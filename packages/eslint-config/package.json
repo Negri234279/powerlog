@@ -1,0 +1,25 @@
+{
+    "name": "@powerlog/eslint-config",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "index.js",
+    "exports": {
+        ".": "./index.js",
+        "./boundaries": "./boundaries.js"
+    },
+    "files": [
+        "index.js",
+        "boundaries.js"
+    ],
+    "dependencies": {
+        "@eslint/js": "^9.18.0",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-boundaries": "^5.0.1",
+        "globals": "^15.14.0",
+        "typescript-eslint": "^8.20.0"
+    },
+    "peerDependencies": {
+        "eslint": "^9.18.0"
+    }
+}

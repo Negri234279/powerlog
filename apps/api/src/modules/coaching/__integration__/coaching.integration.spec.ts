@@ -1,0 +1,77 @@
+import { randomUUID } from 'node:crypto'
+
+import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
+import { sql } from 'drizzle-orm'
+import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
+import { migrate } from 'drizzle-orm/node-postgres/migrator'
+import { Pool } from 'pg'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+
+import * as schema from '../../../database/schema'
+import { CoachInvitationEntity } from '../domain/entities/coach-invitation.entity'
+import { DrizzleCoachInvitationRepository } from '../infrastructure/persistence/repositories/drizzle-coach-invitation.repository'
+import { DrizzleCoachLinkRepository } from '../infrastructure/persistence/repositories/drizzle-coach-link.repository'
+
+let container: StartedPostgreSqlContainer
+let pool: Pool
+let db: NodePgDatabase<typeof schema>
+let invitations: DrizzleCoachInvitationRepository
+let links: DrizzleCoachLinkRepository
+
+beforeAll(async () => {
+    container = await new PostgreSqlContainer('postgres:16-alpine').start()
+    pool = new Pool({ connectionString: container.getConnectionUri() })
+    db = drizzle(pool, { schema })
+    await migrate(db, { migrationsFolder: './drizzle' })
+    invitations = new DrizzleCoachInvitationRepository(db)
+    links = new DrizzleCoachLinkRepository(db)
+}, 120_000)
+
+afterAll(async () => {
+    await pool?.end()
+    await container?.stop()
+})
+
+beforeEach(async () => {
+    await db.execute(sql`TRUNCATE TABLE coach_athlete_invitations, coach_athlete RESTART IDENTITY CASCADE`)
+})
+
+describe('Coaching invitations (integration)', () => {
+    it('persists an invitation, finds it pending, and applies a status transition', async () => {
+        const coachId = randomUUID()
+        const athleteId = randomUUID()
+        const invitation = CoachInvitationEntity.create({
+            id: randomUUID(),
+            coachId,
+            athleteId,
+            now: new Date('2026-03-01T00:00:00Z'),
+        })
+        await invitations.save(invitation)
+
+        expect((await invitations.findPending(coachId, athleteId))?.id).toBe(invitation.id)
+        expect((await invitations.listPendingForAthlete(athleteId)).map((i) => i.id)).toEqual([invitation.id])
+
+        invitation.accept(new Date('2026-03-02T00:00:00Z'))
+        await invitations.save(invitation)
+
+        expect((await invitations.findById(invitation.id))?.status).toBe('accepted')
+        expect(await invitations.findPending(coachId, athleteId)).toBeNull()
+    })
+})
+
+describe('Coach links (integration)', () => {
+    it('links idempotently and lists both directions', async () => {
+        const coachId = randomUUID()
+        const athleteId = randomUUID()
+
+        await links.link(coachId, athleteId, new Date())
+        await links.link(coachId, athleteId, new Date()) // no duplicate
+
+        expect(await links.areLinked(coachId, athleteId)).toBe(true)
+        expect(await links.coachIdsOf(athleteId)).toEqual([coachId])
+        expect(await links.athleteIdsOf(coachId)).toEqual([athleteId])
+
+        const rows = await db.select().from(schema.coachAthlete)
+        expect(rows).toHaveLength(1)
+    })
+})

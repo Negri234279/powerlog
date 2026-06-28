@@ -1,0 +1,12 @@
+# Root notification policy: route every alert to Discord in dev.
+# Replaces Grafana's built-in default policy (which points at the unconfigured
+# email contact point).
+apiVersion: 1
+
+policies:
+  - orgId: 1
+    receiver: Discord
+    group_by: ['grafana_folder', 'alertname']
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h

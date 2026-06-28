@@ -1,0 +1,14 @@
+# Contact points for Grafana unified alerting (provisioned on startup).
+# The Discord webhook URL is injected from the environment ($__env), never
+# hardcoded here — set DISCORD_WEBHOOK_URL in the env-file.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: Discord
+    receivers:
+      - uid: discord-dev
+        type: discord
+        settings:
+          url: $__env{DISCORD_WEBHOOK_URL}
+        disableResolveMessage: false

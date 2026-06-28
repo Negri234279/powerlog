@@ -1,0 +1,88 @@
+# syntax=docker/dockerfile:1.7
+# Multi-stage build for @powerlog/api (NestJS) inside the pnpm workspace.
+# Build context MUST be the repo root: `docker build -f infra/docker/Dockerfile.api .`
+# Targets: development | build | migrate | production
+
+ARG NODE_VERSION=22
+ARG PNPM_VERSION=10.34.3
+
+# OCI image metadata — populated by CI (docker-publish-api.yml) at build time.
+ARG VERSION="unknown"
+ARG VCS_REF="unknown"
+ARG BUILD_DATE="unknown"
+ARG DESCRIPTION="Gym/powerlifting training tracker API (NestJS)"
+
+# ─────────────────────────────────────────────────────────────
+# base — node + pnpm + tini (signal handling)
+# ─────────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS base
+ENV PNPM_HOME="/pnpm" \
+    PATH="/pnpm:$PATH"
+RUN apk add --no-cache tini \
+    && corepack enable \
+    && corepack prepare pnpm@${PNPM_VERSION} --activate
+WORKDIR /app
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# ─────────────────────────────────────────────────────────────
+# deps — install the whole workspace (cached on manifest changes)
+# ─────────────────────────────────────────────────────────────
+FROM base AS deps
+COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc package.json ./
+COPY packages/tsconfig/package.json packages/tsconfig/
+COPY packages/eslint-config/package.json packages/eslint-config/
+COPY apps/api/package.json apps/api/
+ 
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# ─────────────────────────────────────────────────────────────
+# development — full source, Nest watch mode (source bind-mounted in compose)
+# ─────────────────────────────────────────────────────────────
+FROM deps AS development
+ENV NODE_ENV=development
+COPY . .
+EXPOSE 4000
+CMD ["pnpm", "--filter", "@powerlog/api", "start:dev"]
+
+# ─────────────────────────────────────────────────────────────
+# build — compile and produce a pruned, self-contained deployment
+# ─────────────────────────────────────────────────────────────
+FROM deps AS build
+COPY . .
+RUN pnpm --filter @powerlog/api build \
+    && pnpm --filter @powerlog/api deploy --prod /deploy
+
+# ─────────────────────────────────────────────────────────────
+# migrate — drizzle-kit migrations (keeps dev deps + config + source)
+# ─────────────────────────────────────────────────────────────
+FROM build AS migrate
+ENV NODE_ENV=production
+WORKDIR /app/apps/api
+CMD ["pnpm", "db:migrate"]
+
+# ─────────────────────────────────────────────────────────────
+# production — minimal runtime image
+# ─────────────────────────────────────────────────────────────
+FROM base AS production
+ENV NODE_ENV=production
+
+# Re-declare the metadata ARGs so they're in scope for this stage.
+ARG VERSION
+ARG VCS_REF
+ARG BUILD_DATE
+ARG DESCRIPTION
+LABEL org.opencontainers.image.title="powerlog — API" \
+    org.opencontainers.image.description="${DESCRIPTION}" \
+    org.opencontainers.image.version="${VERSION}" \
+    org.opencontainers.image.revision="${VCS_REF}" \
+    org.opencontainers.image.created="${BUILD_DATE}" \
+    org.opencontainers.image.source="" \
+    org.opencontainers.image.licenses=""
+
+COPY --from=build /deploy /app
+# Entrypoint runs pending migrations (idempotent) then starts the server.
+COPY --chmod=0755 infra/docker/api-entrypoint.sh /usr/local/bin/api-entrypoint.sh
+USER node
+EXPOSE 4000
+CMD ["/usr/local/bin/api-entrypoint.sh"]

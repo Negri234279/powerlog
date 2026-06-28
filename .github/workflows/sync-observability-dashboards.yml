@@ -1,0 +1,76 @@
+name: Sync observability dashboards
+
+# When powerlog's Grafana dashboards change, open a PR to the shared
+# observability-platform repo so they show up in the central Grafana, rebinding
+# their datasource to the `powerlog` one provisioned there (uid prometheus-powerlog).
+#
+# Scope: ONLY the dashboards. The rest of infra/observability/ (loki, tempo,
+# alloy, prometheus.yml) is powerlog's own stack and must NOT be synced.
+#
+# Requires a repo/org secret `OBS_PLATFORM_TOKEN`: a fine-grained PAT (or GitHub
+# App token) with Contents:write + Pull requests:write on
+# Negri234279/observability-platform. The default GITHUB_TOKEN cannot push or
+# open PRs on another repo.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/observability/grafana/dashboards/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout powerlog
+        uses: actions/checkout@v4
+        with:
+          path: powerlog
+
+      - name: Checkout observability-platform
+        uses: actions/checkout@v4
+        with:
+          repository: Negri234279/observability-platform
+          token: ${{ secrets.OBS_PLATFORM_TOKEN }}
+          path: observability-platform
+
+      - name: Copy dashboards + rebind datasource
+        run: |
+          set -euo pipefail
+          src="powerlog/infra/observability/grafana/dashboards"
+          dest="observability-platform/grafana/dashboards/powerlog"
+          mkdir -p "$dest"
+
+          # Rewrite ONLY datasource references (uid / legacy datasource string)
+          # from the local `prometheus` to the central `prometheus-powerlog`.
+          # `"type": "prometheus"` (plugin id) is intentionally left untouched.
+          for f in "$src"/*.json; do
+            name="$(basename "$f")"
+            sed -E \
+              -e 's/("uid"[[:space:]]*:[[:space:]]*)"prometheus"/\1"prometheus-powerlog"/g' \
+              -e 's/("datasource"[[:space:]]*:[[:space:]]*)"prometheus"/\1"prometheus-powerlog"/g' \
+              "$f" > "$dest/$name"
+            echo "synced $name"
+          done
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.OBS_PLATFORM_TOKEN }}
+          path: observability-platform
+          branch: sync/powerlog-dashboards
+          delete-branch: true
+          commit-message: "chore(dashboards): sync powerlog dashboards"
+          title: "Sync powerlog dashboards"
+          body: |
+            Automated sync of powerlog's Grafana dashboards into the shared stack.
+
+            - Source: `powerlog/infra/observability/grafana/dashboards/`
+            - Datasource rebound to `prometheus-powerlog` (the powerlog datasource
+              in the central Grafana).
+            - Note: Loki/Tempo panels won't resolve here (central Grafana is
+              metrics-only); use powerlog's own Grafana for full correlation.

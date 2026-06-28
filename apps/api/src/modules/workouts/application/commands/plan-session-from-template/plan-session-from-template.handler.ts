@@ -1,0 +1,57 @@
+import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+
+import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
+import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
+import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
+import { WorkoutTemplateRepository } from '../../../domain/repositories/workout-template.repository'
+import { materializeTemplateInto } from '../../materialize-template'
+import { Clock } from '../../ports/clock.port'
+import { IdGenerator } from '../../ports/id-generator.port'
+import {
+    type WorkoutSessionView,
+    toWorkoutSessionView,
+} from '../../queries/get-workout-session/get-workout-session.handler'
+import { requireOwnedTemplate } from '../../require-owned-template'
+import { PlanSessionFromTemplateCommand } from './plan-session-from-template.command'
+
+@CommandHandler(PlanSessionFromTemplateCommand)
+export class PlanSessionFromTemplateHandler implements ICommandHandler<
+    PlanSessionFromTemplateCommand,
+    WorkoutSessionView
+> {
+    constructor(
+        private readonly sessions: WorkoutSessionRepository,
+        private readonly templates: WorkoutTemplateRepository,
+        private readonly coachLinks: CoachLinks,
+        private readonly clock: Clock,
+        private readonly ids: IdGenerator,
+    ) {}
+
+    async execute(command: PlanSessionFromTemplateCommand): Promise<WorkoutSessionView> {
+        if (!(await this.coachLinks.areLinked(command.coachId, command.athleteId))) {
+            throw new NotLinkedToAthleteError()
+        }
+
+        // The coach plans from their own template (ownership scoped to the coach).
+        const template = await requireOwnedTemplate(this.templates, command.templateId, command.coachId)
+
+        const now = this.clock.now()
+        const session = WorkoutSessionAggregate.create({
+            id: this.ids.uuid(),
+            // Owned by the athlete; stamped with the planning coach.
+            userId: command.athleteId,
+            plannedByUserId: command.coachId,
+            status: 'planned',
+            performedAt: command.performedAt ? new Date(command.performedAt) : now,
+            notes: command.notes ?? null,
+            now,
+        })
+
+        materializeTemplateInto(session, template, this.ids, now)
+
+        await this.sessions.save(session)
+
+        return toWorkoutSessionView(session)
+    }
+}

@@ -1,0 +1,5 @@
+export { FakeAvatarStorage } from './fake-avatar-storage'
+export { FakeClock } from './fake-clock'
+export { FakeImageProcessor } from './fake-image-processor'
+export { FakeProfileConfig } from './fake-profile-config'
+export { InMemoryProfileRepository } from './in-memory-profile.repository'

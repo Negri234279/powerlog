@@ -1,0 +1,842 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input AddExerciseEntryInput {
+  exerciseId: ID!
+  notes: String
+  sessionId: ID!
+}
+
+type AdminCoachingStats {
+  activeCoaches: Int!
+  linkedAthletes: Int!
+  links: Int!
+  pendingInvitations: Int!
+}
+
+type AdminExercisePage {
+  limit: Int!
+  offset: Int!
+  rows: [Exercise!]!
+
+  """Total exercises matching the filter (ignoring pagination)."""
+  total: Int!
+}
+
+type AdminUser {
+  createdAt: DateTime!
+  email: String!
+  emailVerified: Boolean!
+  id: ID!
+  isAdmin: Boolean!
+
+  """User role: "athlete" or "coach"."""
+  role: String!
+
+  """Account status: "active" | "disabled" | "deleted"."""
+  status: String!
+
+  """Public handle, or null if no profile yet."""
+  username: String
+}
+
+type AdminUserPage {
+  limit: Int!
+  offset: Int!
+  rows: [AdminUser!]!
+
+  """Total users matching the filter (ignoring pagination)."""
+  total: Int!
+}
+
+type AdminUserStats {
+  active: Int!
+  admins: Int!
+  athletes: Int!
+  coaches: Int!
+  disabled: Int!
+  newLast7Days: Int!
+  newLast30Days: Int!
+  total: Int!
+  verified: Int!
+}
+
+type AdminWorkoutStats {
+  activeUsers: Int!
+  completedSessions: Int!
+  exercises: Int!
+  sessions: Int!
+  sessionsLast7Days: Int!
+  sets: Int!
+}
+
+input ChangePasswordInput {
+  currentPassword: String
+  newPassword: String!
+}
+
+type CoachInvitation {
+  athleteId: ID!
+  coachId: ID!
+  createdAt: DateTime!
+  id: ID!
+
+  """pending | accepted | declined | cancelled"""
+  status: String!
+}
+
+type CoachUser {
+  userId: ID!
+  username: String!
+}
+
+input CreateExerciseInput {
+  """
+  squat | bench | deadlift | chest | back | shoulders | legs | arms | core
+  """
+  category: String!
+
+  """barbell | dumbbell | machine | cable | bodyweight"""
+  equipment: String!
+  name: String!
+
+  """Primary muscle worked."""
+  primaryMuscle: String!
+
+  """Stable key; derived from name if omitted."""
+  slug: String
+}
+
+input CreateSessionFromTemplateInput {
+  notes: String
+
+  """ISO 8601 datetime; defaults to now."""
+  performedAt: String
+  templateId: ID!
+}
+
+input CreateWorkoutSessionInput {
+  notes: String
+
+  """ISO 8601 datetime; defaults to now."""
+  performedAt: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type DistributionSlice {
+  key: String!
+  totalSets: Int!
+  totalVolumeKg: Float!
+}
+
+type Exercise {
+  """
+  squat | bench | deadlift | chest | back | shoulders | legs | arms | core
+  """
+  category: String!
+
+  """barbell | dumbbell | machine | cable | bodyweight"""
+  equipment: String!
+  id: ID!
+  name: String!
+
+  """Primary muscle worked."""
+  primaryMuscle: String!
+  slug: String!
+}
+
+type ExerciseEntry {
+  exerciseId: ID!
+  id: ID!
+  notes: String
+  order: Int!
+  sets: [WorkoutSet!]!
+}
+
+type ExerciseStats {
+  """Best estimated 1RM (kg)."""
+  bestE1rmKg: Float
+  category: String!
+  exerciseId: ID!
+
+  """Heaviest single set (kg)."""
+  heaviestWeightKg: Float
+  name: String!
+  slug: String!
+  totalReps: Int!
+  totalSets: Int!
+
+  """Σ weight·reps (kg) over logged sets."""
+  totalVolumeKg: Float!
+}
+
+type IntensityBucket {
+  sets: Int!
+
+  """Rounded RPE (6–10) or RIR (0–50)."""
+  value: Int!
+}
+
+input LogSetInput {
+  entryId: ID!
+  notes: String
+  plannedReps: Int
+  plannedWeight: Float
+  reps: Int
+
+  """Reps in reserve (alternative to RPE)."""
+  rir: Int
+
+  """RPE 0–10 in half-point steps."""
+  rpe: Float
+  sessionId: ID!
+
+  """Weight unit of the inputs: kg | lb (default kg)."""
+  unit: String
+  weight: Float
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Me {
+  createdAt: DateTime!
+  email: String!
+
+  """Whether the email address has been verified."""
+  emailVerified: Boolean!
+
+  """Whether the account has a password (vs Google-only)."""
+  hasPassword: Boolean!
+  id: ID!
+
+  """Whether the user has admin privileges."""
+  isAdmin: Boolean!
+
+  """User role: "athlete" or "coach"."""
+  role: String!
+
+  """Unit preference: "kg" or "lb"."""
+  units: String!
+
+  """Public handle (unique)."""
+  username: String!
+}
+
+type Mutation {
+  """Accept a pending invitation (links you to the coach)."""
+  acceptInvitation(id: ID!): CoachInvitation!
+
+  """Add an exercise to a session."""
+  addExerciseEntry(input: AddExerciseEntryInput!): WorkoutSession!
+
+  """
+  Promote the current user to coach (re-issues the session with the new role).
+  """
+  becomeCoach: Me!
+
+  """Cancel an invitation you sent (coaches only)."""
+  cancelInvitation(id: ID!): CoachInvitation!
+
+  """Change (or set, for Google-only accounts) the password."""
+  changePassword(input: ChangePasswordInput!): Boolean!
+
+  """Mark a session as completed."""
+  completeWorkoutSession(id: ID!): WorkoutSession!
+
+  """Create a catalog exercise."""
+  createExercise(input: CreateExerciseInput!): Exercise!
+
+  """
+  Create a session for yourself, pre-filled from one of your templates (status: planned).
+  """
+  createSessionFromTemplate(input: CreateSessionFromTemplateInput!): WorkoutSession!
+
+  """Create a workout session (status: planned)."""
+  createWorkoutSession(input: CreateWorkoutSessionInput): WorkoutSession!
+
+  """Create a reusable workout template."""
+  createWorkoutTemplate(input: WorkoutTemplateInput!): WorkoutTemplate!
+
+  """Decline a pending invitation."""
+  declineInvitation(id: ID!): CoachInvitation!
+
+  """
+  Permanently delete the current account (GDPR): soft-delete + scrub personal data.
+  """
+  deleteAccount: Boolean!
+
+  """Delete a catalog exercise (blocked if used in any workout)."""
+  deleteExercise(exerciseId: ID!): Boolean!
+
+  """Delete a session (cascades to entries and sets)."""
+  deleteWorkoutSession(id: ID!): Boolean!
+
+  """Delete a template (cascades to its exercises and sets)."""
+  deleteWorkoutTemplate(id: ID!): Boolean!
+
+  """
+  Email a password-reset link (always succeeds, even if the email is unknown).
+  """
+  forgotPassword(email: String!): Boolean!
+
+  """Invite an athlete by username (coaches only)."""
+  inviteAthlete(username: String!): CoachInvitation!
+
+  """Append a set to an exercise entry."""
+  logSet(input: LogSetInput!): WorkoutSession!
+
+  """Log in with email + password."""
+  login(input: LoginInput!): Me!
+
+  """Revoke the refresh token and clear the auth cookies."""
+  logout: Boolean!
+
+  """Mark every notification read; returns how many changed."""
+  markAllNotificationsRead: Int!
+
+  """Mark one notification read (no-op if not the caller’s)."""
+  markNotificationRead(id: ID!): Boolean!
+
+  """
+  Plan a session for an athlete from one of your templates (coaches only; status: planned).
+  """
+  planSessionFromTemplate(input: PlanSessionFromTemplateInput!): WorkoutSession!
+
+  """
+  Plan a session for one of your athletes (coaches only; status: planned).
+  """
+  planWorkoutSession(input: PlanWorkoutSessionInput!): WorkoutSession!
+
+  """Rotate the session using the refresh cookie."""
+  refresh: Me!
+
+  """Register with email + password."""
+  register(input: RegisterInput!): Me!
+
+  """Remove an exercise (and its sets) from a session."""
+  removeExerciseEntry(entryId: ID!, sessionId: ID!): WorkoutSession!
+
+  """Remove a set from an exercise entry."""
+  removeSet(entryId: ID!, sessionId: ID!, setId: ID!): WorkoutSession!
+
+  """Resend the verification email to the current user."""
+  resendEmailVerification: Boolean!
+
+  """Reset the password using the token from the reset email."""
+  resetPassword(input: ResetPasswordInput!): Boolean!
+
+  """Revoke every session except the current one."""
+  revokeOtherSessions: Boolean!
+
+  """Revoke one session by id (logs out that device)."""
+  revokeSession(id: String!): Boolean!
+
+  """Grant or revoke platform admin (cannot revoke your own)."""
+  setUserAdmin(input: SetUserAdminInput!): AdminUser!
+
+  """Set a user's role (athlete ↔ coach)."""
+  setUserRole(input: SetUserRoleInput!): AdminUser!
+
+  """
+  Disable (suspend) or re-enable a user account. Disabling signs them out.
+  """
+  setUserStatus(input: SetUserStatusInput!): AdminUser!
+
+  """Edit a catalog exercise (slug is immutable)."""
+  updateExercise(input: UpdateExerciseInput!): Exercise!
+
+  """Update the authenticated user’s profile fields."""
+  updateProfile(input: UpdateProfileInput!): Profile!
+
+  """Edit a set (absent = leave, null = clear)."""
+  updateSet(input: UpdateSetInput!): WorkoutSession!
+
+  """
+  Edit a session’s date and/or notes (absent = leave, notes null = clear).
+  """
+  updateWorkoutSession(input: UpdateWorkoutSessionInput!): WorkoutSession!
+
+  """Replace a template’s name, notes and exercise/set tree."""
+  updateWorkoutTemplate(id: ID!, input: WorkoutTemplateInput!): WorkoutTemplate!
+
+  """Confirm email ownership with the token from the verification email."""
+  verifyEmail(token: String!): Boolean!
+}
+
+type Notification {
+  createdAt: DateTime!
+
+  """Type-specific payload, JSON-encoded."""
+  data: String!
+  id: ID!
+
+  """When the user read it; null while unread."""
+  readAt: DateTime
+
+  """Notification kind, e.g. "coach_invitation"."""
+  type: String!
+}
+
+type NotificationsPage {
+  hasNextPage: Boolean!
+  items: [Notification!]!
+
+  """Cursor for the next page; null when last."""
+  nextCursor: String
+}
+
+type PendingInvitation {
+  coachId: ID!
+
+  """The inviting coach's username."""
+  coachUsername: String!
+  createdAt: DateTime!
+  id: ID!
+}
+
+input PlanSessionFromTemplateInput {
+  """The athlete this session is planned for."""
+  athleteId: ID!
+  notes: String
+
+  """ISO 8601 datetime; defaults to now."""
+  performedAt: String
+  templateId: ID!
+}
+
+input PlanWorkoutSessionInput {
+  """The athlete this session is planned for."""
+  athleteId: ID!
+  notes: String
+
+  """ISO 8601 datetime; defaults to now."""
+  performedAt: String
+}
+
+type Profile {
+  """Avatar URL; null → client shows the default."""
+  avatarUrl: String
+  bio: String
+
+  """Birth date as YYYY-MM-DD."""
+  birthDate: String
+
+  """ISO 3166-1 alpha-2 country code."""
+  country: String
+  createdAt: DateTime!
+  displayName: String!
+  firstName: String
+
+  """Height in centimetres."""
+  heightCm: Int
+  lastName: String
+
+  """BCP 47 locale, e.g. "es-ES"."""
+  locale: String
+
+  """"male" or "female"."""
+  sex: String
+
+  """IANA timezone, e.g. "Europe/Madrid"."""
+  timezone: String
+  updatedAt: DateTime!
+  userId: ID!
+}
+
+type Query {
+  """Aggregate coaching counts (admin only)."""
+  adminCoachingStats: AdminCoachingStats!
+
+  """
+  Exercise catalog for admins (filter by category/equipment/muscle/text; offset-paginated).
+  """
+  adminExercises(categories: [String!], equipment: [String!], limit: Int, muscles: [String!], offset: Int, search: String): AdminExercisePage!
+
+  """Aggregate user counts for the admin dashboard."""
+  adminUserStats: AdminUserStats!
+
+  """List users with filters + offset pagination (admin only)."""
+  adminUsers(isAdmin: Boolean, limit: Int, offset: Int, roles: [String!], search: String, statuses: [String!], verified: Boolean): AdminUserPage!
+
+  """Aggregate training counts (admin only)."""
+  adminWorkoutStats: AdminWorkoutStats!
+
+  """
+  The caller's per-exercise volume and PRs, optionally within a date range.
+  """
+  exerciseStats(from: String, to: String): [ExerciseStats!]!
+
+  """The exercise catalog, optionally filtered by category."""
+  exercises(category: String): [Exercise!]!
+
+  """The currently authenticated user."""
+  me: Me!
+
+  """Athletes linked to the caller."""
+  myAthletes: [CoachUser!]!
+
+  """Coaches linked to the caller."""
+  myCoaches: [CoachUser!]!
+
+  """The caller's notification inbox, newest first (keyset-paginated)."""
+  myNotifications(cursor: String, limit: Int): NotificationsPage!
+
+  """The authenticated user's profile."""
+  myProfile: Profile!
+
+  """The user’s active sessions (devices)."""
+  mySessions: [Session!]!
+
+  """Pending invitations received by the caller."""
+  pendingInvitations: [PendingInvitation!]!
+
+  """Liveness ping for the GraphQL schema."""
+  ping: String!
+
+  """
+  e1RM progression and projection for one exercise, optionally within a date range.
+  """
+  strengthProgression(exerciseId: ID!, from: String, to: String): StrengthProgression!
+
+  """
+  The caller's volume distribution (muscle/category) and RPE breakdown, optionally ranged.
+  """
+  trainingDistribution(from: String, to: String): TrainingDistribution!
+
+  """
+  The caller's headline training KPIs (incl. estimated S+B+D total), optionally ranged.
+  """
+  trainingSummary(from: String, to: String): TrainingSummary!
+
+  """Number of unread notifications (the bell badge)."""
+  unreadNotificationsCount: Int!
+
+  """The caller's weekly training volume, optionally within a date range."""
+  volumeSeries(from: String, to: String): [VolumeBucket!]!
+
+  """
+  The caller's session history, newest first (keyset-paginated; optional status/date/exercise/notes filters).
+  """
+  workoutHistory(cursor: String, exerciseId: ID, from: String, limit: Int, query: String, status: String, to: String): WorkoutHistoryPage!
+
+  """A workout session owned by the caller, with its full tree."""
+  workoutSession(id: ID!): WorkoutSession!
+
+  """One of the caller’s templates, with its full tree."""
+  workoutTemplate(id: ID!): WorkoutTemplate!
+
+  """
+  The caller's templates (name-ordered), with cheap rollups; optional name search.
+  """
+  workoutTemplates(search: String): [WorkoutTemplateSummary!]!
+}
+
+input RegisterInput {
+  """Birth date as YYYY-MM-DD."""
+  birthDate: String
+  email: String!
+  firstName: String
+
+  """Height in centimetres (50–300)."""
+  heightCm: Int
+  lastName: String
+  password: String!
+
+  """"kg" (default) or "lb"."""
+  units: String
+
+  """Public handle: 3–30 chars of a–z, 0–9 or underscore."""
+  username: String!
+}
+
+input ResetPasswordInput {
+  newPassword: String!
+  token: String!
+}
+
+type Session {
+  """Whether this is the session making the request."""
+  current: Boolean!
+  id: ID!
+  ip: String
+
+  """When this session was last used (last token rotation)."""
+  lastUsedAt: DateTime!
+  userAgent: String
+}
+
+input SetUserAdminInput {
+  isAdmin: Boolean!
+  userId: ID!
+}
+
+input SetUserRoleInput {
+  """"athlete" or "coach"."""
+  role: String!
+  userId: ID!
+}
+
+input SetUserStatusInput {
+  """true → disable (suspend) the account; false → re-enable."""
+  disabled: Boolean!
+  userId: ID!
+}
+
+type StrengthPoint {
+  e1rmKg: Float!
+  performedAt: DateTime!
+}
+
+type StrengthProgression {
+  points: [StrengthPoint!]!
+  trend: StrengthTrend
+}
+
+type StrengthProjection {
+  e1rmKg: Float!
+  weeks: Int!
+}
+
+type StrengthTrend {
+  projections: [StrengthProjection!]!
+
+  """Fit quality R² in [0, 1]."""
+  r2: Float!
+
+  """kg gained per week (negative = regressing)."""
+  slopePerWeekKg: Float!
+}
+
+input TemplateExerciseInput {
+  exerciseId: ID!
+  notes: String
+  sets: [TemplateSetInput!]!
+}
+
+input TemplateSetInput {
+  notes: String
+  plannedReps: Int
+  plannedWeight: Float
+
+  """Target reps in reserve (alternative to RPE)."""
+  rir: Int
+
+  """Target RPE 0–10 in half-point steps."""
+  rpe: Float
+
+  """Weight unit of the inputs: kg | lb (default kg)."""
+  unit: String
+}
+
+type TrainingDistribution {
+  byCategory: [DistributionSlice!]!
+  byMuscle: [DistributionSlice!]!
+  rir: [IntensityBucket!]!
+  rpe: [IntensityBucket!]!
+}
+
+type TrainingSummary {
+  """Mean RPE over sets that recorded one."""
+  avgRpe: Float
+  bestBenchE1rmKg: Float
+  bestDeadliftE1rmKg: Float
+  bestSquatE1rmKg: Float
+  distinctExercises: Int!
+
+  """Estimated S+B+D total (kg)."""
+  estimatedTotalKg: Float
+  sessions: Int!
+  totalReps: Int!
+  totalSets: Int!
+
+  """Σ weight·reps (kg) over logged sets."""
+  totalVolumeKg: Float!
+
+  """Distinct calendar days trained."""
+  trainingDays: Int!
+}
+
+input UpdateExerciseInput {
+  category: String
+  equipment: String
+  exerciseId: ID!
+
+  """Absent = leave unchanged."""
+  name: String
+  primaryMuscle: String
+}
+
+input UpdateProfileInput {
+  bio: String
+
+  """Birth date as YYYY-MM-DD."""
+  birthDate: String
+
+  """ISO 3166-1 alpha-2 country code."""
+  country: String
+  displayName: String
+  firstName: String
+
+  """Height in centimetres (50–300)."""
+  heightCm: Int
+  lastName: String
+
+  """BCP 47 locale, e.g. "es-ES"."""
+  locale: String
+
+  """"male" or "female"."""
+  sex: String
+
+  """IANA timezone, e.g. "Europe/Madrid"."""
+  timezone: String
+}
+
+input UpdateSetInput {
+  entryId: ID!
+  notes: String
+  plannedReps: Int
+  plannedWeight: Float
+  reps: Int
+
+  """Reps in reserve (alternative to RPE)."""
+  rir: Int
+
+  """RPE 0–10 in half-point steps."""
+  rpe: Float
+  sessionId: ID!
+  setId: ID!
+
+  """Weight unit of the inputs: kg | lb (default kg)."""
+  unit: String
+  weight: Float
+}
+
+input UpdateWorkoutSessionInput {
+  """Absent = leave unchanged; null = clear."""
+  notes: String
+
+  """ISO 8601 datetime; absent = leave unchanged."""
+  performedAt: String
+  sessionId: ID!
+}
+
+type VolumeBucket {
+  """Start of the week (UTC)."""
+  bucketStart: DateTime!
+  sessions: Int!
+  totalSets: Int!
+  totalVolumeKg: Float!
+}
+
+type WorkoutHistoryPage {
+  hasNextPage: Boolean!
+  items: [WorkoutSessionSummary!]!
+
+  """Cursor for the next page; null when last."""
+  nextCursor: String
+}
+
+type WorkoutSession {
+  createdAt: DateTime!
+  entries: [ExerciseEntry!]!
+  id: ID!
+  notes: String
+  performedAt: DateTime!
+
+  """Coach who planned this session, if any."""
+  plannedByUserId: ID
+
+  """planned | completed"""
+  status: String!
+  updatedAt: DateTime!
+  userId: ID!
+}
+
+type WorkoutSessionSummary {
+  createdAt: DateTime!
+
+  """Number of exercise entries."""
+  exerciseCount: Int!
+  id: ID!
+  notes: String
+  performedAt: DateTime!
+
+  """Coach who planned this session, if any."""
+  plannedByUserId: ID
+
+  """Number of sets across all entries."""
+  setCount: Int!
+
+  """planned | completed"""
+  status: String!
+
+  """Σ weight·reps (kg) over logged sets."""
+  totalVolumeKg: Float!
+  updatedAt: DateTime!
+  userId: ID!
+}
+
+type WorkoutSet {
+  """Estimated 1RM (kg) from the actual set (Epley)."""
+  e1rmKg: Float
+  id: ID!
+  notes: String
+  order: Int!
+  plannedReps: Int
+  plannedWeightKg: Float
+  reps: Int
+  rir: Int
+  rpe: Float
+  weightKg: Float
+}
+
+type WorkoutTemplate {
+  createdAt: DateTime!
+  exercises: [WorkoutTemplateExercise!]!
+  id: ID!
+  name: String!
+  notes: String
+  ownerId: ID!
+  updatedAt: DateTime!
+}
+
+type WorkoutTemplateExercise {
+  exerciseId: ID!
+  id: ID!
+  notes: String
+  order: Int!
+  sets: [WorkoutTemplateSet!]!
+}
+
+input WorkoutTemplateInput {
+  exercises: [TemplateExerciseInput!]!
+  name: String!
+  notes: String
+}
+
+type WorkoutTemplateSet {
+  id: ID!
+  notes: String
+  order: Int!
+  plannedReps: Int
+  plannedWeightKg: Float
+  rir: Int
+  rpe: Float
+}
+
+type WorkoutTemplateSummary {
+  exerciseCount: Int!
+  id: ID!
+  name: String!
+  notes: String
+  setCount: Int!
+  updatedAt: DateTime!
+}

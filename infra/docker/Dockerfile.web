@@ -1,0 +1,85 @@
+# syntax=docker/dockerfile:1.7
+# Multi-stage build for @powerlog/web (Next.js 15, standalone output).
+# Build context MUST be the repo root: `docker build -f infra/docker/Dockerfile.web .`
+# Requires next.config to set `output: 'standalone'` and
+# `outputFileTracingRoot` pointing at the monorepo root (configured in apps/web).
+# Targets: development | build | production
+
+ARG NODE_VERSION=22
+ARG PNPM_VERSION=10.34.3
+
+# OCI image metadata — populated by CI (docker-publish-web.yml) at build time.
+ARG VERSION="unknown"
+ARG VCS_REF="unknown"
+ARG BUILD_DATE="unknown"
+ARG DESCRIPTION="Gym/powerlifting training tracker web app (Next.js)"
+
+# ─────────────────────────────────────────────────────────────
+# base — node + pnpm + tini
+# ─────────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS base
+ENV PNPM_HOME="/pnpm" \
+    PATH="/pnpm:$PATH"
+RUN apk add --no-cache tini \
+    && corepack enable \
+    && corepack prepare pnpm@${PNPM_VERSION} --activate
+WORKDIR /app
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# ─────────────────────────────────────────────────────────────
+# deps — install the whole workspace
+# ─────────────────────────────────────────────────────────────
+FROM base AS deps
+COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc package.json ./
+COPY packages/tsconfig/package.json packages/tsconfig/
+COPY packages/eslint-config/package.json packages/eslint-config/
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# ─────────────────────────────────────────────────────────────
+# development — Next dev server (source bind-mounted in compose)
+# ─────────────────────────────────────────────────────────────
+FROM deps AS development
+ENV NODE_ENV=development
+COPY . .
+EXPOSE 3000
+CMD ["pnpm", "--filter", "@powerlog/web", "dev"]
+
+# ─────────────────────────────────────────────────────────────
+# build — compile Next standalone bundle
+# ─────────────────────────────────────────────────────────────
+FROM deps AS build
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY . .
+RUN pnpm --filter @powerlog/web build
+
+# ─────────────────────────────────────────────────────────────
+# production — run the standalone server
+# ─────────────────────────────────────────────────────────────
+FROM base AS production
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+
+# Re-declare the metadata ARGs so they're in scope for this stage.
+ARG VERSION
+ARG VCS_REF
+ARG BUILD_DATE
+ARG DESCRIPTION
+LABEL org.opencontainers.image.title="powerlog — Web" \
+    org.opencontainers.image.description="${DESCRIPTION}" \
+    org.opencontainers.image.version="${VERSION}" \
+    org.opencontainers.image.revision="${VCS_REF}" \
+    org.opencontainers.image.created="${BUILD_DATE}" \
+    org.opencontainers.image.source="" \
+    org.opencontainers.image.licenses=""
+
+COPY --from=build /app/apps/web/.next/standalone ./
+COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build /app/apps/web/public ./apps/web/public
+USER node
+EXPOSE 3000
+CMD ["node", "apps/web/server.js"]

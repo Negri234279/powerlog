@@ -1,0 +1,21 @@
+# Docker build context = repo root. Keep images small & cacheable.
+**/node_modules
+**/dist
+**/.next
+**/out
+**/build
+**/.turbo
+**/coverage
+.git
+.gitignore
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+**/.DS_Store
+**/Thumbs.db
+**/.vscode
+**/.idea
+# infra config is not needed inside the images
+infra/**/*.example
+README.md

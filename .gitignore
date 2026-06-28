@@ -1,0 +1,52 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build outputs
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# turbo
+.turbo/
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example
+infra/env/*.env
+!infra/env/*.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# test / coverage
+coverage/
+
+# graphql codegen artifacts
+apps/web/src/gql/
+
+# editor / os
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Local avatar storage (dev filesystem adapter)
+apps/api/var/
+
+# JWT key files (never commit private keys)
+*.pem
+
+# Claude / Agents
+.claude
+.agents
+HANDOFF.md
+skills-lock.json
+CLAUDE.md

@@ -1,0 +1,43 @@
+import { CoachLinkRepository } from '../../../src/modules/coaching/domain/repositories/coach-link.repository'
+
+interface Link {
+    coachId: string
+    athleteId: string
+    createdAt: Date
+}
+
+/**
+ * In-memory CoachLinkRepository implementing the real abstract interface.
+ * `link` is idempotent on the (coach, athlete) pair; lists are newest-first.
+ */
+export class InMemoryCoachLinkRepository extends CoachLinkRepository {
+    private readonly links: Link[] = []
+
+    constructor(seed: Link[] = []) {
+        super()
+        this.links.push(...seed)
+    }
+
+    async areLinked(coachId: string, athleteId: string): Promise<boolean> {
+        return this.links.some((l) => l.coachId === coachId && l.athleteId === athleteId)
+    }
+
+    async link(coachId: string, athleteId: string, now: Date): Promise<void> {
+        if (await this.areLinked(coachId, athleteId)) return
+        this.links.push({ coachId, athleteId, createdAt: now })
+    }
+
+    async coachIdsOf(athleteId: string): Promise<string[]> {
+        return this.links
+            .filter((l) => l.athleteId === athleteId)
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .map((l) => l.coachId)
+    }
+
+    async athleteIdsOf(coachId: string): Promise<string[]> {
+        return this.links
+            .filter((l) => l.coachId === coachId)
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+            .map((l) => l.athleteId)
+    }
+}

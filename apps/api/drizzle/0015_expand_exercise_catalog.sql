@@ -1,0 +1,88 @@
+-- Data-only migration: expand the seeded exercise catalog with the basics and
+-- their free-weight / barbell / dumbbell / machine / cable variants, plus
+-- powerlifting variations (Larsen press, Spoto press, board/pin/floor press,
+-- pin/Anderson/tempo squats, paused/snatch-grip deadlifts, …). Idempotent via
+-- ON CONFLICT so it is safe on databases that already ran the original seed.
+INSERT INTO "exercises" ("slug", "name", "category", "equipment", "primary_muscle") VALUES
+	-- Squat (competition-lift strength variants)
+	('high-bar-squat', 'High-Bar Back Squat', 'squat', 'barbell', 'quads'),
+	('low-bar-squat', 'Low-Bar Back Squat', 'squat', 'barbell', 'quads'),
+	('safety-bar-squat', 'Safety Bar Squat', 'squat', 'barbell', 'quads'),
+	('pin-squat', 'Pin Squat', 'squat', 'barbell', 'quads'),
+	('tempo-squat', 'Tempo Squat', 'squat', 'barbell', 'quads'),
+	('anderson-squat', 'Anderson Squat', 'squat', 'barbell', 'quads'),
+	('pause-front-squat', 'Pause Front Squat', 'squat', 'barbell', 'quads'),
+	('zercher-squat', 'Zercher Squat', 'squat', 'barbell', 'quads'),
+	-- Bench (competition-lift strength + power variants)
+	('larsen-press', 'Larsen Press', 'bench', 'barbell', 'chest'),
+	('spoto-press', 'Spoto Press', 'bench', 'barbell', 'chest'),
+	('board-press', 'Board Press', 'bench', 'barbell', 'chest'),
+	('pin-press', 'Pin Press', 'bench', 'barbell', 'chest'),
+	('floor-press', 'Floor Press', 'bench', 'barbell', 'triceps'),
+	('wide-grip-bench-press', 'Wide-Grip Bench Press', 'bench', 'barbell', 'chest'),
+	('decline-bench-press', 'Decline Barbell Bench Press', 'bench', 'barbell', 'chest'),
+	('tempo-bench-press', 'Tempo Bench Press', 'bench', 'barbell', 'chest'),
+	-- Deadlift (competition-lift strength variants)
+	('paused-deadlift', 'Paused Deadlift', 'deadlift', 'barbell', 'back'),
+	('snatch-grip-deadlift', 'Snatch-Grip Deadlift', 'deadlift', 'barbell', 'back'),
+	('stiff-leg-deadlift', 'Stiff-Leg Deadlift', 'deadlift', 'barbell', 'hamstrings'),
+	('trap-bar-deadlift', 'Trap Bar Deadlift', 'deadlift', 'barbell', 'back'),
+	('rack-pull', 'Rack Pull', 'deadlift', 'barbell', 'back'),
+	-- Chest accessories
+	('decline-dumbbell-press', 'Decline Dumbbell Press', 'chest', 'dumbbell', 'chest'),
+	('dumbbell-fly', 'Dumbbell Fly', 'chest', 'dumbbell', 'chest'),
+	('dumbbell-floor-press', 'Dumbbell Floor Press', 'chest', 'dumbbell', 'triceps'),
+	('machine-chest-press', 'Machine Chest Press', 'chest', 'machine', 'chest'),
+	('pec-deck', 'Pec Deck', 'chest', 'machine', 'chest'),
+	('incline-cable-fly', 'Incline Cable Fly', 'chest', 'cable', 'chest'),
+	('smith-machine-bench-press', 'Smith Machine Bench Press', 'chest', 'machine', 'chest'),
+	-- Back
+	('t-bar-row', 'T-Bar Row', 'back', 'barbell', 'back'),
+	('chest-supported-row', 'Chest-Supported Row', 'back', 'machine', 'back'),
+	('meadows-row', 'Meadows Row', 'back', 'barbell', 'back'),
+	('machine-row', 'Machine Row', 'back', 'machine', 'back'),
+	('straight-arm-pulldown', 'Straight-Arm Pulldown', 'back', 'cable', 'lats'),
+	('wide-grip-pull-up', 'Wide-Grip Pull-Up', 'back', 'bodyweight', 'lats'),
+	('inverted-row', 'Inverted Row', 'back', 'bodyweight', 'back'),
+	('barbell-shrug', 'Barbell Shrug', 'back', 'barbell', 'back'),
+	('dumbbell-shrug', 'Dumbbell Shrug', 'back', 'dumbbell', 'back'),
+	('back-extension', 'Back Extension', 'back', 'bodyweight', 'hamstrings'),
+	-- Shoulders
+	('seated-overhead-press', 'Seated Overhead Press', 'shoulders', 'barbell', 'shoulders'),
+	('arnold-press', 'Arnold Press', 'shoulders', 'dumbbell', 'shoulders'),
+	('machine-shoulder-press', 'Machine Shoulder Press', 'shoulders', 'machine', 'shoulders'),
+	('cable-lateral-raise', 'Cable Lateral Raise', 'shoulders', 'cable', 'shoulders'),
+	('upright-row', 'Upright Row', 'shoulders', 'barbell', 'shoulders'),
+	('front-raise', 'Front Raise', 'shoulders', 'dumbbell', 'shoulders'),
+	('reverse-pec-deck', 'Reverse Pec Deck', 'shoulders', 'machine', 'shoulders'),
+	('landmine-press', 'Landmine Press', 'shoulders', 'barbell', 'shoulders'),
+	-- Legs (accessory / machine work)
+	('goblet-squat', 'Goblet Squat', 'legs', 'dumbbell', 'quads'),
+	('smith-machine-squat', 'Smith Machine Squat', 'legs', 'machine', 'quads'),
+	('belt-squat', 'Belt Squat', 'legs', 'machine', 'quads'),
+	('seated-leg-curl', 'Seated Leg Curl', 'legs', 'machine', 'hamstrings'),
+	('barbell-hip-thrust', 'Barbell Hip Thrust', 'legs', 'barbell', 'glutes'),
+	('seated-calf-raise', 'Seated Calf Raise', 'legs', 'machine', 'calves'),
+	('step-up', 'Step-Up', 'legs', 'dumbbell', 'quads'),
+	('reverse-lunge', 'Reverse Lunge', 'legs', 'dumbbell', 'quads'),
+	('nordic-curl', 'Nordic Hamstring Curl', 'legs', 'bodyweight', 'hamstrings'),
+	-- Arms
+	('preacher-curl', 'Preacher Curl', 'arms', 'barbell', 'biceps'),
+	('ez-bar-curl', 'EZ-Bar Curl', 'arms', 'barbell', 'biceps'),
+	('cable-curl', 'Cable Curl', 'arms', 'cable', 'biceps'),
+	('incline-dumbbell-curl', 'Incline Dumbbell Curl', 'arms', 'dumbbell', 'biceps'),
+	('concentration-curl', 'Concentration Curl', 'arms', 'dumbbell', 'biceps'),
+	('reverse-curl', 'Reverse Curl', 'arms', 'barbell', 'biceps'),
+	('rope-pushdown', 'Rope Triceps Pushdown', 'arms', 'cable', 'triceps'),
+	('cable-overhead-triceps-extension', 'Cable Overhead Triceps Extension', 'arms', 'cable', 'triceps'),
+	('bench-dip', 'Bench Dip', 'arms', 'bodyweight', 'triceps'),
+	('dumbbell-skullcrusher', 'Dumbbell Skullcrusher', 'arms', 'dumbbell', 'triceps'),
+	-- Core
+	('sit-up', 'Sit-Up', 'core', 'bodyweight', 'core'),
+	('crunch', 'Crunch', 'core', 'bodyweight', 'core'),
+	('russian-twist', 'Russian Twist', 'core', 'bodyweight', 'core'),
+	('side-plank', 'Side Plank', 'core', 'bodyweight', 'core'),
+	('lying-leg-raise', 'Lying Leg Raise', 'core', 'bodyweight', 'core'),
+	('pallof-press', 'Pallof Press', 'core', 'cable', 'core'),
+	('dead-bug', 'Dead Bug', 'core', 'bodyweight', 'core')
+ON CONFLICT ("slug") DO NOTHING;

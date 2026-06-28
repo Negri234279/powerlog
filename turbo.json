@@ -1,0 +1,45 @@
+{
+    "$schema": "https://turborepo.dev/schema.json",
+    "globalDependencies": [".env", "tsconfig.json"],
+    "globalEnv": ["NODE_ENV"],
+    "globalPassThroughEnv": [
+        "DATABASE_URL",
+        "JWT_PRIVATE_KEY",
+        "JWT_PUBLIC_KEY",
+        "API_PORT",
+        "WEB_PORT",
+        "NEXT_PUBLIC_GRAPHQL_URL"
+    ],
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build", "codegen"],
+            "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+        },
+        "codegen": {
+            "cache": false
+        },
+        "dev": {
+            "cache": false,
+            "persistent": true
+        },
+        "lint": {
+            "dependsOn": ["^build"]
+        },
+        "typecheck": {
+            "dependsOn": ["^build", "codegen"]
+        },
+        "test": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"]
+        },
+        "db:generate": {
+            "cache": false
+        },
+        "db:migrate": {
+            "cache": false
+        },
+        "clean": {
+            "cache": false
+        }
+    }
+}

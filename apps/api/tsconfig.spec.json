@@ -1,0 +1,12 @@
+{
+    // Typechecks the test suite + helpers (mothers/doubles), which the base
+    // tsconfig excludes (it only compiles src/** for `nest build`). Emits nothing.
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "rootDir": ".",
+        "noEmit": true,
+        "types": ["node", "vitest/globals"]
+    },
+    "include": ["src/**/*.ts", "tests/**/*.ts", "__e2e__/**/*.ts"],
+    "exclude": ["node_modules", "dist"]
+}

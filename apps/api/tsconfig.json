@@ -1,0 +1,21 @@
+{
+    "extends": "@powerlog/tsconfig/node.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "types": ["node"],
+        // Disable incremental here: with `tsc --noEmit` (typecheck) sharing the
+        // same .tsbuildinfo, `nest build` would otherwise skip emitting (empty dist).
+        "incremental": false
+    },
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"],
+    // `nest start --watch` (tsc) watches `src/`. The GraphQL code-first schema is
+    // (re)written to `src/schema.gql` on every boot, which the watcher would pick
+    // up and trigger an endless reload loop (worse on Windows' noisy fs events).
+    // Exclude the generated schema + build dirs so only real `.ts` edits restart.
+    "watchOptions": {
+        "excludeFiles": ["src/schema.gql"],
+        "excludeDirectories": ["**/node_modules", "dist", "coverage", ".turbo"]
+    }
+}

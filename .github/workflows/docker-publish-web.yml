@@ -1,0 +1,221 @@
+name: Docker publish (web)
+
+# Build & publish the @powerlog/web image only when the web app actually changes.
+# The `paths` allowlist is the gate: it covers apps/web plus the root workspace
+# files the image build depends on (lockfile, workspace + pnpm config, shared
+# packages, the Dockerfile and dockerignore). apps/api is deliberately absent —
+# api-only pushes never trigger this workflow.
+on:
+    push:
+        branches: [main, master]
+        paths:
+            - apps/web/** # the web app source itself
+            - packages/** # shared workspace packages the web app depends on
+            - package.json # root manifest (scripts, pnpm config)
+            - pnpm-lock.yaml # dependency graph — install layer cache key
+            - pnpm-workspace.yaml # workspace definition
+            - .npmrc # pnpm settings used during install
+            - infra/docker/Dockerfile.web # the image recipe
+            - .dockerignore # build-context contents
+            - .github/workflows/docker-publish-web.yml # this workflow
+
+# A new push supersedes any in-flight build for the same ref.
+concurrency:
+    group: docker-publish-web-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+env:
+    IMAGE: negrii/powerlog-web
+
+jobs:
+    # Gate: only build & publish when apps/web/package.json "version" actually
+    # changed in this push. Other pushes still get verified, but produce no
+    # image — bump the web version to cut a release.
+    gate:
+        name: Check web version bump
+        runs-on: ubuntu-latest
+        outputs:
+            publish: ${{ steps.check.outputs.publish }}
+            version: ${{ steps.check.outputs.version }}
+            description: ${{ steps.check.outputs.description }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0 # need history to read package.json at the previous commit
+
+            - name: Compare versions
+              id: check
+              run: |
+                  MANIFEST=apps/web/package.json
+                  CURRENT=$(jq -r .version "$MANIFEST")
+                  echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+
+                  DESCRIPTION=$(jq -r '.description // "Gym/powerlifting training tracker web app (Next.js)"' "$MANIFEST")
+                  {
+                    echo "description<<EOF"
+                    echo "$DESCRIPTION"
+                    echo "EOF"
+                  } >> "$GITHUB_OUTPUT"
+
+                  BEFORE='${{ github.event.before }}'
+                  if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+                      echo "::notice::No previous commit on this ref — treating as a release ($CURRENT)."
+                      echo "publish=true" >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
+
+                  PREV=$(git show "$BEFORE:$MANIFEST" 2>/dev/null | jq -r .version 2>/dev/null || echo "")
+                  echo "Previous web version: '${PREV:-<unknown>}'  ·  Current: '$CURRENT'"
+
+                  if [ "$PREV" != "$CURRENT" ]; then
+                      echo "::notice::Web version changed ${PREV:-<unknown>} → $CURRENT — building & publishing."
+                      echo "publish=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "::notice::apps/web/package.json version unchanged ($CURRENT) — skipping Docker build/publish."
+                      echo "publish=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+    # Codegen + type-check the web app on every triggering push (cheap gate
+    # before publish). Codegen reads the API's committed SDL — no running server.
+    verify:
+        name: Verify
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: Set up pnpm
+              uses: pnpm/action-setup@v4
+
+            - name: Set up Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+                  cache: pnpm
+
+            - name: Install deps
+              run: pnpm install --frozen-lockfile
+
+            - name: Codegen
+              run: pnpm --filter @powerlog/web codegen
+
+            - name: Type-check
+              run: pnpm --filter @powerlog/web typecheck
+
+    # Build each platform on its native runner — no QEMU. Each job pushes a
+    # per-platform image by digest; the merge job stitches them into a single
+    # multi-arch manifest under the version + latest tags.
+    build:
+        name: Build ${{ matrix.platform }}
+        needs: [gate, verify]
+        if: needs.gate.outputs.publish == 'true'
+        runs-on: ${{ matrix.runner }}
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - platform: linux/amd64
+                      runner: ubuntu-latest
+                    - platform: linux/arm64
+                      runner: ubuntu-24.04-arm
+        steps:
+            - name: Prepare platform pair
+              run: |
+                  platform=${{ matrix.platform }}
+                  echo "PLATFORM_PAIR=${platform//\//-}" >> "$GITHUB_ENV"
+
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Login to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+            # Context is the repo root (pnpm workspace); Dockerfile.web targets
+            # the standalone `production` runtime stage.
+            - name: Build and push by digest
+              id: build
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: ./infra/docker/Dockerfile.web
+                  target: production
+                  platforms: ${{ matrix.platform }}
+                  outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+                  provenance: false
+                  cache-from: type=gha,scope=${{ env.PLATFORM_PAIR }}
+                  cache-to: type=gha,mode=max,scope=${{ env.PLATFORM_PAIR }}
+                  build-args: |
+                      VERSION=${{ needs.gate.outputs.version }}
+                      VCS_REF=${{ github.sha }}
+                      BUILD_DATE=${{ github.event.head_commit.timestamp }}
+                      DESCRIPTION=${{ needs.gate.outputs.description }}
+
+            - name: Export digest
+              run: |
+                  mkdir -p /tmp/digests
+                  digest="${{ steps.build.outputs.digest }}"
+                  touch "/tmp/digests/${digest#sha256:}"
+
+            - name: Upload digest
+              uses: actions/upload-artifact@v7
+              with:
+                  name: digests-${{ env.PLATFORM_PAIR }}
+                  path: /tmp/digests/*
+                  if-no-files-found: error
+                  retention-days: 1
+
+    merge:
+        name: Merge manifests
+        needs: [gate, build]
+        if: needs.gate.outputs.publish == 'true'
+        runs-on: ubuntu-latest
+        env:
+            VERSION: ${{ needs.gate.outputs.version }}
+        steps:
+            - name: Download digests
+              uses: actions/download-artifact@v8
+              with:
+                  path: /tmp/digests
+                  pattern: digests-*
+                  merge-multiple: true
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Login to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+            # Only tags are needed here — the OCI labels are baked into the image
+            # by Dockerfile.web from the build-args passed in the build job.
+            - name: Compute tags
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ env.IMAGE }}
+                  tags: |
+                      type=raw,value=latest
+                      type=raw,value=${{ env.VERSION }}
+
+            - name: Create manifest list and push
+              working-directory: /tmp/digests
+              run: |
+                  docker buildx imagetools create \
+                    $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+                    $(printf '${{ env.IMAGE }}@sha256:%s ' *)
+
+            - name: Inspect image
+              run: |
+                  docker buildx imagetools inspect ${{ env.IMAGE }}:${{ env.VERSION }}

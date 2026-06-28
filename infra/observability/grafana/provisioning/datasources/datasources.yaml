@@ -1,0 +1,57 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      httpMethod: POST
+      # Latency histogram exemplars carry a trace_id → click the dot to open the
+      # trace in Tempo.
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo
+
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      # Derived fields turn ids inside each JSON log line into clickable links.
+      derivedFields:
+        # trace_id → open the matching distributed trace in Tempo.
+        - name: TraceID
+          matcherType: regex
+          matcherRegex: '"trace_id":"(\w+)"'
+          url: '$${__value.raw}'
+          datasourceUid: tempo
+          urlDisplayLabel: View trace
+        # correlationId → pivot to every log line of the same request/flow
+        # (the app's own id, set by nestjs-cls; spans one or more traces).
+        - name: CorrelationID
+          matcherType: regex
+          matcherRegex: '"correlationId":"([^"]+)"'
+          url: '{service=~".+"} | json | correlationId=`$${__value.raw}`'
+          datasourceUid: loki
+          urlDisplayLabel: Related logs
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      # From a span, jump to its correlated logs in Loki.
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: true
+        spanStartTimeShift: -1h
+        spanEndTimeShift: 1h
+      serviceMap:
+        datasourceUid: prometheus
+      nodeGraph:
+        enabled: true
