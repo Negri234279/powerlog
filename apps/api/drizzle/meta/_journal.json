@@ -134,6 +134,27 @@
       "when": 1782387531347,
       "tag": "0018_expand_arms_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1782473931347,
+      "tag": "0019_expand_back_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1782560331347,
+      "tag": "0020_expand_leg_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1782646731347,
+      "tag": "0021_expand_shoulder_catalog",
+      "breakpoints": true
     }
   ]
 }
