@@ -124,6 +124,44 @@ groups:
                 - evaluator: { type: gt, params: [0] }
               refId: C
 
+      # ── R2 bucket unreachable (app-side HeadObject probe) ─────
+      - uid: powerlog-r2-down
+        title: R2 bucket unreachable
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: OK
+        labels:
+          severity: critical
+        annotations:
+          summary: R2 HeadObject probe failing (powerlog_r2_up == 0) — avatar storage unreachable
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: min(powerlog_r2_up)
+              instant: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+              refId: C
+
   - orgId: 1
     name: powerlog-slo
     folder: PowerLog
@@ -216,13 +254,18 @@ groups:
           severity: warning
         annotations:
           summary: "One or more transactional emails failed to send (10m)"
+          # Renders "View panel"/"View dashboard" links in the notification,
+          # pointing at the Email log panel (sends + delivery events) so you can
+          # jump from the alert straight to the failure cause (e.g. a 403).
+          __dashboardUid__: powerlog-overview
+          __panelId__: "138"
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
             datasourceUid: prometheus
             model:
               datasource: { type: prometheus, uid: prometheus }
-              expr: sum(increase(powerlog_emails_sent_total{status="error"}[10m]))
+              expr: sum(increase(powerlog_emails_sent_total{status="failed"}[10m]))
               instant: true
               refId: A
           - refId: B
@@ -279,4 +322,162 @@ groups:
               expression: B
               conditions:
                 - evaluator: { type: gt, params: [0] }
+              refId: C
+
+  - orgId: 1
+    name: powerlog-email
+    folder: PowerLog
+    interval: 1m
+    rules:
+      # ── Sending domain not verified (Resend) ─────────────────
+      # noDataState OK so dev/SMTP (no series) never fires.
+      - uid: powerlog-resend-domain-unverified
+        title: Resend sending domain not verified
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: OK
+        labels:
+          severity: critical
+        annotations:
+          summary: A Resend sending domain is not verified — emails will fail to send
+        data:
+          - refId: A
+            relativeTimeRange: { from: 1800, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: min(powerlog_resend_domain_verified)
+              instant: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+              refId: C
+
+      # ── Resend API unreachable (API key probe) ───────────────
+      - uid: powerlog-resend-api-down
+        title: Resend API unreachable
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: OK
+        labels:
+          severity: warning
+        annotations:
+          summary: Resend API probe failing (powerlog_resend_api_up == 0) — key invalid or Resend down
+        data:
+          - refId: A
+            relativeTimeRange: { from: 1800, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: powerlog_resend_api_up
+              instant: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+              refId: C
+
+      # ── Spam complaints (any in the last hour) ───────────────
+      - uid: powerlog-email-complaints
+        title: Email spam complaints
+        condition: C
+        for: 0m
+        noDataState: OK
+        execErrState: OK
+        labels:
+          severity: critical
+        annotations:
+          summary: Recipients marked email as spam (Resend complained event) — reputation risk
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: sum(increase(powerlog_email_events_total{event="complained"}[1h]))
+              instant: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+              refId: C
+
+      # ── High bounce ratio (>5% of delivered+bounced over 1h) ─
+      - uid: powerlog-email-bounce-rate
+        title: High email bounce rate
+        condition: C
+        for: 0m
+        noDataState: OK
+        execErrState: OK
+        labels:
+          severity: warning
+        annotations:
+          summary: ">5% of recent emails bounced (1h) — check recipients / domain reputation"
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              datasource: { type: prometheus, uid: prometheus }
+              expr: sum(increase(powerlog_email_events_total{event="bounced"}[1h])) / clamp_min(sum(increase(powerlog_email_events_total{event=~"delivered|bounced"}[1h])), 1)
+              instant: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              datasource: { type: __expr__, uid: __expr__ }
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.05] }
               refId: C

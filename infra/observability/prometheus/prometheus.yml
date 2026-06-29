@@ -20,6 +20,14 @@ scrape_configs:
     static_configs:
       - targets: ["postgres-exporter:9187"]
 
+  # Cloudflare R2 account analytics. Opt-in: only resolves when the exporter is
+  # running (`--profile cloudflare` + CF_API_TOKEN). The exporter caches the
+  # Cloudflare API (~5 min cadence), so a slower scrape is enough.
+  - job_name: cloudflare
+    scrape_interval: 60s
+    static_configs:
+      - targets: ["cloudflare-exporter:8080"]
+
   # Self-health of the observability stack (each service exposes /metrics).
   - job_name: loki
     static_configs:
