@@ -4,8 +4,9 @@ import { type EmailMessage, Mailer } from '../../../src/mail/mailer.port'
 export class FakeMailer extends Mailer {
     readonly sent: EmailMessage[] = []
 
-    async send(message: EmailMessage): Promise<void> {
+    async send(message: EmailMessage): Promise<string | undefined> {
         this.sent.push(message)
+        return undefined
     }
 
     last(): EmailMessage | undefined {

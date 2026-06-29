@@ -11,8 +11,17 @@ export class AvatarUrls {
         private readonly config: ProfileConfig,
     ) {}
 
-    resolve(key: string | null): string | null {
-        if (key) return this.storage.urlFor(key)
+    /**
+     * Resolves a stored avatar key to its public URL. The avatar key is stable
+     * (`<userId>.webp`), so a re-upload reuses the same URL; passing `updatedAt`
+     * appends a `?v=<epoch>` cache-buster so clients (and CDNs) fetch the new
+     * image instead of a stale cached one. `null` key → the configured default.
+     */
+    resolve(key: string | null, updatedAt?: Date): string | null {
+        if (key) {
+            const url = this.storage.urlFor(key)
+            return updatedAt ? `${url}?v=${updatedAt.getTime()}` : url
+        }
         return this.config.defaultAvatarUrl || null
     }
 }

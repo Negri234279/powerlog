@@ -13,4 +13,8 @@ export abstract class AvatarStorage {
     abstract read(key: string): Promise<StoredObject | null>
     abstract delete(key: string): Promise<void>
     abstract urlFor(key: string): string
+
+    /** Liveness probe: resolves if the backend is reachable, throws otherwise.
+     *  Used by the periodic health probe (R2 HeadBucket / filesystem dir check). */
+    abstract ping(): Promise<void>
 }

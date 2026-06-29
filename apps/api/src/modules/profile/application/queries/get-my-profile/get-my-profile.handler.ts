@@ -58,6 +58,6 @@ export class GetMyProfileHandler implements IQueryHandler<GetMyProfileQuery, Pro
         if (!profile) {
             throw new ProfileNotFoundError()
         }
-        return toProfileView(profile, this.avatarUrls.resolve(profile.avatarKey))
+        return toProfileView(profile, this.avatarUrls.resolve(profile.avatarKey, profile.updatedAt))
     }
 }

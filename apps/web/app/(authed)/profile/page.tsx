@@ -3,6 +3,7 @@
 import { type FormEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
+import { AvatarCard } from '@/components/profile/avatar-card'
 import { ChangePasswordCard } from '@/components/auth/change-password-card'
 import { DeleteAccountCard } from '@/components/auth/delete-account-card'
 import { EmailVerificationCard } from '@/components/auth/email-verification-card'
@@ -140,7 +141,13 @@ export default function ProfilePage() {
                 </p>
             </TextsReveal>
 
-            <div className="mt-10 rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
+            {profile ? (
+                <div className="mt-10">
+                    <AvatarCard profile={profile} />
+                </div>
+            ) : null}
+
+            <div className="mt-6 rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
                 <div className="inset-hi rounded-[calc(2rem-0.375rem)] bg-surface p-6 md:p-8">
                     {isLoading ? (
                         <div className="space-y-4">

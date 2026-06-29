@@ -24,7 +24,7 @@ export class GetProfileSnapshotHandler implements IQueryHandler<GetProfileSnapsh
 
         return {
             username: profile.displayName.value,
-            avatarUrl: this.avatarUrls.resolve(profile.avatarKey),
+            avatarUrl: this.avatarUrls.resolve(profile.avatarKey, profile.updatedAt),
         }
     }
 }

@@ -44,6 +44,11 @@ export class FilesystemAvatarStorage extends AvatarStorage {
         return `${this.baseUrl}/${key}`
     }
 
+    /** Reachable when the avatar directory exists (created if missing) + writable. */
+    async ping(): Promise<void> {
+        await mkdir(this.dir, { recursive: true })
+    }
+
     /** Keys are app-generated (`<uuid>.webp`); `basename` defends against traversal. */
     private pathFor(key: string): string {
         return join(this.dir, basename(key))

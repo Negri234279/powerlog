@@ -9,6 +9,11 @@ describe('AvatarUrls', () => {
         expect(urls.resolve('u-1.webp')).toBe('https://cdn.test/u-1.webp')
     })
 
+    it('appends an updatedAt cache-buster when given one', () => {
+        const urls = new AvatarUrls(new FakeAvatarStorage(), new FakeProfileConfig())
+        expect(urls.resolve('u-1.webp', new Date(1_700_000_000_000))).toBe('https://cdn.test/u-1.webp?v=1700000000000')
+    })
+
     it('returns null for no key when no default is configured', () => {
         const urls = new AvatarUrls(new FakeAvatarStorage(), new FakeProfileConfig(''))
         expect(urls.resolve(null)).toBeNull()

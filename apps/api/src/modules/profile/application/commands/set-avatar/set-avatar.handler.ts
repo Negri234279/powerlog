@@ -26,6 +26,6 @@ export class SetAvatarHandler implements ICommandHandler<SetAvatarCommand, Profi
         const key = await this.ingestor.ingest(command.userId, command.file)
         profile.setAvatar(key, this.clock.now())
         await this.profiles.save(profile)
-        return toProfileView(profile, this.avatarUrls.resolve(profile.avatarKey))
+        return toProfileView(profile, this.avatarUrls.resolve(profile.avatarKey, profile.updatedAt))
     }
 }

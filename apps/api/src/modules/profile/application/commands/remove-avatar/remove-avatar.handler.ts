@@ -31,6 +31,6 @@ export class RemoveAvatarHandler implements ICommandHandler<RemoveAvatarCommand,
         if (previousKey) {
             await this.storage.delete(previousKey).catch(() => undefined)
         }
-        return toProfileView(profile, this.avatarUrls.resolve(profile.avatarKey))
+        return toProfileView(profile, this.avatarUrls.resolve(profile.avatarKey, profile.updatedAt))
     }
 }

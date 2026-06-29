@@ -48,7 +48,7 @@ function isUnauthenticated(error: unknown): boolean {
  */
 let refreshInFlight: Promise<void> | null = null
 
-function refreshSession(): Promise<void> {
+export function refreshSession(): Promise<void> {
     refreshInFlight ??= gqlClient
         .request(RefreshDocument as RequestDocument)
         .then(() => undefined)

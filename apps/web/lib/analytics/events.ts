@@ -17,6 +17,8 @@ export interface AnalyticsEventMap {
     user_logged_out: EmptyProps
     auth_failed: { action: 'register' | 'login'; code: string }
     profile_updated: EmptyProps
+    avatar_updated: EmptyProps
+    avatar_removed: EmptyProps
     password_changed: EmptyProps
     password_reset: EmptyProps
     email_verified: EmptyProps

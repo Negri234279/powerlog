@@ -19,4 +19,8 @@ export class FakeAvatarStorage extends AvatarStorage {
     urlFor(key: string): string {
         return `https://cdn.test/${key}`
     }
+
+    async ping(): Promise<void> {
+        // In-memory backend is always reachable.
+    }
 }

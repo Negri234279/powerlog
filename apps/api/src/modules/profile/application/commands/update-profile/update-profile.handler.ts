@@ -40,7 +40,7 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
 
         profile.update(fields, this.clock.now())
         await this.profiles.save(profile)
-        return toProfileView(profile, this.avatarUrls.resolve(profile.avatarKey))
+        return toProfileView(profile, this.avatarUrls.resolve(profile.avatarKey, profile.updatedAt))
     }
 
     /** Maps raw fields → VOs. Only keys explicitly present are included. */

@@ -39,7 +39,8 @@ describe('SetAvatarHandler', () => {
 
         expect(ctx.profiles.all()[0]?.avatarKey).toBe('u-1.webp')
         expect(ctx.storage.objects.get('u-1.webp')?.contentType).toBe('image/webp')
-        expect(view.avatarUrl).toBe('https://cdn.test/u-1.webp')
+        // URL carries an `?v=<updatedAt>` cache-buster so a re-upload isn't served stale.
+        expect(view.avatarUrl).toBe(`https://cdn.test/u-1.webp?v=${NOW.getTime()}`)
     })
 
     it('throws when the profile does not exist', async () => {
