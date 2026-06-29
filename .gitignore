@@ -15,6 +15,7 @@ build/
 # env
 .env
 .env.local
+.dev.env
 .env.*.local
 !.env.example
 infra/env/*.env
@@ -50,3 +51,6 @@ apps/api/var/
 HANDOFF.md
 skills-lock.json
 CLAUDE.md
+
+apps/api/public/avatars
+!apps/api/public/avatars/.gitkeep
