@@ -42,7 +42,7 @@ services:
     build:
       dockerfile: infra/docker/Dockerfile.api
       target: development
-    command: ["pnpm", "--filter", "@powerlog/api", "start:dev"]
+    command: [ "pnpm", "--filter", "@powerlog/api", "start:dev" ]
     env_file:
       - ../apps/api/.env
     environment:
@@ -51,13 +51,9 @@ services:
       # Dev is plain HTTP — don't mark cookies Secure or they won't be set.
       COOKIE_SECURE: "false"
       # Transactional email → Mailpit (catch-all SMTP; UI at http://localhost:18025).
-      MAIL_TRANSPORT: smtp
-      SMTP_HOST: mailpit
-      SMTP_PORT: "1025"
-      MAIL_FROM: PowerLog <no-reply@powerlog.local>
       # Avatars: local filesystem in dev, served by the API at /avatars.
-      AVATAR_STORAGE: filesystem
-      AVATAR_DIR: /app/apps/api/var/avatars
+      #AVATAR_STORAGE: filesystem
+      AVATAR_DIR: /app/apps/api/public/avatars
       AVATAR_PUBLIC_BASE_URL: http://localhost:4000/avatars
       # OpenTelemetry → Tempo (OTLP/HTTP). Read by src/tracing.ts.
       OTEL_SERVICE_NAME: powerlog-api
@@ -131,6 +127,26 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Cloudflare R2 account analytics → Prometheus. Queries Cloudflare's GraphQL
+  # Analytics API (account-level), so it reports real R2 usage regardless of
+  # which env this stack runs in. Opt-in: only starts with `--profile cloudflare`.
+  # Reached in-network as cloudflare-exporter:8080.
+  #
+  # REQUIRED in .dev.env (exact var names — the exporter ignores other names):
+  #   CF_API_TOKEN=...     token with "Account Analytics: Read"
+  #   CF_ACCOUNTS=<id>     account id (NOT CF_ACCOUNT_ID). R2 is account-scoped;
+  #                        without CF_ACCOUNTS the exporter never fetches R2 and
+  #                        the cloudflare_r2_* metrics stay empty.
+  cloudflare-exporter:
+    image: ghcr.io/lablabs/cloudflare_exporter:latest
+    profiles: [ "cloudflare" ]
+    env_file: ".dev.env"
+    environment:
+      LISTEN: ":8080"
+      # Cloudflare analytics update on a ~5 min cadence; don't hammer the API.
+      SCRAPE_DELAY: "300"
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:latest
     command:
@@ -149,7 +165,7 @@ services:
 
   loki:
     image: grafana/loki:latest
-    command: ["-config.file=/etc/loki/loki-config.yaml"]
+    command: [ "-config.file=/etc/loki/loki-config.yaml" ]
     volumes:
       - ./observability/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
       - loki_dev:/loki
@@ -161,7 +177,7 @@ services:
 
   tempo:
     image: grafana/tempo:latest
-    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    command: [ "-config.file=/etc/tempo/tempo.yaml" ]
     volumes:
       - ./observability/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - tempo_dev:/var/tempo
