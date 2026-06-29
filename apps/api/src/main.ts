@@ -13,7 +13,9 @@ import { AppModule } from './app.module'
 import type { Env } from './config/env'
 
 async function bootstrap(): Promise<void> {
-    const app = await NestFactory.create(AppModule, { bufferLogs: true })
+    // rawBody: keep the unparsed body (req.rawBody) so the Resend webhook can
+    // verify its Svix signature against the exact bytes received.
+    const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true })
 
     // Route all Nest logs through pino.
     app.useLogger(app.get(Logger))

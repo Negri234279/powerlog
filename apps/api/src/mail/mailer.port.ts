@@ -17,5 +17,11 @@ export interface EmailMessage {
  * the concrete one is chosen by `MAIL_TRANSPORT`.
  */
 export abstract class Mailer {
-    abstract send(message: EmailMessage): Promise<void>
+    /**
+     * Sends the message and returns the provider's message id (Resend id /
+     * SMTP Message-ID), or undefined if the transport doesn't expose one. The id
+     * is logged on send so a dispatch line can be correlated with its later
+     * delivery webhook event.
+     */
+    abstract send(message: EmailMessage): Promise<string | undefined>
 }

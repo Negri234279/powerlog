@@ -9,7 +9,15 @@ export const METRIC = {
     domainErrors: 'domain_errors_total',
     buildInfo: 'powerlog_build_info',
     emailsSent: 'powerlog_emails_sent_total',
+    emailSendDuration: 'powerlog_email_send_duration_seconds',
+    emailEvents: 'powerlog_email_events_total',
+    resendApiUp: 'powerlog_resend_api_up',
+    resendDomainVerified: 'powerlog_resend_domain_verified',
     avatarsProcessed: 'powerlog_avatars_processed_total',
+    r2OperationDuration: 'powerlog_r2_operation_duration_seconds',
+    r2BytesUploaded: 'powerlog_r2_bytes_uploaded_total',
+    r2Up: 'powerlog_r2_up',
+    r2ProbeDuration: 'powerlog_r2_probe_seconds',
     notificationsCreated: 'powerlog_notifications_created_total',
     authLogins: 'powerlog_auth_logins_total',
     authRefresh: 'powerlog_auth_refresh_total',
@@ -70,11 +78,62 @@ export const metricsProviders = [
         help: 'Count of transactional emails dispatched, by type and outcome.',
         labelNames: ['type', 'status'],
     }),
+    // Latency of the mail transport send call (Resend HTTP API / SMTP), by type
+    // and outcome (set by MeteredMailer).
+    makeHistogramProvider({
+        name: METRIC.emailSendDuration,
+        help: 'Duration of the mail transport send call in seconds.',
+        labelNames: ['type', 'status'],
+        buckets: DURATION_BUCKETS,
+        enableExemplars: true,
+    }),
+    // Resend delivery webhook events (delivered/bounced/complained/opened/clicked/…)
+    // by event and email type (set by ResendWebhookController). Deliverability the
+    // send path can't see.
+    makeCounterProvider({
+        name: METRIC.emailEvents,
+        help: 'Count of Resend webhook delivery events, by event and email type.',
+        labelNames: ['event', 'type'],
+    }),
+    // Resend account health, polled via the API key (ResendDomainProbe).
+    makeGaugeProvider({
+        name: METRIC.resendApiUp,
+        help: 'Resend API reachability via the API key: 1 = list domains OK, 0 = failing.',
+    }),
+    makeGaugeProvider({
+        name: METRIC.resendDomainVerified,
+        help: 'Sending domain verification: 1 = verified, 0 = not verified.',
+        labelNames: ['domain'],
+    }),
     // Avatar ingests (process → store), by source and outcome (set by AvatarIngestor).
     makeCounterProvider({
         name: METRIC.avatarsProcessed,
         help: 'Count of avatar ingestions, by source and outcome.',
         labelNames: ['source', 'status'],
+    }),
+    // Cloudflare R2 object-storage calls — latency by operation + outcome, and
+    // bytes uploaded (set by R2AvatarStorage; only active when AVATAR_STORAGE=r2).
+    makeHistogramProvider({
+        name: METRIC.r2OperationDuration,
+        help: 'Duration of Cloudflare R2 object-storage operations in seconds.',
+        labelNames: ['operation', 'status'],
+        buckets: DURATION_BUCKETS,
+        enableExemplars: true,
+    }),
+    makeCounterProvider({
+        name: METRIC.r2BytesUploaded,
+        help: 'Total bytes uploaded to R2 (avatar PutObject).',
+    }),
+    // R2 bucket liveness, sampled by a periodic HeadBucket probe (R2HealthProbe).
+    makeGaugeProvider({
+        name: METRIC.r2Up,
+        help: 'R2 bucket reachability: 1 = HeadBucket OK, 0 = failing.',
+        labelNames: ['bucket'],
+    }),
+    makeGaugeProvider({
+        name: METRIC.r2ProbeDuration,
+        help: 'Duration of the last R2 HeadBucket health probe in seconds.',
+        labelNames: ['bucket'],
     }),
     // In-app notifications created, by type (set by NotificationService).
     makeCounterProvider({

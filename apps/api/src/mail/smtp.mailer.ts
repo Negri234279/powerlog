@@ -27,13 +27,15 @@ export class SmtpMailer extends Mailer {
         this.from = config.get('MAIL_FROM', { infer: true })
     }
 
-    async send(message: EmailMessage): Promise<void> {
-        await this.transporter.sendMail({
+    async send(message: EmailMessage): Promise<string | undefined> {
+        const info = await this.transporter.sendMail({
             from: this.from,
             to: message.to,
             subject: message.subject,
             html: message.html,
             text: message.text,
         })
+
+        return info.messageId
     }
 }

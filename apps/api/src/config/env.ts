@@ -70,6 +70,9 @@ export const envSchema = z.object({
     MAIL_TRANSPORT: z.enum(['smtp', 'resend']).default('smtp'),
     MAIL_FROM: z.string().default('PowerLog <no-reply@powerlog.local>'),
     RESEND_API_KEY: z.string().default(''),
+    // Svix signing secret (whsec_…) for the Resend webhook that feeds delivery
+    // metrics (delivered/bounced/complained/…). Empty → the webhook is rejected.
+    RESEND_WEBHOOK_SECRET: z.string().default(''),
     SMTP_HOST: z.string().default('localhost'),
     SMTP_PORT: z.coerce.number().int().positive().default(1025),
     SMTP_SECURE: z.stringbool().default(false),

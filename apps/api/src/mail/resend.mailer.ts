@@ -18,17 +18,27 @@ export class ResendMailer extends Mailer {
         this.from = config.get('MAIL_FROM', { infer: true })
     }
 
-    async send(message: EmailMessage): Promise<void> {
-        const { error } = await this.client.emails.send({
+    async send(message: EmailMessage): Promise<string | undefined> {
+        const { data, error } = await this.client.emails.send({
             from: this.from,
             to: message.to,
             subject: message.subject,
             html: message.html,
             ...(message.text ? { text: message.text } : {}),
+            // Tag with the purpose so Resend echoes it on delivery webhooks → we
+            // can break delivered/bounced/complained down by email type. Tag
+            // values allow only [A-Za-z0-9_-], which our tags already satisfy.
+            ...(message.tag ? { tags: [{ name: 'type', value: message.tag }] } : {}),
         })
 
         if (error) {
-            throw new Error(`Resend failed to send email: ${error.message}`)
+            // Keep Resend's status + name so the failure log is diagnosable, e.g.
+            // a 403 "Domain not verified: Verify <domain> or update your from domain."
+            const status = (error as { statusCode?: number }).statusCode
+            const detail = status ? ` (${status} ${error.name})` : ` (${error.name})`
+            throw new Error(`Resend send failed${detail}: ${error.message}`)
         }
+
+        return data?.id
     }
 }
