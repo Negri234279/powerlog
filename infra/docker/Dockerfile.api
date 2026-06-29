@@ -50,8 +50,11 @@ CMD ["pnpm", "--filter", "@powerlog/api", "start:dev"]
 # ─────────────────────────────────────────────────────────────
 FROM deps AS build
 COPY . .
+# --legacy: pnpm v10 refuses non-injected deploys by default
+# (ERR_PNPM_DEPLOY_NONINJECTED_WORKSPACE). The API has no workspace:* runtime
+# deps (only dev), so the legacy (pre-v10) deploy is correct here.
 RUN pnpm --filter @powerlog/api build \
-    && pnpm --filter @powerlog/api deploy --prod /deploy
+    && pnpm --filter @powerlog/api deploy --legacy --prod /deploy
 
 # ─────────────────────────────────────────────────────────────
 # migrate — drizzle-kit migrations (keeps dev deps + config + source)
