@@ -54,3 +54,5 @@ CLAUDE.md
 
 apps/api/public/avatars
 !apps/api/public/avatars/.gitkeep
+
+*.stackdump
