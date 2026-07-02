@@ -24,5 +24,10 @@ if (token) {
         session_recording: {
             maskAllInputs: true,
         },
+        // Fires once when the SDK finishes initialising — the real "functional"
+        // signal, at app boot, never on each capture.
+        loaded: () => {
+            console.info('[powerlog] posthog analytics functional')
+        },
     })
 }

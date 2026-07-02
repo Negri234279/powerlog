@@ -9,9 +9,13 @@
 //   OTEL_EXPORTER_OTLP_PROTOCOL, OTEL_RESOURCE_ATTRIBUTES.
 // No-ops without an OTLP endpoint, mirroring the API's tracing.ts guard.
 import { registerOTel } from '@vercel/otel'
+import { log } from '@/lib/log/server'
 
 export function register(): void {
     if (!process.env['OTEL_EXPORTER_OTLP_ENDPOINT']) return
 
-    registerOTel({ serviceName: process.env['OTEL_SERVICE_NAME'] ?? 'powerlog-web' })
+    const serviceName = process.env['OTEL_SERVICE_NAME'] ?? 'powerlog-web'
+
+    registerOTel({ serviceName })
+    log.info('otel instrumentation registered', { serviceName })
 }
