@@ -1,5 +1,6 @@
 import { Controller, Get, Inject, ServiceUnavailableException } from '@nestjs/common'
 import { sql } from 'drizzle-orm'
+import { PinoLogger } from 'nestjs-pino'
 
 import { DRIZZLE, type Database } from '../database/database.module'
 
@@ -15,13 +16,23 @@ type HealthStatus = {
  */
 @Controller('health')
 export class HealthController {
-    constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+    constructor(
+        @Inject(DRIZZLE) private readonly db: Database,
+        private readonly logger: PinoLogger,
+    ) {
+        this.logger.setContext(HealthController.name)
+    }
 
     @Get()
     async check(): Promise<HealthStatus> {
         try {
             await this.db.execute(sql`select 1`)
-        } catch {
+        } catch (error: unknown) {
+            // Surface the underlying DB error — the GlobalExceptionFilter only
+            // sees the ServiceUnavailableException below, so without this the
+            // real cause (connection refused, auth failed, …) is lost.
+            this.logger.error({ err: error }, 'database health check failed')
+
             throw new ServiceUnavailableException({
                 status: 'error',
                 info: { database: 'down' },
