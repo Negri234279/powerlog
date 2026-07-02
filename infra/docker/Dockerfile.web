@@ -52,6 +52,12 @@ CMD ["pnpm", "--filter", "@powerlog/web", "dev"]
 # ─────────────────────────────────────────────────────────────
 FROM deps AS build
 ENV NEXT_TELEMETRY_DISABLED=1
+# Next evaluates next.config `rewrites()` at BUILD time and bakes the destinations
+# into the standalone server — runtime env is ignored for them. The BFF proxy
+# (/api/* → the API) must therefore know the API's address now. The service DNS
+# name is stable in the prod stack; override the ARG to build for another topology.
+ARG API_INTERNAL_URL=http://powerlog-api:4000
+ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 COPY . .
 RUN pnpm --filter @powerlog/web build
 
