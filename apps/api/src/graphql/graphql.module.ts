@@ -6,7 +6,7 @@ import { ConfigService } from '@nestjs/config'
 import { GraphQLModule } from '@nestjs/graphql'
 import type { GraphQLFormattedError } from 'graphql'
 
-import type { Env } from '../config/env'
+import { type Env, isDev } from '../config/env'
 
 /**
  * GraphQL code-first. The schema is generated from decorators into
@@ -19,7 +19,11 @@ import type { Env } from '../config/env'
             driver: ApolloDriver,
             inject: [ConfigService],
             useFactory: (config: ConfigService<Env, true>) => ({
-                autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+                // Only dev writes the SDL to disk (consumed by the web app's
+                // codegen); every other stage generates it in memory. Prod runs
+                // as a non-root user against a root-owned /app/src, so writing
+                // there fails with EACCES.
+                autoSchemaFile: isDev ? join(process.cwd(), 'src/schema.gql') : true,
                 sortSchema: true,
                 playground: false,
                 graphiql: config.get('NODE_ENV') !== 'production',
