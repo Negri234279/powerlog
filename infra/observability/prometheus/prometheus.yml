@@ -1,42 +1,51 @@
+# powerlog Prometheus — SINGLE SOURCE shared by dev / staging / prod.
+#
+# Works in every env because all service names are unified to `powerlog-*`.
+# Per-env extras (e.g. dev's local postgres-exporter) are dropped as files into
+# scrape.d/ — staging/prod mount an empty scrape.d (their Postgres is the shared
+# core DB, scraped by pi-infra's exporter).
+
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    app: powerlog
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+# Per-environment extra scrape jobs (none in staging/prod; dev adds Postgres).
+scrape_config_files:
+  - /etc/prometheus/scrape.d/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["powerlog-alertmanager:9093"]
 
 scrape_configs:
   - job_name: powerlog-api
     metrics_path: /metrics
     static_configs:
-      # API runs on the host (nest watch), not in the compose network, so reach
-      # it via Docker Desktop's host gateway. If you instead run the dockerized
-      # `api` service, switch this to `api:4000`.
-      - targets: ["host.docker.internal:4000"]
+      - targets: ["powerlog-api:4000"]
 
-  - job_name: prometheus
+  - job_name: powerlog-prometheus
     static_configs:
       - targets: ["localhost:9090"]
 
-  - job_name: postgres
-    # In-network: the exporter is a compose service, reached by DNS name.
-    static_configs:
-      - targets: ["postgres-exporter:9187"]
-
-  # Cloudflare R2 account analytics. Opt-in: only resolves when the exporter is
-  # running (`--profile cloudflare` + CF_API_TOKEN). The exporter caches the
-  # Cloudflare API (~5 min cadence), so a slower scrape is enough.
-  - job_name: cloudflare
-    scrape_interval: 60s
-    static_configs:
-      - targets: ["cloudflare-exporter:8080"]
-
   # Self-health of the observability stack (each service exposes /metrics).
-  - job_name: loki
+  - job_name: powerlog-loki
     static_configs:
-      - targets: ["loki:3100"]
+      - targets: ["powerlog-loki:3100"]
 
-  - job_name: tempo
+  - job_name: powerlog-tempo
     static_configs:
-      - targets: ["tempo:3200"]
+      - targets: ["powerlog-tempo:3200"]
 
-  - job_name: alloy
+  - job_name: powerlog-alloy
     static_configs:
-      - targets: ["alloy:12345"]
+      - targets: ["powerlog-alloy:12345"]
+
+  - job_name: powerlog-alertmanager
+    static_configs:
+      - targets: ["powerlog-alertmanager:9093"]

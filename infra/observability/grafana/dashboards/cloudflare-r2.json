@@ -1,6 +1,6 @@
 {
-    "uid": "cloudflare-r2",
-    "title": "Cloudflare · R2 storage",
+    "uid": "powerlog-cloudflare-r2",
+    "title": "powerlog · Cloudflare R2",
     "tags": ["cloudflare", "r2", "storage"],
     "timezone": "browser",
     "schemaVersion": 39,
@@ -30,7 +30,7 @@
             "type": "stat",
             "title": "R2 bucket status",
             "description": "Live HeadBucket probe from the API every 30s. UP = auth + endpoint + bucket all reachable. No data → the API isn't running with AVATAR_STORAGE=r2.",
-            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "datasource": { "type": "prometheus", "uid": "prometheus-powerlog" },
             "gridPos": { "h": 6, "w": 8, "x": 0, "y": 4 },
             "fieldConfig": {
                 "defaults": {
@@ -66,7 +66,7 @@
             "id": 12,
             "type": "stat",
             "title": "Last probe latency",
-            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "datasource": { "type": "prometheus", "uid": "prometheus-powerlog" },
             "gridPos": { "h": 6, "w": 8, "x": 8, "y": 4 },
             "fieldConfig": {
                 "defaults": {
@@ -89,7 +89,7 @@
             "id": 13,
             "type": "timeseries",
             "title": "Bucket up (history)",
-            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "datasource": { "type": "prometheus", "uid": "prometheus-powerlog" },
             "gridPos": { "h": 6, "w": 8, "x": 16, "y": 4 },
             "fieldConfig": {
                 "defaults": {
@@ -114,7 +114,7 @@
             "type": "stat",
             "title": "Total stored",
             "description": "Total bytes stored across all R2 buckets in the account.",
-            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "datasource": { "type": "prometheus", "uid": "prometheus-powerlog" },
             "gridPos": { "h": 6, "w": 6, "x": 0, "y": 11 },
             "fieldConfig": {
                 "defaults": { "unit": "decbytes", "color": { "mode": "fixed", "fixedColor": "blue" } },
@@ -127,7 +127,7 @@
             "id": 4,
             "type": "timeseries",
             "title": "Stored bytes by bucket",
-            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "datasource": { "type": "prometheus", "uid": "prometheus-powerlog" },
             "gridPos": { "h": 6, "w": 18, "x": 6, "y": 11 },
             "fieldConfig": { "defaults": { "unit": "decbytes" }, "overrides": [] },
             "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"] } },
@@ -150,7 +150,7 @@
             "type": "stat",
             "title": "Operations (selected range)",
             "description": "Sum of R2 operations reported over the dashboard time range. Class A (writes/list) and Class B (reads) are distinguished by the `operation` label.",
-            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "datasource": { "type": "prometheus", "uid": "prometheus-powerlog" },
             "gridPos": { "h": 6, "w": 6, "x": 0, "y": 18 },
             "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
             "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "value", "graphMode": "area" },
@@ -161,7 +161,7 @@
             "type": "timeseries",
             "title": "Operations by type",
             "description": "Per-operation counts (PutObject, GetObject, ListObjects, …). Use these to see the Class A vs Class B split that drives R2 billing.",
-            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "datasource": { "type": "prometheus", "uid": "prometheus-powerlog" },
             "gridPos": { "h": 6, "w": 18, "x": 6, "y": 18 },
             "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
             "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "sum"] } },
@@ -177,7 +177,7 @@
             "id": 8,
             "type": "piechart",
             "title": "Operation share",
-            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "datasource": { "type": "prometheus", "uid": "prometheus-powerlog" },
             "gridPos": { "h": 7, "w": 12, "x": 0, "y": 24 },
             "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
             "options": { "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] } },
@@ -194,7 +194,7 @@
             "id": 9,
             "type": "timeseries",
             "title": "Operations by bucket",
-            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "datasource": { "type": "prometheus", "uid": "prometheus-powerlog" },
             "gridPos": { "h": 7, "w": 12, "x": 12, "y": 24 },
             "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
             "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["lastNotNull"] } },

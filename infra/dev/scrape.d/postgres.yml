@@ -1,0 +1,6 @@
+# DEV-only extra scrape: the local Postgres exporter. Loaded via the shared
+# prometheus.yml `scrape_config_files` glob. staging/prod don't have this (their
+# Postgres is the shared core DB, scraped by pi-infra's exporter).
+- job_name: powerlog-postgres
+  static_configs:
+    - targets: ["powerlog-postgres-exporter:9187"]

@@ -1,0 +1,48 @@
+# ─────────────────────────────────────────────────────────────
+# STAGING — simulate PROD locally. This is an OVERRIDE layered on top of
+# ../prod/compose.yml: it only changes what differs (images BUILT LOCALLY instead
+# of pulled, APP_ENV=staging, staging env_file). Everything else — the isolated
+# topology, shared Postgres via PgBouncer, the obs stack and its shared configs —
+# comes from prod (+ ../observability).
+#
+# Setup once: cp infra/staging/staging.env.example infra/staging/staging.env
+# Run it (note the TWO -f files; prod first so its relative paths resolve):
+#   1) in pi-infra:  docker compose -f core/docker-compose.yml up -d
+#   2) here:         docker compose \
+#                      -f infra/prod/compose.yml -f infra/staging/compose.yml \
+#                      up -d --build
+#
+# Needs the external `monitoring` + `db` networks (pi-infra/scripts/create-network.sh).
+# ─────────────────────────────────────────────────────────────
+name: powerlog-staging
+
+services:
+  powerlog-api:
+    image: powerlog/api:staging
+    pull_policy: build
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+      target: production
+    environment:
+      APP_ENV: staging
+    env_file:
+      - path: ./staging.env
+        required: false
+
+  powerlog-web:
+    image: powerlog/web:staging
+    pull_policy: build
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.web
+      target: production
+    env_file:
+      - path: ./staging.env
+        required: false
+
+  # Pick up the staging Discord webhook (if set) for the alert secret.
+  powerlog-alertmanager-init:
+    env_file:
+      - path: ./staging.env
+        required: false

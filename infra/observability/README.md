@@ -12,7 +12,7 @@ API ─/metrics◄─ Prometheus (metrics)┘
 ## Run
 
 ```bash
-docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml \
+docker compose -f infra/docker-compose.dev.yml \
   --env-file infra/env/dev.env.example up --build
 ```
 

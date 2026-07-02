@@ -1,4 +1,4 @@
-# Single-binary Loki for local dev (filesystem storage).
+# Single-binary Loki for powerlog (prod / Pi, filesystem storage).
 auth_enabled: false
 
 server:

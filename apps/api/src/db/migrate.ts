@@ -17,7 +17,10 @@ import { env } from '../config/env'
  * otherwise this is a no-op.
  *
  * A Postgres advisory lock serialises concurrent runs (multiple replicas or
- * overlapping restarts) so only one process migrates at a time.
+ * overlapping restarts) so only one process migrates at a time. Because that
+ * lock is session-level, the migrator connects DIRECTLY to Postgres
+ * (`MIGRATIONS_DATABASE_URL`) — never through a transaction-pooling PgBouncer,
+ * which would break it. Falls back to `DATABASE_URL` when unset (dev/local).
  */
 
 // Arbitrary but stable key — every migrator process uses the same one, so they
@@ -25,7 +28,8 @@ import { env } from '../config/env'
 const MIGRATION_LOCK_KEY = 4_011_989
 
 async function run(): Promise<void> {
-    const pool = new Pool({ connectionString: env.DATABASE_URL })
+    // Direct connection (bypass PgBouncer) for the session-level advisory lock.
+    const pool = new Pool({ connectionString: env.MIGRATIONS_DATABASE_URL ?? env.DATABASE_URL })
 
     try {
         await pool.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK_KEY])

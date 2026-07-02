@@ -1,0 +1,84 @@
+# ─────────────────────────────────────────────────────────────
+# TEST — ephemeral Postgres (tmpfs, no persistence).
+#
+# Unit + integration tests use Testcontainers (their own throwaway Postgres) and
+# do NOT need this file. Use it only for a SHARED test DB or end-to-end runs:
+#   docker compose -f infra/test/compose.yml --env-file infra/test/.env up -d powerlog-postgres
+# The e2e api/web (production images, built locally) live under the `e2e` profile.
+# ─────────────────────────────────────────────────────────────
+name: powerlog-test
+
+services:
+  powerlog-postgres:
+    image: postgres:16-alpine
+    container_name: powerlog-test-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-powerlog}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-powerlog}
+      POSTGRES_DB: ${POSTGRES_DB:-powerlog_test}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-powerlog} -d ${POSTGRES_DB:-powerlog_test}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "${POSTGRES_PORT:-15434}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks: [powerlog-net]
+    restart: "no"
+
+  powerlog-api:
+    image: powerlog/api:test
+    container_name: powerlog-test-api
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+      target: production
+    profiles: ["e2e"]
+    environment:
+      NODE_ENV: test
+      APP_ENV: test
+      API_PORT: ${API_PORT:-4000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-powerlog}:${POSTGRES_PASSWORD:-powerlog}@powerlog-postgres:5432/${POSTGRES_DB:-powerlog_test}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+    depends_on:
+      powerlog-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:${API_PORT:-4000}/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    ports:
+      - "${API_PORT:-4002}:4000"
+    networks: [powerlog-net]
+    restart: "no"
+
+  powerlog-web:
+    image: powerlog/web:test
+    container_name: powerlog-test-web
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.web
+      target: production
+    profiles: ["e2e"]
+    environment:
+      NODE_ENV: test
+      PORT: ${WEB_PORT:-3000}
+      NEXT_PUBLIC_GRAPHQL_URL: ${NEXT_PUBLIC_GRAPHQL_URL:-http://localhost:4000/graphql}
+    depends_on:
+      powerlog-api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-3002}:3000"
+    networks: [powerlog-net]
+    restart: "no"
+
+networks:
+  powerlog-net:
+    name: powerlog-test-net

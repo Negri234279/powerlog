@@ -27,6 +27,11 @@ export const envSchema = z.object({
 
     API_PORT: z.coerce.number().int().positive().default(4000),
     DATABASE_URL: z.url(),
+    // Direct Postgres URL used ONLY by the migration runner. When the runtime
+    // DATABASE_URL points at a transaction-pooling proxy (PgBouncer), migrations
+    // must bypass it: the migrator holds a session-level `pg_advisory_lock`,
+    // which transaction pooling breaks. Unset → falls back to DATABASE_URL.
+    MIGRATIONS_DATABASE_URL: z.url().optional(),
 
     // Graceful-shutdown drain window: on SIGTERM the server stops accepting
     // connections and waits this long for in-flight requests to finish before

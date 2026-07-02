@@ -1,5 +1,5 @@
-# Single-binary Tempo for local dev (filesystem storage).
-# ingester/compactor use defaults (tuning them is unnecessary for dev).
+# Single-binary Tempo for powerlog (prod / Pi, filesystem storage).
+# ingester/compactor use defaults (Tempo 2.x — keep config minimal).
 server:
   http_listen_port: 3200
   log_level: warn
@@ -14,16 +14,17 @@ distributor:
           endpoint: 0.0.0.0:4317
 
 # Derive RED span-metrics + a service graph from incoming spans and push them to
-# Prometheus via remote-write. Prometheus must run with
-# --web.enable-remote-write-receiver (set in docker-compose.dev.yml).
+# powerlog's Prometheus via remote-write (started with
+# --web.enable-remote-write-receiver in compose.yml).
 metrics_generator:
   registry:
     external_labels:
       source: tempo
+      app: powerlog
   storage:
     path: /var/tempo/generator/wal
     remote_write:
-      - url: http://prometheus:9090/api/v1/write
+      - url: http://powerlog-prometheus:9090/api/v1/write
         send_exemplars: true
 
 storage:
@@ -34,7 +35,6 @@ storage:
     local:
       path: /var/tempo/blocks
 
-# Single-tenant dev: turn the generator processors on by default.
 overrides:
   defaults:
     metrics_generator:

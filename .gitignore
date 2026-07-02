@@ -18,8 +18,10 @@ build/
 .dev.env
 .env.*.local
 !.env.example
-infra/env/*.env
-!infra/env/*.env.example
+# Per-env deploy secrets (the *.env.example stays tracked).
+infra/prod/powerlog.env
+infra/prod/postgres/provision.env
+infra/staging/staging.env
 
 # logs
 *.log
