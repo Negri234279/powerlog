@@ -33,7 +33,7 @@ function emailType(event: ResendWebhookEvent): string {
     if (Array.isArray(tags)) {
         return tags.find((t) => t.name === 'type')?.value ?? 'unknown'
     }
-    
+
     if (tags && typeof tags === 'object') {
         return tags['type'] ?? 'unknown'
     }

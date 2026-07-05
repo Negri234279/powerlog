@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 
@@ -8,6 +7,7 @@ import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input, Select } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
 import { SubmitButton } from '@/components/ui/submit-button'
+import { TrackedLink } from '@/components/ui/tracked'
 import { track } from '@/lib/analytics/events'
 import { gqlErrorCode, gqlErrorMessage } from '@/lib/graphql/error'
 import { useRegister } from '@/lib/graphql/hooks/use-auth'
@@ -55,9 +55,13 @@ export function RegisterForm() {
             footer={
                 <>
                     Already lifting with us?{' '}
-                    <Link href="/login" className="text-text underline-offset-4 hover:underline">
+                    <TrackedLink
+                        analyticsId="register-login-link"
+                        href="/login"
+                        className="text-text underline-offset-4 hover:underline"
+                    >
                         Log in
-                    </Link>
+                    </TrackedLink>
                 </>
             }
         >
@@ -108,7 +112,9 @@ export function RegisterForm() {
 
                 <FormError error={formError} />
 
-                <SubmitButton loading={register.isPending}>Create account</SubmitButton>
+                <SubmitButton analyticsId="register-submit" loading={register.isPending}>
+                    Create account
+                </SubmitButton>
             </form>
         </AuthCard>
     )

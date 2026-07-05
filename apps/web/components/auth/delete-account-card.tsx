@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { Input } from '@/components/ui/field'
+import { TrackedButton } from '@/components/ui/tracked'
 import { gqlErrorMessage } from '@/lib/graphql/error'
 import { useDeleteAccount, useMe } from '@/lib/graphql/hooks/use-auth'
 
@@ -52,13 +53,14 @@ export function DeleteAccountCard() {
                 </p>
 
                 {!open ? (
-                    <button
+                    <TrackedButton
+                        analyticsId="account-delete-open"
                         type="button"
                         onClick={() => setOpen(true)}
                         className="mt-6 rounded-full px-5 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-ember hover:ring-ember/30 active:scale-[0.98]"
                     >
                         Delete account
-                    </button>
+                    </TrackedButton>
                 ) : (
                     <div className="mt-6 max-w-sm space-y-4">
                         <label htmlFor="confirm-delete" className="block text-sm text-text-dim">
@@ -77,22 +79,24 @@ export function DeleteAccountCard() {
                         {error ? <p className="text-sm text-ember">{error}</p> : null}
 
                         <div className="flex items-center gap-3">
-                            <button
+                            <TrackedButton
+                                analyticsId="account-delete-confirm"
                                 type="button"
                                 onClick={onDelete}
                                 disabled={!matches || remove.isPending}
                                 className="rounded-full bg-ember px-5 py-2.5 text-sm font-medium text-bg transition-transform duration-300 ease-spring active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 {remove.isPending ? 'Deleting…' : 'Permanently delete'}
-                            </button>
-                            <button
+                            </TrackedButton>
+                            <TrackedButton
+                                analyticsId="account-delete-cancel"
                                 type="button"
                                 onClick={reset}
                                 disabled={remove.isPending}
                                 className="rounded-full px-5 py-2.5 text-sm text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-50"
                             >
                                 Cancel
-                            </button>
+                            </TrackedButton>
                         </div>
                     </div>
                 )}

@@ -1,17 +1,19 @@
 'use client'
 
-import Link from 'next/link'
 import type { Route } from 'next'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 import { Plus } from './icons'
+import { TrackedButton, TrackedLink } from './tracked'
 
 export interface PlusMenuItem {
     label: string
     icon?: ReactNode
     href?: Route
     onClick?: () => void
+    /** Stable id for the `ui_click` event (e.g. `quick-new-session`). */
+    analyticsId: string
 }
 
 const ITEM_H = 44
@@ -29,10 +31,13 @@ export function PlusMenuMorph({
     items,
     label = 'Quick actions',
     className,
+    analyticsId,
 }: {
     items: PlusMenuItem[]
     label?: string
     className?: string
+    /** Stable id for the trigger's `ui_click` event (e.g. `quick-actions`). */
+    analyticsId: string
 }) {
     const [open, setOpen] = useState(false)
     const ref = useRef<HTMLDivElement>(null)
@@ -71,7 +76,8 @@ export function PlusMenuMorph({
             <div className="t-morph-menu p-2" role="menu" aria-label={label}>
                 {items.map((item) =>
                     item.href ? (
-                        <Link
+                        <TrackedLink
+                            analyticsId={item.analyticsId}
                             key={item.label}
                             href={item.href}
                             role="menuitem"
@@ -80,9 +86,10 @@ export function PlusMenuMorph({
                         >
                             {item.icon ? <span className="text-text-faint">{item.icon}</span> : null}
                             {item.label}
-                        </Link>
+                        </TrackedLink>
                     ) : (
-                        <button
+                        <TrackedButton
+                            analyticsId={item.analyticsId}
                             key={item.label}
                             type="button"
                             role="menuitem"
@@ -94,12 +101,13 @@ export function PlusMenuMorph({
                         >
                             {item.icon ? <span className="text-text-faint">{item.icon}</span> : null}
                             {item.label}
-                        </button>
+                        </TrackedButton>
                     ),
                 )}
             </div>
 
-            <button
+            <TrackedButton
+                analyticsId={analyticsId}
                 type="button"
                 aria-label={label}
                 aria-haspopup="menu"
@@ -111,7 +119,7 @@ export function PlusMenuMorph({
                 className="t-morph-plus"
             >
                 <Plus className="size-5 text-ember" />
-            </button>
+            </TrackedButton>
         </div>
     )
 }

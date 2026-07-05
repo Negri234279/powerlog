@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { NextConfig } from 'next'
@@ -8,14 +9,19 @@ import type { NextConfig } from 'next'
 // CORS entirely. In compose this is http://api:4000.
 const apiInternalUrl = process.env['API_INTERNAL_URL'] ?? 'http://localhost:4000'
 
-// PostHog Cloud ingest + static-asset hosts (US region by default). The browser
-// only ever hits same-origin /ingest/*; Next rewrites those here so ad-blockers
-// don't drop analytics and everything stays first-party. The assets host is the
-// regional *-assets domain, derived from the ingest host unless overridden.
-const posthogHost = process.env['NEXT_PUBLIC_POSTHOG_HOST'] ?? 'https://us.i.posthog.com'
-const posthogAssetsHost =
-    process.env['POSTHOG_ASSETS_HOST'] ??
-    posthogHost.replace('://us.', '://us-assets.').replace('://eu.', '://eu-assets.')
+// Grafana Faro collector (Alloy's faro.receiver). The browser only ever hits
+// same-origin /faro/*; Next rewrites those here so telemetry stays first-party
+// (no CORS, no ad-blocker drops). Like API_INTERNAL_URL, rewrites are baked at
+// BUILD time — the Docker build overrides this ARG for the prod stack DNS name.
+const faroInternalUrl = process.env['FARO_INTERNAL_URL'] ?? 'http://localhost:12347'
+
+// Stamped on every Faro signal as app.version / app.environment (inlined into
+// the client bundle via `env` below). APP_ENV mirrors the API's convention
+// (dev|staging|prod); the Docker build sets it, local dev defaults to 'dev'.
+const { version } = JSON.parse(readFileSync(join(import.meta.dirname, 'package.json'), 'utf8')) as {
+    version: string
+}
+const appEnv = process.env['APP_ENV'] ?? 'dev'
 
 // Extra hostnames allowed to reach the dev server (HMR / RSC / route handlers)
 // when the app is opened from a non-localhost origin — e.g. a VS Code dev tunnel
@@ -34,15 +40,15 @@ const nextConfig: NextConfig = {
     // Trace files from the monorepo root so pnpm's symlinked deps are included.
     outputFileTracingRoot: join(import.meta.dirname, '../..'),
     reactStrictMode: true,
-    // PostHog's recorder relies on trailing slashes on /ingest/* being preserved.
     skipTrailingSlashRedirect: true,
+    env: {
+        NEXT_PUBLIC_APP_VERSION: version,
+        NEXT_PUBLIC_APP_ENV: appEnv,
+    },
     async rewrites() {
         return [
-            // PostHog reverse proxy: static assets + recorder array first, then
-            // the catch-all to the ingestion API.
-            { source: '/ingest/static/:path*', destination: `${posthogAssetsHost}/static/:path*` },
-            { source: '/ingest/array/:path*', destination: `${posthogAssetsHost}/array/:path*` },
-            { source: '/ingest/:path*', destination: `${posthogHost}/:path*` },
+            // Faro reverse proxy: browser RUM/traces → Alloy's faro.receiver.
+            { source: '/faro/:path*', destination: `${faroInternalUrl}/:path*` },
             // BFF proxy: the browser hits same-origin /api/*, Next forwards to the API.
             { source: '/api/:path*', destination: `${apiInternalUrl}/:path*` },
         ]

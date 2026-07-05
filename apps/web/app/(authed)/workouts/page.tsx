@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useMemo, useState } from 'react'
 
@@ -32,6 +31,7 @@ import { TextsReveal } from '@/components/ui/texts-reveal'
 import { Field, Input, Select } from '@/components/ui/field'
 import { Calendar, ChartLine, ChevronDown, Dumbbell, Plus, Search } from '@/components/ui/icons'
 import { Menu } from '@/components/ui/menu'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 function formatDate(iso: string): string {
     return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -172,7 +172,8 @@ function SessionRow({
                 <div className="relative">
                     {/* Only the chevron toggles the panel; the card itself opens the session. */}
                     <div className="absolute inset-y-0 left-2 z-10 flex items-center">
-                        <button
+                        <TrackedButton
+                            analyticsId="session-row-expand"
                             type="button"
                             onClick={toggle}
                             aria-expanded={open}
@@ -182,10 +183,11 @@ function SessionRow({
                             <span className="t-acc-chevron">
                                 <ChevronDown className="size-4" />
                             </span>
-                        </button>
+                        </TrackedButton>
                     </div>
 
-                    <Link
+                    <TrackedLink
+                        analyticsId="session-open"
                         href={`/workouts/${session.id}`}
                         className="flex flex-col gap-3 py-4 pl-12 pr-14 sm:flex-row sm:items-center sm:justify-between"
                     >
@@ -205,14 +207,20 @@ function SessionRow({
                             <Stat label="sets" value={session.setCount} />
                             <Stat label="volume" value={formatWeight(session.totalVolumeKg, units)} />
                         </div>
-                    </Link>
+                    </TrackedLink>
 
                     <div className="absolute inset-y-0 right-3 flex items-center">
                         <Menu
+                            analyticsId="session-menu"
                             label="Session actions"
                             items={[
-                                { label: 'Edit', onSelect: onEdit },
-                                { label: 'Delete', onSelect: onDelete, destructive: true },
+                                { label: 'Edit', onSelect: onEdit, analyticsId: 'session-menu-edit' },
+                                {
+                                    label: 'Delete',
+                                    onSelect: onDelete,
+                                    destructive: true,
+                                    analyticsId: 'session-menu-delete',
+                                },
                             ]}
                         />
                     </div>
@@ -271,6 +279,7 @@ function FilterBar({
         <div className="mt-6 rounded-2xl bg-shell p-1.5 ring-1 ring-hairline">
             <div className="inset-hi flex flex-col gap-3 rounded-[calc(1rem-0.25rem)] bg-surface p-4">
                 <ClearableSearch
+                    analyticsId="workouts-search"
                     value={queryInput}
                     onChange={onQuery}
                     placeholder="Search session notes…"
@@ -280,7 +289,8 @@ function FilterBar({
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="inline-flex rounded-full bg-bg/60 p-1 ring-1 ring-hairline">
                         {STATUS_FILTERS.map((s) => (
-                            <button
+                            <TrackedButton
+                                analyticsId={`workouts-filter-${s.key}`}
                                 key={s.key}
                                 type="button"
                                 onClick={() => onStatus(s.key)}
@@ -290,7 +300,7 @@ function FilterBar({
                                 )}
                             >
                                 {s.label}
-                            </button>
+                            </TrackedButton>
                         ))}
                     </div>
 
@@ -334,13 +344,14 @@ function FilterBar({
                     </div>
 
                     {hasActiveFilters ? (
-                        <button
+                        <TrackedButton
+                            analyticsId="workouts-filter-clear"
                             type="button"
                             onClick={onClear}
                             className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                         >
                             Clear
-                        </button>
+                        </TrackedButton>
                     ) : null}
                 </div>
             </div>
@@ -463,28 +474,31 @@ export default function WorkoutsPage() {
                     <h1 className="mt-3 font-display text-display">Workouts</h1>
                 </TextsReveal>
                 <div className="flex items-center gap-2">
-                    <Link
+                    <TrackedLink
+                        analyticsId="workouts-templates-link"
                         href="/workouts/templates"
                         className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                     >
                         <Dumbbell className="size-4" />
                         Templates
-                    </Link>
-                    <Link
+                    </TrackedLink>
+                    <TrackedLink
+                        analyticsId="workouts-stats-link"
                         href="/workouts/stats"
                         className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                     >
                         <ChartLine className="size-4" />
                         Analytics
-                    </Link>
-                    <button
+                    </TrackedLink>
+                    <TrackedButton
+                        analyticsId="session-create-open"
                         type="button"
                         onClick={() => setCreating((open) => !open)}
                         className="group inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring hover:scale-[1.02] active:scale-[0.98]"
                     >
                         <Plus className="size-4" />
                         Session
-                    </button>
+                    </TrackedButton>
                 </div>
             </div>
 
@@ -534,7 +548,8 @@ export default function WorkoutsPage() {
                         <FormError error={createError} className="mt-3" />
 
                         <div className="mt-4 flex items-center gap-2">
-                            <button
+                            <TrackedButton
+                                analyticsId="session-create-submit"
                                 type="submit"
                                 disabled={create.isPending || startFromTemplate.isPending}
                                 className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:opacity-60"
@@ -544,8 +559,9 @@ export default function WorkoutsPage() {
                                     : template
                                       ? 'Create from template'
                                       : 'Create session'}
-                            </button>
-                            <button
+                            </TrackedButton>
+                            <TrackedButton
+                                analyticsId="session-create-cancel"
                                 type="button"
                                 onClick={() => {
                                     setCreating(false)
@@ -554,7 +570,7 @@ export default function WorkoutsPage() {
                                 className="rounded-full px-4 py-2.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                             >
                                 Cancel
-                            </button>
+                            </TrackedButton>
                         </div>
                     </div>
 
@@ -609,13 +625,14 @@ export default function WorkoutsPage() {
                                 <p className="mt-2 max-w-sm text-body text-text-dim">
                                     No sessions match these filters. Try widening the date range or clearing them.
                                 </p>
-                                <button
+                                <TrackedButton
+                                    analyticsId="workouts-empty-clear-filters"
                                     type="button"
                                     onClick={clearFilters}
                                     className="mt-6 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                                 >
                                     Clear filters
-                                </button>
+                                </TrackedButton>
                             </div>
                         </div>
                     ) : (
@@ -629,14 +646,15 @@ export default function WorkoutsPage() {
                                     Start a session, add your lifts and log every set — your history, e1RM and PRs build
                                     from here.
                                 </p>
-                                <button
+                                <TrackedButton
+                                    analyticsId="session-create-first"
                                     type="button"
                                     onClick={() => setCreating(true)}
                                     className="mt-6 inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
                                 >
                                     <Plus className="size-4" />
                                     Start your first session
-                                </button>
+                                </TrackedButton>
                             </div>
                         </div>
                     )
@@ -659,14 +677,15 @@ export default function WorkoutsPage() {
                             ))}
                         </ul>
                         {hasNextPage ? (
-                            <button
+                            <TrackedButton
+                                analyticsId="workouts-load-more"
                                 type="button"
                                 onClick={() => void fetchNextPage()}
                                 disabled={isFetchingNextPage}
                                 className="mt-6 inline-flex w-max rounded-full px-5 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text disabled:opacity-60"
                             >
                                 {isFetchingNextPage ? 'Loading…' : 'Load more'}
-                            </button>
+                            </TrackedButton>
                         ) : null}
                     </>
                 )}
@@ -675,6 +694,7 @@ export default function WorkoutsPage() {
             {editing ? <EditSessionModal key={editing.id} session={editing} onClose={() => setEditing(null)} /> : null}
 
             <ConfirmModal
+                analyticsId="session-delete"
                 open={deleting !== null}
                 onClose={() => setDeleting(null)}
                 onConfirm={onConfirmDelete}

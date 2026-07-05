@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 
 import { cn } from '@/lib/cn'
 import { useEnterExit } from '@/lib/hooks/use-enter-exit'
+import { TrackedButton } from './tracked'
 
 /**
  * Generic centered modal overlay. Handles the backdrop, Escape to close,
@@ -52,7 +53,10 @@ export function Modal({
             aria-modal="true"
             aria-labelledby={labelledBy}
         >
-            <button
+            {/* One shared id for every modal's backdrop: the current view meta
+                already says WHICH dialog was dismissed. */}
+            <TrackedButton
+                analyticsId="modal-backdrop-close"
                 type="button"
                 aria-label="Close"
                 onClick={onClose}

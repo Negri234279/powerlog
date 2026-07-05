@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { gqlErrorMessage } from '@/lib/graphql/error'
 import { useMe, useResendEmailVerification } from '@/lib/graphql/hooks/use-auth'
 import { Mail } from '@/components/ui/icons'
+import { TrackedButton } from '@/components/ui/tracked'
 
 /**
  * Prompt to verify the account email. Renders only while unverified — once the
@@ -47,14 +48,15 @@ export function EmailVerificationCard() {
                         {sent ? (
                             <p className="mt-4 text-sm text-pr">Verification email sent. Check your inbox.</p>
                         ) : (
-                            <button
+                            <TrackedButton
+                                analyticsId="email-verification-resend"
                                 type="button"
                                 onClick={onResend}
                                 disabled={resend.isPending}
                                 className="mt-4 rounded-full px-5 py-2.5 text-sm text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] disabled:opacity-60"
                             >
                                 {resend.isPending ? 'Sending…' : 'Resend verification email'}
-                            </button>
+                            </TrackedButton>
                         )}
                         {error ? <p className="mt-3 text-sm text-ember">{error}</p> : null}
                     </div>

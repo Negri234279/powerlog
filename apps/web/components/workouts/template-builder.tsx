@@ -18,6 +18,7 @@ import { Field, Input } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
 import { Close, Plus, Search, Trash } from '@/components/ui/icons'
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select'
+import { TrackedButton } from '@/components/ui/tracked'
 
 type IntensityKind = 'none' | 'rpe' | 'rir'
 
@@ -216,13 +217,14 @@ export function TemplateBuilder({
                         {editing ? 'Edit template' : 'New template'}
                     </h1>
                 </div>
-                <button
+                <TrackedButton
+                    analyticsId="template-builder-back"
                     type="button"
                     onClick={onClose}
                     className="rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                 >
                     Back
-                </button>
+                </TrackedButton>
             </div>
 
             <div className="mt-6 space-y-4">
@@ -272,34 +274,37 @@ export function TemplateBuilder({
                         onClose={() => setPicking(false)}
                     />
                 ) : (
-                    <button
+                    <TrackedButton
+                        analyticsId="template-add-exercise"
                         type="button"
                         onClick={() => setPicking(true)}
                         className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
                     >
                         <Plus className="size-4" /> Add exercise
-                    </button>
+                    </TrackedButton>
                 )}
             </div>
 
             <FormError error={error} className="mt-5" />
 
             <div className="mt-6 flex items-center gap-2">
-                <button
+                <TrackedButton
+                    analyticsId="template-save"
                     type="button"
                     onClick={onSave}
                     disabled={pending}
                     className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:opacity-60"
                 >
                     {pending ? 'Saving…' : editing ? 'Save changes' : 'Create template'}
-                </button>
-                <button
+                </TrackedButton>
+                <TrackedButton
+                    analyticsId="template-builder-cancel"
                     type="button"
                     onClick={onClose}
                     className="rounded-full px-4 py-2.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                 >
                     Cancel
-                </button>
+                </TrackedButton>
             </div>
         </div>
     )
@@ -329,14 +334,15 @@ function ExerciseCard({
             <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface p-5">
                 <div className="flex items-start justify-between gap-3">
                     <h3 className="font-display text-lg tracking-tight">{name}</h3>
-                    <button
+                    <TrackedButton
+                        analyticsId="template-remove-exercise"
                         type="button"
                         onClick={onRemove}
                         aria-label={`Remove ${name}`}
                         className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
                     >
                         <Trash className="size-4" />
-                    </button>
+                    </TrackedButton>
                 </div>
 
                 <Input
@@ -365,13 +371,14 @@ function ExerciseCard({
                     ))}
                 </div>
 
-                <button
+                <TrackedButton
+                    analyticsId="template-add-set"
                     type="button"
                     onClick={onAddSet}
                     className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                 >
                     <Plus className="size-3.5" /> Add set
-                </button>
+                </TrackedButton>
             </div>
         </div>
     )
@@ -436,14 +443,15 @@ function SetRow({
                     aria-label="Intensity value"
                 />
             </div>
-            <button
+            <TrackedButton
+                analyticsId="template-remove-set"
                 type="button"
                 onClick={onRemove}
                 aria-label={`Remove set ${index}`}
                 className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
             >
                 <Close className="size-4" />
-            </button>
+            </TrackedButton>
         </div>
     )
 }
@@ -525,44 +533,55 @@ function ExercisePicker({
                             className="pl-10"
                         />
                     </div>
-                    <button
+                    <TrackedButton
+                        analyticsId="exercise-picker-cancel"
                         type="button"
                         onClick={onClose}
                         className="rounded-full px-3 py-2.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                     >
                         Cancel
-                    </button>
+                    </TrackedButton>
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                     <MultiSelect
+                        analyticsId="exercise-filter-category"
                         label="Category"
                         options={categoryOptions}
                         selected={categories}
                         onChange={setCategories}
                     />
                     <MultiSelect
+                        analyticsId="exercise-filter-equipment"
                         label="Equipment"
                         options={equipmentOptions}
                         selected={equipment}
                         onChange={setEquipment}
                     />
-                    <MultiSelect label="Muscle" options={muscleOptions} selected={muscles} onChange={setMuscles} />
+                    <MultiSelect
+                        analyticsId="exercise-filter-muscle"
+                        label="Muscle"
+                        options={muscleOptions}
+                        selected={muscles}
+                        onChange={setMuscles}
+                    />
                     {hasFilters ? (
-                        <button
+                        <TrackedButton
+                            analyticsId="exercise-filter-clear"
                             type="button"
                             onClick={reset}
                             className="rounded-full px-3 py-1.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                         >
                             Clear
-                        </button>
+                        </TrackedButton>
                     ) : null}
                 </div>
 
                 <ul className="mt-3 max-h-72 space-y-1 overflow-y-auto">
                     {filtered.map((exercise) => (
                         <li key={exercise.id}>
-                            <button
+                            <TrackedButton
+                                analyticsId="exercise-picker-pick"
                                 type="button"
                                 onClick={() => onPick(exercise.id)}
                                 className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-300 hover:bg-white/[0.04]"
@@ -571,7 +590,7 @@ function ExercisePicker({
                                 <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
                                     {exercise.category} · {exercise.equipment} · {exercise.primaryMuscle}
                                 </span>
-                            </button>
+                            </TrackedButton>
                         </li>
                     ))}
                     {filtered.length === 0 ? (

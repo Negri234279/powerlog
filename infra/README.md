@@ -23,7 +23,7 @@ infra/
 **How it's DRY:** every env names its services `powerlog-*`, so the configs in
 `observability/` are byte-identical across dev/staging/prod. Each env's compose
 just mounts `../observability/...`; only the **env vars** (and dev's extra
-grafana/pg/mailpit) differ. `prod` and `staging` are *isolated* (join the shared
+grafana/pg/mailpit) differ. `prod` and `staging` are _isolated_ (join the shared
 `monitoring` + `db` networks from pi-infra); `dev` is self-contained.
 
 ## Run

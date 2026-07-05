@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { type FormEvent, useState } from 'react'
 
 import { gqlErrorMessage } from '@/lib/graphql/error'
@@ -8,6 +7,7 @@ import { useForgotPassword } from '@/lib/graphql/hooks/use-auth'
 import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input } from '@/components/ui/field'
 import { SubmitButton } from '@/components/ui/submit-button'
+import { TrackedLink } from '@/components/ui/tracked'
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
@@ -39,9 +39,13 @@ export function ForgotPasswordForm() {
                 title="Check your inbox"
                 subtitle="If an account exists for that email, we’ve sent a reset link."
                 footer={
-                    <Link href="/login" className="text-text underline-offset-4 hover:underline">
+                    <TrackedLink
+                        analyticsId="forgot-back-to-login"
+                        href="/login"
+                        className="text-text underline-offset-4 hover:underline"
+                    >
                         Back to login
-                    </Link>
+                    </TrackedLink>
                 }
             >
                 <p className="text-body text-text-dim">Didn’t get it? Check spam, or try again in a minute.</p>
@@ -56,9 +60,13 @@ export function ForgotPasswordForm() {
             footer={
                 <>
                     Remembered it?{' '}
-                    <Link href="/login" className="text-text underline-offset-4 hover:underline">
+                    <TrackedLink
+                        analyticsId="forgot-login-link"
+                        href="/login"
+                        className="text-text underline-offset-4 hover:underline"
+                    >
                         Log in
-                    </Link>
+                    </TrackedLink>
                 </>
             }
         >
@@ -66,7 +74,9 @@ export function ForgotPasswordForm() {
                 <Field label="Email" htmlFor="email" error={error ?? undefined}>
                     <Input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" />
                 </Field>
-                <SubmitButton loading={forgot.isPending}>Send reset link</SubmitButton>
+                <SubmitButton analyticsId="forgot-submit" loading={forgot.isPending}>
+                    Send reset link
+                </SubmitButton>
             </form>
         </AuthCard>
     )

@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 
@@ -8,6 +7,7 @@ import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
 import { SubmitButton } from '@/components/ui/submit-button'
+import { TrackedLink } from '@/components/ui/tracked'
 import { track } from '@/lib/analytics/events'
 import { gqlErrorCode, gqlErrorMessage } from '@/lib/graphql/error'
 import { useLogin } from '@/lib/graphql/hooks/use-auth'
@@ -49,9 +49,13 @@ export function LoginForm() {
             footer={
                 <>
                     New here?{' '}
-                    <Link href="/register" className="text-text underline-offset-4 hover:underline">
+                    <TrackedLink
+                        analyticsId="login-register-link"
+                        href="/register"
+                        className="text-text underline-offset-4 hover:underline"
+                    >
                         Create an account
-                    </Link>
+                    </TrackedLink>
                 </>
             }
         >
@@ -70,17 +74,20 @@ export function LoginForm() {
                 </Field>
 
                 <div className="text-right">
-                    <Link
+                    <TrackedLink
+                        analyticsId="login-forgot-password"
                         href="/forgot-password"
                         className="text-sm text-text-dim underline-offset-4 transition-colors hover:text-text hover:underline"
                     >
                         Forgot password?
-                    </Link>
+                    </TrackedLink>
                 </div>
 
                 <FormError error={formError} />
 
-                <SubmitButton loading={login.isPending}>Log in</SubmitButton>
+                <SubmitButton analyticsId="login-submit" loading={login.isPending}>
+                    Log in
+                </SubmitButton>
             </form>
         </AuthCard>
     )

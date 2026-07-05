@@ -1,6 +1,5 @@
-import Link from 'next/link'
-
 import { Mark } from '@/components/ui/icons'
+import { TrackedLink } from '@/components/ui/tracked'
 
 /** Centered, double-bezel card used by the login & register screens. */
 export function AuthCard({
@@ -19,12 +18,12 @@ export function AuthCard({
             <div className="orb left-1/2 top-[-12%] size-[480px] -translate-x-1/2 bg-ember" />
 
             <div className="relative w-full max-w-md">
-                <Link href="/" className="mb-8 flex items-center justify-center gap-2.5">
+                <TrackedLink analyticsId="auth-logo" href="/" className="mb-8 flex items-center justify-center gap-2.5">
                     <span className="grid size-8 place-items-center rounded-xl bg-ember-gradient text-bg">
                         <Mark className="size-4.5" />
                     </span>
                     <span className="font-display text-lg font-semibold tracking-tight">powerlog</span>
-                </Link>
+                </TrackedLink>
 
                 <div className="rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
                     <div className="inset-hi rounded-[calc(2rem-0.375rem)] bg-surface p-7 md:p-8">

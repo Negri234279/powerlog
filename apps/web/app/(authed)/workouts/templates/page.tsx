@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -21,6 +20,7 @@ import { Dumbbell, Plus } from '@/components/ui/icons'
 import { Menu } from '@/components/ui/menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 type View = { mode: 'list' } | { mode: 'new' } | { mode: 'edit'; id: string }
 
@@ -52,10 +52,16 @@ function TemplateCard({
                         ) : null}
                     </div>
                     <Menu
+                        analyticsId="template-menu"
                         label="Template actions"
                         items={[
-                            { label: 'Edit', onSelect: onEdit },
-                            { label: 'Delete', onSelect: onDelete, destructive: true },
+                            { label: 'Edit', onSelect: onEdit, analyticsId: 'template-menu-edit' },
+                            {
+                                label: 'Delete',
+                                onSelect: onDelete,
+                                destructive: true,
+                                analyticsId: 'template-menu-delete',
+                            },
                         ]}
                     />
                 </div>
@@ -66,14 +72,15 @@ function TemplateCard({
                         {template.setCount} {template.setCount === 1 ? 'set' : 'sets'} ·{' '}
                         {formatDate(template.updatedAt)}
                     </p>
-                    <button
+                    <TrackedButton
+                        analyticsId="template-start-session"
                         type="button"
                         onClick={onStart}
                         disabled={starting}
                         className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-4 py-1.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-60"
                     >
                         <Plus className="size-3.5" /> Start session
-                    </button>
+                    </TrackedButton>
                 </div>
             </div>
         </div>
@@ -136,25 +143,27 @@ export default function TemplatesPage() {
 
     return (
         <div>
-            <Link
+            <TrackedLink
+                analyticsId="templates-breadcrumb-workouts"
                 href="/workouts"
                 className="font-mono text-eyebrow uppercase text-text-faint transition-colors duration-300 hover:text-text-dim"
             >
                 ← Workouts
-            </Link>
+            </TrackedLink>
 
             <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
                 <TextsReveal>
                     <p className="font-mono text-eyebrow uppercase text-text-faint">Training</p>
                     <h1 className="mt-1 font-display text-display">Templates</h1>
                 </TextsReveal>
-                <button
+                <TrackedButton
+                    analyticsId="template-new-open"
                     type="button"
                     onClick={() => setView({ mode: 'new' })}
                     className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring hover:scale-[1.02] active:scale-[0.98]"
                 >
                     <Plus className="size-4" /> New template
-                </button>
+                </TrackedButton>
             </div>
 
             <FormError error={startError} className="mt-4" />
@@ -162,6 +171,7 @@ export default function TemplatesPage() {
             {(items.length > 0 || hasSearch) && !isLoading ? (
                 <div className="mt-6">
                     <ClearableSearch
+                        analyticsId="templates-search"
                         value={rawSearch}
                         onChange={setRawSearch}
                         placeholder="Search templates…"
@@ -192,13 +202,14 @@ export default function TemplatesPage() {
                                     : 'Build a reusable session — pick your exercises and program sets once, then start a session from it in a tap.'}
                             </p>
                             {!hasSearch ? (
-                                <button
+                                <TrackedButton
+                                    analyticsId="template-create-first"
                                     type="button"
                                     onClick={() => setView({ mode: 'new' })}
                                     className="mt-6 inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
                                 >
                                     <Plus className="size-4" /> Create your first template
-                                </button>
+                                </TrackedButton>
                             ) : null}
                         </div>
                     </div>
@@ -223,6 +234,7 @@ export default function TemplatesPage() {
             </div>
 
             <ConfirmModal
+                analyticsId="template-delete"
                 open={deleting !== null}
                 onClose={() => setDeleting(null)}
                 onConfirm={onConfirmDelete}

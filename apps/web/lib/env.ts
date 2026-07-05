@@ -15,17 +15,15 @@ const schema = z.object({
     // Default to the same-origin BFF proxy path (resolved against the live origin
     // in the browser) so localhost and dev tunnels both work without CORS.
     NEXT_PUBLIC_GRAPHQL_URL: z.string().min(1).default('/api/graphql'),
-    // Optional links to the always-on observability/product dashboards, surfaced
-    // on the admin panel. Absent → the link is simply not shown.
+    // Optional link to the always-on Grafana (RUM + logs + traces + metrics),
+    // surfaced on the admin panel. Absent → the link is simply not shown.
     NEXT_PUBLIC_GRAFANA_URL: z.string().url().optional(),
-    NEXT_PUBLIC_POSTHOG_DASHBOARD_URL: z.string().url().optional(),
 })
 
 const parsed = schema.safeParse({
     NEXT_PUBLIC_API_URL: process.env['NEXT_PUBLIC_API_URL'],
     NEXT_PUBLIC_GRAPHQL_URL: process.env['NEXT_PUBLIC_GRAPHQL_URL'],
     NEXT_PUBLIC_GRAFANA_URL: process.env['NEXT_PUBLIC_GRAFANA_URL'],
-    NEXT_PUBLIC_POSTHOG_DASHBOARD_URL: process.env['NEXT_PUBLIC_POSTHOG_DASHBOARD_URL'],
 })
 
 if (!parsed.success) {
@@ -37,5 +35,4 @@ export const env = {
     apiUrl: parsed.data.NEXT_PUBLIC_API_URL,
     graphqlUrl: parsed.data.NEXT_PUBLIC_GRAPHQL_URL,
     grafanaUrl: parsed.data.NEXT_PUBLIC_GRAFANA_URL ?? null,
-    posthogDashboardUrl: parsed.data.NEXT_PUBLIC_POSTHOG_DASHBOARD_URL ?? null,
 } as const

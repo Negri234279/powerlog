@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 
 import { cn } from '@/lib/cn'
@@ -19,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
 import { TextsReveal } from '@/components/ui/texts-reveal'
 import { TiltCard } from '@/components/ui/tilt-card'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 type RangeKey = 'all' | '30d' | '90d' | '1y'
 
@@ -81,6 +81,7 @@ function KpiTile({ label, value, sub, accent }: { label: string; value: string; 
 function RangeToggle({ range, onChange }: { range: RangeKey; onChange: (range: RangeKey) => void }) {
     return (
         <SlidingTabs
+            analyticsId="stats-range"
             items={RANGES.map((r) => ({ value: r.key, label: r.label }))}
             value={range}
             onChange={(value) => onChange(value as RangeKey)}
@@ -163,12 +164,13 @@ export default function ExerciseStatsPage() {
 
     return (
         <div className="max-w-6xl">
-            <Link
+            <TrackedLink
+                analyticsId="stats-breadcrumb-workouts"
                 href="/workouts"
                 className="font-mono text-eyebrow uppercase text-text-faint transition-colors duration-300 hover:text-text-dim"
             >
                 ← Workouts
-            </Link>
+            </TrackedLink>
 
             <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
                 <TextsReveal>
@@ -187,12 +189,13 @@ export default function ExerciseStatsPage() {
                         <p className="mt-2 max-w-sm text-body text-text-dim">
                             No logged sets in this range. Log some sets and your dashboard fills in here.
                         </p>
-                        <Link
+                        <TrackedLink
+                            analyticsId="stats-empty-go-workouts"
                             href="/workouts"
                             className="mt-6 inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
                         >
                             Go to workouts
-                        </Link>
+                        </TrackedLink>
                     </div>
                 </div>
             ) : (
@@ -327,7 +330,8 @@ export default function ExerciseStatsPage() {
                         action={
                             <div className="inline-flex rounded-full bg-bg/60 p-1 ring-1 ring-hairline">
                                 {(['rpe', 'rir'] as const).map((m) => (
-                                    <button
+                                    <TrackedButton
+                                        analyticsId={`stats-intensity-${m}`}
                                         key={m}
                                         type="button"
                                         onClick={() => setIntensityMetric(m)}
@@ -339,7 +343,7 @@ export default function ExerciseStatsPage() {
                                         )}
                                     >
                                         {m}
-                                    </button>
+                                    </TrackedButton>
                                 ))}
                             </div>
                         }

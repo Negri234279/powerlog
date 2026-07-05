@@ -6,11 +6,14 @@ import { createPortal } from 'react-dom'
 import { cn } from '@/lib/cn'
 import { useEnterExit } from '@/lib/hooks/use-enter-exit'
 import { EllipsisVertical } from './icons'
+import { TrackedButton } from './tracked'
 
 export interface MenuItem {
     label: string
     onSelect: () => void
     destructive?: boolean
+    /** Stable id for the `ui_click` event (e.g. `session-menu-delete`). */
+    analyticsId: string
 }
 
 interface Coords {
@@ -29,10 +32,13 @@ export function Menu({
     items,
     label = 'Open menu',
     align = 'right',
+    analyticsId,
 }: {
     items: MenuItem[]
     label?: string
     align?: 'left' | 'right'
+    /** Stable id for the trigger's `ui_click` event (e.g. `session-menu`). */
+    analyticsId: string
 }) {
     const [open, setOpen] = useState(false)
     const { mounted, className: stateClass } = useEnterExit(open)
@@ -89,7 +95,8 @@ export function Menu({
 
     return (
         <>
-            <button
+            <TrackedButton
+                analyticsId={analyticsId}
                 ref={buttonRef}
                 type="button"
                 aria-label={label}
@@ -103,7 +110,7 @@ export function Menu({
                 className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.06] hover:text-text"
             >
                 <EllipsisVertical className="size-4" />
-            </button>
+            </TrackedButton>
 
             {mounted && coords
                 ? createPortal(
@@ -118,7 +125,8 @@ export function Menu({
                           )}
                       >
                           {items.map((item) => (
-                              <button
+                              <TrackedButton
+                                  analyticsId={item.analyticsId}
                                   key={item.label}
                                   type="button"
                                   role="menuitem"
@@ -136,7 +144,7 @@ export function Menu({
                                   )}
                               >
                                   {item.label}
-                              </button>
+                              </TrackedButton>
                           ))}
                       </div>,
                       document.body,

@@ -1,6 +1,8 @@
-import posthog from 'posthog-js'
+import { faroApi } from './faro'
 
 // Single source of truth for product event names and their property shapes.
+// Events land in Loki (kind=event) via Alloy's faro.receiver, queryable in
+// Grafana next to the API's logs and alertable from the same stack.
 //
 // Conventions (mirror the API's observability rules in CLAUDE.md):
 // - snake_case, stable names — treat them as a public contract.
@@ -31,22 +33,26 @@ export interface AnalyticsEventMap {
     session_created_from_template: EmptyProps
     set_logged: EmptyProps
     session_completed: EmptyProps
+    // Emitted only by TrackedButton / TrackedLink (components/ui/tracked.tsx);
+    // `id` is the finite set of analyticsId literals used across the app.
+    ui_click: { id: string; kind: 'button' | 'link' }
 }
 
 export type AnalyticsEventName = keyof AnalyticsEventMap
 
 /** Capture a typed product event — properties are enforced by the catalog. */
 export function track<K extends AnalyticsEventName>(name: K, properties: AnalyticsEventMap[K]): void {
-    posthog.capture(name, properties)
+    // Faro event attributes are string-valued; the catalog only allows strings.
+    faroApi()?.pushEvent(name, properties)
 }
 
-/** Tie the current person to the authenticated user once their id is known.
+/** Tie the session to the authenticated user once their id is known.
  *  username is a public handle (not PII); never pass email here. */
 export function identifyUser(userId: string, username: string): void {
-    posthog.identify(userId, { username })
+    faroApi()?.setUser({ id: userId, username })
 }
 
 /** Drop the identity on logout so the next visitor on this device starts anew. */
 export function resetAnalytics(): void {
-    posthog.reset()
+    faroApi()?.resetUser()
 }

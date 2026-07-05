@@ -1,11 +1,11 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useRef } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { useVerifyEmail } from '@/lib/graphql/hooks/use-auth'
 import { Check, Close } from '@/components/ui/icons'
+import { TrackedLink } from '@/components/ui/tracked'
 
 /** Consumes the token from the verification email link and reports the result.
  *  Runs the mutation exactly once on mount. */
@@ -32,7 +32,9 @@ export function VerifyEmailClient({ token }: { token: string | null }) {
                         </Badge>
                         <h1 className="mt-6 font-display text-h2">Email verified</h1>
                         <p className="mt-3 text-body text-text-dim">Your email is confirmed. You’re all set.</p>
-                        <Cta href="/dashboard">Go to dashboard</Cta>
+                        <Cta analyticsId="verify-go-dashboard" href="/dashboard">
+                            Go to dashboard
+                        </Cta>
                     </>
                 ) : state === 'verifying' ? (
                     <>
@@ -52,7 +54,9 @@ export function VerifyEmailClient({ token }: { token: string | null }) {
                                 ? 'This page needs a verification token from your email link.'
                                 : 'The link may have expired or already been used. Request a new one from your profile.'}
                         </p>
-                        <Cta href="/login">Back to login</Cta>
+                        <Cta analyticsId="verify-back-to-login" href="/login">
+                            Back to login
+                        </Cta>
                     </>
                 )}
             </div>
@@ -74,13 +78,14 @@ function Badge({ tone, children }: { tone: 'pr' | 'ember'; children: React.React
     )
 }
 
-function Cta({ href, children }: { href: string; children: React.ReactNode }) {
+function Cta({ href, children, analyticsId }: { href: string; children: React.ReactNode; analyticsId: string }) {
     return (
-        <Link
+        <TrackedLink
+            analyticsId={analyticsId}
             href={href}
             className="mt-7 inline-flex rounded-full bg-ember-gradient px-6 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
         >
             {children}
-        </Link>
+        </TrackedLink>
     )
 }

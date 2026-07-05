@@ -1,4 +1,5 @@
 import { Mark } from '@/components/ui/icons'
+import { TrackedLink } from '@/components/ui/tracked'
 
 const COLUMNS = [
     { title: 'Product', links: ['Features', 'Analytics', 'Coaching', 'Pricing'] },
@@ -28,9 +29,13 @@ export function SiteFooter() {
                         <ul className="mt-4 space-y-3">
                             {col.links.map((l) => (
                                 <li key={l}>
-                                    <a href="#" className="text-body text-text-dim transition-colors hover:text-text">
+                                    <TrackedLink
+                                        analyticsId={`footer-${l.toLowerCase()}`}
+                                        href="#"
+                                        className="text-body text-text-dim transition-colors hover:text-text"
+                                    >
                                         {l}
-                                    </a>
+                                    </TrackedLink>
                                 </li>
                             ))}
                         </ul>

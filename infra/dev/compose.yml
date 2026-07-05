@@ -204,6 +204,9 @@ services:
       - alloy_dev:/var/lib/alloy/data
     ports:
       - "${ALLOY_PORT:-12345}:12345"
+      # faro.receiver — the web app (running on the HOST in dev) proxies browser
+      # RUM here via the Next /faro rewrite (FARO_INTERNAL_URL=localhost:12347).
+      - "${FARO_PORT:-12347}:12347"
     depends_on:
       - powerlog-loki
     networks: [powerlog-net]

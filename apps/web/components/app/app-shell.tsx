@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -8,11 +7,12 @@ import type { Session } from '@/lib/auth/session'
 import { identifyUser, resetAnalytics, track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
 import { ArrowUpRight, Close, Mark, Menu } from '@/components/ui/icons'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import { useLogout, useMe } from '@/lib/graphql/hooks/use-auth'
 
 const NAV = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Workouts', href: '/workouts' },
+    { id: 'dashboard', label: 'Dashboard', href: '/dashboard' },
+    { id: 'workouts', label: 'Workouts', href: '/workouts' },
 ]
 
 /** Authenticated chrome: top bar with nav + user + logout. The authed layout
@@ -33,7 +33,7 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
     const avatar = initialUser?.avatar ?? null
     const onProfile = isActive('/profile')
     // Admins get an extra nav entry; the route itself is gated server-side too.
-    const nav = initialUser?.isAdmin ? [...NAV, { label: 'Admin', href: '/admin' }] : NAV
+    const nav = initialUser?.isAdmin ? [...NAV, { id: 'admin', label: 'Admin', href: '/admin' }] : NAV
 
     useEffect(() => {
         if (isError) router.replace('/login')
@@ -87,15 +87,16 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
             <header className="sticky top-0 z-50 border-b border-hairline bg-bg/80 backdrop-blur-xl">
                 <div className="mx-auto flex max-w-[72rem] items-center justify-between gap-6 px-6 py-3">
                     <div className="flex items-center gap-8">
-                        <Link href="/dashboard" className="flex items-center gap-2.5">
+                        <TrackedLink analyticsId="shell-logo" href="/dashboard" className="flex items-center gap-2.5">
                             <span className="grid size-8 place-items-center rounded-xl bg-ember-gradient text-bg">
                                 <Mark className="size-4.5" />
                             </span>
                             <span className="font-display text-base font-semibold tracking-tight">powerlog</span>
-                        </Link>
+                        </TrackedLink>
                         <nav className="hidden items-center gap-1 sm:flex">
                             {nav.map((n) => (
-                                <Link
+                                <TrackedLink
+                                    analyticsId={`shell-nav-${n.id}`}
                                     key={n.href}
                                     href={n.href}
                                     aria-current={isActive(n.href) ? 'page' : undefined}
@@ -107,14 +108,15 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                                     )}
                                 >
                                     {n.label}
-                                </Link>
+                                </TrackedLink>
                             ))}
                         </nav>
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3">
                         {/* User cluster → profile. Handle on desktop; avatar always. */}
-                        <Link
+                        <TrackedLink
+                            analyticsId="shell-profile"
                             href="/profile"
                             aria-label="Your profile"
                             className="group flex items-center gap-2.5 rounded-full transition-opacity duration-300 hover:opacity-90"
@@ -139,18 +141,20 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                                     '··'
                                 )}
                             </span>
-                        </Link>
+                        </TrackedLink>
 
-                        <button
+                        <TrackedButton
+                            analyticsId="shell-logout"
                             type="button"
                             onClick={onLogout}
                             className="hidden rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text active:scale-[0.98] sm:inline-block"
                         >
                             Log out
-                        </button>
+                        </TrackedButton>
 
                         {/* Burger — morphs to an X. Mobile only. */}
-                        <button
+                        <TrackedButton
+                            analyticsId="shell-menu-toggle"
                             type="button"
                             onClick={() => setMenuOpen((open) => !open)}
                             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
@@ -172,7 +176,7 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                                     )}
                                 />
                             </span>
-                        </button>
+                        </TrackedButton>
                     </div>
                 </div>
             </header>
@@ -188,7 +192,8 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
 
                         <nav className="mt-6 flex flex-col gap-1">
                             {nav.map((n, i) => (
-                                <Link
+                                <TrackedLink
+                                    analyticsId={`shell-nav-mobile-${n.id}`}
                                     key={n.href}
                                     href={n.href}
                                     aria-current={isActive(n.href) ? 'page' : undefined}
@@ -206,7 +211,7 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                                     ) : (
                                         <ArrowUpRight className="size-5 text-text-faint transition-transform duration-300 group-hover:-translate-y-px group-hover:translate-x-0.5 group-hover:text-text" />
                                     )}
-                                </Link>
+                                </TrackedLink>
                             ))}
                         </nav>
 
@@ -219,13 +224,14 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                                     Signed in as <span className="text-text">@{username}</span>
                                 </p>
                             ) : null}
-                            <button
+                            <TrackedButton
+                                analyticsId="shell-logout-mobile"
                                 type="button"
                                 onClick={onLogout}
                                 className="w-full rounded-full px-5 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text active:scale-[0.98]"
                             >
                                 Log out
-                            </button>
+                            </TrackedButton>
                         </div>
                     </div>
                 </div>

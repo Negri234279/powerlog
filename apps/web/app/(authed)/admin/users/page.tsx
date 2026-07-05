@@ -23,6 +23,7 @@ import { MultiSelect } from '@/components/ui/multi-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
 import { Tooltip } from '@/components/ui/tooltip'
+import { TrackedButton } from '@/components/ui/tracked'
 
 const ROLE_OPTIONS = [
     { value: 'athlete', label: 'Athlete' },
@@ -121,14 +122,28 @@ export default function AdminUsersPage() {
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-2.5">
                 <ClearableSearch
+                    analyticsId="admin-users-search"
                     value={rawSearch}
                     onChange={setRawSearch}
                     placeholder="Search email…"
                     className="w-64"
                 />
-                <MultiSelect label="Role" options={ROLE_OPTIONS} selected={roles} onChange={setRoles} />
-                <MultiSelect label="Status" options={STATUS_OPTIONS} selected={statuses} onChange={setStatuses} />
-                <button
+                <MultiSelect
+                    analyticsId="admin-users-filter-role"
+                    label="Role"
+                    options={ROLE_OPTIONS}
+                    selected={roles}
+                    onChange={setRoles}
+                />
+                <MultiSelect
+                    analyticsId="admin-users-filter-status"
+                    label="Status"
+                    options={STATUS_OPTIONS}
+                    selected={statuses}
+                    onChange={setStatuses}
+                />
+                <TrackedButton
+                    analyticsId="admin-users-filter-admins"
                     type="button"
                     onClick={() => setAdminsOnly((v) => !v)}
                     className={cn(
@@ -139,7 +154,7 @@ export default function AdminUsersPage() {
                     )}
                 >
                     Admins only
-                </button>
+                </TrackedButton>
             </div>
 
             <FormError error={error} className="mt-4" />
@@ -227,7 +242,8 @@ export default function AdminUsersPage() {
                                                 ) : (
                                                     (() => {
                                                         const statusButton = (
-                                                            <button
+                                                            <TrackedButton
+                                                                analyticsId="admin-user-status-toggle"
                                                                 type="button"
                                                                 disabled={isSelf}
                                                                 onClick={() =>
@@ -244,7 +260,7 @@ export default function AdminUsersPage() {
                                                                 )}
                                                             >
                                                                 {user.status}
-                                                            </button>
+                                                            </TrackedButton>
                                                         )
                                                         return isSelf ? (
                                                             <Tooltip label="You can't disable your own account">
@@ -259,7 +275,8 @@ export default function AdminUsersPage() {
                                             <td className="px-5 py-3 text-right">
                                                 {(() => {
                                                     const adminButton = (
-                                                        <button
+                                                        <TrackedButton
+                                                            analyticsId="admin-user-admin-toggle"
                                                             type="button"
                                                             disabled={isSelf && user.isAdmin}
                                                             onClick={() =>
@@ -273,7 +290,7 @@ export default function AdminUsersPage() {
                                                             )}
                                                         >
                                                             {user.isAdmin ? 'Admin' : 'Make admin'}
-                                                        </button>
+                                                        </TrackedButton>
                                                     )
                                                     return isSelf && user.isAdmin ? (
                                                         <Tooltip label="You can't revoke your own admin">
@@ -315,6 +332,7 @@ export default function AdminUsersPage() {
             ) : null}
 
             <ConfirmModal
+                analyticsId="admin-user-admin"
                 open={adminTarget != null}
                 onClose={() => {
                     setError(null)
@@ -334,6 +352,7 @@ export default function AdminUsersPage() {
             />
 
             <ConfirmModal
+                analyticsId="admin-user-status"
                 open={statusTarget != null}
                 onClose={() => {
                     setError(null)

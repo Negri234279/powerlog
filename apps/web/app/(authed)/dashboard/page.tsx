@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { track } from '@/lib/analytics/events'
@@ -20,6 +19,7 @@ import { PlusMenuMorph } from '@/components/ui/plus-menu-morph'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextSwap } from '@/components/ui/text-swap'
 import { TextsReveal } from '@/components/ui/texts-reveal'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import { useState } from 'react'
 
 // ── helpers ──────────────────────────────────────────────────
@@ -103,12 +103,13 @@ function WeekCard({ units }: { units: Units }) {
             <PanelHeader
                 title="This week"
                 action={
-                    <Link
+                    <TrackedLink
+                        analyticsId="dashboard-all-workouts"
                         href="/workouts"
                         className="rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                     >
                         All workouts
-                    </Link>
+                    </TrackedLink>
                 }
             />
 
@@ -134,16 +135,21 @@ function WeekCard({ units }: { units: Units }) {
                 ) : planned.length === 0 ? (
                     <p className="mt-3 text-sm text-text-dim">
                         Nothing planned for this week.{' '}
-                        <Link href="/workouts" className="text-text underline-offset-4 hover:underline">
+                        <TrackedLink
+                            analyticsId="dashboard-plan-session"
+                            href="/workouts"
+                            className="text-text underline-offset-4 hover:underline"
+                        >
                             Plan a session
-                        </Link>
+                        </TrackedLink>
                         .
                     </p>
                 ) : (
                     <ul className="mt-3 space-y-2">
                         {planned.map((session) => (
                             <li key={session.id}>
-                                <Link
+                                <TrackedLink
+                                    analyticsId="dashboard-planned-session-open"
                                     href={`/workouts/${session.id}`}
                                     className="flex items-center justify-between gap-3 rounded-xl bg-bg/40 px-3.5 py-2.5 ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04]"
                                 >
@@ -155,7 +161,7 @@ function WeekCard({ units }: { units: Units }) {
                                     <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
                                         {session.exerciseCount} ex · {session.setCount} sets
                                     </span>
-                                </Link>
+                                </TrackedLink>
                             </li>
                         ))}
                     </ul>
@@ -187,13 +193,14 @@ function StrengthCard({ units }: { units: Units }) {
             <PanelHeader
                 title="Strength"
                 action={
-                    <Link
+                    <TrackedLink
+                        analyticsId="dashboard-analytics"
                         href="/workouts/stats"
                         aria-label="Analytics"
                         className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.06] hover:text-text"
                     >
                         <ChartLine className="size-4" />
-                    </Link>
+                    </TrackedLink>
                 }
             />
 
@@ -233,12 +240,13 @@ function RecentCard({ units }: { units: Units }) {
             <PanelHeader
                 title="Recent sessions"
                 action={
-                    <Link
+                    <TrackedLink
+                        analyticsId="dashboard-recent-view-all"
                         href="/workouts"
                         className="rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                     >
                         View all
-                    </Link>
+                    </TrackedLink>
                 }
             />
 
@@ -254,7 +262,8 @@ function RecentCard({ units }: { units: Units }) {
                 <ul className="mt-5 space-y-2">
                     {sessions.map((session) => (
                         <li key={session.id}>
-                            <Link
+                            <TrackedLink
+                                analyticsId="dashboard-recent-session-open"
                                 href={`/workouts/${session.id}`}
                                 className="flex items-center justify-between gap-3 rounded-xl bg-bg/40 px-3.5 py-2.5 ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04]"
                             >
@@ -265,7 +274,7 @@ function RecentCard({ units }: { units: Units }) {
                                 <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
                                     {formatWeight(session.totalVolumeKg, units)}
                                 </span>
-                            </Link>
+                            </TrackedLink>
                         </li>
                     ))}
                 </ul>
@@ -302,12 +311,13 @@ function TemplatesCard() {
             <PanelHeader
                 title="Start from a template"
                 action={
-                    <Link
+                    <TrackedLink
+                        analyticsId="dashboard-templates-manage"
                         href="/workouts/templates"
                         className="rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                     >
                         Manage
-                    </Link>
+                    </TrackedLink>
                 }
             />
 
@@ -320,9 +330,13 @@ function TemplatesCard() {
             ) : top.length === 0 ? (
                 <p className="mt-5 flex-1 text-sm text-text-dim">
                     No templates yet.{' '}
-                    <Link href="/workouts/templates" className="text-text underline-offset-4 hover:underline">
+                    <TrackedLink
+                        analyticsId="dashboard-templates-create"
+                        href="/workouts/templates"
+                        className="text-text underline-offset-4 hover:underline"
+                    >
                         Create one
-                    </Link>{' '}
+                    </TrackedLink>{' '}
                     to start sessions in a tap.
                 </p>
             ) : (
@@ -341,14 +355,15 @@ function TemplatesCard() {
                                     </span>
                                 </span>
                             </span>
-                            <button
+                            <TrackedButton
+                                analyticsId="dashboard-template-start"
                                 type="button"
                                 onClick={() => onStart(template)}
                                 disabled={start.isPending}
                                 className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/[0.06] px-3.5 py-1.5 text-xs font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-60"
                             >
                                 <Plus className="size-3.5" /> Start
-                            </button>
+                            </TrackedButton>
                         </li>
                     ))}
                 </ul>
@@ -409,11 +424,27 @@ export default function DashboardPage() {
             </div>
 
             <PlusMenuMorph
+                analyticsId="dashboard-quick-actions"
                 className="fixed bottom-6 right-6 z-40"
                 items={[
-                    { label: 'Log a workout', href: '/workouts', icon: <Calendar className="size-4" /> },
-                    { label: 'Analytics', href: '/workouts/stats', icon: <ChartLine className="size-4" /> },
-                    { label: 'Your profile', href: '/profile', icon: <Target className="size-4" /> },
+                    {
+                        label: 'Log a workout',
+                        href: '/workouts',
+                        icon: <Calendar className="size-4" />,
+                        analyticsId: 'quick-log-workout',
+                    },
+                    {
+                        label: 'Analytics',
+                        href: '/workouts/stats',
+                        icon: <ChartLine className="size-4" />,
+                        analyticsId: 'quick-analytics',
+                    },
+                    {
+                        label: 'Your profile',
+                        href: '/profile',
+                        icon: <Target className="size-4" />,
+                        analyticsId: 'quick-profile',
+                    },
                 ]}
             />
         </div>

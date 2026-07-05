@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 
 import { cn } from '@/lib/cn'
+import { TrackedButton } from './tracked'
 
 export interface SlidingTabsItem {
     value: string
@@ -19,11 +20,15 @@ export function SlidingTabs({
     value,
     onChange,
     className,
+    analyticsId,
 }: {
     items: SlidingTabsItem[]
     value: string
     onChange: (value: string) => void
     className?: string
+    /** Stable id prefix; each tab emits `<id>-<value>` (values are code-defined
+     *  literals, so the set stays bounded). */
+    analyticsId: string
 }) {
     const barRef = useRef<HTMLDivElement>(null)
     const pillRef = useRef<HTMLSpanElement>(null)
@@ -65,7 +70,9 @@ export function SlidingTabs({
         <div ref={barRef} role="tablist" className={cn('t-tabs', className)}>
             <span ref={pillRef} className="t-tabs-pill" aria-hidden="true" />
             {items.map((item) => (
-                <button
+                <TrackedButton
+                    // Values may be paths ('/admin/users') — squash to kebab-case.
+                    analyticsId={`${analyticsId}-${item.value.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '')}`}
                     key={item.value}
                     type="button"
                     role="tab"
@@ -74,7 +81,7 @@ export function SlidingTabs({
                     className="t-tab text-sm"
                 >
                     {item.label}
-                </button>
+                </TrackedButton>
             ))}
         </div>
     )

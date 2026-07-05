@@ -54,10 +54,16 @@ FROM deps AS build
 ENV NEXT_TELEMETRY_DISABLED=1
 # Next evaluates next.config `rewrites()` at BUILD time and bakes the destinations
 # into the standalone server — runtime env is ignored for them. The BFF proxy
-# (/api/* → the API) must therefore know the API's address now. The service DNS
-# name is stable in the prod stack; override the ARG to build for another topology.
+# (/api/* → the API) and the Faro proxy (/faro/* → Alloy) must therefore know
+# their addresses now. Service DNS names are stable in the prod stack; override
+# the ARGs to build for another topology. APP_ENV is inlined into the client
+# bundle as the Faro app.environment (NEXT_PUBLIC_APP_ENV).
 ARG API_INTERNAL_URL=http://powerlog-api:4000
-ENV API_INTERNAL_URL=${API_INTERNAL_URL}
+ARG FARO_INTERNAL_URL=http://powerlog-alloy:12347
+ARG APP_ENV=prod
+ENV API_INTERNAL_URL=${API_INTERNAL_URL} \
+    FARO_INTERNAL_URL=${FARO_INTERNAL_URL} \
+    APP_ENV=${APP_ENV}
 COPY . .
 RUN pnpm --filter @powerlog/web build
 

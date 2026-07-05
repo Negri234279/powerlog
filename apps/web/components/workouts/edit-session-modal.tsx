@@ -8,6 +8,7 @@ import { type WorkoutHistoryItem, useUpdateWorkoutSession } from '@/lib/graphql/
 import { Field, Input } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
 import { Modal } from '@/components/ui/modal'
+import { TrackedButton } from '@/components/ui/tracked'
 
 /** A session's `performedAt` as YYYY-MM-DD in the user's local timezone. */
 function toDateInput(iso: string): string {
@@ -70,21 +71,23 @@ export function EditSessionModal({ session, onClose }: { session: WorkoutHistory
                 <FormError error={error} />
 
                 <div className="flex items-center justify-end gap-2 pt-1">
-                    <button
+                    <TrackedButton
+                        analyticsId="session-edit-cancel"
                         type="button"
                         onClick={onClose}
                         disabled={update.isPending}
                         className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-60"
                     >
                         Cancel
-                    </button>
-                    <button
+                    </TrackedButton>
+                    <TrackedButton
+                        analyticsId="session-edit-save"
                         type="submit"
                         disabled={update.isPending}
                         className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:opacity-60"
                     >
                         {update.isPending ? 'Saving…' : 'Save changes'}
-                    </button>
+                    </TrackedButton>
                 </div>
             </form>
         </Modal>

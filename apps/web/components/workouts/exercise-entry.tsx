@@ -13,6 +13,7 @@ import {
 } from '@/lib/graphql/hooks/use-workouts'
 import { formatWeight, kgTo, type Units } from '@/lib/units'
 import { Close, Plus } from '@/components/ui/icons'
+import { TrackedButton } from '@/components/ui/tracked'
 import { SetForm, type SetValues } from './set-form'
 
 function intensitySuffix(set: WorkoutSetData): string {
@@ -42,6 +43,7 @@ function SetRow({
         return (
             <li className="py-2.5">
                 <SetForm
+                    analyticsId="set-update"
                     units={units}
                     submitLabel={update.isPending ? 'Saving…' : 'Save'}
                     pending={update.isPending}
@@ -92,14 +94,16 @@ function SetRow({
             {set.e1rmKg !== null ? (
                 <span className="hidden text-right text-text-dim sm:block">e1RM {formatWeight(set.e1rmKg, units)}</span>
             ) : null}
-            <button
+            <TrackedButton
+                analyticsId="set-edit"
                 type="button"
                 onClick={() => setEditing(true)}
                 className="rounded-full px-2.5 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
             >
                 Edit
-            </button>
-            <button
+            </TrackedButton>
+            <TrackedButton
+                analyticsId="set-remove"
                 type="button"
                 aria-label="Remove set"
                 onClick={() => remove.mutate({ sessionId, entryId, setId: set.id })}
@@ -107,7 +111,7 @@ function SetRow({
                 className="grid size-7 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember disabled:opacity-50"
             >
                 <Close className="size-3.5" />
-            </button>
+            </TrackedButton>
         </li>
     )
 }
@@ -154,14 +158,15 @@ export function ExerciseEntry({
             <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface p-5">
                 <div className="flex items-start justify-between gap-3">
                     <h3 className="font-display text-h3 tracking-tight">{exerciseName}</h3>
-                    <button
+                    <TrackedButton
+                        analyticsId="exercise-entry-remove"
                         type="button"
                         onClick={() => removeEntry.mutate({ sessionId, entryId: entry.id })}
                         disabled={removeEntry.isPending}
                         className="rounded-full px-3 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember disabled:opacity-50"
                     >
                         Remove
-                    </button>
+                    </TrackedButton>
                 </div>
                 {entry.notes ? <p className="mt-1 text-sm text-text-dim">{entry.notes}</p> : null}
 
@@ -185,6 +190,7 @@ export function ExerciseEntry({
                 <div className="mt-4">
                     {adding ? (
                         <SetForm
+                            analyticsId="set-log"
                             units={units}
                             submitLabel={log.isPending ? 'Adding…' : 'Add set'}
                             pending={log.isPending}
@@ -192,13 +198,14 @@ export function ExerciseEntry({
                             onCancel={() => setAdding(false)}
                         />
                     ) : (
-                        <button
+                        <TrackedButton
+                            analyticsId="set-add-open"
                             type="button"
                             onClick={() => setAdding(true)}
                             className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                         >
                             <Plus className="size-4" /> Add set
-                        </button>
+                        </TrackedButton>
                     )}
                 </div>
             </div>

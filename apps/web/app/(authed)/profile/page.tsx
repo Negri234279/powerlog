@@ -121,7 +121,9 @@ function ProfileForm({ profile }: { profile: ProfileData }) {
             {saved ? <p className="text-sm text-pr">Profile saved.</p> : null}
 
             <div className="max-w-xs">
-                <SubmitButton loading={update.isPending}>Save profile</SubmitButton>
+                <SubmitButton analyticsId="profile-save" loading={update.isPending}>
+                    Save profile
+                </SubmitButton>
             </div>
         </form>
     )

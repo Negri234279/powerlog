@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { type FormEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
@@ -10,6 +9,7 @@ import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
 import { SubmitButton } from '@/components/ui/submit-button'
+import { TrackedLink } from '@/components/ui/tracked'
 
 /** Completes a password reset with the token from the email link. On success the
  *  API revokes all sessions, so the user re-logs in everywhere. */
@@ -48,9 +48,13 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
                 title="Invalid link"
                 subtitle="This page needs a reset token from your email link."
                 footer={
-                    <Link href="/forgot-password" className="text-text underline-offset-4 hover:underline">
+                    <TrackedLink
+                        analyticsId="reset-request-new-link"
+                        href="/forgot-password"
+                        className="text-text underline-offset-4 hover:underline"
+                    >
                         Request a new link
-                    </Link>
+                    </TrackedLink>
                 }
             >
                 <p className="text-body text-text-dim">The link looks incomplete or expired.</p>
@@ -61,12 +65,13 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
     if (done) {
         return (
             <AuthCard title="Password reset" subtitle="You can now log in with your new password.">
-                <Link
+                <TrackedLink
+                    analyticsId="reset-go-to-login"
                     href="/login"
                     className="inline-flex rounded-full bg-ember-gradient px-6 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
                 >
                     Go to login
-                </Link>
+                </TrackedLink>
             </AuthCard>
         )
     }
@@ -78,9 +83,13 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
             footer={
                 <>
                     Changed your mind?{' '}
-                    <Link href="/login" className="text-text underline-offset-4 hover:underline">
+                    <TrackedLink
+                        analyticsId="reset-login-link"
+                        href="/login"
+                        className="text-text underline-offset-4 hover:underline"
+                    >
                         Log in
-                    </Link>
+                    </TrackedLink>
                 </>
             }
         >
@@ -109,7 +118,9 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
                     />
                 </Field>
                 <FormError error={formError} />
-                <SubmitButton loading={reset.isPending}>Reset password</SubmitButton>
+                <SubmitButton analyticsId="reset-submit" loading={reset.isPending}>
+                    Reset password
+                </SubmitButton>
             </form>
         </AuthCard>
     )

@@ -7,6 +7,7 @@ import { track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Pencil, Trash } from '@/components/ui/icons'
+import { TrackedButton } from '@/components/ui/tracked'
 import { ACCEPTED_AVATAR_TYPES, prepareAvatar, validateAvatarFile } from '@/lib/image/avatar-image'
 import { type ProfileData, useRemoveAvatar, useUploadAvatar } from '@/lib/graphql/hooks/use-profile'
 
@@ -121,7 +122,8 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
         <div className="rounded-[1.75rem] bg-shell p-1.5 ring-1 ring-hairline">
             <div className="inset-hi flex items-center gap-5 rounded-[calc(1.75rem-0.375rem)] bg-surface p-4 sm:p-5">
                 {/* Avatar = upload target: click or drag & drop. */}
-                <button
+                <TrackedButton
+                    analyticsId="avatar-upload-target"
                     type="button"
                     onClick={() => inputRef.current?.click()}
                     onDragOver={(e) => {
@@ -154,7 +156,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
                     >
                         <Pencil className="size-5" />
                     </span>
-                </button>
+                </TrackedButton>
 
                 {/* Meta + actions. */}
                 <div className="min-w-0 flex-1">
@@ -168,35 +170,39 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                         {staged ? (
                             <>
-                                <button
+                                <TrackedButton
+                                    analyticsId="avatar-save"
                                     type="button"
                                     onClick={onSave}
                                     disabled={busy}
                                     className="rounded-full bg-ember px-4 py-2 text-sm font-medium text-bg transition-transform duration-300 ease-spring active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                     {upload.isPending ? 'Saving…' : 'Save'}
-                                </button>
-                                <button
+                                </TrackedButton>
+                                <TrackedButton
+                                    analyticsId="avatar-cancel"
                                     type="button"
                                     onClick={clearStaged}
                                     disabled={busy}
                                     className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-50"
                                 >
                                     Cancel
-                                </button>
+                                </TrackedButton>
                             </>
                         ) : (
                             <>
-                                <button
+                                <TrackedButton
+                                    analyticsId="avatar-change"
                                     type="button"
                                     onClick={() => inputRef.current?.click()}
                                     disabled={busy}
                                     className="rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text active:scale-[0.98] disabled:opacity-50"
                                 >
                                     {profile.avatarUrl ? 'Change' : 'Upload'}
-                                </button>
+                                </TrackedButton>
                                 {profile.avatarUrl ? (
-                                    <button
+                                    <TrackedButton
+                                        analyticsId="avatar-remove-open"
                                         type="button"
                                         onClick={() => setConfirmRemove(true)}
                                         disabled={busy}
@@ -204,7 +210,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
                                         className="grid size-9 place-items-center rounded-full text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-ember hover:ring-ember/30 active:scale-[0.98] disabled:opacity-50"
                                     >
                                         <Trash className="size-4" />
-                                    </button>
+                                    </TrackedButton>
                                 ) : null}
                             </>
                         )}
@@ -215,6 +221,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
             </div>
 
             <ConfirmModal
+                analyticsId="avatar-remove"
                 open={confirmRemove}
                 onClose={() => setConfirmRemove(false)}
                 onConfirm={onRemove}

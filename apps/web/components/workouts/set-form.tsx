@@ -4,6 +4,7 @@ import { type FormEvent, type ReactNode, useState } from 'react'
 
 import type { Units } from '@/lib/units'
 import { Input, Select } from '@/components/ui/field'
+import { TrackedButton } from '@/components/ui/tracked'
 
 /** A set's editable values, in the user's display unit (weight) + unitless intensity. */
 export interface SetValues {
@@ -55,6 +56,7 @@ export function SetForm({
     pending,
     onSubmit,
     onCancel,
+    analyticsId,
 }: {
     units: Units
     initial?: SetValues
@@ -62,6 +64,8 @@ export function SetForm({
     pending?: boolean
     onSubmit: (values: SetValues) => void
     onCancel?: () => void
+    /** Stable id for the submit `ui_click` (e.g. `set-log`); cancel emits `<id>-cancel`. */
+    analyticsId: string
 }) {
     const start = initial ?? EMPTY
     const [weight, setWeight] = useState(toInput(start.weight))
@@ -136,21 +140,23 @@ export function SetForm({
             ) : null}
 
             <div className="flex items-center gap-2">
-                <button
+                <TrackedButton
+                    analyticsId={analyticsId}
                     type="submit"
                     disabled={pending}
                     className="rounded-full bg-white/[0.06] px-4 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-60"
                 >
                     {submitLabel}
-                </button>
+                </TrackedButton>
                 {onCancel ? (
-                    <button
+                    <TrackedButton
+                        analyticsId={`${analyticsId}-cancel`}
                         type="button"
                         onClick={onCancel}
                         className="rounded-full px-3 py-2.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                     >
                         Cancel
-                    </button>
+                    </TrackedButton>
                 ) : null}
             </div>
         </form>

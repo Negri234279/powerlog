@@ -7,6 +7,7 @@ import { PopNumber } from '@/components/ui/pop-number'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
 import { TiltCard } from '@/components/ui/tilt-card'
+import { TrackedLink } from '@/components/ui/tracked'
 import { AdminTabs } from '@/components/admin/admin-tabs'
 
 export default function AdminOverviewPage() {
@@ -92,10 +93,11 @@ function Stat({ label, value }: { label: string; value?: number }) {
 }
 
 function ExternalDashboards() {
-    const links = [
-        { label: 'Grafana', description: 'Logs · traces · metrics', href: env.grafanaUrl },
-        { label: 'PostHog', description: 'Product analytics · replays', href: env.posthogDashboardUrl },
-    ].filter((l): l is { label: string; description: string; href: string } => Boolean(l.href))
+    // Grafana now owns ALL web telemetry (RUM + events via Faro, logs, traces,
+    // metrics) — it's the single external dashboard.
+    const links = [{ label: 'Grafana', description: 'RUM · logs · traces · metrics', href: env.grafanaUrl }].filter(
+        (l): l is { label: string; description: string; href: string } => Boolean(l.href),
+    )
 
     if (links.length === 0) return null
 
@@ -105,7 +107,8 @@ function ExternalDashboards() {
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {links.map((link) => (
                     <TiltCard key={link.label} cardClassName="rounded-2xl">
-                        <a
+                        <TrackedLink
+                            analyticsId={`admin-dashboard-${link.label.toLowerCase()}`}
                             href={link.href}
                             target="_blank"
                             rel="noreferrer"
@@ -117,7 +120,7 @@ function ExternalDashboards() {
                                 <p className="text-sm text-text-dim">{link.description}</p>
                             </div>
                             <ArrowUpRight className="size-5 text-text-faint transition-transform duration-300 group-hover:-translate-y-px group-hover:translate-x-0.5 group-hover:text-text" />
-                        </a>
+                        </TrackedLink>
                     </TiltCard>
                 ))}
             </div>

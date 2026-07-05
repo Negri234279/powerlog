@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { gqlErrorMessage } from '@/lib/graphql/error'
 import { type SessionData, useMySessions, useRevokeOtherSessions, useRevokeSession } from '@/lib/graphql/hooks/use-auth'
+import { TrackedButton } from '@/components/ui/tracked'
 
 /** Best-effort friendly label from a user-agent string (browser · OS). */
 function deviceLabel(ua: string | null): string {
@@ -57,14 +58,15 @@ function SessionRow({ session }: { session: SessionData }) {
                 </p>
             </div>
             {session.current ? null : (
-                <button
+                <TrackedButton
+                    analyticsId="session-revoke"
                     type="button"
                     onClick={() => revoke.mutate(session.id)}
                     disabled={revoke.isPending}
                     className="shrink-0 rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-ember hover:ring-ember/30 disabled:opacity-50"
                 >
                     {revoke.isPending ? 'Revoking…' : 'Revoke'}
-                </button>
+                </TrackedButton>
             )}
         </li>
     )
@@ -108,14 +110,15 @@ export function SessionsCard() {
                         </ul>
                         {error ? <p className="mt-3 text-sm text-ember">{error}</p> : null}
                         {hasOthers ? (
-                            <button
+                            <TrackedButton
+                                analyticsId="sessions-revoke-others"
                                 type="button"
                                 onClick={onRevokeOthers}
                                 disabled={revokeOthers.isPending}
                                 className="mt-5 rounded-full px-5 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text disabled:opacity-60"
                             >
                                 {revokeOthers.isPending ? 'Signing out…' : 'Log out other sessions'}
-                            </button>
+                            </TrackedButton>
                         ) : null}
                     </>
                 )}

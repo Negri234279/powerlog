@@ -5,22 +5,23 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { PrimaryCta } from '@/components/ui/cta'
 import { Mark } from '@/components/ui/icons'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 const LINKS = [
-    { label: 'Features', href: '#features' },
-    { label: 'Analytics', href: '#analytics' },
-    { label: 'Coaching', href: '#coaching' },
-    { label: 'Pricing', href: '#pricing' },
+    { id: 'features', label: 'Features', href: '#features' },
+    { id: 'analytics', label: 'Analytics', href: '#analytics' },
+    { id: 'coaching', label: 'Coaching', href: '#coaching' },
+    { id: 'pricing', label: 'Pricing', href: '#pricing' },
 ]
 
 function Wordmark() {
     return (
-        <a href="#top" className="flex items-center gap-2.5">
+        <TrackedLink analyticsId="nav-wordmark" href="#top" className="flex items-center gap-2.5">
             <span className="grid size-8 place-items-center rounded-xl bg-ember-gradient text-bg">
                 <Mark className="size-4.5" />
             </span>
             <span className="font-display text-lg font-semibold tracking-tight">powerlog</span>
-        </a>
+        </TrackedLink>
     )
 }
 
@@ -42,30 +43,33 @@ export function SiteNav() {
 
                 <div className="hidden items-center gap-7 md:flex">
                     {LINKS.map((l) => (
-                        <a
+                        <TrackedLink
+                            analyticsId={`nav-${l.id}`}
                             key={l.href}
                             href={l.href}
                             className="text-sm text-text-dim transition-colors duration-300 hover:text-text"
                         >
                             {l.label}
-                        </a>
+                        </TrackedLink>
                     ))}
                 </div>
 
                 <div className="hidden items-center gap-2 md:flex">
-                    <a
+                    <TrackedLink
+                        analyticsId="nav-login"
                         href="/login"
                         className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors hover:text-text"
                     >
                         Log in
-                    </a>
+                    </TrackedLink>
                     <PrimaryCta href="/register" analyticsId="nav-register">
                         Start free
                     </PrimaryCta>
                 </div>
 
                 {/* Mobile hamburger → morphs to X */}
-                <button
+                <TrackedButton
+                    analyticsId="nav-menu-toggle"
                     type="button"
                     aria-label={open ? 'Close menu' : 'Open menu'}
                     aria-expanded={open}
@@ -84,7 +88,7 @@ export function SiteNav() {
                             open ? '-rotate-45' : 'translate-y-1',
                         )}
                     />
-                </button>
+                </TrackedButton>
             </nav>
 
             {/* Full-screen glass overlay (mobile) */}
@@ -96,7 +100,8 @@ export function SiteNav() {
             >
                 <div className="flex flex-col gap-2 px-8 pt-32">
                     {LINKS.map((l, i) => (
-                        <a
+                        <TrackedLink
+                            analyticsId={`nav-mobile-${l.id}`}
                             key={l.href}
                             href={l.href}
                             onClick={() => setOpen(false)}
@@ -107,19 +112,20 @@ export function SiteNav() {
                             )}
                         >
                             {l.label}
-                        </a>
+                        </TrackedLink>
                     ))}
                     <div className="mt-10 flex flex-col gap-3">
                         <PrimaryCta href="/register" className="justify-between" analyticsId="nav-mobile-register">
                             Start free
                         </PrimaryCta>
-                        <a
+                        <TrackedLink
+                            analyticsId="nav-mobile-login"
                             href="/login"
                             onClick={() => setOpen(false)}
                             className="rounded-full px-6 py-3 text-center text-sm text-text-dim ring-1 ring-hairline"
                         >
                             Log in
-                        </a>
+                        </TrackedLink>
                     </div>
                 </div>
             </div>

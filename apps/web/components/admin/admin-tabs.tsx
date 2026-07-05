@@ -18,7 +18,7 @@ export function AdminTabs() {
 
     return (
         <div className="mb-8">
-            <SlidingTabs items={TABS} value={active} onChange={(href) => router.push(href)} />
+            <SlidingTabs analyticsId="admin-tabs" items={TABS} value={active} onChange={(href) => router.push(href)} />
         </div>
     )
 }

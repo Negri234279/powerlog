@@ -1,127 +1,130 @@
-# Web observability — PostHog + structured logs
+# Web observability — Grafana Faro (RUM) + structured logs
 
-Frontend telemetry for `@powerlog/web`. Split by concern from the backend:
+Frontend telemetry for `@powerlog/web`. Everything lives in the **Grafana
+stack** (Loki / Tempo / Prometheus) — the same pane as the API, correlated and
+alertable from one place. PostHog was removed (2026-07): no session replay /
+funnels, in exchange for first-party RUM correlated with backend traces.
 
-- **Product analytics + session replay + Web Vitals + JS errors → PostHog Cloud**
-  (free tier). PostHog owns funnels/retention/replay — things the Grafana stack
-  is weak at.
+- **RUM (Web Vitals, JS errors, session/view events, product + click events) →
+  Grafana Faro SDK → Alloy `faro.receiver` → Loki** (logfmt lines,
+  `{app="powerlog-web", job="faro"}`).
+- **Browser traces → Faro web-tracing → Alloy → Tempo**: every fetch (GraphQL
+  via `/api/*`) emits a span with `traceparent`, so traces run
+  **browser → web proxy → API** end-to-end.
 - **Server logs → stdout → Alloy → Loki** (parity with the API's Pino logs).
-- **Server traces → Tempo** (OTel via `@vercel/otel`; auto-instrumented fetch
-  propagates `traceparent`, so server→API calls are end-to-end traced).
-- Backend ops (API traces/logs/metrics) stay on **Grafana + Tempo/Loki/Prometheus**,
-  unchanged.
-
-Trade-off accepted: **client** product analytics live in PostHog (a separate
-pane) and aren't correlated with Tempo — PostHog doesn't emit `traceparent`.
-Server-side spans, however, do reach the API's traces.
+- **Server traces → Tempo** (OTel via `@vercel/otel`, unchanged).
 
 ## Architecture
 
 ```
-Browser ──$pageview / autocapture / Web Vitals / replay / track()──►
-   /ingest/*  (same-origin)  ──next.config rewrites──►  PostHog Cloud (US)
-
-Next server (route handlers) ─┬─ JSON logs to stdout ──► Alloy ──► Loki
-                              └─ OTel spans (fetch→API) ──► Tempo (OTLP 4318)
+Browser (Faro SDK: vitals / errors / events / fetch spans)
+   └─► /faro/*  (same-origin) ── next.config rewrite ──► powerlog-alloy:12347 (faro.receiver)
+                                                            ├─ logs/events/vitals/exceptions ─► Loki
+                                                            └─ traces (OTLP) ────────────────► Tempo
+Next server ─┬─ JSON logs → stdout ─► Alloy ─► Loki
+             └─ OTel spans (fetch→API) ─► Tempo (OTLP 4318)
 ```
 
-The `/ingest` reverse proxy keeps ingestion first-party so ad-blockers don't
-drop events. Switching to EU = point the env hosts at the `eu`/`eu-assets`
-domains.
+The `/faro` reverse proxy keeps ingestion first-party (no CORS, immune to
+ad-blockers) and means Alloy needs **no exposed port in prod** — the browser
+never talks to it directly. Rewrites are baked at **build time**
+(`FARO_INTERNAL_URL`, like `API_INTERNAL_URL`).
 
 ## Files
 
-| File                            | Role                                                                                    |
-| ------------------------------- | --------------------------------------------------------------------------------------- |
-| `instrumentation-client.ts`     | PostHog SDK init (Next 15.3+ client instrumentation). No-ops without a token.           |
-| `next.config.ts` → `rewrites()` | `/ingest/*` reverse proxy to PostHog (static/array → assets host, rest → ingest host).  |
-| `lib/analytics/events.ts`       | Typed event catalog + `track()` / `identifyUser()` / `resetAnalytics()`.                |
-| `components/ui/cta.tsx`         | `analyticsId` → `data-ph-capture-attribute-cta` for named-CTA autocapture.              |
-| `lib/log/server.ts`             | Dependency-free structured server logger (`log.info/warn/error/debug`).                 |
-| `instrumentation.ts`            | Server OTel via `@vercel/otel` (`register()`) → Tempo; no-ops without an OTLP endpoint. |
+| File                                    | Role                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `lib/analytics/faro.ts`                 | Faro bootstrap: instrumentations, app metas (name/version/env), enable/disable logic.    |
+| `lib/analytics/events.ts`               | Typed event catalog + `track()` / `identifyUser()` / `resetAnalytics()` over `faro.api`. |
+| `instrumentation-client.ts`             | Calls `initFaro()` once before hydration. No-ops in dev without the flag.                |
+| `components/ui/tracked.tsx`             | **TrackedButton / TrackedLink** — the only allowed interactive primitives (see below).   |
+| `components/app/faro-route-tracker.tsx` | Syncs App Router navigations into Faro's `view` meta (ids sanitised to `:id`).           |
+| `next.config.ts` → `rewrites()`         | `/faro/*` reverse proxy to Alloy's faro.receiver; inlines app version/env.               |
+| `lib/log/server.ts`                     | Dependency-free structured server logger (`log.info/warn/error/debug`).                  |
+| `instrumentation.ts`                    | Server OTel via `@vercel/otel` (`register()`) → Tempo; no-ops without an OTLP endpoint.  |
 
 ## Env
 
 ```
-NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN   # public write key (safe in browser); empty = analytics off
-NEXT_PUBLIC_POSTHOG_HOST            # ingest host the proxy forwards to (US default)
-NEXT_PUBLIC_POSTHOG_UI_HOST         # app host for the toolbar/links
-POSTHOG_ASSETS_HOST                 # static-asset host (derived from HOST if unset)
-
-OTEL_SERVICE_NAME                   # powerlog-web
-OTEL_EXPORTER_OTLP_ENDPOINT         # Tempo OTLP base; empty = tracing off. Dev host: http://localhost:4318, compose: http://tempo:4318
-OTEL_EXPORTER_OTLP_PROTOCOL         # http/protobuf
-OTEL_RESOURCE_ATTRIBUTES            # deployment.environment.name=dev
+NEXT_PUBLIC_FARO_DEV     # 'true' enables Faro in dev (prod builds are always on)
+FARO_INTERNAL_URL        # rewrite target, BUILD time. Dev: http://localhost:12347
+                         # (compose publishes Alloy's 12347); Docker build ARG
+                         # defaults to http://powerlog-alloy:12347
+APP_ENV                  # baked as app.environment (NEXT_PUBLIC_APP_ENV); Docker ARG=prod
+OTEL_SERVICE_NAME / OTEL_EXPORTER_OTLP_ENDPOINT / ...   # server traces, unchanged
 ```
 
-## Privacy / PII
+`app.version` is read from `apps/web/package.json` at build and stamped on
+every Faro signal (mirrors the API's `service.version`).
 
-- **Session replay masks all inputs** (`session_recording.maskAllInputs: true`,
-  also PostHog's default) — passwords/emails are never recorded. To mask extra
-  elements, add `class="ph-no-capture"`.
-- **Event properties carry no PII**: no emails, tokens, raw text or ids. Only
-  bounded enums (`method`, `action`, `code`). `identify` uses the userId +
-  public `username` only.
+Note: the **staging** compose has no observability stack; its `/faro` rewrite
+points at the default DNS name and requests fail harmlessly. Pass the
+`FARO_INTERNAL_URL` build arg there if staging ever grows an Alloy.
+
+## Tracked components — the rule
+
+**Never render a bare `<button>`, `<a>` or `<Link>`.** Every interactive
+element goes through `TrackedButton` / `TrackedLink`
+(`components/ui/tracked.tsx`) or a primitive built on them (`SubmitButton`,
+`Menu`, `Modal`, `ConfirmModal`, `MultiSelect`, `SlidingTabs`, `PlusMenuMorph`,
+`ClearableSearch`, `PrimaryCta`/`SecondaryCta`). All of them require a stable
+kebab-case `analyticsId` and emit a single `ui_click { id, kind }` event, so
+"which controls get used" has total coverage by construction.
+
+Audit: `grep -rn '<button\|<a \|<Link' app components --include='*.tsx'` must
+only hit `components/ui/tracked.tsx`.
+
+`analyticsId` rules: stable literal, kebab-case, finite set — **never**
+interpolate user data or row ids (`session-open`, not `session-${id}`; the
+dashboards break down by this value).
 
 ## Event catalog (`lib/analytics/events.ts`)
 
-| Event             | Properties                            | Fired from                                         |
-| ----------------- | ------------------------------------- | -------------------------------------------------- |
-| `user_registered` | `method: 'password'`                  | register form (success)                            |
-| `user_logged_in`  | `method: 'password'`                  | login form (success)                               |
-| `user_logged_out` | —                                     | app shell logout                                   |
-| `auth_failed`     | `action: 'register'\|'login'`, `code` | auth forms (catch); `code` = API `extensions.code` |
-| `profile_updated` | —                                     | profile page (save success)                        |
+Unchanged contract (snake*case, low-cardinality, PII-free): `user_registered`,
+`user_logged_in`, `user_logged_out`, `auth_failed{action,code}`,
+`profile_updated`, `avatar_updated/_removed`, `password_changed/_reset`,
+`email_verified`, `workout_session*_`, `workout*template*_`,
+`session_created_from_template`, `set_logged`, `session_completed`, plus
+`ui_click{id,kind}` (emitted only by the tracked primitives).
 
-Plus automatic: `$pageview`, `$pageleave`, `$autocapture` (clicks), `$web_vitals`,
-`$exception`. Named CTAs add a `cta` property (`nav-register`, `hero-register`,
-`hero-see-data`, `nav-mobile-register`).
+Automatic from Faro: `session_start`, `view_changed`, Web Vitals measurements
+(`kind=measurement type=web-vitals`), exceptions (`kind=exception`), and fetch
+spans in Tempo.
 
-Future events (added when their UI lands): `workout_session_created`,
-`set_logged`, `session_completed`, `coach_invite_sent`/`_accepted`.
+`identifyUser(userId, username)` → `faro.api.setUser` (public handle only,
+never email); `resetAnalytics()` on logout.
 
-## Dashboards in PostHog (built)
+## Querying in Grafana
 
-Built 2026-06-17 via the PostHog MCP in project **474976** (PostHog Cloud US,
-org `powerlog-dev`). Dashboard **"Web — Product Analytics (powerlog)"** (id
-`1727063`, pinned) holds the 5 insights below; item 6 is a saved replay filter.
-All sit empty until real usage arrives (only smoke-test `$pageview`/`$autocapture`
-exist so far — no `user_registered`/`auth_failed`/`$web_vitals`/`$exception` yet),
-then auto-populate. Rebuild/edit them with the same MCP tools (`insight-create`,
-`dashboard-create`, `session-recording-playlist-create`).
+Dashboard **“powerlog · Web RUM (Faro)”** (`web-rum.json`, provisioned like the
+rest): Web Vitals p75 stats + series, sessions/views, `ui_click` by control,
+product events, JS errors by type, raw stream.
 
-1. **Signup funnel** (Funnel, `tf4wuWKL`): step 1 `$autocapture` filtered
-   `cta ∈ {nav-register, hero-register, nav-mobile-register}` → step 2
-   `user_registered` → step 3 `profile_updated`. Ordered, 1-day window.
-2. **Auth failures by code** (Trends, `2cvNdROX`): `auth_failed`, breakdown by
-   `code`. Spot `INVALID_CREDENTIALS` spikes. (Covers login + register; the event
-   carries `action` if you want to split them.)
-3. **CTA clicks by cta** (Trends bar, `TpaaqnSJ`): `$autocapture` where `cta`
-   is set, breakdown by `cta`. Answers "which buttons get used".
-4. **Web Vitals p75 (LCP / INP / CLS)** (Trends, `ikver3WQ`): p75 of
-   `$web_vitals_LCP_value` / `_INP_value` / `_CLS_value`. Add a `$pathname`
-   breakdown per-metric for route-level detail.
-5. **JS errors by type** (Trends, `3PRHfezH`): `$exception`, breakdown by
-   `$exception_type`.
-6. **Session replays** (saved filter playlist `Ohy64HrB`, "Signup & auth-failure
-   sessions"): sessions containing `user_registered` OR `auth_failed` — watch real
-   signup/failure sessions once recordings arrive.
+Ad-hoc in Explore → `powerlog · Logs`:
 
-## Server traces (OTel → Tempo)
+```logql
+{app="powerlog-web", job="faro"} | logfmt | kind=`event` | event_name=`ui_click`
+{app="powerlog-web", job="faro"} | logfmt | kind=`measurement` | type=`web-vitals`
+{app="powerlog-web", job="faro"} | logfmt | kind=`exception`
+```
 
-`instrumentation.ts` calls `@vercel/otel`'s `register()`, which auto-instruments
-server `fetch`. The silent-refresh route's call to the API carries `traceparent`,
-so in Grafana → Explore → Tempo you can search
-`{resource.service.name="powerlog-web"}` and follow a span into the API's trace
-(`powerlog-api`). Tracing is disabled when `OTEL_EXPORTER_OTLP_ENDPOINT` is empty.
+Browser traces in Explore → `powerlog · Traces`: search
+`{resource.service.name="powerlog-web"}` — browser spans now parent the API's
+spans (same trace id as `powerlog-api`).
 
-Verify live (like the API): hit a server route, then query Tempo for the
-`powerlog-web` service. This covers server-side fetches only — browser GraphQL
-goes through the rewrite proxy and lands in PostHog, not Tempo.
+## Privacy / PII
 
-## Server logs in Loki
+- Event properties carry **no PII**: bounded enums + stable control ids only.
+- `identify` uses userId + public `username`; never email or tokens.
+- Faro captures page URLs — app routes carry no PII (ids are opaque UUIDs) and
+  the view meta sanitises them to `:id` anyway.
+- The `/faro` endpoint accepts writes only; nothing is readable from the browser.
 
-In Grafana → Explore → Loki: `{service="web"}` (the compose service label). Lines
-are JSON: `{ level, time, service, msg, ...fields }`. Notable lines from the
-silent-refresh route: `session refresh rejected` (warn), `session refresh failed:
-API unreachable` (error).
+## Verifying live
+
+1. `docker compose -f infra/dev/compose.yml up` (Alloy publishes 12347).
+2. `NEXT_PUBLIC_FARO_DEV=true` in `apps/web/.env`, `pnpm --filter @powerlog/web dev`.
+3. Browse the app, click around, then in Grafana Explore run the LogQL above —
+   events appear within seconds (Faro batches ~250 ms).
+4. Tempo: search `powerlog-web` and open a GraphQL fetch span; it should
+   continue into `powerlog-api`.

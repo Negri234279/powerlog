@@ -5,6 +5,7 @@ import { useId } from 'react'
 import { cn } from '@/lib/cn'
 import { FormError } from './form-error'
 import { Modal } from './modal'
+import { TrackedButton } from './tracked'
 
 /**
  * Generic confirmation dialog, reusable for any destructive (or neutral) action.
@@ -22,6 +23,7 @@ export function ConfirmModal({
     destructive = false,
     pending = false,
     error,
+    analyticsId,
 }: {
     open: boolean
     onClose: () => void
@@ -33,6 +35,9 @@ export function ConfirmModal({
     destructive?: boolean
     pending?: boolean
     error?: string | null
+    /** Stable id for the action being confirmed (e.g. `session-delete`);
+     *  buttons emit `<id>-confirm` / `<id>-cancel`. */
+    analyticsId: string
 }) {
     const titleId = useId()
 
@@ -45,15 +50,17 @@ export function ConfirmModal({
             <FormError error={error} className="mt-3" />
 
             <div className="mt-6 flex items-center justify-end gap-2">
-                <button
+                <TrackedButton
+                    analyticsId={`${analyticsId}-cancel`}
                     type="button"
                     onClick={onClose}
                     disabled={pending}
                     className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-60"
                 >
                     {cancelLabel}
-                </button>
-                <button
+                </TrackedButton>
+                <TrackedButton
+                    analyticsId={`${analyticsId}-confirm`}
                     type="button"
                     onClick={onConfirm}
                     disabled={pending}
@@ -65,7 +72,7 @@ export function ConfirmModal({
                     )}
                 >
                     {pending ? 'Working…' : confirmLabel}
-                </button>
+                </TrackedButton>
             </div>
         </Modal>
     )

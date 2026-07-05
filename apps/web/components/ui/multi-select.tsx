@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { useEnterExit } from '@/lib/hooks/use-enter-exit'
 import { Check, ChevronDown } from './icons'
+import { TrackedButton } from './tracked'
 
 export interface MultiSelectOption {
     value: string
@@ -20,11 +21,15 @@ export function MultiSelect({
     options,
     selected,
     onChange,
+    analyticsId,
 }: {
     label: string
     options: MultiSelectOption[]
     selected: string[]
     onChange: (next: string[]) => void
+    /** Stable id for the trigger's `ui_click`; option toggles share
+     *  `<id>-option` (option values are dynamic — never put them in the id). */
+    analyticsId: string
 }) {
     const [open, setOpen] = useState(false)
     const { mounted, className: stateClass } = useEnterExit(open)
@@ -57,7 +62,8 @@ export function MultiSelect({
 
     return (
         <div ref={ref} className="relative">
-            <button
+            <TrackedButton
+                analyticsId={analyticsId}
                 type="button"
                 onClick={() => setOpen((o) => !o)}
                 aria-expanded={open}
@@ -71,7 +77,7 @@ export function MultiSelect({
                 {label}
                 {count > 0 ? <span className="font-mono text-xs tabular-nums">{count}</span> : null}
                 <ChevronDown className={cn('size-3.5 transition-transform duration-300', open && 'rotate-180')} />
-            </button>
+            </TrackedButton>
 
             {mounted ? (
                 <div
@@ -87,7 +93,8 @@ export function MultiSelect({
                         const active = selected.includes(option.value)
 
                         return (
-                            <button
+                            <TrackedButton
+                                analyticsId={`${analyticsId}-option`}
                                 key={option.value}
                                 type="button"
                                 role="option"
@@ -107,7 +114,7 @@ export function MultiSelect({
                                     {active ? <Check className="size-3" /> : null}
                                 </span>
                                 {option.label}
-                            </button>
+                            </TrackedButton>
                         )
                     })}
                 </div>

@@ -2,16 +2,20 @@ import type { ButtonHTMLAttributes } from 'react'
 
 import { cn } from '@/lib/cn'
 import { TextSwap } from './text-swap'
+import { TrackedButton } from './tracked'
 
 interface SubmitButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     loading?: boolean
+    /** Stable id for the `ui_click` event (e.g. `login-submit`). */
+    analyticsId: string
 }
 
 /** Ember pill submit button with a loading state (button element, for forms).
  *  The label swaps in place (text-states-swap) between the idle and loading text. */
-export function SubmitButton({ children, loading, disabled, className, ...props }: SubmitButtonProps) {
+export function SubmitButton({ children, loading, disabled, className, analyticsId, ...props }: SubmitButtonProps) {
     return (
-        <button
+        <TrackedButton
+            analyticsId={analyticsId}
             type="submit"
             disabled={loading || disabled}
             className={cn(
@@ -29,6 +33,6 @@ export function SubmitButton({ children, loading, disabled, className, ...props 
             ) : (
                 children
             )}
-        </button>
+        </TrackedButton>
     )
 }

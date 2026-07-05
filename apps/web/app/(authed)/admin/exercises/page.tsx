@@ -22,6 +22,7 @@ import { Modal } from '@/components/ui/modal'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
+import { TrackedButton } from '@/components/ui/tracked'
 
 const CATEGORY_OPTIONS = taxonomyOptions(EXERCISE_CATEGORIES)
 const EQUIPMENT_OPTIONS = taxonomyOptions(EXERCISE_EQUIPMENT)
@@ -78,39 +79,50 @@ export default function AdminExercisesPage() {
             </div>
 
             <div className="flex justify-end">
-                <button
+                <TrackedButton
+                    analyticsId="admin-exercise-new-open"
                     type="button"
                     onClick={() => setCreating(true)}
                     className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-4 py-2 text-sm font-medium text-bg transition-opacity duration-300 hover:opacity-90 active:scale-[0.98]"
                 >
                     <Plus className="size-4" />
                     New exercise
-                </button>
+                </TrackedButton>
             </div>
 
             {/* Filters */}
             <div className="mt-4 flex flex-wrap items-center gap-2.5">
                 <ClearableSearch
+                    analyticsId="admin-exercises-search"
                     value={rawSearch}
                     onChange={setRawSearch}
                     placeholder="Search name or slug…"
                     className="w-64"
                 />
                 <MultiSelect
+                    analyticsId="admin-exercises-filter-category"
                     label="Category"
                     options={CATEGORY_OPTIONS}
                     selected={categories}
                     onChange={setCategories}
                 />
                 <MultiSelect
+                    analyticsId="admin-exercises-filter-equipment"
                     label="Equipment"
                     options={EQUIPMENT_OPTIONS}
                     selected={equipment}
                     onChange={setEquipment}
                 />
-                <MultiSelect label="Muscle" options={MUSCLE_OPTIONS} selected={muscles} onChange={setMuscles} />
+                <MultiSelect
+                    analyticsId="admin-exercises-filter-muscle"
+                    label="Muscle"
+                    options={MUSCLE_OPTIONS}
+                    selected={muscles}
+                    onChange={setMuscles}
+                />
                 {filtersActive ? (
-                    <button
+                    <TrackedButton
+                        analyticsId="admin-exercises-filter-clear"
                         type="button"
                         onClick={() => {
                             setRawSearch('')
@@ -121,7 +133,7 @@ export default function AdminExercisesPage() {
                         className="text-sm text-text-dim transition-colors duration-300 hover:text-text"
                     >
                         Clear
-                    </button>
+                    </TrackedButton>
                 ) : null}
             </div>
 
@@ -158,22 +170,24 @@ export default function AdminExercisesPage() {
                                 <span className="text-text-dim">{exercise.equipment}</span>
                                 <span className="text-text-dim">{exercise.primaryMuscle}</span>
                                 <div className="flex items-center justify-end gap-1">
-                                    <button
+                                    <TrackedButton
+                                        analyticsId="admin-exercise-edit"
                                         type="button"
                                         onClick={() => setEditing(exercise)}
                                         aria-label={`Edit ${exercise.name}`}
                                         className="grid size-8 place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-white/[0.05] hover:text-text"
                                     >
                                         <Pencil className="size-4" />
-                                    </button>
-                                    <button
+                                    </TrackedButton>
+                                    <TrackedButton
+                                        analyticsId="admin-exercise-delete-open"
                                         type="button"
                                         onClick={() => setDeleting(exercise)}
                                         aria-label={`Delete ${exercise.name}`}
                                         className="grid size-8 place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
                                     >
                                         <Trash className="size-4" />
-                                    </button>
+                                    </TrackedButton>
                                 </div>
                             </div>
                         ))}
@@ -308,21 +322,23 @@ function ExerciseEditor({ exercise, onClose }: { exercise: AdminExercise | null;
                 <FormError error={error} />
 
                 <div className="flex items-center justify-end gap-2 pt-1">
-                    <button
+                    <TrackedButton
+                        analyticsId="admin-exercise-editor-cancel"
                         type="button"
                         onClick={onClose}
                         disabled={pending}
                         className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-60"
                     >
                         Cancel
-                    </button>
-                    <button
+                    </TrackedButton>
+                    <TrackedButton
+                        analyticsId="admin-exercise-editor-save"
                         type="submit"
                         disabled={pending}
                         className="rounded-full bg-ember-gradient px-5 py-2 text-sm font-medium text-bg transition-opacity duration-300 hover:opacity-90 disabled:opacity-60"
                     >
                         {pending ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}
-                    </button>
+                    </TrackedButton>
                 </div>
             </form>
         </Modal>
@@ -348,6 +364,7 @@ function DeleteExercise({ exercise, onClose }: { exercise: AdminExercise | null;
 
     return (
         <ConfirmModal
+            analyticsId="admin-exercise-delete"
             open={exercise != null}
             onClose={() => {
                 setError(null)

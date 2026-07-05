@@ -84,11 +84,15 @@ function PlanCard({ plan }: { plan: Plan }) {
 
                 <div className="mt-8">
                     {plan.featured ? (
-                        <PrimaryCta href="/register" className="w-full justify-between">
+                        <PrimaryCta href="/register" className="w-full justify-between" analyticsId="pricing-register">
                             {plan.cta}
                         </PrimaryCta>
                     ) : (
-                        <SecondaryCta href="/register" className="w-full justify-center">
+                        <SecondaryCta
+                            href="/register"
+                            className="w-full justify-center"
+                            analyticsId="pricing-register-free"
+                        >
                             {plan.cta}
                         </SecondaryCta>
                     )}

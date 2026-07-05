@@ -18,8 +18,12 @@ export function CtaSection() {
                                 keep.
                             </p>
                             <div className="relative mt-9 flex flex-wrap items-center justify-center gap-3">
-                                <PrimaryCta href="/register">Start training free</PrimaryCta>
-                                <SecondaryCta href="#pricing">Compare plans</SecondaryCta>
+                                <PrimaryCta href="/register" analyticsId="cta-section-register">
+                                    Start training free
+                                </PrimaryCta>
+                                <SecondaryCta href="#pricing" analyticsId="cta-section-pricing">
+                                    Compare plans
+                                </SecondaryCta>
                             </div>
                         </div>
                     </div>

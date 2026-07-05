@@ -4,6 +4,7 @@ import { type MouseEvent, type PointerEvent, useRef, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 import { Close, Search } from './icons'
+import { TrackedButton } from './tracked'
 
 const NBSP = ' '
 
@@ -49,11 +50,14 @@ export function ClearableSearch({
     onChange,
     placeholder,
     className,
+    analyticsId,
 }: {
     value: string
     onChange: (value: string) => void
     placeholder: string
     className?: string
+    /** Stable id for this search field; the clear button emits `<id>-clear`. */
+    analyticsId: string
 }) {
     const inputRef = useRef<HTMLInputElement>(null)
     const mirrorRef = useRef<HTMLDivElement>(null)
@@ -211,7 +215,8 @@ export function ClearableSearch({
             </div>
             <div ref={glowRef} className="t-clear-glow" aria-hidden />
             {hasValue && !clearing ? (
-                <button
+                <TrackedButton
+                    analyticsId={`${analyticsId}-clear`}
                     type="button"
                     aria-label="Clear search"
                     onPointerDown={keepFocus}
@@ -220,7 +225,7 @@ export function ClearableSearch({
                     className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-text-faint transition-colors duration-200 hover:bg-white/[0.06] hover:text-text"
                 >
                     <Close className="size-3.5" />
-                </button>
+                </TrackedButton>
             ) : null}
         </div>
     )

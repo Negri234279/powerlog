@@ -105,7 +105,7 @@ export function ChangePasswordCard() {
                     <FormError error={formError} />
                     {done ? <p className="text-sm text-pr">Password updated.</p> : null}
 
-                    <SubmitButton loading={change.isPending}>
+                    <SubmitButton analyticsId="password-change-submit" loading={change.isPending}>
                         {hasPassword ? 'Update password' : 'Set password'}
                     </SubmitButton>
                 </form>

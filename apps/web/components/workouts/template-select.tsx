@@ -13,6 +13,7 @@ import {
 import { formatWeight, type Units, unitsOf } from '@/lib/units'
 import { Modal } from '@/components/ui/modal'
 import { ChevronDown, Close, Dumbbell, Search } from '@/components/ui/icons'
+import { TrackedButton } from '@/components/ui/tracked'
 
 /** The minimal shape both the combobox and the modal hand back on selection. */
 export interface SelectedTemplate {
@@ -59,22 +60,24 @@ export function TemplateCombobox({
                 <span className="inline-flex min-w-0 items-center gap-2 rounded-2xl bg-ember/10 px-3.5 py-3 text-sm text-ember ring-1 ring-ember/30">
                     <Dumbbell className="size-4 shrink-0" />
                     <span className="truncate">{value.name}</span>
-                    <button
+                    <TrackedButton
+                        analyticsId="template-combobox-clear"
                         type="button"
                         onClick={() => onChange(null)}
                         aria-label="Clear template"
                         className="-mr-1 grid size-5 shrink-0 place-items-center rounded-full transition-colors duration-300 hover:bg-ember/20"
                     >
                         <Close className="size-3.5" />
-                    </button>
+                    </TrackedButton>
                 </span>
-                <button
+                <TrackedButton
+                    analyticsId="template-browse-open"
                     type="button"
                     onClick={onBrowse}
                     className="rounded-2xl px-3 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                 >
                     Browse
-                </button>
+                </TrackedButton>
             </div>
         )
     }
@@ -103,7 +106,11 @@ export function TemplateCombobox({
                     <ul className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto rounded-2xl bg-shell p-1 shadow-xl ring-1 ring-hairline">
                         {filtered.map((template) => (
                             <li key={template.id}>
-                                <button
+                                <TrackedButton
+                                    analyticsId="template-combobox-pick"
+                                    // The pick unmounts the list before mouseup, so a 'click'
+                                    // would never fire and the ui_click event would be lost.
+                                    trackOn="mousedown"
                                     type="button"
                                     // onMouseDown beats the input's onBlur, so the pick lands.
                                     onMouseDown={() => {
@@ -116,20 +123,21 @@ export function TemplateCombobox({
                                     <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-text-faint">
                                         {template.exerciseCount} ex · {template.setCount} sets
                                     </span>
-                                </button>
+                                </TrackedButton>
                             </li>
                         ))}
                     </ul>
                 ) : null}
             </div>
 
-            <button
+            <TrackedButton
+                analyticsId="template-browse-open"
                 type="button"
                 onClick={onBrowse}
                 className="rounded-2xl px-3.5 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
             >
                 Browse
-            </button>
+            </TrackedButton>
         </div>
     )
 }
@@ -207,27 +215,34 @@ function BrowseCard({
     return (
         <div className="rounded-2xl bg-bg/40 ring-1 ring-hairline">
             <div className="flex items-center gap-3 p-3">
-                <button type="button" onClick={onToggle} className="min-w-0 flex-1 text-left">
+                <TrackedButton
+                    analyticsId="template-browse-toggle"
+                    type="button"
+                    onClick={onToggle}
+                    className="min-w-0 flex-1 text-left"
+                >
                     <p className="truncate text-sm font-medium text-text">{template.name}</p>
                     <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-text-faint">
                         {template.exerciseCount} ex · {template.setCount} sets
                     </p>
-                </button>
-                <button
+                </TrackedButton>
+                <TrackedButton
+                    analyticsId="template-browse-preview"
                     type="button"
                     onClick={onToggle}
                     aria-label={expanded ? 'Hide preview' : 'Show preview'}
                     className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.06] hover:text-text"
                 >
                     <ChevronDown className={cn('size-4 transition-transform duration-300', expanded && 'rotate-180')} />
-                </button>
-                <button
+                </TrackedButton>
+                <TrackedButton
+                    analyticsId="template-browse-use"
                     type="button"
                     onClick={onUse}
                     className="shrink-0 rounded-full bg-ember/10 px-3.5 py-1.5 text-xs font-medium text-ember ring-1 ring-ember/30 transition-colors duration-300 hover:bg-ember/20"
                 >
                     Use
-                </button>
+                </TrackedButton>
             </div>
             {expanded ? <TemplatePreview id={template.id} /> : null}
         </div>

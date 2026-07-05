@@ -6,6 +6,7 @@ import { type ExerciseData, useAddExerciseEntry, useExercises } from '@/lib/grap
 import { Input } from '@/components/ui/field'
 import { Plus } from '@/components/ui/icons'
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select'
+import { TrackedButton } from '@/components/ui/tracked'
 
 function titleCase(value: string): string {
     return value.charAt(0).toUpperCase() + value.slice(1)
@@ -80,13 +81,14 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
 
     if (!open) {
         return (
-            <button
+            <TrackedButton
+                analyticsId="session-add-exercise-open"
                 type="button"
                 onClick={() => setOpen(true)}
                 className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
             >
                 <Plus className="size-4" /> Add exercise
-            </button>
+            </TrackedButton>
         )
     }
 
@@ -103,7 +105,8 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
                             onChange={(e) => setQuery(e.target.value)}
                         />
                     </div>
-                    <button
+                    <TrackedButton
+                        analyticsId="session-add-exercise-cancel"
                         type="button"
                         onClick={() => {
                             setOpen(false)
@@ -112,31 +115,40 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
                         className="rounded-full px-3 py-2.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                     >
                         Cancel
-                    </button>
+                    </TrackedButton>
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                     <MultiSelect
+                        analyticsId="exercise-filter-category"
                         label="Category"
                         options={categoryOptions}
                         selected={categories}
                         onChange={setCategories}
                     />
                     <MultiSelect
+                        analyticsId="exercise-filter-equipment"
                         label="Equipment"
                         options={equipmentOptions}
                         selected={equipment}
                         onChange={setEquipment}
                     />
-                    <MultiSelect label="Muscle" options={muscleOptions} selected={muscles} onChange={setMuscles} />
+                    <MultiSelect
+                        analyticsId="exercise-filter-muscle"
+                        label="Muscle"
+                        options={muscleOptions}
+                        selected={muscles}
+                        onChange={setMuscles}
+                    />
                     {hasFilters ? (
-                        <button
+                        <TrackedButton
+                            analyticsId="exercise-filter-clear"
                             type="button"
                             onClick={reset}
                             className="rounded-full px-3 py-1.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                         >
                             Clear
-                        </button>
+                        </TrackedButton>
                     ) : null}
                 </div>
 
@@ -146,7 +158,8 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
                     <ul className="mt-3 max-h-72 space-y-1 overflow-y-auto">
                         {filtered.map((exercise) => (
                             <li key={exercise.id}>
-                                <button
+                                <TrackedButton
+                                    analyticsId="session-exercise-pick"
                                     type="button"
                                     onClick={() => pick(exercise.id)}
                                     disabled={add.isPending}
@@ -156,7 +169,7 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
                                     <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
                                         {exercise.category} · {exercise.equipment} · {exercise.primaryMuscle}
                                     </span>
-                                </button>
+                                </TrackedButton>
                             </li>
                         ))}
                         {filtered.length === 0 ? (
