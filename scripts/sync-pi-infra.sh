@@ -10,8 +10,7 @@
 # apps/powerlog/ to keep that relative path valid:
 #   infra/prod/                                → apps/powerlog/prod/        (the app stack)
 #   infra/observability/ (minus grafana/)      → apps/powerlog/observability/ (configs prod mounts)
-#   infra/observability/grafana/dashboards/
-#       powerlog-overview.json, cloudflare-r2.json
+#   infra/observability/grafana/dashboards/*.json (except postgresql-9628.json)
 #                                              → core/grafana/dashboards/powerlog/
 #   infra/observability/grafana/provisioning/datasources/datasources.yaml
 #                                              → core/grafana/provisioning/datasources/powerlog.yml
@@ -64,11 +63,13 @@ log "obs configs: infra/observability/ (minus grafana) → apps/powerlog/observa
 mirror_dir "$SRC_ROOT/infra/observability" "$DEST/apps/powerlog/observability" --exclude 'grafana/'
 
 # 3) App dashboards → core/grafana/dashboards/powerlog/
+#    All dashboards except postgresql-9628.json (pi-infra owns the SHARED Postgres
+#    "Databases" dashboard). Copying by pattern means new dashboards sync themselves.
 log "dashboards → core/grafana/dashboards/powerlog/"
 mkdir -p "$DEST/core/grafana/dashboards/powerlog"
-cp "$SRC_ROOT/infra/observability/grafana/dashboards/powerlog-overview.json" \
-   "$SRC_ROOT/infra/observability/grafana/dashboards/cloudflare-r2.json" \
-   "$DEST/core/grafana/dashboards/powerlog/"
+find "$SRC_ROOT/infra/observability/grafana/dashboards" -maxdepth 1 -type f -name '*.json' \
+  ! -name 'postgresql-9628.json' \
+  -exec cp {} "$DEST/core/grafana/dashboards/powerlog/" \;
 
 # 4) App datasources → core/grafana/provisioning/datasources/powerlog.yml
 log "datasources → core/grafana/provisioning/datasources/powerlog.yml"
