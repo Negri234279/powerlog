@@ -48,7 +48,8 @@ export class WorkoutTemplateResolver {
         @CurrentUser() user: AuthUser,
         @Args('search', { type: () => String, nullable: true }, new ZodValidationPipe(searchArg)) search?: string,
     ): Promise<WorkoutTemplateSummaryRow[]> {
-        return this.queryBus.execute(new ListWorkoutTemplatesQuery(user.userId, search))
+        const query = new ListWorkoutTemplatesQuery(user.userId, search)
+        return this.queryBus.execute(query)
     }
 
     @Query(() => WorkoutTemplateType, { description: 'One of the caller’s templates, with its full tree.' })
@@ -56,7 +57,8 @@ export class WorkoutTemplateResolver {
         @CurrentUser() user: AuthUser,
         @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
     ): Promise<WorkoutTemplateView> {
-        return this.queryBus.execute(new GetWorkoutTemplateQuery(user.userId, id))
+        const query = new GetWorkoutTemplateQuery(user.userId, id)
+        return this.queryBus.execute(query)
     }
 
     @Mutation(() => WorkoutTemplateType, { description: 'Create a reusable workout template.' })
@@ -64,7 +66,8 @@ export class WorkoutTemplateResolver {
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(workoutTemplateSchema)) input: WorkoutTemplateInput,
     ): Promise<WorkoutTemplateView> {
-        return this.commandBus.execute(new CreateWorkoutTemplateCommand(user.userId, input))
+        const command = new CreateWorkoutTemplateCommand(user.userId, input)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => WorkoutTemplateType, { description: 'Replace a template’s name, notes and exercise/set tree.' })
@@ -73,7 +76,8 @@ export class WorkoutTemplateResolver {
         @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
         @Args('input', new ZodValidationPipe(workoutTemplateSchema)) input: WorkoutTemplateInput,
     ): Promise<WorkoutTemplateView> {
-        return this.commandBus.execute(new UpdateWorkoutTemplateCommand(user.userId, id, input))
+        const command = new UpdateWorkoutTemplateCommand(user.userId, id, input)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => Boolean, { description: 'Delete a template (cascades to its exercises and sets).' })
@@ -81,7 +85,8 @@ export class WorkoutTemplateResolver {
         @CurrentUser() user: AuthUser,
         @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
     ): Promise<boolean> {
-        return this.commandBus.execute(new DeleteWorkoutTemplateCommand(user.userId, id))
+        const command = new DeleteWorkoutTemplateCommand(user.userId, id)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => WorkoutSessionType, {
@@ -91,9 +96,13 @@ export class WorkoutTemplateResolver {
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(createSessionFromTemplateSchema)) input: CreateSessionFromTemplateInput,
     ): Promise<WorkoutSessionView> {
-        return this.commandBus.execute(
-            new CreateSessionFromTemplateCommand(user.userId, input.templateId, input.performedAt, input.notes),
+        const command = new CreateSessionFromTemplateCommand(
+            user.userId,
+            input.templateId,
+            input.performedAt,
+            input.notes,
         )
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => WorkoutSessionType, {
@@ -105,14 +114,13 @@ export class WorkoutTemplateResolver {
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(planSessionFromTemplateSchema)) input: PlanSessionFromTemplateInput,
     ): Promise<WorkoutSessionView> {
-        return this.commandBus.execute(
-            new PlanSessionFromTemplateCommand(
-                user.userId,
-                input.athleteId,
-                input.templateId,
-                input.performedAt,
-                input.notes,
-            ),
+        const command = new PlanSessionFromTemplateCommand(
+            user.userId,
+            input.athleteId,
+            input.templateId,
+            input.performedAt,
+            input.notes,
         )
+        return this.commandBus.execute(command)
     }
 }

@@ -45,7 +45,8 @@ export class AnalyticsResolver {
         @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
     ): Promise<ExerciseStatsRow[]> {
-        return this.queryBus.execute(new GetExerciseStatsQuery(user.userId, from, to))
+        const query = new GetExerciseStatsQuery(user.userId, from, to)
+        return this.queryBus.execute(query)
     }
 
     @Query(() => TrainingSummaryType, {
@@ -56,7 +57,8 @@ export class AnalyticsResolver {
         @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
     ): Promise<TrainingSummaryView> {
-        return this.queryBus.execute(new GetTrainingSummaryQuery(user.userId, from, to))
+        const query = new GetTrainingSummaryQuery(user.userId, from, to)
+        return this.queryBus.execute(query)
     }
 
     @Query(() => [VolumeBucketType], {
@@ -67,7 +69,8 @@ export class AnalyticsResolver {
         @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
     ): Promise<VolumeBucketRow[]> {
-        return this.queryBus.execute(new GetVolumeSeriesQuery(user.userId, from, to))
+        const query = new GetVolumeSeriesQuery(user.userId, from, to)
+        return this.queryBus.execute(query)
     }
 
     @Query(() => StrengthProgressionType, {
@@ -79,7 +82,8 @@ export class AnalyticsResolver {
         @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
     ): Promise<StrengthProgressionView> {
-        return this.queryBus.execute(new GetStrengthProgressionQuery(user.userId, exerciseId, from, to))
+        const query = new GetStrengthProgressionQuery(user.userId, exerciseId, from, to)
+        return this.queryBus.execute(query)
     }
 
     @Query(() => [ExerciseSessionHistoryType], {
@@ -92,9 +96,8 @@ export class AnalyticsResolver {
         excludeSessionId?: string,
         @Args('limit', { type: () => Int, nullable: true }, new ZodValidationPipe(limitArg)) limit?: number,
     ): Promise<ExerciseSessionHistoryRow[]> {
-        return this.queryBus.execute(
-            new GetExerciseSessionHistoryQuery(user.userId, exerciseId, excludeSessionId, limit),
-        )
+        const query = new GetExerciseSessionHistoryQuery(user.userId, exerciseId, excludeSessionId, limit)
+        return this.queryBus.execute(query)
     }
 
     @Query(() => TrainingDistributionType, {
@@ -105,6 +108,7 @@ export class AnalyticsResolver {
         @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
     ): Promise<TrainingDistribution> {
-        return this.queryBus.execute(new GetTrainingDistributionQuery(user.userId, from, to))
+        const query = new GetTrainingDistributionQuery(user.userId, from, to)
+        return this.queryBus.execute(query)
     }
 }

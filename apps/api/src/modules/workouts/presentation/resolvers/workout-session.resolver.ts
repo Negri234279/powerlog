@@ -64,7 +64,8 @@ export class WorkoutSessionResolver {
         @CurrentUser() user: AuthUser,
         @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
     ): Promise<WorkoutSessionView> {
-        return this.queryBus.execute(new GetWorkoutSessionQuery(user.userId, id))
+        const query = new GetWorkoutSessionQuery(user.userId, id)
+        return this.queryBus.execute(query)
     }
 
     @Query(() => WorkoutHistoryPageType, {
@@ -83,18 +84,17 @@ export class WorkoutSessionResolver {
         @Args('query', { type: () => String, nullable: true }, new ZodValidationPipe(queryArg)) query?: string,
         @Args('cursor', { type: () => String, nullable: true }, new ZodValidationPipe(cursorArg)) cursor?: string,
     ): Promise<WorkoutHistoryPage> {
-        return this.queryBus.execute(
-            new ListWorkoutSessionsQuery(
-                user.userId,
-                limit ?? DEFAULT_HISTORY_LIMIT,
-                status,
-                from,
-                to,
-                exerciseId,
-                query,
-                cursor,
-            ),
+        const listQuery = new ListWorkoutSessionsQuery(
+            user.userId,
+            limit ?? DEFAULT_HISTORY_LIMIT,
+            status,
+            from,
+            to,
+            exerciseId,
+            query,
+            cursor,
         )
+        return this.queryBus.execute(listQuery)
     }
 
     @Mutation(() => WorkoutSessionType, { description: 'Create a workout session (status: planned).' })
@@ -107,7 +107,8 @@ export class WorkoutSessionResolver {
         )
         input?: CreateWorkoutSessionInput | null,
     ): Promise<WorkoutSessionView> {
-        return this.commandBus.execute(new CreateWorkoutSessionCommand(user.userId, input?.performedAt, input?.notes))
+        const command = new CreateWorkoutSessionCommand(user.userId, input?.performedAt, input?.notes)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => WorkoutSessionType, {
@@ -119,9 +120,8 @@ export class WorkoutSessionResolver {
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(planWorkoutSessionSchema)) input: PlanWorkoutSessionInput,
     ): Promise<WorkoutSessionView> {
-        return this.commandBus.execute(
-            new PlanWorkoutSessionCommand(user.userId, input.athleteId, input.performedAt, input.notes),
-        )
+        const command = new PlanWorkoutSessionCommand(user.userId, input.athleteId, input.performedAt, input.notes)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => WorkoutSessionType, { description: 'Add an exercise to a session.' })
@@ -129,9 +129,8 @@ export class WorkoutSessionResolver {
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(addExerciseEntrySchema)) input: AddExerciseEntryInput,
     ): Promise<WorkoutSessionView> {
-        return this.commandBus.execute(
-            new AddExerciseEntryCommand(user.userId, input.sessionId, input.exerciseId, input.notes),
-        )
+        const command = new AddExerciseEntryCommand(user.userId, input.sessionId, input.exerciseId, input.notes)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => WorkoutSessionType, { description: 'Remove an exercise (and its sets) from a session.' })
@@ -140,7 +139,8 @@ export class WorkoutSessionResolver {
         @Args('sessionId', { type: () => ID }, new ZodValidationPipe(uuidArg)) sessionId: string,
         @Args('entryId', { type: () => ID }, new ZodValidationPipe(uuidArg)) entryId: string,
     ): Promise<WorkoutSessionView> {
-        return this.commandBus.execute(new RemoveExerciseEntryCommand(user.userId, sessionId, entryId))
+        const command = new RemoveExerciseEntryCommand(user.userId, sessionId, entryId)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => WorkoutSessionType, { description: 'Append a set to an exercise entry.' })
@@ -149,7 +149,8 @@ export class WorkoutSessionResolver {
         @Args('input', new ZodValidationPipe(logSetSchema)) input: LogSetInput,
     ): Promise<WorkoutSessionView> {
         const { sessionId, entryId, ...set } = input
-        return this.commandBus.execute(new LogSetCommand(user.userId, sessionId, entryId, set))
+        const command = new LogSetCommand(user.userId, sessionId, entryId, set)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => WorkoutSessionType, { description: 'Edit a set (absent = leave, null = clear).' })
@@ -158,7 +159,8 @@ export class WorkoutSessionResolver {
         @Args('input', new ZodValidationPipe(updateSetSchema)) input: UpdateSetInput,
     ): Promise<WorkoutSessionView> {
         const { sessionId, entryId, setId, ...fields } = input
-        return this.commandBus.execute(new UpdateSetCommand(user.userId, sessionId, entryId, setId, fields))
+        const command = new UpdateSetCommand(user.userId, sessionId, entryId, setId, fields)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => WorkoutSessionType, { description: 'Remove a set from an exercise entry.' })
@@ -168,7 +170,8 @@ export class WorkoutSessionResolver {
         @Args('entryId', { type: () => ID }, new ZodValidationPipe(uuidArg)) entryId: string,
         @Args('setId', { type: () => ID }, new ZodValidationPipe(uuidArg)) setId: string,
     ): Promise<WorkoutSessionView> {
-        return this.commandBus.execute(new RemoveSetCommand(user.userId, sessionId, entryId, setId))
+        const command = new RemoveSetCommand(user.userId, sessionId, entryId, setId)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => WorkoutSessionType, { description: 'Mark a session as completed.' })
@@ -176,7 +179,8 @@ export class WorkoutSessionResolver {
         @CurrentUser() user: AuthUser,
         @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
     ): Promise<WorkoutSessionView> {
-        return this.commandBus.execute(new CompleteWorkoutSessionCommand(user.userId, id))
+        const command = new CompleteWorkoutSessionCommand(user.userId, id)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => WorkoutSessionType, {
@@ -186,9 +190,13 @@ export class WorkoutSessionResolver {
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(updateWorkoutSessionSchema)) input: UpdateWorkoutSessionInput,
     ): Promise<WorkoutSessionView> {
-        return this.commandBus.execute(
-            new UpdateWorkoutSessionCommand(user.userId, input.sessionId, input.performedAt ?? undefined, input.notes),
+        const command = new UpdateWorkoutSessionCommand(
+            user.userId,
+            input.sessionId,
+            input.performedAt ?? undefined,
+            input.notes,
         )
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => Boolean, { description: 'Delete a session (cascades to entries and sets).' })
@@ -196,6 +204,7 @@ export class WorkoutSessionResolver {
         @CurrentUser() user: AuthUser,
         @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
     ): Promise<boolean> {
-        return this.commandBus.execute(new DeleteWorkoutSessionCommand(user.userId, id))
+        const command = new DeleteWorkoutSessionCommand(user.userId, id)
+        return this.commandBus.execute(command)
     }
 }

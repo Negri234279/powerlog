@@ -37,7 +37,8 @@ export class CoachingResolver {
         @CurrentUser() user: AuthUser,
         @Args('username', new ZodValidationPipe(usernameArg)) username: string,
     ): Promise<InvitationView> {
-        return this.commandBus.execute(new InviteAthleteCommand(user.userId, username))
+        const command = new InviteAthleteCommand(user.userId, username)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => CoachInvitationType, { description: 'Accept a pending invitation (links you to the coach).' })
@@ -45,7 +46,8 @@ export class CoachingResolver {
         @CurrentUser() user: AuthUser,
         @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
     ): Promise<InvitationView> {
-        return this.commandBus.execute(new AcceptInvitationCommand(user.userId, id))
+        const command = new AcceptInvitationCommand(user.userId, id)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => CoachInvitationType, { description: 'Decline a pending invitation.' })
@@ -53,7 +55,8 @@ export class CoachingResolver {
         @CurrentUser() user: AuthUser,
         @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
     ): Promise<InvitationView> {
-        return this.commandBus.execute(new DeclineInvitationCommand(user.userId, id))
+        const command = new DeclineInvitationCommand(user.userId, id)
+        return this.commandBus.execute(command)
     }
 
     @Mutation(() => CoachInvitationType, { description: 'Cancel an invitation you sent (coaches only).' })
@@ -63,21 +66,25 @@ export class CoachingResolver {
         @CurrentUser() user: AuthUser,
         @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
     ): Promise<InvitationView> {
-        return this.commandBus.execute(new CancelInvitationCommand(user.userId, id))
+        const command = new CancelInvitationCommand(user.userId, id)
+        return this.commandBus.execute(command)
     }
 
     @Query(() => [CoachUserType], { description: 'Coaches linked to the caller.' })
     async myCoaches(@CurrentUser() user: AuthUser): Promise<CoachUserView[]> {
-        return this.queryBus.execute(new MyCoachesQuery(user.userId))
+        const query = new MyCoachesQuery(user.userId)
+        return this.queryBus.execute(query)
     }
 
     @Query(() => [CoachUserType], { description: 'Athletes linked to the caller.' })
     async myAthletes(@CurrentUser() user: AuthUser): Promise<CoachUserView[]> {
-        return this.queryBus.execute(new MyAthletesQuery(user.userId))
+        const query = new MyAthletesQuery(user.userId)
+        return this.queryBus.execute(query)
     }
 
     @Query(() => [PendingInvitationType], { description: 'Pending invitations received by the caller.' })
     async pendingInvitations(@CurrentUser() user: AuthUser): Promise<PendingInvitationView[]> {
-        return this.queryBus.execute(new PendingInvitationsQuery(user.userId))
+        const query = new PendingInvitationsQuery(user.userId)
+        return this.queryBus.execute(query)
     }
 }
