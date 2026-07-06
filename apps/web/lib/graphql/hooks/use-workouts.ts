@@ -11,6 +11,7 @@ import type {
     AddExerciseEntryInput,
     CreateWorkoutSessionInput,
     ExercisesQuery,
+    ExerciseSessionHistoryQuery,
     ExerciseStatsQuery,
     LogSetInput,
     StrengthProgressionQuery,
@@ -29,6 +30,7 @@ import {
     CreateWorkoutSessionDocument,
     DeleteWorkoutSessionDocument,
     ExercisesDocument,
+    ExerciseSessionHistoryDocument,
     ExerciseStatsDocument,
     LogSetDocument,
     RemoveExerciseEntryDocument,
@@ -49,6 +51,8 @@ export type ExerciseEntryData = WorkoutSessionData['entries'][number]
 export type WorkoutSetData = ExerciseEntryData['sets'][number]
 export type WorkoutHistoryItem = WorkoutHistoryQuery['workoutHistory']['items'][number]
 export type ExerciseStatsData = ExerciseStatsQuery['exerciseStats'][number]
+export type ExerciseSessionHistoryEntry = ExerciseSessionHistoryQuery['exerciseSessionHistory'][number]
+export type ExerciseSessionHistorySet = ExerciseSessionHistoryEntry['sets'][number]
 export type TrainingSummaryData = TrainingSummaryQuery['trainingSummary']
 export type VolumeBucketData = VolumeSeriesQuery['volumeSeries'][number]
 export type StrengthProgressionData = StrengthProgressionQuery['strengthProgression']
@@ -109,6 +113,28 @@ export function useExerciseStats(from?: string, to?: string) {
     })
 }
 
+/**
+ * Recent completed sessions logging one exercise, with their performed sets —
+ * for the "previous marks" panel shown while training. Lazy: pass `enabled` so
+ * it only fires when the panel is opened. `excludeSessionId` drops the session
+ * being viewed so it never lists itself.
+ */
+export function useExerciseSessionHistory(
+    exerciseId: string,
+    excludeSessionId?: string,
+    options: { enabled?: boolean; limit?: number } = {},
+) {
+    const { enabled = true, limit } = options
+    return useQuery({
+        queryKey: ['exerciseSessionHistory', exerciseId, excludeSessionId ?? null, limit ?? null],
+        queryFn: () =>
+            gqlRequest(ExerciseSessionHistoryDocument, { exerciseId, excludeSessionId, limit }).then(
+                (r) => r.exerciseSessionHistory,
+            ),
+        enabled: enabled && Boolean(exerciseId),
+    })
+}
+
 /** Headline training KPIs (incl. estimated S+B+D total), optionally ranged. */
 export function useTrainingSummary(from?: string, to?: string) {
     return useQuery({
@@ -153,6 +179,7 @@ function cacheSession(qc: QueryClient, session: WorkoutSessionData): void {
     qc.setQueryData(['workoutSession', session.id], session)
     void qc.invalidateQueries({ queryKey: ['workoutHistory'] })
     void qc.invalidateQueries({ queryKey: ['exerciseStats'] })
+    void qc.invalidateQueries({ queryKey: ['exerciseSessionHistory'] })
 }
 
 export function useCreateWorkoutSession() {

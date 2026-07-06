@@ -1,14 +1,16 @@
 import { UseGuards } from '@nestjs/common'
 import { QueryBus } from '@nestjs/cqrs'
-import { Args, ID, Query, Resolver } from '@nestjs/graphql'
+import { Args, ID, Int, Query, Resolver } from '@nestjs/graphql'
 import { z } from 'zod'
 
 import type { AuthUser } from '../../../../auth/auth-user'
 import { CurrentUser } from '../../../../auth/current-user.decorator'
 import { JwtCookieGuard } from '../../../../auth/jwt-cookie.guard'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
+import type { ExerciseSessionHistoryRow } from '../../application/ports/exercise-session-history.read-model'
 import type { ExerciseStatsRow } from '../../application/ports/exercise-stats.read-model'
 import type { TrainingDistribution, VolumeBucketRow } from '../../application/ports/training-dashboard.read-model'
+import { GetExerciseSessionHistoryQuery } from '../../application/queries/get-exercise-session-history/get-exercise-session-history.query'
 import { GetExerciseStatsQuery } from '../../application/queries/get-exercise-stats/get-exercise-stats.query'
 import type { StrengthProgressionView } from '../../application/queries/get-strength-progression/get-strength-progression.handler'
 import { GetStrengthProgressionQuery } from '../../application/queries/get-strength-progression/get-strength-progression.query'
@@ -16,6 +18,7 @@ import type { TrainingSummaryView } from '../../application/queries/get-training
 import { GetTrainingDistributionQuery } from '../../application/queries/get-training-distribution/get-training-distribution.query'
 import { GetTrainingSummaryQuery } from '../../application/queries/get-training-summary/get-training-summary.query'
 import { GetVolumeSeriesQuery } from '../../application/queries/get-volume-series/get-volume-series.query'
+import { ExerciseSessionHistoryType } from '../types/exercise-session-history.type'
 import { ExerciseStatsType } from '../types/exercise-stats.type'
 import {
     StrengthProgressionType,
@@ -26,6 +29,8 @@ import {
 
 const isoDate = z.string().datetime().optional()
 const uuidArg = z.string().uuid()
+const optionalUuid = z.string().uuid().optional()
+const limitArg = z.number().int().positive().max(20).optional()
 
 @Resolver(() => ExerciseStatsType)
 @UseGuards(JwtCookieGuard)
@@ -75,6 +80,21 @@ export class AnalyticsResolver {
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
     ): Promise<StrengthProgressionView> {
         return this.queryBus.execute(new GetStrengthProgressionQuery(user.userId, exerciseId, from, to))
+    }
+
+    @Query(() => [ExerciseSessionHistoryType], {
+        description: "The caller's recent completed sessions logging one exercise, with their performed sets.",
+    })
+    async exerciseSessionHistory(
+        @CurrentUser() user: AuthUser,
+        @Args('exerciseId', { type: () => ID }, new ZodValidationPipe(uuidArg)) exerciseId: string,
+        @Args('excludeSessionId', { type: () => ID, nullable: true }, new ZodValidationPipe(optionalUuid))
+        excludeSessionId?: string,
+        @Args('limit', { type: () => Int, nullable: true }, new ZodValidationPipe(limitArg)) limit?: number,
+    ): Promise<ExerciseSessionHistoryRow[]> {
+        return this.queryBus.execute(
+            new GetExerciseSessionHistoryQuery(user.userId, exerciseId, excludeSessionId, limit),
+        )
     }
 
     @Query(() => TrainingDistributionType, {

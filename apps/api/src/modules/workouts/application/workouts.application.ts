@@ -18,6 +18,7 @@ import { UpdateWorkoutSessionHandler } from './commands/update-workout-session/u
 import { UpdateWorkoutTemplateHandler } from './commands/update-workout-template/update-workout-template.handler'
 import { PurgeWorkoutsOnUserDeleted } from './event-handlers/purge-workouts-on-user-deleted.handler'
 import { AdminWorkoutStatsHandler } from './queries/admin-workout-stats/admin-workout-stats.handler'
+import { GetExerciseSessionHistoryHandler } from './queries/get-exercise-session-history/get-exercise-session-history.handler'
 import { GetExerciseStatsHandler } from './queries/get-exercise-stats/get-exercise-stats.handler'
 import { GetStrengthProgressionHandler } from './queries/get-strength-progression/get-strength-progression.handler'
 import { GetTrainingDistributionHandler } from './queries/get-training-distribution/get-training-distribution.handler'
@@ -61,6 +62,7 @@ export const WORKOUTS_QUERY_HANDLERS = [
     GetWorkoutTemplateHandler,
     ListWorkoutTemplatesHandler,
     GetExerciseStatsHandler,
+    GetExerciseSessionHistoryHandler,
     ListWorkoutSessionsHandler,
     GetTrainingSummaryHandler,
     GetVolumeSeriesHandler,

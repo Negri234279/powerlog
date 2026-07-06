@@ -158,6 +158,24 @@ type ExerciseEntry {
   sets: [WorkoutSet!]!
 }
 
+type ExerciseHistorySet {
+  """Estimated 1RM (kg) from the set (Epley)."""
+  e1rmKg: Float
+  reps: Int!
+  rir: Int
+  rpe: Float
+  weightKg: Float!
+}
+
+type ExerciseSessionHistory {
+  performedAt: DateTime!
+  sessionId: ID!
+  sets: [ExerciseHistorySet!]!
+
+  """planned | completed"""
+  status: String!
+}
+
 type ExerciseStats {
   """Best estimated 1RM (kg)."""
   bestE1rmKg: Float
@@ -468,6 +486,11 @@ type Query {
 
   """Aggregate training counts (admin only)."""
   adminWorkoutStats: AdminWorkoutStats!
+
+  """
+  The caller's recent completed sessions logging one exercise, with their performed sets.
+  """
+  exerciseSessionHistory(excludeSessionId: ID, exerciseId: ID!, limit: Int): [ExerciseSessionHistory!]!
 
   """
   The caller's per-exercise volume and PRs, optionally within a date range.

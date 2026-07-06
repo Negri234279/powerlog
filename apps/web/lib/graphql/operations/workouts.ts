@@ -111,6 +111,23 @@ export const ExerciseStatsDocument = graphql(`
     }
 `)
 
+export const ExerciseSessionHistoryDocument = graphql(`
+    query ExerciseSessionHistory($exerciseId: ID!, $excludeSessionId: ID, $limit: Int) {
+        exerciseSessionHistory(exerciseId: $exerciseId, excludeSessionId: $excludeSessionId, limit: $limit) {
+            sessionId
+            performedAt
+            status
+            sets {
+                weightKg
+                reps
+                rpe
+                rir
+                e1rmKg
+            }
+        }
+    }
+`)
+
 export const TrainingSummaryDocument = graphql(`
     query TrainingSummary($from: String, $to: String) {
         trainingSummary(from: $from, to: $to) {

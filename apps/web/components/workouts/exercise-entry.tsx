@@ -14,6 +14,7 @@ import {
 import { formatWeight, kgTo, type Units } from '@/lib/units'
 import { Close, Plus } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
+import { ExerciseHistory } from './exercise-history'
 import { SetForm, type SetValues } from './set-form'
 
 function intensitySuffix(set: WorkoutSetData): string {
@@ -208,6 +209,8 @@ export function ExerciseEntry({
                         </TrackedButton>
                     )}
                 </div>
+
+                <ExerciseHistory exerciseId={entry.exerciseId} sessionId={sessionId} units={units} />
             </div>
         </div>
     )

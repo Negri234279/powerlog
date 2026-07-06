@@ -11,6 +11,7 @@ import {
 } from './application/workouts.application'
 import { Clock } from './application/ports/clock.port'
 import { AdminWorkoutStatsReadModel } from './application/ports/admin-workout-stats.read-model'
+import { ExerciseSessionHistoryReadModel } from './application/ports/exercise-session-history.read-model'
 import { ExerciseStatsReadModel } from './application/ports/exercise-stats.read-model'
 import { IdGenerator } from './application/ports/id-generator.port'
 import { TrainingDashboardReadModel } from './application/ports/training-dashboard.read-model'
@@ -21,6 +22,7 @@ import { WorkoutSessionRepository } from './domain/repositories/workout-session.
 import { WorkoutTemplateRepository } from './domain/repositories/workout-template.repository'
 import { UuidGenerator } from './infrastructure/id/uuid-generator'
 import { DrizzleAdminWorkoutStatsReadModel } from './infrastructure/persistence/read-models/drizzle-admin-workout-stats.read-model'
+import { DrizzleExerciseSessionHistoryReadModel } from './infrastructure/persistence/read-models/drizzle-exercise-session-history.read-model'
 import { DrizzleExerciseStatsReadModel } from './infrastructure/persistence/read-models/drizzle-exercise-stats.read-model'
 import { DrizzleTrainingDashboardReadModel } from './infrastructure/persistence/read-models/drizzle-training-dashboard.read-model'
 import { DrizzleWorkoutHistoryReadModel } from './infrastructure/persistence/read-models/drizzle-workout-history.read-model'
@@ -39,6 +41,7 @@ const ADAPTERS: Provider[] = [
     { provide: Clock, useClass: SystemClock },
     { provide: IdGenerator, useClass: UuidGenerator },
     { provide: ExerciseStatsReadModel, useClass: DrizzleExerciseStatsReadModel },
+    { provide: ExerciseSessionHistoryReadModel, useClass: DrizzleExerciseSessionHistoryReadModel },
     { provide: AdminWorkoutStatsReadModel, useClass: DrizzleAdminWorkoutStatsReadModel },
     { provide: WorkoutHistoryReadModel, useClass: DrizzleWorkoutHistoryReadModel },
     { provide: TrainingDashboardReadModel, useClass: DrizzleTrainingDashboardReadModel },
