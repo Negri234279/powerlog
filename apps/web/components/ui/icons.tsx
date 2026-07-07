@@ -114,6 +114,18 @@ export const ChevronDown = (p: SVGProps<SVGSVGElement>) => (
     </Icon>
 )
 
+export const ChevronLeft = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <path d="m15 6-6 6 6 6" />
+    </Icon>
+)
+
+export const ChevronRight = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <path d="m9 6 6 6-6 6" />
+    </Icon>
+)
+
 export const EllipsisVertical = (p: SVGProps<SVGSVGElement>) => (
     <Icon {...p} fill="currentColor" stroke="none">
         <circle cx="12" cy="5" r="1.5" />

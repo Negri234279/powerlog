@@ -161,6 +161,21 @@
             "planned": "Planificadas",
             "completed": "Completadas"
         },
+        "period": {
+            "week": "Semana",
+            "month": "Mes",
+            "3m": "3M",
+            "6m": "6M",
+            "all": "Todo",
+            "custom": "Personalizado",
+            "allLabel": "Todo el historial",
+            "prev": "Periodo anterior",
+            "next": "Periodo siguiente",
+            "current": "Actual"
+        },
+        "noSessionsInRange": "Sin entrenamientos en este rango",
+        "noSessionsInRangeBody": "No hay sesiones en el periodo seleccionado. Muévete a otra semana o amplía el rango.",
+        "viewAll": "Ver todo",
         "searchNotes": "Buscar notas de sesión…",
         "filterByExercise": "Filtrar por ejercicio",
         "allExercises": "Todos los ejercicios",

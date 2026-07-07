@@ -161,6 +161,21 @@
             "planned": "Planned",
             "completed": "Completed"
         },
+        "period": {
+            "week": "Week",
+            "month": "Month",
+            "3m": "3M",
+            "6m": "6M",
+            "all": "All",
+            "custom": "Custom",
+            "allLabel": "All history",
+            "prev": "Previous period",
+            "next": "Next period",
+            "current": "Current"
+        },
+        "noSessionsInRange": "No workouts in this range",
+        "noSessionsInRangeBody": "There are no sessions in the selected period. Move to another week or widen the range.",
+        "viewAll": "View all",
         "searchNotes": "Search session notes…",
         "filterByExercise": "Filter by exercise",
         "allExercises": "All exercises",

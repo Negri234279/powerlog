@@ -22,7 +22,9 @@ import {
 import { useCreateSessionFromTemplate } from '@/lib/graphql/hooks/use-workout-templates'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { formatWeight, type Units, unitsOf } from '@/lib/units'
+import { computeRange, formatDay, formatRange, type PeriodMode } from '@/lib/workouts/period'
 import { EditSessionModal } from '@/components/workouts/edit-session-modal'
+import { PeriodNavigator } from '@/components/workouts/period-navigator'
 import { type SelectedTemplate, TemplateBrowseModal, TemplateCombobox } from '@/components/workouts/template-select'
 import { ClearableSearch } from '@/components/ui/clearable-search'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -35,7 +37,12 @@ import { Menu } from '@/components/ui/menu'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 function formatDate(iso: string, locale: string): string {
-    return new Date(iso).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+    return new Date(iso).toLocaleDateString(locale, {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    })
 }
 
 /** Today as YYYY-MM-DD in the user's local timezone (for <input type="date">). */
@@ -242,10 +249,6 @@ function FilterBar({
     onStatus,
     exerciseId,
     onExercise,
-    from,
-    onFrom,
-    to,
-    onTo,
     queryInput,
     onQuery,
     hasActiveFilters,
@@ -256,10 +259,6 @@ function FilterBar({
     onStatus: (status: StatusFilter) => void
     exerciseId: string
     onExercise: (id: string) => void
-    from: string
-    onFrom: (value: string) => void
-    to: string
-    onTo: (value: string) => void
     queryInput: string
     onQuery: (value: string) => void
     hasActiveFilters: boolean
@@ -326,26 +325,6 @@ function FilterBar({
                         </Select>
                     </div>
 
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <Input
-                            type="date"
-                            value={from}
-                            max={to || undefined}
-                            onChange={(e) => onFrom(e.target.value)}
-                            aria-label={t('fromDate')}
-                            className="w-40"
-                        />
-                        <span className="hidden text-text-faint sm:inline">–</span>
-                        <Input
-                            type="date"
-                            value={to}
-                            min={from || undefined}
-                            onChange={(e) => onTo(e.target.value)}
-                            aria-label={t('toDate')}
-                            className="w-40"
-                        />
-                    </div>
-
                     {hasActiveFilters ? (
                         <TrackedButton
                             analyticsId="workouts-filter-clear"
@@ -382,6 +361,8 @@ export default function WorkoutsPage() {
     const [deleting, setDeleting] = useState<WorkoutHistoryItem | null>(null)
     const [deleteError, setDeleteError] = useState<string | null>(null)
 
+    const locale = useLocale()
+
     // Filter state. The text query is debounced before it hits the network.
     const [status, setStatus] = useState<StatusFilter>('all')
     const [exerciseId, setExerciseId] = useState('')
@@ -390,19 +371,43 @@ export default function WorkoutsPage() {
     const [queryInput, setQueryInput] = useState('')
     const debouncedQuery = useDebouncedValue(queryInput.trim(), 300)
 
-    const hasActiveFilters =
-        status !== 'all' || exerciseId !== '' || from !== '' || to !== '' || queryInput.trim() !== ''
+    // Period navigator — the single source of truth for the date window. Presets
+    // (week/month/3m/6m) compute their own range; `custom` uses the from/to state
+    // below (revealed inline); `all` is unbounded. Time is intentionally NOT a
+    // filter-bar concern, so there's no second date control to reconcile.
+    const [periodMode, setPeriodMode] = useState<PeriodMode>('week')
+    const [periodOffset, setPeriodOffset] = useState(0)
+    const periodRange = useMemo(() => computeRange(periodMode, periodOffset), [periodMode, periodOffset])
+
+    // Effective ISO-date bounds (local calendar) before whole-day UTC framing.
+    const rangeFrom = periodMode === 'custom' ? from : (periodRange?.from ?? '')
+    const rangeTo = periodMode === 'custom' ? to : (periodRange?.to ?? '')
+    // A bounded window with no rows reads as "empty range", not "no history".
+    const hasDateWindow = periodMode === 'custom' ? from !== '' || to !== '' : periodMode !== 'all'
+
+    function windowLabel(): string {
+        if (periodMode === 'all') return t('period.allLabel')
+        if (periodMode === 'custom') {
+            if (!from && !to) return t('period.custom')
+            return `${from ? formatDay(from, locale) : '…'} – ${to ? formatDay(to, locale) : '…'}`
+        }
+        return periodRange ? formatRange(periodMode, periodRange, locale) : ''
+    }
+
+    // Filters are orthogonal to time (status/exercise/text) — the date window is
+    // owned by the navigator, so it's not counted here or reset by "Clear".
+    const hasActiveFilters = status !== 'all' || exerciseId !== '' || queryInput.trim() !== ''
 
     const filters = useMemo<WorkoutHistoryFilters>(() => {
         const f: WorkoutHistoryFilters = {}
         if (status !== 'all') f.status = status
         if (exerciseId) f.exerciseId = exerciseId
         // Whole-day UTC bounds, consistent with how sessions are stored (noon UTC).
-        if (from) f.from = `${from}T00:00:00.000Z`
-        if (to) f.to = `${to}T23:59:59.999Z`
+        if (rangeFrom) f.from = `${rangeFrom}T00:00:00.000Z`
+        if (rangeTo) f.to = `${rangeTo}T23:59:59.999Z`
         if (debouncedQuery) f.query = debouncedQuery
         return f
-    }, [status, exerciseId, from, to, debouncedQuery])
+    }, [status, exerciseId, rangeFrom, rangeTo, debouncedQuery])
 
     // Resolve exercise names for the expandable session detail panels.
     const nameById = useMemo(() => {
@@ -416,8 +421,6 @@ export default function WorkoutsPage() {
     function clearFilters() {
         setStatus('all')
         setExerciseId('')
-        setFrom('')
-        setTo('')
         setQueryInput('')
     }
 
@@ -588,6 +591,25 @@ export default function WorkoutsPage() {
                 </form>
             ) : null}
 
+            {!isLoading ? (
+                <PeriodNavigator
+                    mode={periodMode}
+                    onMode={(m) => {
+                        setPeriodMode(m)
+                        setPeriodOffset(0)
+                    }}
+                    onPrev={() => setPeriodOffset((o) => o - 1)}
+                    onNext={() => setPeriodOffset((o) => o + 1)}
+                    onCurrent={() => setPeriodOffset(0)}
+                    label={windowLabel()}
+                    isCurrent={periodOffset === 0}
+                    from={from}
+                    to={to}
+                    onFrom={setFrom}
+                    onTo={setTo}
+                />
+            ) : null}
+
             {showFilters ? (
                 <FilterBar
                     exercises={exercises ?? []}
@@ -595,10 +617,6 @@ export default function WorkoutsPage() {
                     onStatus={setStatus}
                     exerciseId={exerciseId}
                     onExercise={setExerciseId}
-                    from={from}
-                    onFrom={setFrom}
-                    to={to}
-                    onTo={setTo}
                     queryInput={queryInput}
                     onQuery={setQueryInput}
                     hasActiveFilters={hasActiveFilters}
@@ -633,6 +651,27 @@ export default function WorkoutsPage() {
                                     className="mt-6 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                                 >
                                     {t('clearFilters')}
+                                </TrackedButton>
+                            </div>
+                        </div>
+                    ) : hasDateWindow ? (
+                        <div className="rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
+                            <div className="inset-hi flex flex-col items-start rounded-[calc(2rem-0.375rem)] bg-surface p-8">
+                                <span className="grid size-12 place-items-center rounded-2xl bg-white/[0.05] text-text-dim ring-1 ring-hairline">
+                                    <Calendar className="size-6" />
+                                </span>
+                                <h2 className="mt-5 font-display text-h3">{t('noSessionsInRange')}</h2>
+                                <p className="mt-2 max-w-sm text-body text-text-dim">{t('noSessionsInRangeBody')}</p>
+                                <TrackedButton
+                                    analyticsId="workouts-empty-view-all"
+                                    type="button"
+                                    onClick={() => {
+                                        setPeriodMode('all')
+                                        setPeriodOffset(0)
+                                    }}
+                                    className="mt-6 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                                >
+                                    {t('viewAll')}
                                 </TrackedButton>
                             </div>
                         </div>
