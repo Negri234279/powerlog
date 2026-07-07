@@ -19,7 +19,16 @@ describe('ProvisionProfileHandler', () => {
         const { profiles, handler } = setup()
 
         await handler.execute(
-            new ProvisionProfileCommand('u-1', 'ada@example.com', 'adahandle', 'Ada', 'Lovelace', '1990-12-10', 170),
+            new ProvisionProfileCommand(
+                'u-1',
+                'ada@example.com',
+                'adahandle',
+                'Ada',
+                'Lovelace',
+                '1990-12-10',
+                170,
+                'es',
+            ),
         )
 
         const profile = profiles.all()[0]
@@ -29,6 +38,7 @@ describe('ProvisionProfileHandler', () => {
         expect(profile?.lastName?.value).toBe('Lovelace')
         expect(profile?.birthDate?.value).toBe('1990-12-10')
         expect(profile?.height?.value).toBe(170)
+        expect(profile?.locale).toBe('es')
     })
 
     it('generates a unique handle from the email when none is chosen (e.g. Google)', async () => {

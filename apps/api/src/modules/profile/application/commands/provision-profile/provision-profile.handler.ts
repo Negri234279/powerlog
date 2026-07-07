@@ -44,6 +44,7 @@ export class ProvisionProfileHandler implements ICommandHandler<ProvisionProfile
         const fields: UpdateProfileFields = {}
         if (command.birthDate) fields.birthDate = BirthDateVO.create(command.birthDate)
         if (command.heightCm != null) fields.height = HeightVO.create(command.heightCm)
+        if (command.locale) fields.locale = command.locale
         if (Object.keys(fields).length > 0) profile.update(fields, now)
 
         await this.profiles.save(profile)

@@ -67,6 +67,7 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand,
                 lastName: command.profile?.lastName,
                 birthDate: command.profile?.birthDate,
                 heightCm: command.profile?.heightCm,
+                locale: command.profile?.locale,
             })
         } catch (err) {
             await this.rollback(user.id)

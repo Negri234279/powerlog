@@ -48,6 +48,27 @@ function isUnauthenticated(error: unknown): boolean {
  */
 let refreshInFlight: Promise<void> | null = null
 
+/**
+ * The session is dead: the access token is expired/invalid and the refresh was
+ * rejected (revoked, reuse-detected, or expired). The stale `pl_rt`/`pl_at`
+ * cookies are HTTPOnly, so the client can't drop them — and while `pl_rt`
+ * lingers, both the proxy and the login page bounce any `/login` navigation
+ * straight back to a protected route, trapping the user on a half-rendered page.
+ *
+ * So we hand off to the server refresh route with a full-page navigation: it
+ * retries the (now dead) refresh, fails, and clears both cookies before landing
+ * on /login. Guarded so a burst of dead requests triggers a single navigation.
+ */
+let loggingOut = false
+
+export function hardLogout(): void {
+    if (typeof window === 'undefined' || loggingOut) return
+    loggingOut = true
+
+    const next = window.location.pathname + window.location.search
+    window.location.assign(`/api/auth/refresh?next=${encodeURIComponent(next)}`)
+}
+
 export function refreshSession(): Promise<void> {
     refreshInFlight ??= gqlClient
         .request(RefreshDocument as RequestDocument)
@@ -75,6 +96,9 @@ export async function gqlRequest<TResult, TVariables extends Variables>(
             try {
                 await refreshSession()
             } catch {
+                // Refresh rejected → session is unrecoverable. Clear cookies and
+                // bounce to login instead of failing silently in place.
+                hardLogout()
                 throw error
             }
 

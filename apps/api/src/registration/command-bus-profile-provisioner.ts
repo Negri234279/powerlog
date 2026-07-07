@@ -28,6 +28,7 @@ export class CommandBusProfileProvisioner extends ProfileProvisioner {
                 input.lastName,
                 input.birthDate,
                 input.heightCm,
+                input.locale,
             ),
         )
     }

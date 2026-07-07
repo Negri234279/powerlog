@@ -28,6 +28,9 @@ export class RegisterInput {
 
     @Field(() => Int, { nullable: true, description: 'Height in centimetres (50–300).' })
     heightCm?: number | null
+
+    @Field(() => String, { nullable: true, description: 'BCP 47 UI locale, e.g. "es".' })
+    locale?: string | null
 }
 
 export const registerSchema = z.object({
@@ -49,4 +52,5 @@ export const registerSchema = z.object({
         .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD.')
         .nullish(),
     heightCm: z.number().int().min(50).max(300).nullish(),
+    locale: z.string().trim().min(2).max(10).nullish(),
 })

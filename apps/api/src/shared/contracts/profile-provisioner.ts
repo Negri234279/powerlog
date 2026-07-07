@@ -22,6 +22,8 @@ export interface ProfileProvisionInput {
     birthDate?: string | null
     /** Whole centimetres. */
     heightCm?: number | null
+    /** BCP-47 UI locale captured at sign-up (e.g. "es"); null when unknown. */
+    locale?: string | null
 }
 
 export abstract class ProfileProvisioner {
