@@ -8,6 +8,8 @@ export interface RegisterProfileDetails {
     birthDate?: string | null
     /** Whole centimetres. */
     heightCm?: number | null
+    /** BCP-47 UI locale chosen at sign-up (e.g. "es"); null when unknown. */
+    locale?: string | null
 }
 
 /** Register a new user with email + password + username. `units` defaults to "kg". */

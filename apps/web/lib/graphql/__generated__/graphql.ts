@@ -71,6 +71,8 @@ export type RegisterInput = {
   /** Height in centimetres (50–300). */
   heightCm?: number | null | undefined;
   lastName?: string | null | undefined;
+  /** BCP 47 UI locale, e.g. "es". */
+  locale?: string | null | undefined;
   password: string;
   /** "kg" (default) or "lb". */
   units?: string | null | undefined;

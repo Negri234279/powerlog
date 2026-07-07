@@ -9,7 +9,6 @@ import { identifyUser, resetAnalytics, track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
 import { hardLogout } from '@/lib/graphql/client'
 import { ArrowUpRight, Close, Mark, Menu } from '@/components/ui/icons'
-import { LanguageSwitcher } from '@/components/app/language-switcher'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import { useLogout, useMe } from '@/lib/graphql/hooks/use-auth'
 
@@ -122,9 +121,6 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3">
-                        {/* Language toggle — hidden on the smallest screens (lives in the menu). */}
-                        <LanguageSwitcher className="hidden sm:inline-flex" />
-
                         {/* User cluster → profile. Handle on desktop; avatar always. */}
                         <TrackedLink
                             analyticsId="shell-profile"
@@ -235,12 +231,6 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                                     {t('signedInAs', { user: `@${username}` })}
                                 </p>
                             ) : null}
-                            <div className="mb-3 flex items-center justify-between px-4">
-                                <span className="font-mono text-eyebrow uppercase text-text-faint">
-                                    {t('language')}
-                                </span>
-                                <LanguageSwitcher />
-                            </div>
                             <TrackedButton
                                 analyticsId="shell-logout-mobile"
                                 type="button"

@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { type FormEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
+import { LanguageSwitcher } from '@/components/app/language-switcher'
 import { AvatarCard } from '@/components/profile/avatar-card'
 import { ChangePasswordCard } from '@/components/auth/change-password-card'
 import { DeleteAccountCard } from '@/components/auth/delete-account-card'
@@ -46,7 +47,6 @@ function ProfileForm({ profile }: { profile: ProfileData }) {
                 bio: nullify(data.get('bio')),
                 country: nullify(data.get('country')),
                 timezone: nullify(data.get('timezone')),
-                locale: nullify(data.get('locale')),
             })
             track('profile_updated', {})
             setSaved(true)
@@ -111,8 +111,8 @@ function ProfileForm({ profile }: { profile: ProfileData }) {
                 <Field label={t('timezone')} htmlFor="timezone" hint={t('timezoneHint')}>
                     <Input id="timezone" name="timezone" defaultValue={profile.timezone ?? ''} />
                 </Field>
-                <Field label={t('locale')} htmlFor="locale" hint={t('localeHint')}>
-                    <Input id="locale" name="locale" defaultValue={profile.locale ?? ''} />
+                <Field label={t('language')}>
+                    <LanguageSwitcher />
                 </Field>
             </div>
 

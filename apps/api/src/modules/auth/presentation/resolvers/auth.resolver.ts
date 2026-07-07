@@ -76,6 +76,7 @@ export class AuthResolver {
                 lastName: input.lastName,
                 birthDate: input.birthDate,
                 heightCm: input.heightCm,
+                locale: input.locale,
             },
             this.deviceFrom(ctx.req),
         )

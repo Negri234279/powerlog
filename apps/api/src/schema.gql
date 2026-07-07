@@ -593,6 +593,9 @@ input RegisterInput {
   """Height in centimetres (50–300)."""
   heightCm: Int
   lastName: String
+
+  """BCP 47 UI locale, e.g. "es"."""
+  locale: String
   password: String!
 
   """"kg" (default) or "lb"."""

@@ -1,8 +1,8 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useState, useTransition } from 'react'
 
 import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input, Select } from '@/components/ui/field'
@@ -13,6 +13,8 @@ import { track } from '@/lib/analytics/events'
 import { gqlErrorCode } from '@/lib/graphql/error'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useRegister } from '@/lib/graphql/hooks/use-auth'
+import { setLocaleCookie } from '@/lib/i18n/actions'
+import { type Locale, LOCALE_LABELS, SUPPORTED_LOCALES } from '@/lib/i18n/config'
 import { fieldErrors, registerSchema } from '@/lib/validation/auth'
 
 export function RegisterForm() {
@@ -21,8 +23,20 @@ export function RegisterForm() {
     const errorMessage = useErrorMessage()
     const router = useRouter()
     const register = useRegister()
+    // The form paints in the active locale (browser default for a guest), so the
+    // language <Select> starts there. Changing it switches the UI immediately.
+    const locale = useLocale() as Locale
+    const [, startTransition] = useTransition()
     const [errors, setErrors] = useState<Record<string, string>>({})
     const [formError, setFormError] = useState<string | null>(null)
+
+    function onLocaleChange(next: Locale) {
+        if (next === locale) return
+        startTransition(async () => {
+            await setLocaleCookie(next)
+            router.refresh()
+        })
+    }
 
     async function onSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
@@ -32,6 +46,7 @@ export function RegisterForm() {
             username: String(data.get('username') ?? ''),
             password: String(data.get('password') ?? ''),
             units: String(data.get('units') ?? 'kg'),
+            locale: String(data.get('locale') ?? locale),
             firstName: data.get('firstName'),
             lastName: data.get('lastName'),
             birthDate: data.get('birthDate'),
@@ -57,6 +72,7 @@ export function RegisterForm() {
         <AuthCard
             title={t('register.title')}
             subtitle={t('register.subtitle')}
+            languageSwitcher={false}
             footer={
                 <>
                     {t('register.haveAccount')}{' '}
@@ -86,7 +102,12 @@ export function RegisterForm() {
                     error={te(errors['username'])}
                     hint={t('fields.usernameHint')}
                 >
-                    <Input id="username" name="username" autoComplete="username" placeholder={t('placeholders.username')} />
+                    <Input
+                        id="username"
+                        name="username"
+                        autoComplete="username"
+                        placeholder={t('placeholders.username')}
+                    />
                 </Field>
                 <Field
                     label={t('fields.password')}
@@ -102,12 +123,28 @@ export function RegisterForm() {
                         placeholder="••••••••"
                     />
                 </Field>
-                <Field label={t('fields.units')} htmlFor="units" error={te(errors['units'])}>
-                    <Select id="units" name="units" defaultValue="kg">
-                        <option value="kg">{t('register.unitsKg')}</option>
-                        <option value="lb">{t('register.unitsLb')}</option>
-                    </Select>
-                </Field>
+                <div className="grid grid-cols-2 gap-4">
+                    <Field label={t('fields.units')} htmlFor="units" error={te(errors['units'])}>
+                        <Select id="units" name="units" defaultValue="kg">
+                            <option value="kg">{t('register.unitsKg')}</option>
+                            <option value="lb">{t('register.unitsLb')}</option>
+                        </Select>
+                    </Field>
+                    <Field label={t('fields.language')} htmlFor="locale" error={te(errors['locale'])}>
+                        <Select
+                            id="locale"
+                            name="locale"
+                            defaultValue={locale}
+                            onChange={(e) => onLocaleChange(e.target.value as Locale)}
+                        >
+                            {SUPPORTED_LOCALES.map((option) => (
+                                <option key={option} value={option}>
+                                    {LOCALE_LABELS[option]}
+                                </option>
+                            ))}
+                        </Select>
+                    </Field>
+                </div>
 
                 <p className="pt-2 text-xs uppercase tracking-wide text-text-dim">{t('register.optional')}</p>
 

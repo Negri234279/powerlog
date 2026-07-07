@@ -8,11 +8,15 @@ export function AuthCard({
     subtitle,
     children,
     footer,
+    languageSwitcher = true,
 }: {
     title: string
     subtitle?: string
     children: React.ReactNode
     footer?: React.ReactNode
+    /** Show the cookie-only EN|ES toggle under the card. Off where the screen has
+     *  its own language control (e.g. register's in-form field). */
+    languageSwitcher?: boolean
 }) {
     return (
         <main className="relative grid min-h-[100dvh] place-items-center overflow-hidden px-6 py-16">
@@ -37,9 +41,11 @@ export function AuthCard({
                 {footer ? <p className="mt-6 text-center text-sm text-text-dim">{footer}</p> : null}
 
                 {/* Guests have no profile yet: the switcher only sets the cookie here. */}
-                <div className="mt-8 flex justify-center">
-                    <LanguageSwitcher persist={false} />
-                </div>
+                {languageSwitcher ? (
+                    <div className="mt-8 flex justify-center">
+                        <LanguageSwitcher persist={false} />
+                    </div>
+                ) : null}
             </div>
         </main>
     )

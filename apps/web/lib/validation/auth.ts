@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { SUPPORTED_LOCALES } from '@/lib/i18n/config'
+
 // Validation messages are emitted as stable keys (not prose) so the forms can
 // translate them via the `auth.errors` namespace. See `fieldErrors`.
 export const loginSchema = z.object({
@@ -20,6 +22,9 @@ export const registerSchema = z.object({
         .regex(/^[a-z0-9_]+$/i, 'usernameChars'),
     password: z.string().min(8, 'passwordMin').max(200),
     units: z.enum(['kg', 'lb']),
+    // Preferred UI locale, defaulted to the browser language in the form and
+    // persisted to the new profile so it survives to a fresh device.
+    locale: z.enum(SUPPORTED_LOCALES),
     // Optional profile details (provisioned with the account). Mirror the API.
     firstName: z.preprocess(blankToUndefined, z.string().trim().min(1).max(60, 'nameMax').optional()),
     lastName: z.preprocess(blankToUndefined, z.string().trim().min(1).max(60, 'nameMax').optional()),

@@ -16,5 +16,7 @@ export class ProvisionProfileCommand {
         public readonly lastName?: string | null,
         public readonly birthDate?: string | null,
         public readonly heightCm?: number | null,
+        /** BCP-47 UI locale captured at sign-up (e.g. "es"); null when unknown. */
+        public readonly locale?: string | null,
     ) {}
 }

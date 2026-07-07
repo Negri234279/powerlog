@@ -113,6 +113,7 @@ describe('RegisterUserHandler', () => {
                 lastName: 'Lovelace',
                 birthDate: '1990-12-10',
                 heightCm: 170,
+                locale: 'es',
             }),
         )
 
@@ -125,6 +126,7 @@ describe('RegisterUserHandler', () => {
             lastName: 'Lovelace',
             birthDate: '1990-12-10',
             heightCm: 170,
+            locale: 'es',
         })
     })
 
