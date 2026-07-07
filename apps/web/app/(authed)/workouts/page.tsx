@@ -35,7 +35,7 @@ import { Menu } from '@/components/ui/menu'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 function formatDate(iso: string, locale: string): string {
-    return new Date(iso).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+    return new Date(iso).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 /** Today as YYYY-MM-DD in the user's local timezone (for <input type="date">). */
