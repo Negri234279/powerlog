@@ -24,6 +24,18 @@ function formatSet(set: ExerciseSessionHistorySet, units: Units): string {
     return base
 }
 
+/** Whether the set carried a programmed target (weight and/or reps). */
+function hasPlanned(set: ExerciseSessionHistorySet): boolean {
+    return set.plannedWeightKg !== null || set.plannedReps !== null
+}
+
+/** "100kg × 5" from the programmed target; a missing side renders as "—". */
+function formatPlanned(set: ExerciseSessionHistorySet, units: Units): string {
+    const weight = set.plannedWeightKg !== null ? compactWeight(set.plannedWeightKg, units) : '—'
+    const reps = set.plannedReps !== null ? set.plannedReps : '—'
+    return `${weight} × ${reps}`
+}
+
 /**
  * Collapsible "previous marks" panel for one exercise inside a session. Lazily
  * fetches the caller's recent completed sessions of this exercise (excluding the
@@ -70,20 +82,31 @@ export function ExerciseHistory({
                         ) : count === 0 ? (
                             <p className="text-sm text-text-faint">{t('noPrevious')}</p>
                         ) : (
-                            <ul className="space-y-2.5">
+                            <ul className="space-y-3">
                                 {data!.map((entry) => (
-                                    <li key={entry.sessionId} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                        <span className="w-14 shrink-0 font-mono text-xs uppercase text-text-faint">
+                                    <li key={entry.sessionId}>
+                                        <span className="font-mono text-xs uppercase tracking-wider text-text-faint">
                                             {new Date(entry.performedAt).toLocaleDateString(locale, DATE_FMT)}
                                         </span>
-                                        <span className="min-w-0 flex-1 font-mono text-sm tabular-nums text-text-dim">
+                                        {/* One set per line so each mark reads clearly (with its target). */}
+                                        <ul className="mt-1.5 space-y-1">
                                             {entry.sets.map((set, i) => (
-                                                <span key={i}>
-                                                    {i > 0 ? <span className="text-text-faint"> · </span> : null}
-                                                    {formatSet(set, units)}
-                                                </span>
+                                                <li
+                                                    key={i}
+                                                    className="flex items-baseline gap-3 font-mono text-sm tabular-nums"
+                                                >
+                                                    <span className="w-4 shrink-0 text-right text-xs text-text-faint">
+                                                        {i + 1}
+                                                    </span>
+                                                    <span className="text-text-dim">{formatSet(set, units)}</span>
+                                                    {hasPlanned(set) ? (
+                                                        <span className="text-xs text-text-faint">
+                                                            {t('planPrefix')} {formatPlanned(set, units)}
+                                                        </span>
+                                                    ) : null}
+                                                </li>
                                             ))}
-                                        </span>
+                                        </ul>
                                     </li>
                                 ))}
                             </ul>

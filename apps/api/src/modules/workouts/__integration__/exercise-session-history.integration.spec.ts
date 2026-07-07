@@ -59,10 +59,26 @@ describe('Exercise session history (integration)', () => {
             '2026-02-20T00:00:00.000Z',
             '2026-01-10T00:00:00.000Z',
         ])
-        // withTree logs 102.5×5 @8 (top) then 90×8 RIR2 (backoff), in entry/set order.
+        // withTree logs 102.5×5 @8 (top, planned 100×5) then 90×8 RIR2 (backoff, no plan).
         expect(rows[0]!.sets).toEqual([
-            { weightKg: 102.5, reps: 5, rpe: 8, rir: null, e1rmKg: expect.closeTo(119.58, 2) },
-            { weightKg: 90, reps: 8, rpe: null, rir: 2, e1rmKg: expect.closeTo(114, 2) },
+            {
+                plannedWeightKg: 100,
+                plannedReps: 5,
+                weightKg: 102.5,
+                reps: 5,
+                rpe: 8,
+                rir: null,
+                e1rmKg: expect.closeTo(119.58, 2),
+            },
+            {
+                plannedWeightKg: null,
+                plannedReps: null,
+                weightKg: 90,
+                reps: 8,
+                rpe: null,
+                rir: 2,
+                e1rmKg: expect.closeTo(114, 2),
+            },
         ])
     })
 

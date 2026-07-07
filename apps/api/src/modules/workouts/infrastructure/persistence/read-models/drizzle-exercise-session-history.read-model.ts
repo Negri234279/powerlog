@@ -34,6 +34,8 @@ export class DrizzleExerciseSessionHistoryReadModel extends ExerciseSessionHisto
         // The inner joins drop sessions/entries without logged sets, so GROUP BY +
         // LIMIT counts *sessions* directly (no fan-out over sets).
         const sets = sql<ExerciseSessionHistorySet[]>`json_agg(json_build_object(
+            'plannedWeightKg', ${workoutSets.plannedWeightKg},
+            'plannedReps', ${workoutSets.plannedReps},
             'weightKg', ${workoutSets.weightKg},
             'reps', ${workoutSets.reps},
             'rpe', ${workoutSets.rpe},
@@ -61,6 +63,8 @@ export class DrizzleExerciseSessionHistoryReadModel extends ExerciseSessionHisto
             performedAt: row.performedAt,
             status: row.status as WorkoutStatus,
             sets: row.sets.map((set) => ({
+                plannedWeightKg: set.plannedWeightKg === null ? null : Number(set.plannedWeightKg),
+                plannedReps: set.plannedReps === null ? null : Number(set.plannedReps),
                 weightKg: Number(set.weightKg),
                 reps: Number(set.reps),
                 rpe: set.rpe === null ? null : Number(set.rpe),

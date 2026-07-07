@@ -51,6 +51,8 @@ function SetRow({
                     submitLabel={update.isPending ? t('saving') : t('save')}
                     pending={update.isPending}
                     initial={{
+                        plannedWeight: set.plannedWeightKg === null ? null : kgTo(units, set.plannedWeightKg),
+                        plannedReps: set.plannedReps,
                         weight: set.weightKg === null ? null : kgTo(units, set.weightKg),
                         reps: set.reps,
                         rpe: set.rpe,
@@ -63,6 +65,8 @@ function SetRow({
                                 sessionId,
                                 entryId,
                                 setId: set.id,
+                                plannedWeight: v.plannedWeight,
+                                plannedReps: v.plannedReps,
                                 weight: v.weight,
                                 reps: v.reps,
                                 rpe: v.rpe,
@@ -142,6 +146,8 @@ export function ExerciseEntry({
             {
                 sessionId,
                 entryId: entry.id,
+                plannedWeight: values.plannedWeight,
+                plannedReps: values.plannedReps,
                 weight: values.weight,
                 reps: values.reps,
                 rpe: values.rpe,

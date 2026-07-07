@@ -246,6 +246,8 @@
         "saving": "Guardando…",
         "weightLabel": "Peso ({units})",
         "reps": "Reps",
+        "plannedWeightLabel": "Programado ({units})",
+        "plannedRepsLabel": "Reps prog.",
         "intensity": "Intensidad",
         "none": "Ninguna",
         "rpeRange": "RPE (0–10)",

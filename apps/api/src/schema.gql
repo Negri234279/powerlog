@@ -183,6 +183,12 @@ type ExerciseEntry {
 type ExerciseHistorySet {
   """Estimated 1RM (kg) from the set (Epley)."""
   e1rmKg: Float
+
+  """Programmed target reps, if any."""
+  plannedReps: Int
+
+  """Programmed target weight (kg), if any."""
+  plannedWeightKg: Float
   reps: Int!
   rir: Int
   rpe: Float

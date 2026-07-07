@@ -3,6 +3,12 @@ import { Field, Float, ID, Int, ObjectType } from '@nestjs/graphql'
 /** A performed set from a past session. Weights are kg; intensity fields nullable. */
 @ObjectType('ExerciseHistorySet')
 export class ExerciseHistorySetType {
+    @Field(() => Float, { nullable: true, description: 'Programmed target weight (kg), if any.' })
+    plannedWeightKg?: number | null
+
+    @Field(() => Int, { nullable: true, description: 'Programmed target reps, if any.' })
+    plannedReps?: number | null
+
     @Field(() => Float)
     weightKg!: number
 

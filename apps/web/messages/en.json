@@ -246,6 +246,8 @@
         "saving": "Saving…",
         "weightLabel": "Weight ({units})",
         "reps": "Reps",
+        "plannedWeightLabel": "Planned ({units})",
+        "plannedRepsLabel": "Planned reps",
         "intensity": "Intensity",
         "none": "None",
         "rpeRange": "RPE (0–10)",

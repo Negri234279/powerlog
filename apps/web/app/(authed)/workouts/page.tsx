@@ -88,6 +88,8 @@ function SetLine({ set, units }: { set: WorkoutSetData; units: Units }) {
     const weight = hasActual ? set.weightKg : set.plannedWeightKg
     const reps = hasActual ? set.reps : set.plannedReps
     const intensity = set.rpe !== null ? `RPE ${set.rpe}` : set.rir !== null ? `RIR ${set.rir}` : null
+    // Once actuals are logged, still surface the programmed target alongside them.
+    const hasPlanned = set.plannedWeightKg !== null || set.plannedReps !== null
 
     return (
         <div className="flex items-center gap-3 text-sm tabular-nums">
@@ -98,6 +100,11 @@ function SetLine({ set, units }: { set: WorkoutSetData; units: Units }) {
                     <span className="text-text-faint"> · {t('plannedSuffix')}</span>
                 ) : null}
             </span>
+            {hasActual && hasPlanned ? (
+                <span className="font-mono text-xs text-text-faint">
+                    {t('planPrefix')} {formatWeight(set.plannedWeightKg, units)} × {set.plannedReps ?? '—'}
+                </span>
+            ) : null}
             {intensity ? <span className="text-text-dim">{intensity}</span> : null}
             {set.e1rmKg !== null ? (
                 <span className="ml-auto font-mono text-xs text-text-faint">

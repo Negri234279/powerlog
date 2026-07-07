@@ -118,6 +118,8 @@ export const ExerciseSessionHistoryDocument = graphql(`
             performedAt
             status
             sets {
+                plannedWeightKg
+                plannedReps
                 weightKg
                 reps
                 rpe

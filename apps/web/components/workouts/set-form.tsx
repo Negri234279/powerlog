@@ -9,6 +9,9 @@ import { TrackedButton } from '@/components/ui/tracked'
 
 /** A set's editable values, in the user's display unit (weight) + unitless intensity. */
 export interface SetValues {
+    /** Programmed targets (optional). */
+    plannedWeight: number | null
+    plannedReps: number | null
     weight: number | null
     reps: number | null
     rpe: number | null
@@ -17,7 +20,7 @@ export interface SetValues {
 
 type Intensity = 'none' | 'rpe' | 'rir'
 
-const EMPTY: SetValues = { weight: null, reps: null, rpe: null, rir: null }
+const EMPTY: SetValues = { plannedWeight: null, plannedReps: null, weight: null, reps: null, rpe: null, rir: null }
 
 function parseNum(value: string): number | null {
     const trimmed = value.trim()
@@ -70,6 +73,8 @@ export function SetForm({
 }) {
     const t = useTranslations('workouts')
     const start = initial ?? EMPTY
+    const [plannedWeight, setPlannedWeight] = useState(toInput(start.plannedWeight))
+    const [plannedReps, setPlannedReps] = useState(start.plannedReps?.toString() ?? '')
     const [weight, setWeight] = useState(toInput(start.weight))
     const [reps, setReps] = useState(start.reps?.toString() ?? '')
     const [intensity, setIntensity] = useState<Intensity>(startIntensity(start))
@@ -79,6 +84,8 @@ export function SetForm({
         event.preventDefault()
         const value = parseNum(intensityValue)
         onSubmit({
+            plannedWeight: parseNum(plannedWeight),
+            plannedReps: parseNum(plannedReps),
             weight: parseNum(weight),
             reps: parseNum(reps),
             rpe: intensity === 'rpe' ? value : null,
@@ -140,6 +147,33 @@ export function SetForm({
                     </div>
                 </NumberField>
             ) : null}
+
+            <NumberField label={t('plannedWeightLabel', { units })}>
+                <div className="w-24">
+                    <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="any"
+                        min={0}
+                        value={plannedWeight}
+                        onChange={(e) => setPlannedWeight(e.target.value)}
+                        placeholder="—"
+                    />
+                </div>
+            </NumberField>
+
+            <NumberField label={t('plannedRepsLabel')}>
+                <div className="w-20">
+                    <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        value={plannedReps}
+                        onChange={(e) => setPlannedReps(e.target.value)}
+                        placeholder="—"
+                    />
+                </div>
+            </NumberField>
 
             <div className="flex items-center gap-2">
                 <TrackedButton
