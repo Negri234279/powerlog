@@ -2,6 +2,11 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { NextConfig } from 'next'
+import createNextIntlPlugin from 'next-intl/plugin'
+
+// next-intl without URL routing: the locale is resolved per request in
+// i18n/request.ts (cookie → session → Accept-Language → en).
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
 // Server-side proxy target (the API). Kept off NEXT_PUBLIC_* on purpose: the
 // browser only ever talks to the web origin via /api/*, which makes the API's
@@ -55,4 +60,4 @@ const nextConfig: NextConfig = {
     },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)

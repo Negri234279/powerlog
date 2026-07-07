@@ -26,7 +26,7 @@ function setup(opts: { users?: ReturnType<UserMother['buildExisting']>[]; tokens
     const refreshGenerator = new FakeRefreshTokenGenerator()
     const signer = new FakeTokenSigner()
     const profiles = new FakeProfiles()
-    for (const u of opts.users ?? []) profiles.set(u.id, { username: 'gymrat', avatarUrl: null })
+    for (const u of opts.users ?? []) profiles.set(u.id, { username: 'gymrat', avatarUrl: null, locale: null })
     const sessions = new SessionIssuer(
         signer,
         refreshGenerator,
@@ -76,6 +76,7 @@ describe('RefreshSessionHandler', () => {
             role: 'coach',
             isAdmin: true,
             avatar: null,
+            locale: null,
         })
         expect(ctx.metrics.refreshes).toEqual(['rotated'])
     })

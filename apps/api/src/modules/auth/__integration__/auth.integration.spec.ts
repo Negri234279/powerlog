@@ -124,7 +124,7 @@ describe('Auth persistence (integration)', () => {
         const existing = UserMother.create().withEmail('known@example.com').buildExisting()
         await users.save(existing)
         // The existing account already has a profile (auto-link won't provision one).
-        profiles.set(existing.id, { username: 'gymrat', avatarUrl: null })
+        profiles.set(existing.id, { username: 'gymrat', avatarUrl: null, locale: null })
 
         const { userId } = await loginWithGoogle.execute(new LoginWithGoogleCommand('google-456', 'known@example.com'))
 

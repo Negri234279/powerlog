@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 import { env } from '@/lib/env'
 import { useAdminStats } from '@/lib/graphql/hooks/use-admin-stats'
 import { ArrowUpRight, ChartLine, Dumbbell, Shield, Users } from '@/components/ui/icons'
@@ -11,6 +13,7 @@ import { TrackedLink } from '@/components/ui/tracked'
 import { AdminTabs } from '@/components/admin/admin-tabs'
 
 export default function AdminOverviewPage() {
+    const t = useTranslations('admin')
     const { data, isLoading } = useAdminStats()
     const users = data?.adminUserStats
     const coaching = data?.adminCoachingStats
@@ -19,8 +22,8 @@ export default function AdminOverviewPage() {
     return (
         <div>
             <TextsReveal>
-                <p className="font-mono text-eyebrow uppercase text-text-faint">Admin</p>
-                <h1 className="mt-1 font-display text-h2 tracking-tight">Overview</h1>
+                <p className="font-mono text-eyebrow uppercase text-text-faint">{t('eyebrow')}</p>
+                <h1 className="mt-1 font-display text-h2 tracking-tight">{t('overviewTitle')}</h1>
             </TextsReveal>
 
             <div className="mt-8">
@@ -35,31 +38,31 @@ export default function AdminOverviewPage() {
                 </div>
             ) : (
                 <div className="space-y-10">
-                    <Section title="Users" icon={<Users className="size-4" />}>
-                        <Stat label="Total" value={users?.total} />
-                        <Stat label="Athletes" value={users?.athletes} />
-                        <Stat label="Coaches" value={users?.coaches} />
-                        <Stat label="Admins" value={users?.admins} />
-                        <Stat label="Verified" value={users?.verified} />
-                        <Stat label="New · 7d" value={users?.newLast7Days} />
-                        <Stat label="New · 30d" value={users?.newLast30Days} />
-                        <Stat label="Disabled" value={users?.disabled} />
+                    <Section title={t('sectionUsers')} icon={<Users className="size-4" />}>
+                        <Stat label={t('usersTotal')} value={users?.total} />
+                        <Stat label={t('usersAthletes')} value={users?.athletes} />
+                        <Stat label={t('usersCoaches')} value={users?.coaches} />
+                        <Stat label={t('usersAdmins')} value={users?.admins} />
+                        <Stat label={t('usersVerified')} value={users?.verified} />
+                        <Stat label={t('usersNew7')} value={users?.newLast7Days} />
+                        <Stat label={t('usersNew30')} value={users?.newLast30Days} />
+                        <Stat label={t('usersDisabled')} value={users?.disabled} />
                     </Section>
 
-                    <Section title="Coaching" icon={<Shield className="size-4" />}>
-                        <Stat label="Links" value={coaching?.links} />
-                        <Stat label="Active coaches" value={coaching?.activeCoaches} />
-                        <Stat label="Linked athletes" value={coaching?.linkedAthletes} />
-                        <Stat label="Pending invites" value={coaching?.pendingInvitations} />
+                    <Section title={t('sectionCoaching')} icon={<Shield className="size-4" />}>
+                        <Stat label={t('coachingLinks')} value={coaching?.links} />
+                        <Stat label={t('coachingActiveCoaches')} value={coaching?.activeCoaches} />
+                        <Stat label={t('coachingLinkedAthletes')} value={coaching?.linkedAthletes} />
+                        <Stat label={t('coachingPending')} value={coaching?.pendingInvitations} />
                     </Section>
 
-                    <Section title="Training" icon={<Dumbbell className="size-4" />}>
-                        <Stat label="Sessions" value={workouts?.sessions} />
-                        <Stat label="Completed" value={workouts?.completedSessions} />
-                        <Stat label="Sets logged" value={workouts?.sets} />
-                        <Stat label="Catalog" value={workouts?.exercises} />
-                        <Stat label="Sessions · 7d" value={workouts?.sessionsLast7Days} />
-                        <Stat label="Active users" value={workouts?.activeUsers} />
+                    <Section title={t('sectionTraining')} icon={<Dumbbell className="size-4" />}>
+                        <Stat label={t('trainingSessions')} value={workouts?.sessions} />
+                        <Stat label={t('trainingCompleted')} value={workouts?.completedSessions} />
+                        <Stat label={t('trainingSets')} value={workouts?.sets} />
+                        <Stat label={t('trainingCatalog')} value={workouts?.exercises} />
+                        <Stat label={t('trainingSessions7')} value={workouts?.sessionsLast7Days} />
+                        <Stat label={t('trainingActiveUsers')} value={workouts?.activeUsers} />
                     </Section>
 
                     <ExternalDashboards />
@@ -93,9 +96,10 @@ function Stat({ label, value }: { label: string; value?: number }) {
 }
 
 function ExternalDashboards() {
+    const t = useTranslations('admin')
     // Grafana now owns ALL web telemetry (RUM + events via Faro, logs, traces,
     // metrics) — it's the single external dashboard.
-    const links = [{ label: 'Grafana', description: 'RUM · logs · traces · metrics', href: env.grafanaUrl }].filter(
+    const links = [{ label: 'Grafana', description: t('grafanaDesc'), href: env.grafanaUrl }].filter(
         (l): l is { label: string; description: string; href: string } => Boolean(l.href),
     )
 
@@ -103,7 +107,7 @@ function ExternalDashboards() {
 
     return (
         <section>
-            <h2 className="font-mono text-eyebrow uppercase text-text-dim">External dashboards</h2>
+            <h2 className="font-mono text-eyebrow uppercase text-text-dim">{t('externalDashboards')}</h2>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {links.map((link) => (
                     <TiltCard key={link.label} cardClassName="rounded-2xl">

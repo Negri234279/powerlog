@@ -28,7 +28,7 @@ function setup(seed: ReturnType<UserMother['buildExisting']>[] = [], ids: string
     // Profile boundary: existing users get a seeded snapshot; new sign-ups get one
     // populated by provisioning (handle derived from the email).
     const profiles = new FakeProfiles()
-    for (const u of seed) profiles.set(u.id, { username: 'gymrat', avatarUrl: null })
+    for (const u of seed) profiles.set(u.id, { username: 'gymrat', avatarUrl: null, locale: null })
     const sessions = new SessionIssuer(
         signer,
         new FakeRefreshTokenGenerator(),
@@ -113,6 +113,7 @@ describe('LoginWithGoogleHandler', () => {
             role: 'coach',
             isAdmin: true,
             avatar: null,
+            locale: null,
         })
         expect(ctx.metrics.logins).toEqual([{ method: 'google', outcome: 'success' }])
     })

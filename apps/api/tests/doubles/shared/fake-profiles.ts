@@ -31,7 +31,7 @@ export class FakeProfiles extends ProfileProvisioner implements ProfileSnapshotR
         if (this.error) throw this.error
         // Mirror profile's handle rule: chosen handle, else derived from the email.
         const handle = (input.username ?? input.email.split('@')[0] ?? input.email).toLowerCase()
-        this.byUser.set(input.userId, { username: handle, avatarUrl: null })
+        this.byUser.set(input.userId, { username: handle, avatarUrl: null, locale: null })
     }
 
     async read(userId: string): Promise<ProfileSnapshot | null> {

@@ -1,3 +1,4 @@
+import type { SupportedLocale } from '../../../../shared/i18n/locale'
 import type { ExerciseCategory } from '../../domain/exercise-taxonomy'
 
 /** Filter for per-exercise analytics: always user-scoped, optional date range. */
@@ -5,6 +6,8 @@ export interface ExerciseStatsFilter {
     userId: string
     from?: Date
     to?: Date
+    /** Localizes the exercise name (English fallback); omit for English. */
+    locale?: SupportedLocale
 }
 
 /** Aggregated stats for one exercise across the user's logged (actual) sets. */

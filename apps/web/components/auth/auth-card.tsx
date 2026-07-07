@@ -1,3 +1,4 @@
+import { LanguageSwitcher } from '@/components/app/language-switcher'
 import { Mark } from '@/components/ui/icons'
 import { TrackedLink } from '@/components/ui/tracked'
 
@@ -34,6 +35,11 @@ export function AuthCard({
                 </div>
 
                 {footer ? <p className="mt-6 text-center text-sm text-text-dim">{footer}</p> : null}
+
+                {/* Guests have no profile yet: the switcher only sets the cookie here. */}
+                <div className="mt-8 flex justify-center">
+                    <LanguageSwitcher persist={false} />
+                </div>
             </div>
         </main>
     )

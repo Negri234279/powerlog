@@ -1,3 +1,4 @@
+import type { SupportedLocale } from '../../../../shared/i18n/locale'
 import type { ExerciseEntity } from '../entities/exercise.entity'
 import type { ExerciseCategory, ExerciseEquipment, ExerciseMuscle } from '../exercise-taxonomy'
 
@@ -23,8 +24,14 @@ export interface ExercisePagination {
  */
 export abstract class ExerciseRepository {
     /** Exercises matching the filter, ordered for display (category, then name).
-     *  Optional offset pagination; omit it to return the whole match set. */
-    abstract findAll(filter?: ExerciseFilter, pagination?: ExercisePagination): Promise<ExerciseEntity[]>
+     *  Optional offset pagination; omit it to return the whole match set. `locale`
+     *  localizes the display name (English fallback) for the athlete catalog; omit
+     *  it (defaults to English) for admin/canonical reads. */
+    abstract findAll(
+        filter?: ExerciseFilter,
+        pagination?: ExercisePagination,
+        locale?: SupportedLocale,
+    ): Promise<ExerciseEntity[]>
     /** Total exercises matching the filter (for paginated listings). */
     abstract count(filter?: ExerciseFilter): Promise<number>
     abstract findById(id: string): Promise<ExerciseEntity | null>
@@ -34,4 +41,10 @@ export abstract class ExerciseRepository {
     abstract delete(id: string): Promise<void>
     /** How many workout entries reference this exercise (0 → safe to delete). */
     abstract countReferences(exerciseId: string): Promise<number>
+    /** Upsert a localized display name for an exercise (admin catalog editing). */
+    abstract upsertTranslation(exerciseId: string, locale: SupportedLocale, name: string): Promise<void>
+    /** Remove a localized display name (reverting that locale to the English fallback). */
+    abstract deleteTranslation(exerciseId: string, locale: SupportedLocale): Promise<void>
+    /** Localized names for the given exercises, keyed by exercise id (missing = no translation). */
+    abstract translationsFor(exerciseIds: string[], locale: SupportedLocale): Promise<Map<string, string>>
 }

@@ -12,6 +12,7 @@ export class GetExerciseStatsHandler implements IQueryHandler<GetExerciseStatsQu
             userId: query.userId,
             from: query.from ? new Date(query.from) : undefined,
             to: query.to ? new Date(query.to) : undefined,
+            locale: query.locale,
         })
     }
 }

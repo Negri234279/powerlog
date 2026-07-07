@@ -28,6 +28,8 @@ export interface Session {
     isAdmin: boolean
     /** Resolved avatar URL from the profile; null → show the default/initials. */
     avatar: string | null
+    /** Preferred locale from the profile (BCP-47); null → not set. Drives the UI language. */
+    locale: string | null
 }
 
 let verifyKey: ReturnType<typeof importSPKI> | undefined
@@ -62,19 +64,22 @@ export const getSession = cache(async (): Promise<Session | null> => {
             audience: serverEnv.jwtAudience,
         })
 
-        const { sub, email, username, role, isAdmin, avatar } = payload
+        const { sub, email, username, role, isAdmin, avatar, locale: rawLocale } = payload
+        // Tokens minted before locale was added carry no claim → treat as null.
+        const locale = rawLocale === undefined ? null : rawLocale
         if (
             typeof sub !== 'string' ||
             typeof email !== 'string' ||
             typeof username !== 'string' ||
             (role !== 'athlete' && role !== 'coach') ||
             typeof isAdmin !== 'boolean' ||
-            (avatar !== null && typeof avatar !== 'string')
+            (avatar !== null && typeof avatar !== 'string') ||
+            (locale !== null && typeof locale !== 'string')
         ) {
             return null
         }
 
-        return { userId: sub, email, username, role, isAdmin, avatar }
+        return { userId: sub, email, username, role, isAdmin, avatar, locale }
     } catch {
         // Expired / invalid signature / wrong issuer-audience: not authenticated.
         return null

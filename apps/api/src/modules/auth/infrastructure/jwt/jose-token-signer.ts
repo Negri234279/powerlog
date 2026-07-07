@@ -35,6 +35,7 @@ export class JoseTokenSigner extends TokenSigner {
             role: claims.role,
             isAdmin: claims.isAdmin,
             avatar: claims.avatar,
+            locale: claims.locale,
         })
             .setProtectedHeader({ alg: ALG })
             .setSubject(claims.userId)
@@ -56,19 +57,22 @@ export class JoseTokenSigner extends TokenSigner {
             throw new Error('Access token has no subject.')
         }
 
-        const { email, username, role, isAdmin, avatar } = payload
+        const { email, username, role, isAdmin, avatar, locale: rawLocale } = payload
+        // Tokens minted before locale was added carry no claim → treat as null.
+        const locale = rawLocale === undefined ? null : rawLocale
 
         if (
             typeof email !== 'string' ||
             typeof username !== 'string' ||
             (role !== 'athlete' && role !== 'coach') ||
             typeof isAdmin !== 'boolean' ||
-            (avatar !== null && typeof avatar !== 'string')
+            (avatar !== null && typeof avatar !== 'string') ||
+            (locale !== null && typeof locale !== 'string')
         ) {
             throw new Error('Access token is missing required claims.')
         }
 
-        return { userId: payload.sub, email, username, role, isAdmin, avatar }
+        return { userId: payload.sub, email, username, role, isAdmin, avatar, locale }
     }
 
     private getSignKey(): ReturnType<typeof importPKCS8> {

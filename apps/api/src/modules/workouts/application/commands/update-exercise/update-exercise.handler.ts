@@ -19,6 +19,16 @@ export class UpdateExerciseHandler implements ICommandHandler<UpdateExerciseComm
 
         await this.exercises.update(exercise)
 
+        // `undefined` = leave the Spanish name untouched; empty = clear it; else upsert.
+        if (command.nameEs !== undefined) {
+            const nameEs = command.nameEs?.trim() ?? ''
+            if (nameEs) {
+                await this.exercises.upsertTranslation(exercise.id, 'es', nameEs)
+            } else {
+                await this.exercises.deleteTranslation(exercise.id, 'es')
+            }
+        }
+
         return toExerciseView(exercise)
     }
 }

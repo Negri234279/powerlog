@@ -31,6 +31,11 @@ export class CreateExerciseHandler implements ICommandHandler<CreateExerciseComm
 
         await this.exercises.insert(exercise)
 
+        const nameEs = command.nameEs?.trim()
+        if (nameEs) {
+            await this.exercises.upsertTranslation(exercise.id, 'es', nameEs)
+        }
+
         return toExerciseView(exercise)
     }
 }

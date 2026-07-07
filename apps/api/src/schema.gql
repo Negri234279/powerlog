@@ -15,10 +15,29 @@ type AdminCoachingStats {
   pendingInvitations: Int!
 }
 
+type AdminExercise {
+  """
+  squat | bench | deadlift | chest | back | shoulders | legs | arms | core
+  """
+  category: String!
+
+  """barbell | dumbbell | machine | cable | bodyweight"""
+  equipment: String!
+  id: ID!
+  name: String!
+
+  """Spanish display name; null → English fallback."""
+  nameEs: String
+
+  """Primary muscle worked."""
+  primaryMuscle: String!
+  slug: String!
+}
+
 type AdminExercisePage {
   limit: Int!
   offset: Int!
-  rows: [Exercise!]!
+  rows: [AdminExercise!]!
 
   """Total exercises matching the filter (ignoring pagination)."""
   total: Int!
@@ -100,6 +119,9 @@ input CreateExerciseInput {
   """barbell | dumbbell | machine | cable | bodyweight"""
   equipment: String!
   name: String!
+
+  """Spanish display name (optional)."""
+  nameEs: String
 
   """Primary muscle worked."""
   primaryMuscle: String!
@@ -694,6 +716,11 @@ input UpdateExerciseInput {
 
   """Absent = leave unchanged."""
   name: String
+
+  """
+  Spanish display name. Empty string clears it; absent leaves it unchanged.
+  """
+  nameEs: String
   primaryMuscle: String
 }
 

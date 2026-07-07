@@ -4,9 +4,14 @@ import { ExerciseRepository } from '../../../domain/repositories/exercise.reposi
 import { type ExerciseView, toExerciseView } from '../list-exercises/list-exercises.handler'
 import { ListAdminExercisesQuery } from './list-admin-exercises.query'
 
+/** An admin catalog row: the canonical (English) view + the raw Spanish name, if any. */
+export interface AdminExerciseView extends ExerciseView {
+    nameEs: string | null
+}
+
 /** A page of catalog exercises with the total count for the admin listing. */
 export interface AdminExercisePageView {
-    rows: ExerciseView[]
+    rows: AdminExerciseView[]
     total: number
     limit: number
     offset: number
@@ -22,8 +27,17 @@ export class ListAdminExercisesHandler implements IQueryHandler<ListAdminExercis
             this.exercises.count(query.filter),
         ])
 
+        // Admin rows show the canonical English name + the editable Spanish name.
+        const translations = await this.exercises.translationsFor(
+            found.map((exercise) => exercise.id),
+            'es',
+        )
+
         return {
-            rows: found.map(toExerciseView),
+            rows: found.map((exercise) => ({
+                ...toExerciseView(exercise),
+                nameEs: translations.get(exercise.id) ?? null,
+            })),
             total,
             limit: query.limit,
             offset: query.offset,

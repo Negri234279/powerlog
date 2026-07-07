@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -7,19 +8,21 @@ import type { Session } from '@/lib/auth/session'
 import { identifyUser, resetAnalytics, track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
 import { ArrowUpRight, Close, Mark, Menu } from '@/components/ui/icons'
+import { LanguageSwitcher } from '@/components/app/language-switcher'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import { useLogout, useMe } from '@/lib/graphql/hooks/use-auth'
 
 const NAV = [
-    { id: 'dashboard', label: 'Dashboard', href: '/dashboard' },
-    { id: 'workouts', label: 'Workouts', href: '/workouts' },
-]
+    { id: 'dashboard', href: '/dashboard' },
+    { id: 'workouts', href: '/workouts' },
+] as const
 
 /** Authenticated chrome: top bar with nav + user + logout. The authed layout
  *  gates the route server-side and seeds `initialUser` from the verified access
  *  token, so the handle/avatar paint immediately; `useMe` fills the full profile
  *  and this still bounces to /login if the session turns out to be invalid. */
 export function AppShell({ children, initialUser }: { children: React.ReactNode; initialUser?: Session | null }) {
+    const t = useTranslations('shell')
     const { data: me, isError } = useMe()
     const logout = useLogout()
     const router = useRouter()
@@ -33,7 +36,7 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
     const avatar = initialUser?.avatar ?? null
     const onProfile = isActive('/profile')
     // Admins get an extra nav entry; the route itself is gated server-side too.
-    const nav = initialUser?.isAdmin ? [...NAV, { id: 'admin', label: 'Admin', href: '/admin' }] : NAV
+    const nav = initialUser?.isAdmin ? [...NAV, { id: 'admin', href: '/admin' } as const] : NAV
 
     useEffect(() => {
         if (isError) router.replace('/login')
@@ -107,18 +110,21 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                                             : 'text-text-dim hover:text-text',
                                     )}
                                 >
-                                    {n.label}
+                                    {t(`nav.${n.id}`)}
                                 </TrackedLink>
                             ))}
                         </nav>
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3">
+                        {/* Language toggle — hidden on the smallest screens (lives in the menu). */}
+                        <LanguageSwitcher className="hidden sm:inline-flex" />
+
                         {/* User cluster → profile. Handle on desktop; avatar always. */}
                         <TrackedLink
                             analyticsId="shell-profile"
                             href="/profile"
-                            aria-label="Your profile"
+                            aria-label={t('profileAria')}
                             className="group flex items-center gap-2.5 rounded-full transition-opacity duration-300 hover:opacity-90"
                         >
                             {username ? (
@@ -149,7 +155,7 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                             onClick={onLogout}
                             className="hidden rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text active:scale-[0.98] sm:inline-block"
                         >
-                            Log out
+                            {t('logout')}
                         </TrackedButton>
 
                         {/* Burger — morphs to an X. Mobile only. */}
@@ -157,7 +163,7 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                             analyticsId="shell-menu-toggle"
                             type="button"
                             onClick={() => setMenuOpen((open) => !open)}
-                            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                            aria-label={menuOpen ? t('menuClose') : t('menuOpen')}
                             aria-expanded={menuOpen}
                             aria-controls="mobile-menu"
                             className="grid size-9 place-items-center rounded-full text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text active:scale-[0.98] sm:hidden"
@@ -188,7 +194,7 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                     className="animate-overlay-in fixed inset-0 z-40 bg-bg/85 backdrop-blur-2xl sm:hidden"
                 >
                     <div className="flex h-[100dvh] flex-col px-6 pb-10 pt-24">
-                        <p className="font-mono text-eyebrow uppercase text-text-faint">Navigate</p>
+                        <p className="font-mono text-eyebrow uppercase text-text-faint">{t('navigate')}</p>
 
                         <nav className="mt-6 flex flex-col gap-1">
                             {nav.map((n, i) => (
@@ -205,7 +211,7 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                                             : 'text-text-dim hover:bg-white/[0.04] hover:text-text',
                                     )}
                                 >
-                                    <span>{n.label}</span>
+                                    <span>{t(`nav.${n.id}`)}</span>
                                     {isActive(n.href) ? (
                                         <span className="size-1.5 rounded-full bg-ember shadow-[0_0_12px_rgba(255,106,44,0.7)]" />
                                     ) : (
@@ -221,16 +227,22 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                         >
                             {username ? (
                                 <p className="mb-3 px-4 font-mono text-sm text-text-dim">
-                                    Signed in as <span className="text-text">@{username}</span>
+                                    {t('signedInAs', { user: `@${username}` })}
                                 </p>
                             ) : null}
+                            <div className="mb-3 flex items-center justify-between px-4">
+                                <span className="font-mono text-eyebrow uppercase text-text-faint">
+                                    {t('language')}
+                                </span>
+                                <LanguageSwitcher />
+                            </div>
                             <TrackedButton
                                 analyticsId="shell-logout-mobile"
                                 type="button"
                                 onClick={onLogout}
                                 className="w-full rounded-full px-5 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text active:scale-[0.98]"
                             >
-                                Log out
+                                {t('logout')}
                             </TrackedButton>
                         </div>
                     </div>

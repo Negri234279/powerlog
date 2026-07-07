@@ -9,6 +9,8 @@ export interface AccessTokenClaims {
     isAdmin: boolean
     /** Resolved avatar URL from the profile; null → client shows the default. */
     avatar: string | null
+    /** Preferred locale from the profile (BCP-47); null → client falls back. */
+    locale: string | null
 }
 
 /**

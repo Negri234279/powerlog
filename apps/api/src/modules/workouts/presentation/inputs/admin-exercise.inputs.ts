@@ -31,6 +31,9 @@ export class CreateExerciseInput {
 
     @Field(() => String, { nullable: true, description: 'Stable key; derived from name if omitted.' })
     slug?: string | null
+
+    @Field(() => String, { nullable: true, description: 'Spanish display name (optional).' })
+    nameEs?: string | null
 }
 
 export const createExerciseSchema = z.object({
@@ -39,6 +42,7 @@ export const createExerciseSchema = z.object({
     equipment,
     primaryMuscle: muscle,
     slug: slug.nullable().optional(),
+    nameEs: name.nullable().optional(),
 })
 
 // ── update exercise (slug immutable) ────────────────────────────────────
@@ -58,14 +62,23 @@ export class UpdateExerciseInput {
 
     @Field(() => String, { nullable: true })
     primaryMuscle?: string | null
+
+    @Field(() => String, {
+        nullable: true,
+        description: 'Spanish display name. Empty string clears it; absent leaves it unchanged.',
+    })
+    nameEs?: string | null
 }
 
+// `nameEs` allows an empty string (meaning "clear the Spanish name"), so it isn't
+// bound by the non-empty `name` schema.
 export const updateExerciseSchema = z.object({
     exerciseId: z.string().uuid(),
     name: name.optional(),
     category: category.optional(),
     equipment: equipment.optional(),
     primaryMuscle: muscle.optional(),
+    nameEs: z.string().trim().max(80).nullable().optional(),
 })
 
 // ── list filters (admin) ────────────────────────────────────────────────

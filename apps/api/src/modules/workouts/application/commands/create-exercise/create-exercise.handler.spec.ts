@@ -41,4 +41,22 @@ describe('CreateExerciseHandler', () => {
             handler.execute(new CreateExerciseCommand('Back Squat', 'squat', 'barbell', 'quads')),
         ).rejects.toBeInstanceOf(ExerciseSlugTakenError)
     })
+
+    it('seeds the Spanish translation when a name is given', async () => {
+        const { repo, handler } = setup()
+
+        await handler.execute(
+            new CreateExerciseCommand('Romanian Deadlift', 'deadlift', 'barbell', 'hamstrings', null, 'Peso Muerto Rumano'),
+        )
+
+        expect(await repo.translationsFor(['ex-new'], 'es')).toEqual(new Map([['ex-new', 'Peso Muerto Rumano']]))
+    })
+
+    it('leaves the exercise English-only when no Spanish name is given', async () => {
+        const { repo, handler } = setup()
+
+        await handler.execute(new CreateExerciseCommand('Romanian Deadlift', 'deadlift', 'barbell', 'hamstrings'))
+
+        expect(await repo.translationsFor(['ex-new'], 'es')).toEqual(new Map())
+    })
 })

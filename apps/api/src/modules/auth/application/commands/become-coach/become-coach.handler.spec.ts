@@ -22,7 +22,7 @@ function setup(seed = [] as ReturnType<UserMother['buildExisting']>[]) {
     const users = new InMemoryUserRepository(seed)
     const signer = new FakeTokenSigner()
     const profiles = new FakeProfiles()
-    for (const u of seed) profiles.set(u.id, { username: 'gymrat', avatarUrl: null })
+    for (const u of seed) profiles.set(u.id, { username: 'gymrat', avatarUrl: null, locale: null })
     const sessions = new SessionIssuer(
         signer,
         new FakeRefreshTokenGenerator(),

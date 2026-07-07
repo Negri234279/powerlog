@@ -37,10 +37,12 @@ export function StrengthTrendChart({
     points,
     trend,
     formatValue,
+    projectedLabel = 'Projected',
 }: {
     points: StrengthPoint[]
     trend: StrengthTrend | null
     formatValue: ValueFormatter
+    projectedLabel?: string
 }) {
     const byT = new Map<number, Row>()
     for (const p of points) {
@@ -101,7 +103,7 @@ export function StrengthTrendChart({
                         isAnimationActive={false}
                     />
                     <Line
-                        name="Projected"
+                        name={projectedLabel}
                         type="monotone"
                         dataKey="projected"
                         stroke={CHART.amber}

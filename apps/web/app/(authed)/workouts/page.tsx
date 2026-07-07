@@ -1,11 +1,12 @@
 'use client'
 
+import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useMemo, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 import { track } from '@/lib/analytics/events'
-import { gqlErrorMessage } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import {
     type ExerciseData,
@@ -33,8 +34,8 @@ import { Calendar, ChartLine, ChevronDown, Dumbbell, Plus, Search } from '@/comp
 import { Menu } from '@/components/ui/menu'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
-function formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+function formatDate(iso: string, locale: string): string {
+    return new Date(iso).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 /** Today as YYYY-MM-DD in the user's local timezone (for <input type="date">). */
@@ -47,13 +48,10 @@ function todayLocalIso(): string {
 
 type StatusFilter = 'all' | 'planned' | 'completed'
 
-const STATUS_FILTERS: ReadonlyArray<{ key: StatusFilter; label: string }> = [
-    { key: 'all', label: 'All' },
-    { key: 'planned', label: 'Planned' },
-    { key: 'completed', label: 'Completed' },
-]
+const STATUS_FILTERS: readonly StatusFilter[] = ['all', 'planned', 'completed']
 
 function StatusBadge({ status }: { status: string }) {
+    const t = useTranslations('common.status')
     const completed = status === 'completed'
     return (
         <span
@@ -63,7 +61,7 @@ function StatusBadge({ status }: { status: string }) {
                     : 'rounded-full bg-ember/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-ember'
             }
         >
-            {completed ? 'Completed' : 'Planned'}
+            {completed ? t('completed') : t('planned')}
         </span>
     )
 }
@@ -78,6 +76,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 }
 
 function SetLine({ set, units }: { set: WorkoutSetData; units: Units }) {
+    const t = useTranslations('workouts')
     const hasActual = set.weightKg !== null && set.reps !== null
     const weight = hasActual ? set.weightKg : set.plannedWeightKg
     const reps = hasActual ? set.reps : set.plannedReps
@@ -88,7 +87,9 @@ function SetLine({ set, units }: { set: WorkoutSetData; units: Units }) {
             <span className="w-4 shrink-0 text-right font-mono text-xs text-text-faint">{set.order}</span>
             <span className="text-text">
                 {weight !== null && reps !== null ? `${formatWeight(weight, units)} × ${reps}` : '—'}
-                {!hasActual && weight !== null ? <span className="text-text-faint"> · planned</span> : null}
+                {!hasActual && weight !== null ? (
+                    <span className="text-text-faint"> · {t('plannedSuffix')}</span>
+                ) : null}
             </span>
             {intensity ? <span className="text-text-dim">{intensity}</span> : null}
             {set.e1rmKg !== null ? (
@@ -101,19 +102,17 @@ function SetLine({ set, units }: { set: WorkoutSetData; units: Units }) {
 }
 
 function SessionDetailPanel({ id, units, nameById }: { id: string; units: Units; nameById: Map<string, string> }) {
+    const t = useTranslations('workouts')
     const { data, isLoading, isError } = useWorkoutSession(id)
 
-    if (isLoading) return <p className="border-t border-hairline px-5 py-4 text-sm text-text-dim">Loading exercises…</p>
+    if (isLoading)
+        return <p className="border-t border-hairline px-5 py-4 text-sm text-text-dim">{t('loadingExercises')}</p>
 
     if (isError || !data)
-        return <p className="border-t border-hairline px-5 py-4 text-sm text-ember">Couldn’t load this session.</p>
+        return <p className="border-t border-hairline px-5 py-4 text-sm text-ember">{t('loadError')}</p>
 
     if (data.entries.length === 0)
-        return (
-            <p className="border-t border-hairline px-5 py-4 text-sm text-text-dim">
-                No exercises logged in this session.
-            </p>
-        )
+        return <p className="border-t border-hairline px-5 py-4 text-sm text-text-dim">{t('noExercises')}</p>
 
     return (
         <div className="space-y-4 border-t border-hairline px-5 py-4">
@@ -121,10 +120,10 @@ function SessionDetailPanel({ id, units, nameById }: { id: string; units: Units;
                 <div key={entry.id}>
                     <div className="flex items-baseline justify-between gap-3">
                         <h3 className="text-sm font-medium text-text">
-                            {nameById.get(entry.exerciseId) ?? 'Exercise'}
+                            {nameById.get(entry.exerciseId) ?? t('exercise')}
                         </h3>
                         <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                            {entry.sets.length} {entry.sets.length === 1 ? 'set' : 'sets'}
+                            {t('setCountLabel', { count: entry.sets.length })}
                         </span>
                     </div>
                     {entry.notes ? <p className="mt-0.5 text-xs text-text-dim">{entry.notes}</p> : null}
@@ -132,7 +131,7 @@ function SessionDetailPanel({ id, units, nameById }: { id: string; units: Units;
                         {entry.sets.length > 0 ? (
                             entry.sets.map((set) => <SetLine key={set.id} set={set} units={units} />)
                         ) : (
-                            <p className="text-xs text-text-faint">No sets logged.</p>
+                            <p className="text-xs text-text-faint">{t('noSets')}</p>
                         )}
                     </div>
                 </div>
@@ -154,6 +153,8 @@ function SessionRow({
     onEdit: () => void
     onDelete: () => void
 }) {
+    const t = useTranslations('workouts')
+    const locale = useLocale()
     const [open, setOpen] = useState(false)
     // Mount the detail panel on first open and keep it mounted so the accordion
     // animates the collapse too (and the session isn't re-fetched on re-open).
@@ -177,7 +178,7 @@ function SessionRow({
                             type="button"
                             onClick={toggle}
                             aria-expanded={open}
-                            aria-label={open ? 'Collapse session' : 'Expand session'}
+                            aria-label={open ? t('collapse') : t('expand')}
                             className="flex size-8 items-center justify-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.06] hover:text-text"
                         >
                             <span className="t-acc-chevron">
@@ -194,7 +195,7 @@ function SessionRow({
                         <div className="min-w-0">
                             <div className="flex items-center gap-3">
                                 <span className="font-display text-lg tracking-tight">
-                                    {formatDate(session.performedAt)}
+                                    {formatDate(session.performedAt, locale)}
                                 </span>
                                 <StatusBadge status={session.status} />
                             </div>
@@ -203,20 +204,20 @@ function SessionRow({
                             ) : null}
                         </div>
                         <div className="flex shrink-0 items-center gap-5 font-mono text-sm tabular-nums">
-                            <Stat label="exercises" value={session.exerciseCount} />
-                            <Stat label="sets" value={session.setCount} />
-                            <Stat label="volume" value={formatWeight(session.totalVolumeKg, units)} />
+                            <Stat label={t('statExercises')} value={session.exerciseCount} />
+                            <Stat label={t('statSets')} value={session.setCount} />
+                            <Stat label={t('statVolume')} value={formatWeight(session.totalVolumeKg, units)} />
                         </div>
                     </TrackedLink>
 
                     <div className="absolute inset-y-0 right-3 flex items-center">
                         <Menu
                             analyticsId="session-menu"
-                            label="Session actions"
+                            label={t('sessionActions')}
                             items={[
-                                { label: 'Edit', onSelect: onEdit, analyticsId: 'session-menu-edit' },
+                                { label: t('edit'), onSelect: onEdit, analyticsId: 'session-menu-edit' },
                                 {
-                                    label: 'Delete',
+                                    label: t('delete'),
                                     onSelect: onDelete,
                                     destructive: true,
                                     analyticsId: 'session-menu-delete',
@@ -264,6 +265,8 @@ function FilterBar({
     hasActiveFilters: boolean
     onClear: () => void
 }) {
+    const t = useTranslations('workouts')
+    const tt = useTranslations('taxonomy')
     // Catalog already arrives ordered by category then name — keep that order.
     const groups = useMemo(() => {
         const byCategory = new Map<string, ExerciseData[]>()
@@ -282,24 +285,24 @@ function FilterBar({
                     analyticsId="workouts-search"
                     value={queryInput}
                     onChange={onQuery}
-                    placeholder="Search session notes…"
+                    placeholder={t('searchNotes')}
                     className="w-full"
                 />
 
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="inline-flex rounded-full bg-bg/60 p-1 ring-1 ring-hairline">
-                        {STATUS_FILTERS.map((s) => (
+                        {STATUS_FILTERS.map((key) => (
                             <TrackedButton
-                                analyticsId={`workouts-filter-${s.key}`}
-                                key={s.key}
+                                analyticsId={`workouts-filter-${key}`}
+                                key={key}
                                 type="button"
-                                onClick={() => onStatus(s.key)}
+                                onClick={() => onStatus(key)}
                                 className={cn(
                                     'rounded-full px-4 py-1.5 text-sm transition-colors duration-300',
-                                    status === s.key ? 'bg-white/[0.08] text-text' : 'text-text-dim hover:text-text',
+                                    status === key ? 'bg-white/[0.08] text-text' : 'text-text-dim hover:text-text',
                                 )}
                             >
-                                {s.label}
+                                {t(`filter.${key}`)}
                             </TrackedButton>
                         ))}
                     </div>
@@ -308,11 +311,11 @@ function FilterBar({
                         <Select
                             value={exerciseId}
                             onChange={(e) => onExercise(e.target.value)}
-                            aria-label="Filter by exercise"
+                            aria-label={t('filterByExercise')}
                         >
-                            <option value="">All exercises</option>
+                            <option value="">{t('allExercises')}</option>
                             {groups.map(([category, items]) => (
-                                <optgroup key={category} label={category}>
+                                <optgroup key={category} label={tt(`category.${category}`)}>
                                     {items.map((ex) => (
                                         <option key={ex.id} value={ex.id}>
                                             {ex.name}
@@ -329,7 +332,7 @@ function FilterBar({
                             value={from}
                             max={to || undefined}
                             onChange={(e) => onFrom(e.target.value)}
-                            aria-label="From date"
+                            aria-label={t('fromDate')}
                             className="w-40"
                         />
                         <span className="hidden text-text-faint sm:inline">–</span>
@@ -338,7 +341,7 @@ function FilterBar({
                             value={to}
                             min={from || undefined}
                             onChange={(e) => onTo(e.target.value)}
-                            aria-label="To date"
+                            aria-label={t('toDate')}
                             className="w-40"
                         />
                     </div>
@@ -350,7 +353,7 @@ function FilterBar({
                             onClick={onClear}
                             className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                         >
-                            Clear
+                            {t('clear')}
                         </TrackedButton>
                     ) : null}
                 </div>
@@ -360,6 +363,8 @@ function FilterBar({
 }
 
 export default function WorkoutsPage() {
+    const t = useTranslations('workouts')
+    const errorMessage = useErrorMessage()
     const router = useRouter()
     const { data: me } = useMe()
     const units = unitsOf(me?.units)
@@ -450,7 +455,7 @@ export default function WorkoutsPage() {
             track('workout_session_created', {})
             router.push(`/workouts/${result.createWorkoutSession.id}`)
         } catch (error) {
-            setCreateError(gqlErrorMessage(error))
+            setCreateError(errorMessage(error))
         }
     }
 
@@ -462,7 +467,7 @@ export default function WorkoutsPage() {
                 track('workout_session_deleted', {})
                 setDeleting(null)
             },
-            onError: (error) => setDeleteError(gqlErrorMessage(error)),
+            onError: (error) => setDeleteError(errorMessage(error)),
         })
     }
 
@@ -470,8 +475,8 @@ export default function WorkoutsPage() {
         <div className="">
             <div className="flex flex-wrap items-end justify-between gap-4">
                 <TextsReveal>
-                    <p className="font-mono text-eyebrow uppercase text-text-faint">Training</p>
-                    <h1 className="mt-3 font-display text-display">Workouts</h1>
+                    <p className="font-mono text-eyebrow uppercase text-text-faint">{t('training')}</p>
+                    <h1 className="mt-3 font-display text-display">{t('title')}</h1>
                 </TextsReveal>
                 <div className="flex items-center gap-2">
                     <TrackedLink
@@ -480,7 +485,7 @@ export default function WorkoutsPage() {
                         className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                     >
                         <Dumbbell className="size-4" />
-                        Templates
+                        {t('templates')}
                     </TrackedLink>
                     <TrackedLink
                         analyticsId="workouts-stats-link"
@@ -488,7 +493,7 @@ export default function WorkoutsPage() {
                         className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                     >
                         <ChartLine className="size-4" />
-                        Analytics
+                        {t('analytics')}
                     </TrackedLink>
                     <TrackedButton
                         analyticsId="session-create-open"
@@ -497,7 +502,7 @@ export default function WorkoutsPage() {
                         className="group inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring hover:scale-[1.02] active:scale-[0.98]"
                     >
                         <Plus className="size-4" />
-                        Session
+                        {t('session')}
                     </TrackedButton>
                 </div>
             </div>
@@ -506,7 +511,7 @@ export default function WorkoutsPage() {
                 <form onSubmit={onCreate} className="mt-6 rounded-2xl bg-shell p-1.5 ring-1 ring-hairline">
                     <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface p-5">
                         <div className="mb-4">
-                            <Field label="Start from template (optional)">
+                            <Field label={t('startFromTemplate')}>
                                 <TemplateCombobox
                                     value={template}
                                     onChange={setTemplate}
@@ -514,15 +519,13 @@ export default function WorkoutsPage() {
                                 />
                             </Field>
                             <p className="mt-1.5 text-xs text-text-faint">
-                                {template
-                                    ? 'The session will be pre-filled with this template’s exercises and programmed sets.'
-                                    : 'Leave empty to start a blank session.'}
+                                {template ? t('templatePrefill') : t('blankSession')}
                             </p>
                         </div>
 
                         <div className="flex flex-wrap items-end gap-4">
                             <div className="w-44">
-                                <Field label="Date" htmlFor="performedAt">
+                                <Field label={t('date')} htmlFor="performedAt">
                                     <Input
                                         id="performedAt"
                                         name="performedAt"
@@ -533,13 +536,13 @@ export default function WorkoutsPage() {
                                 </Field>
                             </div>
                             <div className="min-w-[12rem] flex-1">
-                                <Field label="Notes (optional)" htmlFor="notes">
+                                <Field label={t('notesOptional')} htmlFor="notes">
                                     <Input
                                         id="notes"
                                         name="notes"
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
-                                        placeholder="e.g. Lower body, week 4"
+                                        placeholder={t('notesPlaceholder')}
                                     />
                                 </Field>
                             </div>
@@ -555,10 +558,10 @@ export default function WorkoutsPage() {
                                 className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:opacity-60"
                             >
                                 {create.isPending || startFromTemplate.isPending
-                                    ? 'Creating…'
+                                    ? t('creating')
                                     : template
-                                      ? 'Create from template'
-                                      : 'Create session'}
+                                      ? t('createFromTemplate')
+                                      : t('createSession')}
                             </TrackedButton>
                             <TrackedButton
                                 analyticsId="session-create-cancel"
@@ -569,7 +572,7 @@ export default function WorkoutsPage() {
                                 }}
                                 className="rounded-full px-4 py-2.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                             >
-                                Cancel
+                                {t('cancel')}
                             </TrackedButton>
                         </div>
                     </div>
@@ -613,7 +616,7 @@ export default function WorkoutsPage() {
                         ))}
                     </div>
                 ) : isError ? (
-                    <p className="text-body text-ember">Couldn&rsquo;t load your history. Try refreshing.</p>
+                    <p className="text-body text-ember">{t('historyError')}</p>
                 ) : items.length === 0 ? (
                     hasActiveFilters ? (
                         <div className="rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
@@ -621,17 +624,15 @@ export default function WorkoutsPage() {
                                 <span className="grid size-12 place-items-center rounded-2xl bg-white/[0.05] text-text-dim ring-1 ring-hairline">
                                     <Search className="size-6" />
                                 </span>
-                                <h2 className="mt-5 font-display text-h3">No matching sessions</h2>
-                                <p className="mt-2 max-w-sm text-body text-text-dim">
-                                    No sessions match these filters. Try widening the date range or clearing them.
-                                </p>
+                                <h2 className="mt-5 font-display text-h3">{t('noMatching')}</h2>
+                                <p className="mt-2 max-w-sm text-body text-text-dim">{t('noMatchingBody')}</p>
                                 <TrackedButton
                                     analyticsId="workouts-empty-clear-filters"
                                     type="button"
                                     onClick={clearFilters}
                                     className="mt-6 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                                 >
-                                    Clear filters
+                                    {t('clearFilters')}
                                 </TrackedButton>
                             </div>
                         </div>
@@ -641,11 +642,8 @@ export default function WorkoutsPage() {
                                 <span className="grid size-12 place-items-center rounded-2xl bg-white/[0.05] text-text-dim ring-1 ring-hairline">
                                     <Calendar className="size-6" />
                                 </span>
-                                <h2 className="mt-5 font-display text-h3">No sessions yet</h2>
-                                <p className="mt-2 max-w-sm text-body text-text-dim">
-                                    Start a session, add your lifts and log every set — your history, e1RM and PRs build
-                                    from here.
-                                </p>
+                                <h2 className="mt-5 font-display text-h3">{t('noSessionsYet')}</h2>
+                                <p className="mt-2 max-w-sm text-body text-text-dim">{t('noSessionsBody')}</p>
                                 <TrackedButton
                                     analyticsId="session-create-first"
                                     type="button"
@@ -653,7 +651,7 @@ export default function WorkoutsPage() {
                                     className="mt-6 inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
                                 >
                                     <Plus className="size-4" />
-                                    Start your first session
+                                    {t('startFirst')}
                                 </TrackedButton>
                             </div>
                         </div>
@@ -684,7 +682,7 @@ export default function WorkoutsPage() {
                                 disabled={isFetchingNextPage}
                                 className="mt-6 inline-flex w-max rounded-full px-5 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text disabled:opacity-60"
                             >
-                                {isFetchingNextPage ? 'Loading…' : 'Load more'}
+                                {isFetchingNextPage ? t('loading') : t('loadMore')}
                             </TrackedButton>
                         ) : null}
                     </>
@@ -698,9 +696,9 @@ export default function WorkoutsPage() {
                 open={deleting !== null}
                 onClose={() => setDeleting(null)}
                 onConfirm={onConfirmDelete}
-                title="Delete session?"
-                description="This permanently removes the session and all its exercises and sets. This can’t be undone."
-                confirmLabel="Delete"
+                title={t('deleteTitle')}
+                description={t('deleteBody')}
+                confirmLabel={t('deleteConfirm')}
                 destructive
                 pending={del.isPending}
                 error={deleteError}

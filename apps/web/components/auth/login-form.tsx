@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 
@@ -9,11 +10,15 @@ import { FormError } from '@/components/ui/form-error'
 import { SubmitButton } from '@/components/ui/submit-button'
 import { TrackedLink } from '@/components/ui/tracked'
 import { track } from '@/lib/analytics/events'
-import { gqlErrorCode, gqlErrorMessage } from '@/lib/graphql/error'
+import { gqlErrorCode } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useLogin } from '@/lib/graphql/hooks/use-auth'
 import { fieldErrors, loginSchema } from '@/lib/validation/auth'
 
 export function LoginForm() {
+    const t = useTranslations('auth')
+    const te = (key?: string) => (key ? t(`errors.${key}`) : undefined)
+    const errorMessage = useErrorMessage()
     const router = useRouter()
     const login = useLogin()
     const [errors, setErrors] = useState<Record<string, string>>({})
@@ -38,32 +43,38 @@ export function LoginForm() {
             router.replace('/dashboard')
         } catch (error) {
             track('auth_failed', { action: 'login', code: gqlErrorCode(error) })
-            setFormError(gqlErrorMessage(error))
+            setFormError(errorMessage(error))
         }
     }
 
     return (
         <AuthCard
-            title="Welcome back"
-            subtitle="Log in to keep the streak alive."
+            title={t('login.title')}
+            subtitle={t('login.subtitle')}
             footer={
                 <>
-                    New here?{' '}
+                    {t('login.newHere')}{' '}
                     <TrackedLink
                         analyticsId="login-register-link"
                         href="/register"
                         className="text-text underline-offset-4 hover:underline"
                     >
-                        Create an account
+                        {t('login.createAccount')}
                     </TrackedLink>
                 </>
             }
         >
             <form onSubmit={onSubmit} className="space-y-5" noValidate>
-                <Field label="Email" htmlFor="email" error={errors['email']}>
-                    <Input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" />
+                <Field label={t('fields.email')} htmlFor="email" error={te(errors['email'])}>
+                    <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder={t('placeholders.email')}
+                    />
                 </Field>
-                <Field label="Password" htmlFor="password" error={errors['password']}>
+                <Field label={t('fields.password')} htmlFor="password" error={te(errors['password'])}>
                     <Input
                         id="password"
                         name="password"
@@ -79,14 +90,14 @@ export function LoginForm() {
                         href="/forgot-password"
                         className="text-sm text-text-dim underline-offset-4 transition-colors hover:text-text hover:underline"
                     >
-                        Forgot password?
+                        {t('login.forgot')}
                     </TrackedLink>
                 </div>
 
                 <FormError error={formError} />
 
                 <SubmitButton analyticsId="login-submit" loading={login.isPending}>
-                    Log in
+                    {t('login.submit')}
                 </SubmitButton>
             </form>
         </AuthCard>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { type ExerciseSessionHistorySet, useExerciseSessionHistory } from '@/lib/graphql/hooks/use-workouts'
@@ -38,6 +39,8 @@ export function ExerciseHistory({
     sessionId: string
     units: Units
 }) {
+    const t = useTranslations('workouts')
+    const locale = useLocale()
     const [open, setOpen] = useState(false)
     const { data, isLoading, isError } = useExerciseSessionHistory(exerciseId, sessionId, { enabled: open })
 
@@ -53,7 +56,7 @@ export function ExerciseHistory({
                 className="flex w-full items-center gap-2 text-left font-mono text-eyebrow uppercase tracking-widest text-text-faint transition-colors duration-300 hover:text-text-dim"
             >
                 <ChevronDown className="t-acc-chevron size-3.5" />
-                Previous sessions
+                {t('previousSessions')}
                 {open && count > 0 ? <span className="text-text-dim">· {count}</span> : null}
             </TrackedButton>
 
@@ -61,17 +64,17 @@ export function ExerciseHistory({
                 <div className="t-acc-panel-inner">
                     <div className="pt-3">
                         {isLoading ? (
-                            <p className="text-sm text-text-faint">Loading…</p>
+                            <p className="text-sm text-text-faint">{t('loading')}</p>
                         ) : isError ? (
-                            <p className="text-sm text-text-faint">Couldn&rsquo;t load history.</p>
+                            <p className="text-sm text-text-faint">{t('historyLoadError')}</p>
                         ) : count === 0 ? (
-                            <p className="text-sm text-text-faint">No previous sessions logged yet.</p>
+                            <p className="text-sm text-text-faint">{t('noPrevious')}</p>
                         ) : (
                             <ul className="space-y-2.5">
                                 {data!.map((entry) => (
                                     <li key={entry.sessionId} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                                         <span className="w-14 shrink-0 font-mono text-xs uppercase text-text-faint">
-                                            {new Date(entry.performedAt).toLocaleDateString(undefined, DATE_FMT)}
+                                            {new Date(entry.performedAt).toLocaleDateString(locale, DATE_FMT)}
                                         </span>
                                         <span className="min-w-0 flex-1 font-mono text-sm tabular-nums text-text-dim">
                                             {entry.sets.map((set, i) => (

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 
 import { cn } from '@/lib/cn'
@@ -22,11 +23,11 @@ import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 type RangeKey = 'all' | '30d' | '90d' | '1y'
 
-const RANGES: ReadonlyArray<{ key: RangeKey; label: string; days: number | null }> = [
-    { key: 'all', label: 'All time', days: null },
-    { key: '30d', label: '30 days', days: 30 },
-    { key: '90d', label: '90 days', days: 90 },
-    { key: '1y', label: '1 year', days: 365 },
+const RANGES: ReadonlyArray<{ key: RangeKey; labelKey: string; days: number | null }> = [
+    { key: 'all', labelKey: 'rangeAll', days: null },
+    { key: '30d', labelKey: 'range30', days: 30 },
+    { key: '90d', labelKey: 'range90', days: 90 },
+    { key: '1y', labelKey: 'range1y', days: 365 },
 ]
 
 function isoDaysAgo(days: number): string {
@@ -79,10 +80,11 @@ function KpiTile({ label, value, sub, accent }: { label: string; value: string; 
 }
 
 function RangeToggle({ range, onChange }: { range: RangeKey; onChange: (range: RangeKey) => void }) {
+    const t = useTranslations('stats')
     return (
         <SlidingTabs
             analyticsId="stats-range"
-            items={RANGES.map((r) => ({ value: r.key, label: r.label }))}
+            items={RANGES.map((r) => ({ value: r.key, label: t(r.labelKey) }))}
             value={range}
             onChange={(value) => onChange(value as RangeKey)}
         />
@@ -102,6 +104,9 @@ function DeltaArrow({ delta, units }: { delta: number; units: ReturnType<typeof 
 // ── page ─────────────────────────────────────────────────────
 
 export default function ExerciseStatsPage() {
+    const t = useTranslations('stats')
+    const tw = useTranslations('workouts')
+    const tt = useTranslations('taxonomy')
     const { data: me } = useMe()
     const units = unitsOf(me?.units)
     const [range, setRange] = useState<RangeKey>('all')
@@ -169,15 +174,13 @@ export default function ExerciseStatsPage() {
                 href="/workouts"
                 className="font-mono text-eyebrow uppercase text-text-faint transition-colors duration-300 hover:text-text-dim"
             >
-                ← Workouts
+                {tw('breadcrumbWorkouts')}
             </TrackedLink>
 
             <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
                 <TextsReveal>
-                    <h1 className="font-display text-display">Analytics</h1>
-                    <p className="mt-3 max-w-lg text-body text-text-dim">
-                        Strength, volume and balance from your logged sets. Estimated 1RM uses the Epley formula.
-                    </p>
+                    <h1 className="font-display text-display">{t('title')}</h1>
+                    <p className="mt-3 max-w-lg text-body text-text-dim">{t('intro')}</p>
                 </TextsReveal>
                 <RangeToggle range={range} onChange={setRange} />
             </div>
@@ -185,16 +188,14 @@ export default function ExerciseStatsPage() {
             {isEmpty ? (
                 <div className="mt-10 rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
                     <div className="inset-hi rounded-[calc(2rem-0.375rem)] bg-surface p-8">
-                        <h2 className="font-display text-h3">Nothing to chart yet</h2>
-                        <p className="mt-2 max-w-sm text-body text-text-dim">
-                            No logged sets in this range. Log some sets and your dashboard fills in here.
-                        </p>
+                        <h2 className="font-display text-h3">{t('emptyTitle')}</h2>
+                        <p className="mt-2 max-w-sm text-body text-text-dim">{t('emptyBody')}</p>
                         <TrackedLink
                             analyticsId="stats-empty-go-workouts"
                             href="/workouts"
                             className="mt-6 inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
                         >
-                            Go to workouts
+                            {t('goToWorkouts')}
                         </TrackedLink>
                     </div>
                 </div>
@@ -203,7 +204,7 @@ export default function ExerciseStatsPage() {
                     {/* 1 — KPIs */}
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                         <KpiTile
-                            label="Est. total (S+B+D)"
+                            label={t('kpiEstTotal')}
                             value={formatWeight(summary?.estimatedTotalKg, units)}
                             sub={
                                 summary
@@ -212,28 +213,28 @@ export default function ExerciseStatsPage() {
                             }
                             accent
                         />
-                        <KpiTile label="Volume" value={formatWeight(summary?.totalVolumeKg ?? 0, units)} />
-                        <KpiTile label="Sessions" value={String(summary?.sessions ?? 0)} />
-                        <KpiTile label="Training days" value={String(summary?.trainingDays ?? 0)} />
-                        <KpiTile label="Sets" value={String(summary?.totalSets ?? 0)} />
-                        <KpiTile label="Reps" value={String(summary?.totalReps ?? 0)} />
-                        <KpiTile label="Avg RPE" value={summary?.avgRpe != null ? summary.avgRpe.toFixed(1) : '—'} />
-                        <KpiTile label="Exercises" value={String(summary?.distinctExercises ?? 0)} />
+                        <KpiTile label={t('kpiVolume')} value={formatWeight(summary?.totalVolumeKg ?? 0, units)} />
+                        <KpiTile label={t('kpiSessions')} value={String(summary?.sessions ?? 0)} />
+                        <KpiTile label={t('kpiTrainingDays')} value={String(summary?.trainingDays ?? 0)} />
+                        <KpiTile label={t('kpiSets')} value={String(summary?.totalSets ?? 0)} />
+                        <KpiTile label={t('kpiReps')} value={String(summary?.totalReps ?? 0)} />
+                        <KpiTile label={t('kpiAvgRpe')} value={summary?.avgRpe != null ? summary.avgRpe.toFixed(1) : '—'} />
+                        <KpiTile label={t('kpiExercises')} value={String(summary?.distinctExercises ?? 0)} />
                     </div>
 
                     {/* 2 — Strength progression + projection */}
                     <SectionCard
-                        title="Strength progression"
-                        subtitle="Best e1RM per session, with a linear trend and 4/8/12-week projection."
+                        title={t('progressionTitle')}
+                        subtitle={t('progressionSubtitle')}
                         action={
                             <select
                                 value={liftId}
                                 onChange={(e) => setLiftId(e.target.value)}
-                                aria-label="Exercise"
+                                aria-label={t('exerciseAria')}
                                 className="appearance-none rounded-full bg-bg/60 px-4 py-2 text-sm text-text ring-1 ring-hairline outline-none focus:ring-ember/50"
                             >
                                 {liftGroups.map(([category, items]) => (
-                                    <optgroup key={category} label={category}>
+                                    <optgroup key={category} label={tt(`category.${category}`)}>
                                         {items.map((ex) => (
                                             <option key={ex.exerciseId} value={ex.exerciseId}>
                                                 {ex.name}
@@ -247,18 +248,19 @@ export default function ExerciseStatsPage() {
                         {progressionLoading ? (
                             <Skeleton className="h-56 w-full rounded-2xl" />
                         ) : !progression || progression.points.length === 0 ? (
-                            <p className="text-sm text-text-dim">No e1RM data for this exercise in range.</p>
+                            <p className="text-sm text-text-dim">{t('noE1rm')}</p>
                         ) : (
                             <>
                                 <StrengthTrendChart
                                     points={progression.points}
                                     trend={progression.trend ?? null}
                                     formatValue={formatValue}
+                                    projectedLabel={t('seriesProjected')}
                                 />
                                 {progression.trend ? (
                                     <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                                         <span className="text-text-dim">
-                                            Trend{' '}
+                                            {t('trend')}{' '}
                                             <span
                                                 className={cn(
                                                     'font-mono tabular-nums',
@@ -266,18 +268,18 @@ export default function ExerciseStatsPage() {
                                                 )}
                                             >
                                                 {progression.trend.slopePerWeekKg >= 0 ? '+' : ''}
-                                                {formatValue(progression.trend.slopePerWeekKg)}/wk
+                                                {t('perWeek', { value: formatValue(progression.trend.slopePerWeekKg) })}
                                             </span>
                                         </span>
                                         <span className="text-text-dim">
-                                            Fit{' '}
+                                            {t('fit')}{' '}
                                             <span className="font-mono text-text">
                                                 R² {progression.trend.r2.toFixed(2)}
                                             </span>
                                         </span>
                                         {progression.trend.projections.map((p) => (
                                             <span key={p.weeks} className="text-text-dim">
-                                                +{p.weeks}wk{' '}
+                                                {t('projWeeks', { weeks: p.weeks })}{' '}
                                                 <span className="font-mono tabular-nums text-amber">
                                                     {formatValue(p.e1rmKg)}
                                                 </span>
@@ -285,47 +287,58 @@ export default function ExerciseStatsPage() {
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="mt-4 text-sm text-text-faint">
-                                        Need at least two sessions to project a trend.
-                                    </p>
+                                    <p className="mt-4 text-sm text-text-faint">{t('needTwo')}</p>
                                 )}
                             </>
                         )}
                     </SectionCard>
 
                     {/* 3 — Weekly volume */}
-                    <SectionCard title="Weekly volume" subtitle="Tonnage per week (Σ weight·reps over logged sets).">
+                    <SectionCard title={t('weeklyVolumeTitle')} subtitle={t('weeklyVolumeSubtitle')}>
                         {volume && volume.length > 0 ? (
-                            <WeeklyVolumeChart data={volume} formatValue={formatValue} />
+                            <WeeklyVolumeChart
+                                data={volume}
+                                formatValue={formatValue}
+                                seriesName={t('seriesVolume')}
+                                weekOfLabel={(date) => t('weekOf', { date })}
+                            />
                         ) : (
-                            <p className="text-sm text-text-dim">No volume in this range.</p>
+                            <p className="text-sm text-text-dim">{t('noVolume')}</p>
                         )}
                     </SectionCard>
 
                     {/* 4 — Distribution + intensity */}
                     <div className="grid gap-6 lg:grid-cols-2">
-                        <SectionCard title="Volume by muscle" subtitle="Where your training emphasis lands.">
+                        <SectionCard title={t('byMuscleTitle')} subtitle={t('byMuscleSubtitle')}>
                             {distribution && distribution.byMuscle.length > 0 ? (
-                                <DistributionChart data={distribution.byMuscle} formatValue={formatValue} />
+                                <DistributionChart
+                                    data={distribution.byMuscle}
+                                    formatValue={formatValue}
+                                    seriesName={t('seriesVolume')}
+                                    labelFor={(key) => tt(`muscle.${key}`)}
+                                />
                             ) : (
-                                <p className="text-sm text-text-dim">No data in this range.</p>
+                                <p className="text-sm text-text-dim">{t('noData')}</p>
                             )}
                         </SectionCard>
-                        <SectionCard title="Volume by movement" subtitle="Balance across movement categories.">
+                        <SectionCard title={t('byMovementTitle')} subtitle={t('byMovementSubtitle')}>
                             {distribution && distribution.byCategory.length > 0 ? (
-                                <DistributionChart data={distribution.byCategory} formatValue={formatValue} />
+                                <DistributionChart
+                                    data={distribution.byCategory}
+                                    formatValue={formatValue}
+                                    seriesName={t('seriesVolume')}
+                                    labelFor={(key) => tt(`category.${key}`)}
+                                />
                             ) : (
-                                <p className="text-sm text-text-dim">No data in this range.</p>
+                                <p className="text-sm text-text-dim">{t('noData')}</p>
                             )}
                         </SectionCard>
                     </div>
 
                     <SectionCard
-                        title="Intensity"
+                        title={t('intensityTitle')}
                         subtitle={
-                            intensityMetric === 'rpe'
-                                ? 'Sets by RPE — hard work (≥8) glows ember.'
-                                : 'Sets by reps in reserve — close to failure (≤2) glows ember.'
+                            intensityMetric === 'rpe' ? t('intensityRpeSubtitle') : t('intensityRirSubtitle')
                         }
                         action={
                             <div className="inline-flex rounded-full bg-bg/60 p-1 ring-1 ring-hairline">
@@ -352,36 +365,37 @@ export default function ExerciseStatsPage() {
                             <IntensityChart
                                 data={distribution[intensityMetric]}
                                 label={intensityMetric.toUpperCase()}
+                                seriesName={t('seriesSets')}
                                 intense={(v) => (intensityMetric === 'rpe' ? v >= 8 : v <= 2)}
                             />
                         ) : (
                             <p className="text-sm text-text-dim">
-                                No {intensityMetric.toUpperCase()} recorded in this range.
+                                {t('noIntensity', { metric: intensityMetric.toUpperCase() })}
                             </p>
                         )}
                     </SectionCard>
 
                     {/* 5 — Per-exercise table */}
                     <SectionCard
-                        title="By exercise"
-                        subtitle={prev ? 'Δ compares e1RM with the previous period.' : 'Most-trained first.'}
+                        title={t('byExerciseTitle')}
+                        subtitle={prev ? t('deltaSubtitle') : t('mostTrained')}
                     >
                         {statsLoading ? (
-                            <p className="text-sm text-text-dim">Crunching your numbers…</p>
+                            <p className="text-sm text-text-dim">{t('crunching')}</p>
                         ) : sortedStats.length === 0 ? (
-                            <p className="text-sm text-text-dim">No logged sets in this range.</p>
+                            <p className="text-sm text-text-dim">{t('noLogged')}</p>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full min-w-[44rem] text-sm">
                                     <thead>
                                         <tr className="border-b border-hairline font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                                            <th className="py-3 pr-4 text-left font-normal">Exercise</th>
-                                            <th className="px-4 py-3 text-right font-normal">Volume</th>
-                                            <th className="px-4 py-3 text-right font-normal">Best e1RM</th>
+                                            <th className="py-3 pr-4 text-left font-normal">{t('colExercise')}</th>
+                                            <th className="px-4 py-3 text-right font-normal">{t('colVolume')}</th>
+                                            <th className="px-4 py-3 text-right font-normal">{t('colBestE1rm')}</th>
                                             {prev ? <th className="px-4 py-3 text-right font-normal">Δ</th> : null}
-                                            <th className="px-4 py-3 text-right font-normal">Heaviest</th>
-                                            <th className="px-4 py-3 text-right font-normal">Sets</th>
-                                            <th className="py-3 pl-4 text-right font-normal">Reps</th>
+                                            <th className="px-4 py-3 text-right font-normal">{t('colHeaviest')}</th>
+                                            <th className="px-4 py-3 text-right font-normal">{t('colSets')}</th>
+                                            <th className="py-3 pl-4 text-right font-normal">{t('colReps')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-hairline">
@@ -395,7 +409,7 @@ export default function ExerciseStatsPage() {
                                                     <td className="py-3 pr-4">
                                                         <span className="text-text">{row.name}</span>
                                                         <span className="ml-2 font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                                                            {row.category}
+                                                            {tt(`category.${row.category}`)}
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3 text-right font-mono tabular-nums text-text">
