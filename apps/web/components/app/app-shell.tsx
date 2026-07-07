@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@/lib/auth/session'
 import { identifyUser, resetAnalytics, track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
+import { hardLogout } from '@/lib/graphql/client'
 import { ArrowUpRight, Close, Mark, Menu } from '@/components/ui/icons'
 import { LanguageSwitcher } from '@/components/app/language-switcher'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
@@ -38,9 +39,13 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
     // Admins get an extra nav entry; the route itself is gated server-side too.
     const nav = initialUser?.isAdmin ? [...NAV, { id: 'admin', href: '/admin' } as const] : NAV
 
+    // A dead session (useMe errored after a failed refresh) can't be cleared with
+    // a client navigation — the HTTPOnly refresh cookie would linger and bounce
+    // /login back here. hardLogout hands off to the server route that drops the
+    // cookies, so we escape the trap instead of stalling on a half-rendered page.
     useEffect(() => {
-        if (isError) router.replace('/login')
-    }, [isError, router])
+        if (isError) hardLogout()
+    }, [isError])
 
     // Tie analytics events + replays to the user once their identity is known
     // (covers login, register and page reloads). username is a public handle.
