@@ -19,9 +19,19 @@ function compact(v: number): string {
  * Horizontal volume distribution over a categorical key (muscle / movement).
  * Bars fade ember → soft to read as a ranked emphasis list.
  */
-export function DistributionChart({ data, formatValue }: { data: DistributionSlice[]; formatValue: ValueFormatter }) {
+export function DistributionChart({
+    data,
+    formatValue,
+    seriesName = 'Volume',
+    labelFor = (key: string) => key,
+}: {
+    data: DistributionSlice[]
+    formatValue: ValueFormatter
+    seriesName?: string
+    labelFor?: (key: string) => string
+}) {
     if (data.length === 0) return null
-    const rows = data.map((d) => ({ label: d.key, value: d.totalVolumeKg, sets: d.totalSets }))
+    const rows = data.map((d) => ({ label: labelFor(d.key), value: d.totalVolumeKg, sets: d.totalSets }))
     const height = rows.length * 34 + 16
 
     return (
@@ -41,7 +51,7 @@ export function DistributionChart({ data, formatValue }: { data: DistributionSli
                         content={<ChartTooltip formatValue={formatValue} />}
                         cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                     />
-                    <Bar name="Volume" dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={22} isAnimationActive={false}>
+                    <Bar name={seriesName} dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={22} isAnimationActive={false}>
                         {rows.map((_, i) => (
                             <Cell
                                 key={i}

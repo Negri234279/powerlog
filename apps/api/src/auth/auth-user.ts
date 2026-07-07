@@ -12,4 +12,6 @@ export interface AuthUser {
     isAdmin: boolean
     /** Resolved avatar URL from the profile; null → default. */
     avatar: string | null
+    /** Preferred locale from the profile (BCP-47); null → not set. */
+    locale: string | null
 }

@@ -1,9 +1,10 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { type FormEvent, useId, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
-import { gqlErrorMessage } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { type WorkoutHistoryItem, useUpdateWorkoutSession } from '@/lib/graphql/hooks/use-workouts'
 import { Field, Input } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
@@ -24,6 +25,9 @@ function toDateInput(iso: string): string {
  * actually changes; notes are always sent (empty clears them).
  */
 export function EditSessionModal({ session, onClose }: { session: WorkoutHistoryItem; onClose: () => void }) {
+    const t = useTranslations('templates')
+    const tw = useTranslations('workouts')
+    const errorMessage = useErrorMessage()
     const update = useUpdateWorkoutSession()
     const titleId = useId()
     const originalDate = toDateInput(session.performedAt)
@@ -45,26 +49,26 @@ export function EditSessionModal({ session, onClose }: { session: WorkoutHistory
             track('workout_session_updated', {})
             onClose()
         } catch (err) {
-            setError(gqlErrorMessage(err))
+            setError(errorMessage(err))
         }
     }
 
     return (
         <Modal open onClose={onClose} labelledBy={titleId}>
             <h2 id={titleId} className="font-display text-h3 tracking-tight">
-                Edit session
+                {t('editSession')}
             </h2>
 
             <form onSubmit={onSubmit} className="mt-5 space-y-4">
-                <Field label="Date" htmlFor="edit-performedAt">
+                <Field label={tw('date')} htmlFor="edit-performedAt">
                     <Input id="edit-performedAt" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
                 </Field>
-                <Field label="Notes (optional)" htmlFor="edit-notes">
+                <Field label={tw('notesOptional')} htmlFor="edit-notes">
                     <Input
                         id="edit-notes"
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="e.g. Lower body, week 4"
+                        placeholder={tw('notesPlaceholder')}
                     />
                 </Field>
 
@@ -78,7 +82,7 @@ export function EditSessionModal({ session, onClose }: { session: WorkoutHistory
                         disabled={update.isPending}
                         className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-60"
                     >
-                        Cancel
+                        {tw('cancel')}
                     </TrackedButton>
                     <TrackedButton
                         analyticsId="session-edit-save"
@@ -86,7 +90,7 @@ export function EditSessionModal({ session, onClose }: { session: WorkoutHistory
                         disabled={update.isPending}
                         className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:opacity-60"
                     >
-                        {update.isPending ? 'Saving…' : 'Save changes'}
+                        {update.isPending ? tw('saving') : t('saveChanges')}
                     </TrackedButton>
                 </div>
             </form>

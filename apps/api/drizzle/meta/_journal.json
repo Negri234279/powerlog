@@ -162,6 +162,20 @@
       "when": 1783294919917,
       "tag": "0022_mean_quasar",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1783360840799,
+      "tag": "0023_dazzling_prism",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1783362529029,
+      "tag": "0024_seed_exercise_es",
+      "breakpoints": true
     }
   ]
 }

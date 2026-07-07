@@ -11,7 +11,7 @@ function setup() {
     const admin = UserMother.admin().withId('admin-id').withEmail('admin@example.com').buildExisting()
     const target = UserMother.athlete().withId('target-id').withEmail('target@example.com').buildExisting()
     const repo = new InMemoryUserRepository([admin, target])
-    const profiles = new FakeProfiles().set('target-id', { username: 'targetuser', avatarUrl: null })
+    const profiles = new FakeProfiles().set('target-id', { username: 'targetuser', avatarUrl: null, locale: null })
     const handler = new SetUserAdminHandler(repo, new FakeClock(), profiles)
     return { repo, handler }
 }

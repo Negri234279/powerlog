@@ -12,8 +12,8 @@ function contextFor(user?: AuthUser): ExecutionContext {
     } as unknown as ExecutionContext
 }
 
-const admin: AuthUser = { userId: 'u-1', email: 'a@b.c', role: 'athlete', isAdmin: true, avatar: null }
-const athlete: AuthUser = { userId: 'u-2', email: 'b@b.c', role: 'athlete', isAdmin: false, avatar: null }
+const admin: AuthUser = { userId: 'u-1', email: 'a@b.c', role: 'athlete', isAdmin: true, avatar: null, locale: null }
+const athlete: AuthUser = { userId: 'u-2', email: 'b@b.c', role: 'athlete', isAdmin: false, avatar: null, locale: null }
 
 describe('AdminGuard', () => {
     it('allows a request from an admin principal', () => {

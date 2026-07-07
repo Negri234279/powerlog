@@ -1,10 +1,11 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
-import { gqlErrorMessage } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import { type ExerciseData, useExercises } from '@/lib/graphql/hooks/use-workouts'
 import {
@@ -102,6 +103,9 @@ export function TemplateBuilder({
     const update = useUpdateWorkoutTemplate()
     const pending = create.isPending || update.isPending
 
+    const t = useTranslations('templates')
+    const tw = useTranslations('workouts')
+    const errorMessage = useErrorMessage()
     const [name, setName] = useState('')
     const [notes, setNotes] = useState('')
     const [draft, setDraft] = useState<DraftExercise[]>([])
@@ -169,7 +173,7 @@ export function TemplateBuilder({
     async function onSave() {
         setError(null)
         if (name.trim() === '') {
-            setError('Give your template a name.')
+            setError(t('nameRequired'))
             return
         }
 
@@ -200,21 +204,21 @@ export function TemplateBuilder({
             }
             onSaved()
         } catch (err) {
-            setError(gqlErrorMessage(err))
+            setError(errorMessage(err))
         }
     }
 
     if (editing && loadingTemplate && !seeded) {
-        return <p className="text-body text-text-dim">Loading template…</p>
+        return <p className="text-body text-text-dim">{t('loadingTemplate')}</p>
     }
 
     return (
         <div>
             <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <p className="font-mono text-eyebrow uppercase text-text-faint">Template</p>
+                    <p className="font-mono text-eyebrow uppercase text-text-faint">{t('eyebrow')}</p>
                     <h1 className="mt-1 font-display text-h2 tracking-tight">
-                        {editing ? 'Edit template' : 'New template'}
+                        {editing ? t('editTitle') : t('newTemplate')}
                     </h1>
                 </div>
                 <TrackedButton
@@ -223,7 +227,7 @@ export function TemplateBuilder({
                     onClick={onClose}
                     className="rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                 >
-                    Back
+                    {t('back')}
                 </TrackedButton>
             </div>
 
@@ -231,22 +235,22 @@ export function TemplateBuilder({
                 <div className="rounded-2xl bg-shell p-1.5 ring-1 ring-hairline">
                     <div className="inset-hi flex flex-col gap-4 rounded-[calc(1rem-0.25rem)] bg-surface p-5 sm:flex-row">
                         <div className="w-full sm:w-72">
-                            <Field label="Name" htmlFor="tmpl-name">
+                            <Field label={t('name')} htmlFor="tmpl-name">
                                 <Input
                                     id="tmpl-name"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    placeholder="e.g. Upper A"
+                                    placeholder={t('namePlaceholder')}
                                 />
                             </Field>
                         </div>
                         <div className="flex-1">
-                            <Field label="Notes (optional)" htmlFor="tmpl-notes">
+                            <Field label={tw('notesOptional')} htmlFor="tmpl-notes">
                                 <Input
                                     id="tmpl-notes"
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="e.g. Push focus, week 1–4"
+                                    placeholder={t('notesPlaceholder')}
                                 />
                             </Field>
                         </div>
@@ -257,7 +261,7 @@ export function TemplateBuilder({
                     <ExerciseCard
                         key={exercise.key}
                         exercise={exercise}
-                        name={nameById.get(exercise.exerciseId) ?? 'Exercise'}
+                        name={nameById.get(exercise.exerciseId) ?? tw('exercise')}
                         units={units}
                         onRemove={() => removeExercise(exercise.key)}
                         onNotes={(value) => patchExercise(exercise.key, { notes: value })}
@@ -280,7 +284,7 @@ export function TemplateBuilder({
                         onClick={() => setPicking(true)}
                         className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
                     >
-                        <Plus className="size-4" /> Add exercise
+                        <Plus className="size-4" /> {tw('addExercise')}
                     </TrackedButton>
                 )}
             </div>
@@ -295,7 +299,7 @@ export function TemplateBuilder({
                     disabled={pending}
                     className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:opacity-60"
                 >
-                    {pending ? 'Saving…' : editing ? 'Save changes' : 'Create template'}
+                    {pending ? tw('saving') : editing ? t('saveChanges') : t('createTemplate')}
                 </TrackedButton>
                 <TrackedButton
                     analyticsId="template-builder-cancel"
@@ -303,7 +307,7 @@ export function TemplateBuilder({
                     onClick={onClose}
                     className="rounded-full px-4 py-2.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                 >
-                    Cancel
+                    {tw('cancel')}
                 </TrackedButton>
             </div>
         </div>
@@ -329,6 +333,8 @@ function ExerciseCard({
     onPatchSet: (setKey: string, patch: Partial<DraftSet>) => void
     onRemoveSet: (setKey: string) => void
 }) {
+    const t = useTranslations('templates')
+    const tw = useTranslations('workouts')
     return (
         <div className="rounded-2xl bg-shell p-1.5 ring-1 ring-hairline">
             <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface p-5">
@@ -338,7 +344,7 @@ function ExerciseCard({
                         analyticsId="template-remove-exercise"
                         type="button"
                         onClick={onRemove}
-                        aria-label={`Remove ${name}`}
+                        aria-label={t('removeExercise', { name })}
                         className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
                     >
                         <Trash className="size-4" />
@@ -348,16 +354,16 @@ function ExerciseCard({
                 <Input
                     value={exercise.notes}
                     onChange={(e) => onNotes(e.target.value)}
-                    placeholder="Exercise notes (optional)"
+                    placeholder={t('exerciseNotesPlaceholder')}
                     className="mt-3"
                 />
 
                 <div className="mt-4 space-y-2">
                     <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-center gap-2 px-1 font-mono text-[10px] uppercase tracking-widest text-text-faint">
                         <span>#</span>
-                        <span>Weight ({units})</span>
-                        <span>Reps</span>
-                        <span>Intensity</span>
+                        <span>{tw('weightLabel', { units })}</span>
+                        <span>{tw('reps')}</span>
+                        <span>{tw('intensity')}</span>
                         <span />
                     </div>
                     {exercise.sets.map((set, index) => (
@@ -377,7 +383,7 @@ function ExerciseCard({
                     onClick={onAddSet}
                     className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                 >
-                    <Plus className="size-3.5" /> Add set
+                    <Plus className="size-3.5" /> {tw('addSet')}
                 </TrackedButton>
             </div>
         </div>
@@ -398,6 +404,7 @@ function SetRow({
     onPatch: (patch: Partial<DraftSet>) => void
     onRemove: () => void
 }) {
+    const t = useTranslations('templates')
     return (
         <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-center gap-2">
             <span className="text-right font-mono text-xs text-text-faint">{index}</span>
@@ -425,7 +432,7 @@ function SetRow({
                     value={set.intensityKind}
                     onChange={(e) => onPatch({ intensityKind: e.target.value as IntensityKind, intensity: '' })}
                     className={cn(cellClass, 'appearance-none')}
-                    aria-label="Intensity type"
+                    aria-label={t('intensityType')}
                 >
                     <option value="none">—</option>
                     <option value="rpe">RPE</option>
@@ -440,14 +447,14 @@ function SetRow({
                     disabled={set.intensityKind === 'none'}
                     placeholder={set.intensityKind === 'none' ? '' : '0'}
                     className={cn(cellClass, 'w-16 disabled:opacity-40')}
-                    aria-label="Intensity value"
+                    aria-label={t('intensityValue')}
                 />
             </div>
             <TrackedButton
                 analyticsId="template-remove-set"
                 type="button"
                 onClick={onRemove}
-                aria-label={`Remove set ${index}`}
+                aria-label={t('removeSet', { index })}
                 className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
             >
                 <Close className="size-4" />
@@ -456,12 +463,13 @@ function SetRow({
     )
 }
 
-function titleCase(value: string): string {
-    return value.charAt(0).toUpperCase() + value.slice(1)
-}
-
-/** Distinct field values in first-seen order (catalog is pre-sorted by taxonomy). */
-function optionsFor(exercises: ExerciseData[], pick: (e: ExerciseData) => string): MultiSelectOption[] {
+/** Distinct field values in first-seen order (catalog is pre-sorted by taxonomy),
+ *  labelled via the caller's (localized) label function. */
+function optionsFor(
+    exercises: ExerciseData[],
+    pick: (e: ExerciseData) => string,
+    label: (value: string) => string,
+): MultiSelectOption[] {
     const seen = new Set<string>()
     const out: MultiSelectOption[] = []
 
@@ -470,7 +478,7 @@ function optionsFor(exercises: ExerciseData[], pick: (e: ExerciseData) => string
         if (seen.has(value)) continue
 
         seen.add(value)
-        out.push({ value, label: titleCase(value) })
+        out.push({ value, label: label(value) })
     }
 
     return out
@@ -487,14 +495,25 @@ function ExercisePicker({
     onPick: (exerciseId: string) => void
     onClose: () => void
 }) {
+    const tw = useTranslations('workouts')
+    const tt = useTranslations('taxonomy')
     const [query, setQuery] = useState('')
     const [categories, setCategories] = useState<string[]>([])
     const [equipment, setEquipment] = useState<string[]>([])
     const [muscles, setMuscles] = useState<string[]>([])
 
-    const categoryOptions = useMemo(() => optionsFor(exercises, (e) => e.category), [exercises])
-    const equipmentOptions = useMemo(() => optionsFor(exercises, (e) => e.equipment), [exercises])
-    const muscleOptions = useMemo(() => optionsFor(exercises, (e) => e.primaryMuscle), [exercises])
+    const categoryOptions = useMemo(
+        () => optionsFor(exercises, (e) => e.category, (v) => tt(`category.${v}`)),
+        [exercises, tt],
+    )
+    const equipmentOptions = useMemo(
+        () => optionsFor(exercises, (e) => e.equipment, (v) => tt(`equipment.${v}`)),
+        [exercises, tt],
+    )
+    const muscleOptions = useMemo(
+        () => optionsFor(exercises, (e) => e.primaryMuscle, (v) => tt(`muscle.${v}`)),
+        [exercises, tt],
+    )
 
     const term = query.trim().toLowerCase()
     const hasFilters = categories.length > 0 || equipment.length > 0 || muscles.length > 0 || term !== ''
@@ -529,7 +548,7 @@ function ExercisePicker({
                             autoFocus
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search exercises…"
+                            placeholder={tw('searchExercises')}
                             className="pl-10"
                         />
                     </div>
@@ -539,28 +558,28 @@ function ExercisePicker({
                         onClick={onClose}
                         className="rounded-full px-3 py-2.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                     >
-                        Cancel
+                        {tw('cancel')}
                     </TrackedButton>
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                     <MultiSelect
                         analyticsId="exercise-filter-category"
-                        label="Category"
+                        label={tw('filterCategory')}
                         options={categoryOptions}
                         selected={categories}
                         onChange={setCategories}
                     />
                     <MultiSelect
                         analyticsId="exercise-filter-equipment"
-                        label="Equipment"
+                        label={tw('filterEquipment')}
                         options={equipmentOptions}
                         selected={equipment}
                         onChange={setEquipment}
                     />
                     <MultiSelect
                         analyticsId="exercise-filter-muscle"
-                        label="Muscle"
+                        label={tw('filterMuscle')}
                         options={muscleOptions}
                         selected={muscles}
                         onChange={setMuscles}
@@ -572,7 +591,7 @@ function ExercisePicker({
                             onClick={reset}
                             className="rounded-full px-3 py-1.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                         >
-                            Clear
+                            {tw('clear')}
                         </TrackedButton>
                     ) : null}
                 </div>
@@ -588,13 +607,14 @@ function ExercisePicker({
                             >
                                 <span className="text-sm text-text">{exercise.name}</span>
                                 <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                                    {exercise.category} · {exercise.equipment} · {exercise.primaryMuscle}
+                                    {tt(`category.${exercise.category}`)} · {tt(`equipment.${exercise.equipment}`)} ·{' '}
+                                    {tt(`muscle.${exercise.primaryMuscle}`)}
                                 </span>
                             </TrackedButton>
                         </li>
                     ))}
                     {filtered.length === 0 ? (
-                        <li className="px-3 py-2.5 text-sm text-text-faint">No exercises match.</li>
+                        <li className="px-3 py-2.5 text-sm text-text-faint">{tw('noExercisesMatch')}</li>
                     ) : null}
                 </ul>
             </div>

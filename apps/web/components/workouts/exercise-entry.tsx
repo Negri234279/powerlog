@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
@@ -36,6 +37,7 @@ function SetRow({
     index: number
     units: Units
 }) {
+    const t = useTranslations('workouts')
     const update = useUpdateSet()
     const remove = useRemoveSet()
     const [editing, setEditing] = useState(false)
@@ -46,7 +48,7 @@ function SetRow({
                 <SetForm
                     analyticsId="set-update"
                     units={units}
-                    submitLabel={update.isPending ? 'Saving…' : 'Save'}
+                    submitLabel={update.isPending ? t('saving') : t('save')}
                     pending={update.isPending}
                     initial={{
                         weight: set.weightKg === null ? null : kgTo(units, set.weightKg),
@@ -88,7 +90,7 @@ function SetRow({
                 </span>
                 {hasPlanned ? (
                     <span className="ml-2 text-xs text-text-faint">
-                        plan {formatWeight(set.plannedWeightKg, units)} × {set.plannedReps ?? '—'}
+                        {t('planPrefix')} {formatWeight(set.plannedWeightKg, units)} × {set.plannedReps ?? '—'}
                     </span>
                 ) : null}
             </div>
@@ -101,12 +103,12 @@ function SetRow({
                 onClick={() => setEditing(true)}
                 className="rounded-full px-2.5 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
             >
-                Edit
+                {t('edit')}
             </TrackedButton>
             <TrackedButton
                 analyticsId="set-remove"
                 type="button"
-                aria-label="Remove set"
+                aria-label={t('removeSet')}
                 onClick={() => remove.mutate({ sessionId, entryId, setId: set.id })}
                 disabled={remove.isPending}
                 className="grid size-7 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember disabled:opacity-50"
@@ -130,6 +132,7 @@ export function ExerciseEntry({
     exerciseName: string
     units: Units
 }) {
+    const t = useTranslations('workouts')
     const log = useLogSet()
     const removeEntry = useRemoveExerciseEntry()
     const [adding, setAdding] = useState(false)
@@ -166,7 +169,7 @@ export function ExerciseEntry({
                         disabled={removeEntry.isPending}
                         className="rounded-full px-3 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember disabled:opacity-50"
                     >
-                        Remove
+                        {t('entryRemove')}
                     </TrackedButton>
                 </div>
                 {entry.notes ? <p className="mt-1 text-sm text-text-dim">{entry.notes}</p> : null}
@@ -185,7 +188,7 @@ export function ExerciseEntry({
                         ))}
                     </ul>
                 ) : (
-                    <p className="mt-3 text-sm text-text-faint">No sets yet.</p>
+                    <p className="mt-3 text-sm text-text-faint">{t('noSetsYet')}</p>
                 )}
 
                 <div className="mt-4">
@@ -193,7 +196,7 @@ export function ExerciseEntry({
                         <SetForm
                             analyticsId="set-log"
                             units={units}
-                            submitLabel={log.isPending ? 'Adding…' : 'Add set'}
+                            submitLabel={log.isPending ? t('adding') : t('addSet')}
                             pending={log.isPending}
                             onSubmit={onAddSet}
                             onCancel={() => setAdding(false)}
@@ -205,7 +208,7 @@ export function ExerciseEntry({
                             onClick={() => setAdding(true)}
                             className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                         >
-                            <Plus className="size-4" /> Add set
+                            <Plus className="size-4" /> {t('addSet')}
                         </TrackedButton>
                     )}
                 </div>

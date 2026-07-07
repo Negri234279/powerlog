@@ -16,7 +16,7 @@ describe('GetMeHandler', () => {
             .withUnits('lb')
             .emailVerified()
             .buildExisting()
-        const profiles = new FakeProfiles().set('u-1', { username: 'coachy', avatarUrl: null })
+        const profiles = new FakeProfiles().set('u-1', { username: 'coachy', avatarUrl: null, locale: null })
         const handler = new GetMeHandler(new InMemoryUserRepository([user]), profiles)
 
         const view = await handler.execute(new GetMeQuery('u-1'))

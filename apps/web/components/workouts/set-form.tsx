@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { type FormEvent, type ReactNode, useState } from 'react'
 
 import type { Units } from '@/lib/units'
@@ -67,6 +68,7 @@ export function SetForm({
     /** Stable id for the submit `ui_click` (e.g. `set-log`); cancel emits `<id>-cancel`. */
     analyticsId: string
 }) {
+    const t = useTranslations('workouts')
     const start = initial ?? EMPTY
     const [weight, setWeight] = useState(toInput(start.weight))
     const [reps, setReps] = useState(start.reps?.toString() ?? '')
@@ -86,7 +88,7 @@ export function SetForm({
 
     return (
         <form onSubmit={submit} className="flex flex-wrap items-end gap-2.5">
-            <NumberField label={`Weight (${units})`}>
+            <NumberField label={t('weightLabel', { units })}>
                 <div className="w-24">
                     <Input
                         type="number"
@@ -100,7 +102,7 @@ export function SetForm({
                 </div>
             </NumberField>
 
-            <NumberField label="Reps">
+            <NumberField label={t('reps')}>
                 <div className="w-20">
                     <Input
                         type="number"
@@ -113,10 +115,10 @@ export function SetForm({
                 </div>
             </NumberField>
 
-            <NumberField label="Intensity">
+            <NumberField label={t('intensity')}>
                 <div className="w-24">
                     <Select value={intensity} onChange={(e) => setIntensity(e.target.value as Intensity)}>
-                        <option value="none">None</option>
+                        <option value="none">{t('none')}</option>
                         <option value="rpe">RPE</option>
                         <option value="rir">RIR</option>
                     </Select>
@@ -124,7 +126,7 @@ export function SetForm({
             </NumberField>
 
             {intensity !== 'none' ? (
-                <NumberField label={intensity === 'rpe' ? 'RPE (0–10)' : 'RIR'}>
+                <NumberField label={intensity === 'rpe' ? t('rpeRange') : t('rir')}>
                     <div className="w-20">
                         <Input
                             type="number"
@@ -155,7 +157,7 @@ export function SetForm({
                         onClick={onCancel}
                         className="rounded-full px-3 py-2.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                     >
-                        Cancel
+                        {t('cancel')}
                     </TrackedButton>
                 ) : null}
             </div>

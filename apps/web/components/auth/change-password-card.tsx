@@ -1,9 +1,10 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { type FormEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
-import { gqlErrorMessage } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useChangePassword, useMe } from '@/lib/graphql/hooks/use-auth'
 import { Field, Input } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
@@ -15,6 +16,9 @@ import { SubmitButton } from '@/components/ui/submit-button'
  * wrong current password with INVALID_CURRENT_PASSWORD, surfaced inline.
  */
 export function ChangePasswordCard() {
+    const t = useTranslations('profile')
+    const ta = useTranslations('auth.errors')
+    const errorMessage = useErrorMessage()
     const { data: me } = useMe()
     const change = useChangePassword()
     const [errors, setErrors] = useState<Record<string, string>>({})
@@ -32,9 +36,9 @@ export function ChangePasswordCard() {
         const confirm = String(data.get('confirm') ?? '')
 
         const next: Record<string, string> = {}
-        if (hasPassword && currentPassword.trim() === '') next['currentPassword'] = 'Enter your current password.'
-        if (newPassword.length < 8) next['newPassword'] = 'At least 8 characters.'
-        if (confirm !== newPassword) next['confirm'] = 'Passwords don’t match.'
+        if (hasPassword && currentPassword.trim() === '') next['currentPassword'] = t('enterCurrent')
+        if (newPassword.length < 8) next['newPassword'] = ta('passwordMin')
+        if (confirm !== newPassword) next['confirm'] = ta('passwordsMismatch')
         setErrors(next)
         if (Object.keys(next).length > 0) return
 
@@ -49,26 +53,24 @@ export function ChangePasswordCard() {
             setDone(true)
             form.reset()
         } catch (error) {
-            setFormError(gqlErrorMessage(error))
+            setFormError(errorMessage(error))
         }
     }
 
     return (
         <div className="rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
             <div className="inset-hi rounded-[calc(2rem-0.375rem)] bg-surface p-6 md:p-8">
-                <p className="font-mono text-eyebrow uppercase text-text-faint">Security</p>
+                <p className="font-mono text-eyebrow uppercase text-text-faint">{t('securityEyebrow')}</p>
                 <h2 className="mt-3 font-display text-h3 text-text">
-                    {hasPassword ? 'Change password' : 'Set a password'}
+                    {hasPassword ? t('changePassword') : t('setPassword')}
                 </h2>
                 <p className="mt-3 max-w-lg text-body text-text-dim">
-                    {hasPassword
-                        ? 'Update your password. You’ll stay signed in on this device.'
-                        : 'Your account signs in with Google. Set a password to also log in with email.'}
+                    {hasPassword ? t('changePasswordBody') : t('setPasswordBody')}
                 </p>
 
                 <form onSubmit={onSubmit} className="mt-6 max-w-sm space-y-4" noValidate>
                     {hasPassword ? (
-                        <Field label="Current password" htmlFor="currentPassword" error={errors['currentPassword']}>
+                        <Field label={t('currentPassword')} htmlFor="currentPassword" error={errors['currentPassword']}>
                             <Input
                                 id="currentPassword"
                                 name="currentPassword"
@@ -79,10 +81,10 @@ export function ChangePasswordCard() {
                         </Field>
                     ) : null}
                     <Field
-                        label="New password"
+                        label={t('newPassword')}
                         htmlFor="newPassword"
                         error={errors['newPassword']}
-                        hint="At least 8 characters"
+                        hint={ta('passwordMin')}
                     >
                         <Input
                             id="newPassword"
@@ -92,7 +94,7 @@ export function ChangePasswordCard() {
                             placeholder="••••••••"
                         />
                     </Field>
-                    <Field label="Confirm new password" htmlFor="confirm" error={errors['confirm']}>
+                    <Field label={t('confirmNewPassword')} htmlFor="confirm" error={errors['confirm']}>
                         <Input
                             id="confirm"
                             name="confirm"
@@ -103,10 +105,10 @@ export function ChangePasswordCard() {
                     </Field>
 
                     <FormError error={formError} />
-                    {done ? <p className="text-sm text-pr">Password updated.</p> : null}
+                    {done ? <p className="text-sm text-pr">{t('passwordUpdated')}</p> : null}
 
                     <SubmitButton analyticsId="password-change-submit" loading={change.isPending}>
-                        {hasPassword ? 'Update password' : 'Set password'}
+                        {hasPassword ? t('updatePassword') : t('setPasswordBtn')}
                     </SubmitButton>
                 </form>
             </div>

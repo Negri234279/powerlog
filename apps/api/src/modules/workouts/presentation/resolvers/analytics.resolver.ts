@@ -6,6 +6,7 @@ import { z } from 'zod'
 import type { AuthUser } from '../../../../auth/auth-user'
 import { CurrentUser } from '../../../../auth/current-user.decorator'
 import { JwtCookieGuard } from '../../../../auth/jwt-cookie.guard'
+import { toSupportedLocale } from '../../../../shared/i18n/locale'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import type { ExerciseSessionHistoryRow } from '../../application/ports/exercise-session-history.read-model'
 import type { ExerciseStatsRow } from '../../application/ports/exercise-stats.read-model'
@@ -45,7 +46,7 @@ export class AnalyticsResolver {
         @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
     ): Promise<ExerciseStatsRow[]> {
-        const query = new GetExerciseStatsQuery(user.userId, from, to)
+        const query = new GetExerciseStatsQuery(user.userId, from, to, toSupportedLocale(user.locale))
         return this.queryBus.execute(query)
     }
 

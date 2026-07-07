@@ -1,10 +1,11 @@
 'use client'
 
+import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
-import { gqlErrorMessage } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import {
     type WorkoutTemplateSummary,
     useCreateSessionFromTemplate,
@@ -24,8 +25,8 @@ import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 type View = { mode: 'list' } | { mode: 'new' } | { mode: 'edit'; id: string }
 
-function formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+function formatDate(iso: string, locale: string): string {
+    return new Date(iso).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function TemplateCard({
@@ -41,6 +42,9 @@ function TemplateCard({
     onStart: () => void
     starting: boolean
 }) {
+    const t = useTranslations('templates')
+    const tw = useTranslations('workouts')
+    const locale = useLocale()
     return (
         <div className="rounded-2xl bg-shell p-1.5 ring-1 ring-hairline transition-all duration-300 hover:ring-text/20">
             <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface p-5">
@@ -53,11 +57,11 @@ function TemplateCard({
                     </div>
                     <Menu
                         analyticsId="template-menu"
-                        label="Template actions"
+                        label={t('actions')}
                         items={[
-                            { label: 'Edit', onSelect: onEdit, analyticsId: 'template-menu-edit' },
+                            { label: tw('edit'), onSelect: onEdit, analyticsId: 'template-menu-edit' },
                             {
-                                label: 'Delete',
+                                label: tw('delete'),
                                 onSelect: onDelete,
                                 destructive: true,
                                 analyticsId: 'template-menu-delete',
@@ -68,9 +72,8 @@ function TemplateCard({
 
                 <div className="mt-4 flex items-center justify-between gap-3">
                     <p className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                        {template.exerciseCount} {template.exerciseCount === 1 ? 'exercise' : 'exercises'} ·{' '}
-                        {template.setCount} {template.setCount === 1 ? 'set' : 'sets'} ·{' '}
-                        {formatDate(template.updatedAt)}
+                        {t('exerciseCount', { count: template.exerciseCount })} ·{' '}
+                        {tw('setCountLabel', { count: template.setCount })} · {formatDate(template.updatedAt, locale)}
                     </p>
                     <TrackedButton
                         analyticsId="template-start-session"
@@ -79,7 +82,7 @@ function TemplateCard({
                         disabled={starting}
                         className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-4 py-1.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-60"
                     >
-                        <Plus className="size-3.5" /> Start session
+                        <Plus className="size-3.5" /> {t('startSession')}
                     </TrackedButton>
                 </div>
             </div>
@@ -88,6 +91,9 @@ function TemplateCard({
 }
 
 export default function TemplatesPage() {
+    const t = useTranslations('templates')
+    const tw = useTranslations('workouts')
+    const errorMessage = useErrorMessage()
     const router = useRouter()
     const [view, setView] = useState<View>({ mode: 'list' })
     const [rawSearch, setRawSearch] = useState('')
@@ -121,7 +127,7 @@ export default function TemplatesPage() {
                     track('session_created_from_template', {})
                     router.push(`/workouts/${r.createSessionFromTemplate.id}`)
                 },
-                onError: (err) => setStartError(gqlErrorMessage(err)),
+                onError: (err) => setStartError(errorMessage(err)),
             },
         )
     }
@@ -134,7 +140,7 @@ export default function TemplatesPage() {
                 track('workout_template_deleted', {})
                 setDeleting(null)
             },
-            onError: (err) => setDeleteError(gqlErrorMessage(err)),
+            onError: (err) => setDeleteError(errorMessage(err)),
         })
     }
 
@@ -148,13 +154,13 @@ export default function TemplatesPage() {
                 href="/workouts"
                 className="font-mono text-eyebrow uppercase text-text-faint transition-colors duration-300 hover:text-text-dim"
             >
-                ← Workouts
+                {tw('breadcrumbWorkouts')}
             </TrackedLink>
 
             <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
                 <TextsReveal>
-                    <p className="font-mono text-eyebrow uppercase text-text-faint">Training</p>
-                    <h1 className="mt-1 font-display text-display">Templates</h1>
+                    <p className="font-mono text-eyebrow uppercase text-text-faint">{tw('training')}</p>
+                    <h1 className="mt-1 font-display text-display">{tw('templates')}</h1>
                 </TextsReveal>
                 <TrackedButton
                     analyticsId="template-new-open"
@@ -162,7 +168,7 @@ export default function TemplatesPage() {
                     onClick={() => setView({ mode: 'new' })}
                     className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring hover:scale-[1.02] active:scale-[0.98]"
                 >
-                    <Plus className="size-4" /> New template
+                    <Plus className="size-4" /> {t('newTemplate')}
                 </TrackedButton>
             </div>
 
@@ -174,7 +180,7 @@ export default function TemplatesPage() {
                         analyticsId="templates-search"
                         value={rawSearch}
                         onChange={setRawSearch}
-                        placeholder="Search templates…"
+                        placeholder={t('searchTemplates')}
                         className="w-full sm:w-80"
                     />
                 </div>
@@ -194,12 +200,10 @@ export default function TemplatesPage() {
                                 <Dumbbell className="size-6" />
                             </span>
                             <h2 className="mt-5 font-display text-h3">
-                                {hasSearch ? 'No matching templates' : 'No templates yet'}
+                                {hasSearch ? t('noMatching') : t('noneYet')}
                             </h2>
                             <p className="mt-2 max-w-sm text-body text-text-dim">
-                                {hasSearch
-                                    ? 'Try a different name.'
-                                    : 'Build a reusable session — pick your exercises and program sets once, then start a session from it in a tap.'}
+                                {hasSearch ? t('tryDifferent') : t('emptyBody')}
                             </p>
                             {!hasSearch ? (
                                 <TrackedButton
@@ -208,7 +212,7 @@ export default function TemplatesPage() {
                                     onClick={() => setView({ mode: 'new' })}
                                     className="mt-6 inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
                                 >
-                                    <Plus className="size-4" /> Create your first template
+                                    <Plus className="size-4" /> {t('createFirst')}
                                 </TrackedButton>
                             ) : null}
                         </div>
@@ -238,13 +242,9 @@ export default function TemplatesPage() {
                 open={deleting !== null}
                 onClose={() => setDeleting(null)}
                 onConfirm={onConfirmDelete}
-                title="Delete template?"
-                description={
-                    deleting
-                        ? `“${deleting.name}” will be permanently removed. Sessions already created from it are not affected.`
-                        : undefined
-                }
-                confirmLabel="Delete"
+                title={t('deleteTitle')}
+                description={deleting ? t('deleteBody', { name: deleting.name }) : undefined}
+                confirmLabel={tw('deleteConfirm')}
                 destructive
                 pending={del.isPending}
                 error={deleteError}

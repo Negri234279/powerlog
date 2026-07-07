@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { type FormEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
@@ -12,7 +13,7 @@ import { Field, Input, Select, Textarea } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SubmitButton } from '@/components/ui/submit-button'
 import { TextsReveal } from '@/components/ui/texts-reveal'
-import { gqlErrorMessage } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { type ProfileData, useMyProfile, useUpdateProfile } from '@/lib/graphql/hooks/use-profile'
 
 /** Empty string → null (clear the field); trimmed value otherwise. */
@@ -22,6 +23,8 @@ function nullify(value: FormDataEntryValue | null): string | null {
 }
 
 function ProfileForm({ profile }: { profile: ProfileData }) {
+    const t = useTranslations('profile')
+    const errorMessage = useErrorMessage()
     const update = useUpdateProfile()
     const [formError, setFormError] = useState<string | null>(null)
     const [saved, setSaved] = useState(false)
@@ -48,17 +51,13 @@ function ProfileForm({ profile }: { profile: ProfileData }) {
             track('profile_updated', {})
             setSaved(true)
         } catch (error) {
-            setFormError(gqlErrorMessage(error))
+            setFormError(errorMessage(error))
         }
     }
 
     return (
         <form onSubmit={onSubmit} onChange={() => setSaved(false)} className="space-y-6" noValidate>
-            <Field
-                label="Display name"
-                htmlFor="displayName"
-                hint="Your public handle (= username) · a–z, 0–9, _ · 3–30"
-            >
+            <Field label={t('displayName')} htmlFor="displayName" hint={t('displayNameHint')}>
                 <Input
                     id="displayName"
                     name="displayName"
@@ -70,26 +69,26 @@ function ProfileForm({ profile }: { profile: ProfileData }) {
             </Field>
 
             <div className="grid gap-6 sm:grid-cols-2">
-                <Field label="First name" htmlFor="firstName">
+                <Field label={t('firstName')} htmlFor="firstName">
                     <Input id="firstName" name="firstName" defaultValue={profile.firstName ?? ''} />
                 </Field>
-                <Field label="Last name" htmlFor="lastName">
+                <Field label={t('lastName')} htmlFor="lastName">
                     <Input id="lastName" name="lastName" defaultValue={profile.lastName ?? ''} />
                 </Field>
             </div>
 
             <div className="grid gap-6 sm:grid-cols-3">
-                <Field label="Birth date" htmlFor="birthDate">
+                <Field label={t('birthDate')} htmlFor="birthDate">
                     <Input id="birthDate" name="birthDate" type="date" defaultValue={profile.birthDate ?? ''} />
                 </Field>
-                <Field label="Sex" htmlFor="sex">
+                <Field label={t('sex')} htmlFor="sex">
                     <Select id="sex" name="sex" defaultValue={profile.sex ?? ''}>
-                        <option value="">Prefer not to say</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
+                        <option value="">{t('sexUnset')}</option>
+                        <option value="male">{t('sexMale')}</option>
+                        <option value="female">{t('sexFemale')}</option>
                     </Select>
                 </Field>
-                <Field label="Height (cm)" htmlFor="heightCm">
+                <Field label={t('height')} htmlFor="heightCm">
                     <Input
                         id="heightCm"
                         name="heightCm"
@@ -101,28 +100,28 @@ function ProfileForm({ profile }: { profile: ProfileData }) {
                 </Field>
             </div>
 
-            <Field label="Bio" htmlFor="bio">
-                <Textarea id="bio" name="bio" defaultValue={profile.bio ?? ''} placeholder="Squatting since…" />
+            <Field label={t('bio')} htmlFor="bio">
+                <Textarea id="bio" name="bio" defaultValue={profile.bio ?? ''} placeholder={t('bioPlaceholder')} />
             </Field>
 
             <div className="grid gap-6 sm:grid-cols-3">
-                <Field label="Country" htmlFor="country" hint="2-letter code, e.g. ES">
+                <Field label={t('country')} htmlFor="country" hint={t('countryHint')}>
                     <Input id="country" name="country" maxLength={2} defaultValue={profile.country ?? ''} />
                 </Field>
-                <Field label="Timezone" htmlFor="timezone" hint="e.g. Europe/Madrid">
+                <Field label={t('timezone')} htmlFor="timezone" hint={t('timezoneHint')}>
                     <Input id="timezone" name="timezone" defaultValue={profile.timezone ?? ''} />
                 </Field>
-                <Field label="Locale" htmlFor="locale" hint="e.g. es-ES">
+                <Field label={t('locale')} htmlFor="locale" hint={t('localeHint')}>
                     <Input id="locale" name="locale" defaultValue={profile.locale ?? ''} />
                 </Field>
             </div>
 
             {formError ? <p className="text-sm text-ember">{formError}</p> : null}
-            {saved ? <p className="text-sm text-pr">Profile saved.</p> : null}
+            {saved ? <p className="text-sm text-pr">{t('saved')}</p> : null}
 
             <div className="max-w-xs">
                 <SubmitButton analyticsId="profile-save" loading={update.isPending}>
-                    Save profile
+                    {t('save')}
                 </SubmitButton>
             </div>
         </form>
@@ -130,17 +129,15 @@ function ProfileForm({ profile }: { profile: ProfileData }) {
 }
 
 export default function ProfilePage() {
+    const t = useTranslations('profile')
     const { data: profile, isLoading, isError } = useMyProfile()
 
     return (
         <div>
             <TextsReveal>
-                <p className="font-mono text-eyebrow uppercase text-text-faint">Account</p>
-                <h1 className="mt-3 font-display text-display">Your profile</h1>
-                <p className="mt-4 max-w-lg text-body text-text-dim">
-                    This shapes how analytics and coaching read your training. Everything here is optional except your
-                    display name.
-                </p>
+                <p className="font-mono text-eyebrow uppercase text-text-faint">{t('eyebrow')}</p>
+                <h1 className="mt-3 font-display text-display">{t('title')}</h1>
+                <p className="mt-4 max-w-lg text-body text-text-dim">{t('intro')}</p>
             </TextsReveal>
 
             {profile ? (
@@ -159,7 +156,7 @@ export default function ProfilePage() {
                             <Skeleton className="h-12 w-2/3" />
                         </div>
                     ) : isError || !profile ? (
-                        <p className="text-body text-ember">Couldn&rsquo;t load your profile. Try refreshing.</p>
+                        <p className="text-body text-ember">{t('loadError')}</p>
                     ) : (
                         <ProfileForm profile={profile} />
                     )}

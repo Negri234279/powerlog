@@ -31,7 +31,11 @@ export class ListExercisesHandler implements IQueryHandler<ListExercisesQuery, E
     constructor(private readonly exercises: ExerciseRepository) {}
 
     async execute(query: ListExercisesQuery): Promise<ExerciseView[]> {
-        const found = await this.exercises.findAll(query.category ? { categories: [query.category] } : undefined)
+        const found = await this.exercises.findAll(
+            query.category ? { categories: [query.category] } : undefined,
+            undefined,
+            query.locale,
+        )
         return found.map(toExerciseView)
     }
 }

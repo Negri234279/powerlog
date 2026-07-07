@@ -28,4 +28,33 @@ describe('UpdateExerciseHandler', () => {
             ExerciseNotFoundError,
         )
     })
+
+    it('upserts the Spanish name when provided', async () => {
+        const repo = new InMemoryExerciseRepository([ExerciseMother.create({ id: 'ex-1', slug: 'back-squat' })])
+        const handler = new UpdateExerciseHandler(repo)
+
+        await handler.execute(new UpdateExerciseCommand('ex-1', {}, 'Sentadilla Trasera'))
+
+        expect(await repo.translationsFor(['ex-1'], 'es')).toEqual(new Map([['ex-1', 'Sentadilla Trasera']]))
+    })
+
+    it('clears the Spanish name when given an empty string', async () => {
+        const repo = new InMemoryExerciseRepository([ExerciseMother.create({ id: 'ex-1', slug: 'back-squat' })])
+        await repo.upsertTranslation('ex-1', 'es', 'Sentadilla')
+        const handler = new UpdateExerciseHandler(repo)
+
+        await handler.execute(new UpdateExerciseCommand('ex-1', {}, ''))
+
+        expect(await repo.translationsFor(['ex-1'], 'es')).toEqual(new Map())
+    })
+
+    it('leaves the Spanish name untouched when nameEs is omitted', async () => {
+        const repo = new InMemoryExerciseRepository([ExerciseMother.create({ id: 'ex-1', slug: 'back-squat' })])
+        await repo.upsertTranslation('ex-1', 'es', 'Sentadilla')
+        const handler = new UpdateExerciseHandler(repo)
+
+        await handler.execute(new UpdateExerciseCommand('ex-1', { name: 'High-Bar Squat' }))
+
+        expect(await repo.translationsFor(['ex-1'], 'es')).toEqual(new Map([['ex-1', 'Sentadilla']]))
+    })
 })

@@ -14,7 +14,7 @@ describe('SetUserRoleHandler', () => {
         const handler = new SetUserRoleHandler(
             repo,
             new FakeClock(),
-            new FakeProfiles().set('u1', { username: 'u1', avatarUrl: null }),
+            new FakeProfiles().set('u1', { username: 'u1', avatarUrl: null, locale: null }),
         )
 
         const view = await handler.execute(new SetUserRoleCommand('u1', 'coach'))

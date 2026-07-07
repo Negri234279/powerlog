@@ -1,9 +1,10 @@
 'use client'
 
-import { type FormEvent, useEffect, useId, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { type FormEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 
-import { EXERCISE_CATEGORIES, EXERCISE_EQUIPMENT, EXERCISE_MUSCLES, taxonomyOptions } from '@/lib/exercise-taxonomy'
-import { gqlErrorMessage } from '@/lib/graphql/error'
+import { EXERCISE_CATEGORIES, EXERCISE_EQUIPMENT, EXERCISE_MUSCLES } from '@/lib/exercise-taxonomy'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import {
     type AdminExercise,
     useAdminExercises,
@@ -24,11 +25,24 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
 import { TrackedButton } from '@/components/ui/tracked'
 
-const CATEGORY_OPTIONS = taxonomyOptions(EXERCISE_CATEGORIES)
-const EQUIPMENT_OPTIONS = taxonomyOptions(EXERCISE_EQUIPMENT)
-const MUSCLE_OPTIONS = taxonomyOptions(EXERCISE_MUSCLES)
+/** Taxonomy options with localized labels, keyed by the (canonical) enum value. */
+function useTaxonomyOptions() {
+    const tt = useTranslations('taxonomy')
+    return useMemo(
+        () => ({
+            categories: EXERCISE_CATEGORIES.map((value) => ({ value, label: tt(`category.${value}`) })),
+            equipment: EXERCISE_EQUIPMENT.map((value) => ({ value, label: tt(`equipment.${value}`) })),
+            muscles: EXERCISE_MUSCLES.map((value) => ({ value, label: tt(`muscle.${value}`) })),
+        }),
+        [tt],
+    )
+}
 
 export default function AdminExercisesPage() {
+    const t = useTranslations('admin')
+    const tt = useTranslations('taxonomy')
+    const tw = useTranslations('workouts')
+    const { categories: CATEGORY_OPTIONS, equipment: EQUIPMENT_OPTIONS, muscles: MUSCLE_OPTIONS } = useTaxonomyOptions()
     const [rawSearch, setRawSearch] = useState('')
     const search = useDebouncedValue(rawSearch, 250)
     const [categories, setCategories] = useState<string[]>([])
@@ -70,8 +84,8 @@ export default function AdminExercisesPage() {
     return (
         <div>
             <TextsReveal>
-                <p className="font-mono text-eyebrow uppercase text-text-faint">Admin</p>
-                <h1 className="mt-1 font-display text-h2 tracking-tight">Exercise catalog</h1>
+                <p className="font-mono text-eyebrow uppercase text-text-faint">{t('eyebrow')}</p>
+                <h1 className="mt-1 font-display text-h2 tracking-tight">{t('catalogTitle')}</h1>
             </TextsReveal>
 
             <div className="mt-8">
@@ -86,7 +100,7 @@ export default function AdminExercisesPage() {
                     className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-4 py-2 text-sm font-medium text-bg transition-opacity duration-300 hover:opacity-90 active:scale-[0.98]"
                 >
                     <Plus className="size-4" />
-                    New exercise
+                    {t('newExercise')}
                 </TrackedButton>
             </div>
 
@@ -96,26 +110,26 @@ export default function AdminExercisesPage() {
                     analyticsId="admin-exercises-search"
                     value={rawSearch}
                     onChange={setRawSearch}
-                    placeholder="Search name or slug…"
+                    placeholder={t('searchNameSlug')}
                     className="w-64"
                 />
                 <MultiSelect
                     analyticsId="admin-exercises-filter-category"
-                    label="Category"
+                    label={t('colCategory')}
                     options={CATEGORY_OPTIONS}
                     selected={categories}
                     onChange={setCategories}
                 />
                 <MultiSelect
                     analyticsId="admin-exercises-filter-equipment"
-                    label="Equipment"
+                    label={t('colEquipment')}
                     options={EQUIPMENT_OPTIONS}
                     selected={equipment}
                     onChange={setEquipment}
                 />
                 <MultiSelect
                     analyticsId="admin-exercises-filter-muscle"
-                    label="Muscle"
+                    label={t('colMuscle')}
                     options={MUSCLE_OPTIONS}
                     selected={muscles}
                     onChange={setMuscles}
@@ -132,7 +146,7 @@ export default function AdminExercisesPage() {
                         }}
                         className="text-sm text-text-dim transition-colors duration-300 hover:text-text"
                     >
-                        Clear
+                        {tw('clear')}
                     </TrackedButton>
                 ) : null}
             </div>
@@ -140,11 +154,11 @@ export default function AdminExercisesPage() {
             {/* List */}
             <div className="mt-6 overflow-hidden rounded-2xl ring-1 ring-hairline">
                 <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_auto] gap-3 bg-white/[0.02] px-5 py-3 font-mono text-eyebrow uppercase text-text-faint">
-                    <span>Name</span>
-                    <span>Category</span>
-                    <span>Equipment</span>
-                    <span>Muscle</span>
-                    <span className="text-right">Actions</span>
+                    <span>{t('colName')}</span>
+                    <span>{t('colCategory')}</span>
+                    <span>{t('colEquipment')}</span>
+                    <span>{t('colMuscle')}</span>
+                    <span className="text-right">{t('colActions')}</span>
                 </div>
 
                 {isLoading ? (
@@ -154,7 +168,7 @@ export default function AdminExercisesPage() {
                         ))}
                     </div>
                 ) : exercises.length === 0 ? (
-                    <p className="px-5 py-8 text-sm text-text-dim">No exercises match these filters.</p>
+                    <p className="px-5 py-8 text-sm text-text-dim">{t('noExercisesMatch')}</p>
                 ) : (
                     <>
                         {exercises.map((exercise) => (
@@ -166,15 +180,15 @@ export default function AdminExercisesPage() {
                                     <p className="truncate text-text">{exercise.name}</p>
                                     <p className="truncate font-mono text-xs text-text-faint">{exercise.slug}</p>
                                 </div>
-                                <span className="text-text-dim">{exercise.category}</span>
-                                <span className="text-text-dim">{exercise.equipment}</span>
-                                <span className="text-text-dim">{exercise.primaryMuscle}</span>
+                                <span className="text-text-dim">{tt(`category.${exercise.category}`)}</span>
+                                <span className="text-text-dim">{tt(`equipment.${exercise.equipment}`)}</span>
+                                <span className="text-text-dim">{tt(`muscle.${exercise.primaryMuscle}`)}</span>
                                 <div className="flex items-center justify-end gap-1">
                                     <TrackedButton
                                         analyticsId="admin-exercise-edit"
                                         type="button"
                                         onClick={() => setEditing(exercise)}
-                                        aria-label={`Edit ${exercise.name}`}
+                                        aria-label={t('editAria', { name: exercise.name })}
                                         className="grid size-8 place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-white/[0.05] hover:text-text"
                                     >
                                         <Pencil className="size-4" />
@@ -183,7 +197,7 @@ export default function AdminExercisesPage() {
                                         analyticsId="admin-exercise-delete-open"
                                         type="button"
                                         onClick={() => setDeleting(exercise)}
-                                        aria-label={`Delete ${exercise.name}`}
+                                        aria-label={t('deleteAria', { name: exercise.name })}
                                         className="grid size-8 place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
                                     >
                                         <Trash className="size-4" />
@@ -208,7 +222,7 @@ export default function AdminExercisesPage() {
 
             {!isLoading && exercises.length > 0 ? (
                 <p className="mt-3 text-right font-mono text-xs text-text-faint">
-                    {exercises.length} of {total}
+                    {t('countOf', { shown: exercises.length, total })}
                 </p>
             ) : null}
 
@@ -230,12 +244,17 @@ export default function AdminExercisesPage() {
 // ── create / edit form ───────────────────────────────────────
 
 function ExerciseEditor({ exercise, onClose }: { exercise: AdminExercise | null; onClose: () => void }) {
+    const t = useTranslations('admin')
+    const tw = useTranslations('workouts')
+    const { categories: CATEGORY_OPTIONS, equipment: EQUIPMENT_OPTIONS, muscles: MUSCLE_OPTIONS } = useTaxonomyOptions()
+    const errorMessage = useErrorMessage()
     const titleId = useId()
     const create = useCreateExercise()
     const update = useUpdateExercise()
     const isEdit = exercise != null
 
     const [name, setName] = useState(exercise?.name ?? '')
+    const [nameEs, setNameEs] = useState(exercise?.nameEs ?? '')
     const [slug, setSlug] = useState(exercise?.slug ?? '')
     const [category, setCategory] = useState(exercise?.category ?? EXERCISE_CATEGORIES[0])
     const [equipment, setEquipment] = useState(exercise?.equipment ?? EXERCISE_EQUIPMENT[0])
@@ -249,36 +268,47 @@ function ExerciseEditor({ exercise, onClose }: { exercise: AdminExercise | null;
         setError(null)
         try {
             if (isEdit) {
-                await update.mutateAsync({ exerciseId: exercise.id, name, category, equipment, primaryMuscle })
+                // Always send nameEs so an emptied field clears the Spanish name.
+                await update.mutateAsync({
+                    exerciseId: exercise.id,
+                    name,
+                    category,
+                    equipment,
+                    primaryMuscle,
+                    nameEs: nameEs.trim(),
+                })
             } else {
-                await create.mutateAsync({ name, category, equipment, primaryMuscle, slug: slug.trim() || null })
+                await create.mutateAsync({
+                    name,
+                    category,
+                    equipment,
+                    primaryMuscle,
+                    slug: slug.trim() || null,
+                    nameEs: nameEs.trim() || null,
+                })
             }
             onClose()
         } catch (err) {
-            setError(gqlErrorMessage(err))
+            setError(errorMessage(err))
         }
     }
 
     return (
         <Modal open onClose={onClose} labelledBy={titleId}>
             <h2 id={titleId} className="font-display text-h3 tracking-tight">
-                {isEdit ? 'Edit exercise' : 'New exercise'}
+                {isEdit ? t('editExercise') : t('newExercise')}
             </h2>
 
             <form onSubmit={onSubmit} className="mt-5 space-y-4">
-                <Field label="Name" htmlFor="ex-name">
+                <Field label={t('nameEn')} htmlFor="ex-name">
                     <Input id="ex-name" value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
                 </Field>
 
-                <Field
-                    label="Slug"
-                    htmlFor="ex-slug"
-                    hint={
-                        isEdit
-                            ? 'The slug is a stable key and cannot be changed.'
-                            : 'Optional — derived from the name if left blank.'
-                    }
-                >
+                <Field label={t('nameEs')} htmlFor="ex-name-es" hint={t('nameEsHint')}>
+                    <Input id="ex-name-es" value={nameEs} onChange={(e) => setNameEs(e.target.value)} />
+                </Field>
+
+                <Field label={t('slug')} htmlFor="ex-slug" hint={isEdit ? t('slugImmutable') : t('slugOptional')}>
                     <Input
                         id="ex-slug"
                         value={isEdit ? exercise.slug : slug}
@@ -290,7 +320,7 @@ function ExerciseEditor({ exercise, onClose }: { exercise: AdminExercise | null;
                 </Field>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <Field label="Category" htmlFor="ex-category">
+                    <Field label={t('colCategory')} htmlFor="ex-category">
                         <Select id="ex-category" value={category} onChange={(e) => setCategory(e.target.value)}>
                             {CATEGORY_OPTIONS.map((o) => (
                                 <option key={o.value} value={o.value}>
@@ -299,7 +329,7 @@ function ExerciseEditor({ exercise, onClose }: { exercise: AdminExercise | null;
                             ))}
                         </Select>
                     </Field>
-                    <Field label="Equipment" htmlFor="ex-equipment">
+                    <Field label={t('colEquipment')} htmlFor="ex-equipment">
                         <Select id="ex-equipment" value={equipment} onChange={(e) => setEquipment(e.target.value)}>
                             {EQUIPMENT_OPTIONS.map((o) => (
                                 <option key={o.value} value={o.value}>
@@ -308,7 +338,7 @@ function ExerciseEditor({ exercise, onClose }: { exercise: AdminExercise | null;
                             ))}
                         </Select>
                     </Field>
-                    <Field label="Muscle" htmlFor="ex-muscle">
+                    <Field label={t('colMuscle')} htmlFor="ex-muscle">
                         <Select id="ex-muscle" value={primaryMuscle} onChange={(e) => setPrimaryMuscle(e.target.value)}>
                             {MUSCLE_OPTIONS.map((o) => (
                                 <option key={o.value} value={o.value}>
@@ -329,7 +359,7 @@ function ExerciseEditor({ exercise, onClose }: { exercise: AdminExercise | null;
                         disabled={pending}
                         className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-60"
                     >
-                        Cancel
+                        {tw('cancel')}
                     </TrackedButton>
                     <TrackedButton
                         analyticsId="admin-exercise-editor-save"
@@ -337,7 +367,7 @@ function ExerciseEditor({ exercise, onClose }: { exercise: AdminExercise | null;
                         disabled={pending}
                         className="rounded-full bg-ember-gradient px-5 py-2 text-sm font-medium text-bg transition-opacity duration-300 hover:opacity-90 disabled:opacity-60"
                     >
-                        {pending ? 'Saving…' : isEdit ? 'Save changes' : 'Create'}
+                        {pending ? tw('saving') : isEdit ? t('saveChanges') : t('create')}
                     </TrackedButton>
                 </div>
             </form>
@@ -348,6 +378,9 @@ function ExerciseEditor({ exercise, onClose }: { exercise: AdminExercise | null;
 // ── delete ───────────────────────────────────────────────────
 
 function DeleteExercise({ exercise, onClose }: { exercise: AdminExercise | null; onClose: () => void }) {
+    const t = useTranslations('admin')
+    const tw = useTranslations('workouts')
+    const errorMessage = useErrorMessage()
     const remove = useDeleteExercise()
     const [error, setError] = useState<string | null>(null)
 
@@ -358,7 +391,7 @@ function DeleteExercise({ exercise, onClose }: { exercise: AdminExercise | null;
             await remove.mutateAsync(exercise.id)
             onClose()
         } catch (err) {
-            setError(gqlErrorMessage(err))
+            setError(errorMessage(err))
         }
     }
 
@@ -371,9 +404,9 @@ function DeleteExercise({ exercise, onClose }: { exercise: AdminExercise | null;
                 onClose()
             }}
             onConfirm={onConfirm}
-            title={`Delete ${exercise?.name ?? 'exercise'}?`}
-            description="This removes it from the catalog. Exercises used in logged workouts cannot be deleted."
-            confirmLabel="Delete"
+            title={t('deleteExerciseTitle', { name: exercise?.name ?? tw('exercise') })}
+            description={t('deleteExerciseBody')}
+            confirmLabel={tw('delete')}
             destructive
             pending={remove.isPending}
             error={error}

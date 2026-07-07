@@ -27,7 +27,7 @@ function setup(seed = [] as ReturnType<UserMother['buildExisting']>[]) {
     const refreshTokens = new InMemoryRefreshTokenRepository()
     const signer = new FakeTokenSigner()
     const profiles = new FakeProfiles()
-    for (const u of seed) profiles.set(u.id, { username: 'gymrat', avatarUrl: null })
+    for (const u of seed) profiles.set(u.id, { username: 'gymrat', avatarUrl: null, locale: null })
     const sessions = new SessionIssuer(
         signer,
         new FakeRefreshTokenGenerator(),
@@ -67,6 +67,7 @@ describe('LoginHandler', () => {
                 role: 'coach',
                 isAdmin: true,
                 avatar: null,
+                locale: null,
             })
             expect(ctx.refreshTokens.all()).toHaveLength(1)
             expect(ctx.metrics.logins).toEqual([{ method: 'password', outcome: 'success' }])

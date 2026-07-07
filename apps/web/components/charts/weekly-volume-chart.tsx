@@ -21,7 +21,17 @@ function compact(v: number): string {
 }
 
 /** Weekly tonnage as bars; the tooltip adds the set count for context. */
-export function WeeklyVolumeChart({ data, formatValue }: { data: VolumeBucket[]; formatValue: ValueFormatter }) {
+export function WeeklyVolumeChart({
+    data,
+    formatValue,
+    seriesName = 'Volume',
+    weekOfLabel = (d: string) => `Week of ${d}`,
+}: {
+    data: VolumeBucket[]
+    formatValue: ValueFormatter
+    seriesName?: string
+    weekOfLabel?: (formattedDate: string) => string
+}) {
     return (
         <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -38,12 +48,12 @@ export function WeeklyVolumeChart({ data, formatValue }: { data: VolumeBucket[];
                     <YAxis tick={axisTick} tickLine={false} axisLine={false} width={40} tickFormatter={compact} />
                     <Tooltip
                         content={
-                            <ChartTooltip formatValue={formatValue} formatLabel={(l) => `Week of ${weekLabel(l)}`} />
+                            <ChartTooltip formatValue={formatValue} formatLabel={(l) => weekOfLabel(weekLabel(l))} />
                         }
                         cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                     />
                     <Bar
-                        name="Volume"
+                        name={seriesName}
                         dataKey="totalVolumeKg"
                         fill={CHART.ember}
                         radius={[4, 4, 0, 0]}

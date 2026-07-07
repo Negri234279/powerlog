@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
 
 import { track } from '@/lib/analytics/events'
@@ -10,6 +11,7 @@ import { TrackedLink } from '@/components/ui/tracked'
 /** Consumes the token from the verification email link and reports the result.
  *  Runs the mutation exactly once on mount. */
 export function VerifyEmailClient({ token }: { token: string | null }) {
+    const t = useTranslations('auth.verify')
     const verify = useVerifyEmail()
     const started = useRef(false)
 
@@ -30,16 +32,16 @@ export function VerifyEmailClient({ token }: { token: string | null }) {
                         <Badge tone="pr">
                             <Check className="size-7" />
                         </Badge>
-                        <h1 className="mt-6 font-display text-h2">Email verified</h1>
-                        <p className="mt-3 text-body text-text-dim">Your email is confirmed. You’re all set.</p>
+                        <h1 className="mt-6 font-display text-h2">{t('successTitle')}</h1>
+                        <p className="mt-3 text-body text-text-dim">{t('successBody')}</p>
                         <Cta analyticsId="verify-go-dashboard" href="/dashboard">
-                            Go to dashboard
+                            {t('goDashboard')}
                         </Cta>
                     </>
                 ) : state === 'verifying' ? (
                     <>
-                        <h1 className="font-display text-h2">Verifying your email…</h1>
-                        <p className="mt-3 text-body text-text-dim">One moment.</p>
+                        <h1 className="font-display text-h2">{t('verifying')}</h1>
+                        <p className="mt-3 text-body text-text-dim">{t('verifyingBody')}</p>
                     </>
                 ) : (
                     <>
@@ -47,15 +49,13 @@ export function VerifyEmailClient({ token }: { token: string | null }) {
                             <Close className="size-7" />
                         </Badge>
                         <h1 className="mt-6 font-display text-h2">
-                            {state === 'missing' ? 'Invalid link' : 'Verification failed'}
+                            {state === 'missing' ? t('missingTitle') : t('errorTitle')}
                         </h1>
                         <p className="mt-3 text-body text-text-dim">
-                            {state === 'missing'
-                                ? 'This page needs a verification token from your email link.'
-                                : 'The link may have expired or already been used. Request a new one from your profile.'}
+                            {state === 'missing' ? t('missingBody') : t('errorBody')}
                         </p>
                         <Cta analyticsId="verify-back-to-login" href="/login">
-                            Back to login
+                            {t('backToLogin')}
                         </Cta>
                     </>
                 )}

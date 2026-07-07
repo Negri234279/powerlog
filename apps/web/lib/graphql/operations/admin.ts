@@ -23,6 +23,7 @@ export const AdminExercisesDocument = graphql(`
                 id
                 slug
                 name
+                nameEs
                 category
                 equipment
                 primaryMuscle

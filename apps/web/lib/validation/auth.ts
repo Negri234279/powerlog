@@ -1,32 +1,33 @@
 import { z } from 'zod'
 
-/** Mirrors the API's register/login validation so the client fails fast. */
+// Validation messages are emitted as stable keys (not prose) so the forms can
+// translate them via the `auth.errors` namespace. See `fieldErrors`.
 export const loginSchema = z.object({
-    email: z.email('Enter a valid email address.'),
-    password: z.string().min(1, 'Password is required.'),
+    email: z.email('invalidEmail'),
+    password: z.string().min(1, 'passwordRequired'),
 })
 
 /** Native form inputs yield "" (or null) when empty; treat that as "not provided". */
 const blankToUndefined = (v: unknown) => (v == null || (typeof v === 'string' && v.trim() === '') ? undefined : v)
 
 export const registerSchema = z.object({
-    email: z.email('Enter a valid email address.'),
+    email: z.email('invalidEmail'),
     username: z
         .string()
         .trim()
-        .min(3, 'Use 3–30 characters.')
-        .max(30, 'Use 3–30 characters.')
-        .regex(/^[a-z0-9_]+$/i, 'Only a–z, 0–9 and underscore.'),
-    password: z.string().min(8, 'At least 8 characters.').max(200),
+        .min(3, 'usernameLength')
+        .max(30, 'usernameLength')
+        .regex(/^[a-z0-9_]+$/i, 'usernameChars'),
+    password: z.string().min(8, 'passwordMin').max(200),
     units: z.enum(['kg', 'lb']),
     // Optional profile details (provisioned with the account). Mirror the API.
-    firstName: z.preprocess(blankToUndefined, z.string().trim().min(1).max(60, 'Use up to 60 characters.').optional()),
-    lastName: z.preprocess(blankToUndefined, z.string().trim().min(1).max(60, 'Use up to 60 characters.').optional()),
+    firstName: z.preprocess(blankToUndefined, z.string().trim().min(1).max(60, 'nameMax').optional()),
+    lastName: z.preprocess(blankToUndefined, z.string().trim().min(1).max(60, 'nameMax').optional()),
     birthDate: z.preprocess(
         blankToUndefined,
         z
             .string()
-            .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.')
+            .regex(/^\d{4}-\d{2}-\d{2}$/, 'invalidDate')
             .optional(),
     ),
     heightCm: z.preprocess(
@@ -35,10 +36,10 @@ export const registerSchema = z.object({
             return cleaned === undefined ? undefined : Number(cleaned)
         },
         z
-            .number({ message: 'Enter a number.' })
-            .int('Whole centimetres.')
-            .min(50, 'Between 50 and 300 cm.')
-            .max(300, 'Between 50 and 300 cm.')
+            .number({ message: 'heightNumber' })
+            .int('heightWhole')
+            .min(50, 'heightRange')
+            .max(300, 'heightRange')
             .optional(),
     ),
 })

@@ -48,7 +48,7 @@ class StubAdminUserReadModel extends AdminUserReadModel {
 describe('AdminUsersHandler', () => {
     it('passes the filter + pagination through and enriches rows with the handle', async () => {
         const readModel = new StubAdminUserReadModel()
-        const profiles = new FakeProfiles().set('u1', { username: 'alpha', avatarUrl: null })
+        const profiles = new FakeProfiles().set('u1', { username: 'alpha', avatarUrl: null, locale: null })
         // u2 has no profile snapshot → username falls back to null.
         const handler = new AdminUsersHandler(readModel, profiles)
 

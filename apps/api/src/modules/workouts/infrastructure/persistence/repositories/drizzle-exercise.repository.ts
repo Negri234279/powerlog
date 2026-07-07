@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { and, asc, count, eq, ilike, inArray, or, type SQL } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
+import { DEFAULT_LOCALE, type SupportedLocale } from '../../../../../shared/i18n/locale'
 import type { ExerciseEntity } from '../../../domain/entities/exercise.entity'
 import {
     ExerciseRepository,
@@ -9,6 +10,8 @@ import {
     type ExercisePagination,
 } from '../../../domain/repositories/exercise.repository'
 import { ExerciseMapper } from '../mappers/exercise.mapper'
+import { localizedExerciseName } from '../read-models/localized-exercise-name'
+import { exerciseTranslations } from '../schema/exercise-translations.schema'
 import { exercises } from '../schema/exercises.schema'
 import { workoutExerciseEntries } from '../schema/workout-exercise-entries.schema'
 
@@ -37,12 +40,27 @@ export class DrizzleExerciseRepository extends ExerciseRepository {
         return conditions.length ? and(...conditions) : undefined
     }
 
-    async findAll(filter?: ExerciseFilter, pagination?: ExercisePagination): Promise<ExerciseEntity[]> {
+    async findAll(
+        filter?: ExerciseFilter,
+        pagination?: ExercisePagination,
+        locale: SupportedLocale = DEFAULT_LOCALE,
+    ): Promise<ExerciseEntity[]> {
+        // The display name is localized (English fallback) and drives the ordering,
+        // so a Spanish catalog is alphabetized in Spanish. Every other column is
+        // canonical, so the mapped entity is a faithful read projection.
+        const name = localizedExerciseName(locale)
         const base = this.db
-            .select()
+            .select({
+                id: exercises.id,
+                slug: exercises.slug,
+                name,
+                category: exercises.category,
+                equipment: exercises.equipment,
+                primaryMuscle: exercises.primaryMuscle,
+            })
             .from(exercises)
             .where(this.buildWhere(filter))
-            .orderBy(asc(exercises.category), asc(exercises.name))
+            .orderBy(asc(exercises.category), asc(name))
 
         const rows = await (pagination ? base.limit(pagination.limit).offset(pagination.offset) : base)
         return rows.map(ExerciseMapper.toDomain)
@@ -90,5 +108,32 @@ export class DrizzleExerciseRepository extends ExerciseRepository {
             .from(workoutExerciseEntries)
             .where(eq(workoutExerciseEntries.exerciseId, exerciseId))
         return row?.value ?? 0
+    }
+
+    async upsertTranslation(exerciseId: string, locale: SupportedLocale, name: string): Promise<void> {
+        await this.db
+            .insert(exerciseTranslations)
+            .values({ exerciseId, locale, name })
+            .onConflictDoUpdate({
+                target: [exerciseTranslations.exerciseId, exerciseTranslations.locale],
+                set: { name },
+            })
+    }
+
+    async deleteTranslation(exerciseId: string, locale: SupportedLocale): Promise<void> {
+        await this.db
+            .delete(exerciseTranslations)
+            .where(and(eq(exerciseTranslations.exerciseId, exerciseId), eq(exerciseTranslations.locale, locale)))
+    }
+
+    async translationsFor(exerciseIds: string[], locale: SupportedLocale): Promise<Map<string, string>> {
+        if (exerciseIds.length === 0) return new Map()
+
+        const rows = await this.db
+            .select({ exerciseId: exerciseTranslations.exerciseId, name: exerciseTranslations.name })
+            .from(exerciseTranslations)
+            .where(and(inArray(exerciseTranslations.exerciseId, exerciseIds), eq(exerciseTranslations.locale, locale)))
+
+        return new Map(rows.map((row) => [row.exerciseId, row.name]))
     }
 }

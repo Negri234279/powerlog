@@ -11,6 +11,8 @@ export interface ProfileSnapshot {
     username: string
     /** Resolved avatar URL; null → client shows the default. */
     avatarUrl: string | null
+    /** The user's preferred locale (BCP-47, e.g. "es-ES"); null → not set. */
+    locale: string | null
 }
 
 export abstract class ProfileSnapshotReader {

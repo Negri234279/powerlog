@@ -1,9 +1,10 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { type FormEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
-import { gqlErrorMessage } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useResetPassword } from '@/lib/graphql/hooks/use-auth'
 import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input } from '@/components/ui/field'
@@ -14,6 +15,8 @@ import { TrackedLink } from '@/components/ui/tracked'
 /** Completes a password reset with the token from the email link. On success the
  *  API revokes all sessions, so the user re-logs in everywhere. */
 export function ResetPasswordForm({ token }: { token: string | null }) {
+    const t = useTranslations('auth')
+    const errorMessage = useErrorMessage()
     const reset = useResetPassword()
     const [errors, setErrors] = useState<Record<string, string>>({})
     const [formError, setFormError] = useState<string | null>(null)
@@ -27,8 +30,8 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
         const confirm = String(data.get('confirm') ?? '')
 
         const next: Record<string, string> = {}
-        if (newPassword.length < 8) next['newPassword'] = 'At least 8 characters.'
-        if (confirm !== newPassword) next['confirm'] = 'Passwords don’t match.'
+        if (newPassword.length < 8) next['newPassword'] = t('errors.passwordMin')
+        if (confirm !== newPassword) next['confirm'] = t('errors.passwordsMismatch')
         setErrors(next)
         if (Object.keys(next).length > 0) return
 
@@ -38,39 +41,39 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
             track('password_reset', {})
             setDone(true)
         } catch (err) {
-            setFormError(gqlErrorMessage(err))
+            setFormError(errorMessage(err))
         }
     }
 
     if (!token) {
         return (
             <AuthCard
-                title="Invalid link"
-                subtitle="This page needs a reset token from your email link."
+                title={t('reset.invalidTitle')}
+                subtitle={t('reset.invalidSubtitle')}
                 footer={
                     <TrackedLink
                         analyticsId="reset-request-new-link"
                         href="/forgot-password"
                         className="text-text underline-offset-4 hover:underline"
                     >
-                        Request a new link
+                        {t('reset.requestNew')}
                     </TrackedLink>
                 }
             >
-                <p className="text-body text-text-dim">The link looks incomplete or expired.</p>
+                <p className="text-body text-text-dim">{t('reset.invalidBody')}</p>
             </AuthCard>
         )
     }
 
     if (done) {
         return (
-            <AuthCard title="Password reset" subtitle="You can now log in with your new password.">
+            <AuthCard title={t('reset.doneTitle')} subtitle={t('reset.doneSubtitle')}>
                 <TrackedLink
                     analyticsId="reset-go-to-login"
                     href="/login"
                     className="inline-flex rounded-full bg-ember-gradient px-6 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
                 >
-                    Go to login
+                    {t('reset.goToLogin')}
                 </TrackedLink>
             </AuthCard>
         )
@@ -78,27 +81,27 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
 
     return (
         <AuthCard
-            title="Set a new password"
-            subtitle="Choose a new password for your account."
+            title={t('reset.title')}
+            subtitle={t('reset.subtitle')}
             footer={
                 <>
-                    Changed your mind?{' '}
+                    {t('reset.changedMind')}{' '}
                     <TrackedLink
                         analyticsId="reset-login-link"
                         href="/login"
                         className="text-text underline-offset-4 hover:underline"
                     >
-                        Log in
+                        {t('reset.login')}
                     </TrackedLink>
                 </>
             }
         >
             <form onSubmit={onSubmit} className="space-y-5" noValidate>
                 <Field
-                    label="New password"
+                    label={t('fields.newPassword')}
                     htmlFor="newPassword"
                     error={errors['newPassword']}
-                    hint="At least 8 characters"
+                    hint={t('fields.passwordHint')}
                 >
                     <Input
                         id="newPassword"
@@ -108,7 +111,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
                         placeholder="••••••••"
                     />
                 </Field>
-                <Field label="Confirm password" htmlFor="confirm" error={errors['confirm']}>
+                <Field label={t('fields.confirmPassword')} htmlFor="confirm" error={errors['confirm']}>
                     <Input
                         id="confirm"
                         name="confirm"
@@ -119,7 +122,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
                 </Field>
                 <FormError error={formError} />
                 <SubmitButton analyticsId="reset-submit" loading={reset.isPending}>
-                    Reset password
+                    {t('reset.submit')}
                 </SubmitButton>
             </form>
         </AuthCard>

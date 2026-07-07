@@ -42,6 +42,7 @@ export class JwtCookieGuard implements CanActivate {
                 role: claims.role,
                 isAdmin: claims.isAdmin,
                 avatar: claims.avatar,
+                locale: claims.locale,
             }
 
             // Surface the user on every subsequent log line for this request.

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 
@@ -9,11 +10,15 @@ import { FormError } from '@/components/ui/form-error'
 import { SubmitButton } from '@/components/ui/submit-button'
 import { TrackedLink } from '@/components/ui/tracked'
 import { track } from '@/lib/analytics/events'
-import { gqlErrorCode, gqlErrorMessage } from '@/lib/graphql/error'
+import { gqlErrorCode } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useRegister } from '@/lib/graphql/hooks/use-auth'
 import { fieldErrors, registerSchema } from '@/lib/validation/auth'
 
 export function RegisterForm() {
+    const t = useTranslations('auth')
+    const te = (key?: string) => (key ? t(`errors.${key}`) : undefined)
+    const errorMessage = useErrorMessage()
     const router = useRouter()
     const register = useRegister()
     const [errors, setErrors] = useState<Record<string, string>>({})
@@ -44,35 +49,51 @@ export function RegisterForm() {
             router.replace('/dashboard')
         } catch (error) {
             track('auth_failed', { action: 'register', code: gqlErrorCode(error) })
-            setFormError(gqlErrorMessage(error))
+            setFormError(errorMessage(error))
         }
     }
 
     return (
         <AuthCard
-            title="Create your account"
-            subtitle="Free forever for solo lifters."
+            title={t('register.title')}
+            subtitle={t('register.subtitle')}
             footer={
                 <>
-                    Already lifting with us?{' '}
+                    {t('register.haveAccount')}{' '}
                     <TrackedLink
                         analyticsId="register-login-link"
                         href="/login"
                         className="text-text underline-offset-4 hover:underline"
                     >
-                        Log in
+                        {t('register.login')}
                     </TrackedLink>
                 </>
             }
         >
             <form onSubmit={onSubmit} className="space-y-5" noValidate>
-                <Field label="Email" htmlFor="email" error={errors['email']}>
-                    <Input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" />
+                <Field label={t('fields.email')} htmlFor="email" error={te(errors['email'])}>
+                    <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder={t('placeholders.email')}
+                    />
                 </Field>
-                <Field label="Username" htmlFor="username" error={errors['username']} hint="a–z, 0–9 and underscore">
-                    <Input id="username" name="username" autoComplete="username" placeholder="ironmike" />
+                <Field
+                    label={t('fields.username')}
+                    htmlFor="username"
+                    error={te(errors['username'])}
+                    hint={t('fields.usernameHint')}
+                >
+                    <Input id="username" name="username" autoComplete="username" placeholder={t('placeholders.username')} />
                 </Field>
-                <Field label="Password" htmlFor="password" error={errors['password']} hint="At least 8 characters">
+                <Field
+                    label={t('fields.password')}
+                    htmlFor="password"
+                    error={te(errors['password'])}
+                    hint={t('fields.passwordHint')}
+                >
                     <Input
                         id="password"
                         name="password"
@@ -81,31 +102,46 @@ export function RegisterForm() {
                         placeholder="••••••••"
                     />
                 </Field>
-                <Field label="Preferred units" htmlFor="units" error={errors['units']}>
+                <Field label={t('fields.units')} htmlFor="units" error={te(errors['units'])}>
                     <Select id="units" name="units" defaultValue="kg">
-                        <option value="kg">Kilograms (kg)</option>
-                        <option value="lb">Pounds (lb)</option>
+                        <option value="kg">{t('register.unitsKg')}</option>
+                        <option value="lb">{t('register.unitsLb')}</option>
                     </Select>
                 </Field>
 
-                <p className="pt-2 text-xs uppercase tracking-wide text-text-dim">
-                    Optional · you can fill these later
-                </p>
+                <p className="pt-2 text-xs uppercase tracking-wide text-text-dim">{t('register.optional')}</p>
 
                 <div className="grid grid-cols-2 gap-4">
-                    <Field label="First name" htmlFor="firstName" error={errors['firstName']}>
-                        <Input id="firstName" name="firstName" autoComplete="given-name" placeholder="Ada" />
+                    <Field label={t('fields.firstName')} htmlFor="firstName" error={te(errors['firstName'])}>
+                        <Input
+                            id="firstName"
+                            name="firstName"
+                            autoComplete="given-name"
+                            placeholder={t('placeholders.firstName')}
+                        />
                     </Field>
-                    <Field label="Last name" htmlFor="lastName" error={errors['lastName']}>
-                        <Input id="lastName" name="lastName" autoComplete="family-name" placeholder="Lovelace" />
+                    <Field label={t('fields.lastName')} htmlFor="lastName" error={te(errors['lastName'])}>
+                        <Input
+                            id="lastName"
+                            name="lastName"
+                            autoComplete="family-name"
+                            placeholder={t('placeholders.lastName')}
+                        />
                     </Field>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                    <Field label="Height (cm)" htmlFor="heightCm" error={errors['heightCm']}>
-                        <Input id="heightCm" name="heightCm" type="number" min={50} max={300} placeholder="175" />
+                    <Field label={t('fields.height')} htmlFor="heightCm" error={te(errors['heightCm'])}>
+                        <Input
+                            id="heightCm"
+                            name="heightCm"
+                            type="number"
+                            min={50}
+                            max={300}
+                            placeholder={t('placeholders.height')}
+                        />
                     </Field>
-                    <Field label="Birthday" htmlFor="birthDate" error={errors['birthDate']}>
+                    <Field label={t('fields.birthday')} htmlFor="birthDate" error={te(errors['birthDate'])}>
                         <Input id="birthDate" name="birthDate" type="date" autoComplete="bday" />
                     </Field>
                 </div>
@@ -113,7 +149,7 @@ export function RegisterForm() {
                 <FormError error={formError} />
 
                 <SubmitButton analyticsId="register-submit" loading={register.isPending}>
-                    Create account
+                    {t('register.submit')}
                 </SubmitButton>
             </form>
         </AuthCard>

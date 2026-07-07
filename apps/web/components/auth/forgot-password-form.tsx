@@ -1,8 +1,9 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { type FormEvent, useState } from 'react'
 
-import { gqlErrorMessage } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useForgotPassword } from '@/lib/graphql/hooks/use-auth'
 import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input } from '@/components/ui/field'
@@ -12,6 +13,8 @@ import { TrackedLink } from '@/components/ui/tracked'
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
 export function ForgotPasswordForm() {
+    const t = useTranslations('auth')
+    const errorMessage = useErrorMessage()
     const forgot = useForgotPassword()
     const [error, setError] = useState<string | null>(null)
     const [sent, setSent] = useState(false)
@@ -20,7 +23,7 @@ export function ForgotPasswordForm() {
         event.preventDefault()
         const email = String(new FormData(event.currentTarget).get('email') ?? '').trim()
         if (!EMAIL_RE.test(email)) {
-            setError('Enter a valid email address.')
+            setError(t('errors.invalidEmail'))
             return
         }
         setError(null)
@@ -29,53 +32,59 @@ export function ForgotPasswordForm() {
             // The API never reveals whether the email exists — same message either way.
             setSent(true)
         } catch (err) {
-            setError(gqlErrorMessage(err))
+            setError(errorMessage(err))
         }
     }
 
     if (sent) {
         return (
             <AuthCard
-                title="Check your inbox"
-                subtitle="If an account exists for that email, we’ve sent a reset link."
+                title={t('forgot.sentTitle')}
+                subtitle={t('forgot.sentSubtitle')}
                 footer={
                     <TrackedLink
                         analyticsId="forgot-back-to-login"
                         href="/login"
                         className="text-text underline-offset-4 hover:underline"
                     >
-                        Back to login
+                        {t('forgot.backToLogin')}
                     </TrackedLink>
                 }
             >
-                <p className="text-body text-text-dim">Didn’t get it? Check spam, or try again in a minute.</p>
+                <p className="text-body text-text-dim">{t('forgot.sentBody')}</p>
             </AuthCard>
         )
     }
 
     return (
         <AuthCard
-            title="Reset your password"
-            subtitle="Enter your email and we’ll send a reset link."
+            title={t('forgot.title')}
+            subtitle={t('forgot.subtitle')}
             footer={
                 <>
-                    Remembered it?{' '}
+                    {t('forgot.remembered')}{' '}
                     <TrackedLink
                         analyticsId="forgot-login-link"
                         href="/login"
                         className="text-text underline-offset-4 hover:underline"
                     >
-                        Log in
+                        {t('forgot.login')}
                     </TrackedLink>
                 </>
             }
         >
             <form onSubmit={onSubmit} className="space-y-5" noValidate>
-                <Field label="Email" htmlFor="email" error={error ?? undefined}>
-                    <Input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" />
+                <Field label={t('fields.email')} htmlFor="email" error={error ?? undefined}>
+                    <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder={t('placeholders.email')}
+                    />
                 </Field>
                 <SubmitButton analyticsId="forgot-submit" loading={forgot.isPending}>
-                    Send reset link
+                    {t('forgot.submit')}
                 </SubmitButton>
             </form>
         </AuthCard>

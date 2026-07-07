@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 
 import { type ExerciseData, useAddExerciseEntry, useExercises } from '@/lib/graphql/hooks/use-workouts'
@@ -8,12 +9,13 @@ import { Plus } from '@/components/ui/icons'
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select'
 import { TrackedButton } from '@/components/ui/tracked'
 
-function titleCase(value: string): string {
-    return value.charAt(0).toUpperCase() + value.slice(1)
-}
-
-/** Distinct field values in first-seen order (catalog is pre-sorted by taxonomy). */
-function optionsFor(exercises: ExerciseData[], pick: (e: ExerciseData) => string): MultiSelectOption[] {
+/** Distinct field values in first-seen order (catalog is pre-sorted by taxonomy),
+ *  labelled via the caller's (localized) label function. */
+function optionsFor(
+    exercises: ExerciseData[],
+    pick: (e: ExerciseData) => string,
+    label: (value: string) => string,
+): MultiSelectOption[] {
     const seen = new Set<string>()
     const out: MultiSelectOption[] = []
 
@@ -22,7 +24,7 @@ function optionsFor(exercises: ExerciseData[], pick: (e: ExerciseData) => string
         if (seen.has(value)) continue
 
         seen.add(value)
-        out.push({ value, label: titleCase(value) })
+        out.push({ value, label: label(value) })
     }
 
     return out
@@ -31,6 +33,8 @@ function optionsFor(exercises: ExerciseData[], pick: (e: ExerciseData) => string
 /** Catalog picker: a toggle that expands into a searchable, filterable exercise
  *  list and appends the chosen exercise to the session. */
 export function AddExercise({ sessionId }: { sessionId: string }) {
+    const t = useTranslations('workouts')
+    const tt = useTranslations('taxonomy')
     const { data: exercises, isLoading } = useExercises()
     const add = useAddExerciseEntry()
     const [open, setOpen] = useState(false)
@@ -41,9 +45,18 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
 
     const catalog = exercises ?? []
 
-    const categoryOptions = useMemo(() => optionsFor(catalog, (e) => e.category), [catalog])
-    const equipmentOptions = useMemo(() => optionsFor(catalog, (e) => e.equipment), [catalog])
-    const muscleOptions = useMemo(() => optionsFor(catalog, (e) => e.primaryMuscle), [catalog])
+    const categoryOptions = useMemo(
+        () => optionsFor(catalog, (e) => e.category, (v) => tt(`category.${v}`)),
+        [catalog, tt],
+    )
+    const equipmentOptions = useMemo(
+        () => optionsFor(catalog, (e) => e.equipment, (v) => tt(`equipment.${v}`)),
+        [catalog, tt],
+    )
+    const muscleOptions = useMemo(
+        () => optionsFor(catalog, (e) => e.primaryMuscle, (v) => tt(`muscle.${v}`)),
+        [catalog, tt],
+    )
 
     const term = query.trim().toLowerCase()
     const hasFilters = categories.length > 0 || equipment.length > 0 || muscles.length > 0 || term !== ''
@@ -87,7 +100,7 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
                 onClick={() => setOpen(true)}
                 className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
             >
-                <Plus className="size-4" /> Add exercise
+                <Plus className="size-4" /> {t('addExercise')}
             </TrackedButton>
         )
     }
@@ -100,7 +113,7 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
                         {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
                         <Input
                             autoFocus
-                            placeholder="Search exercises…"
+                            placeholder={t('searchExercises')}
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                         />
@@ -114,28 +127,28 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
                         }}
                         className="rounded-full px-3 py-2.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                     >
-                        Cancel
+                        {t('cancel')}
                     </TrackedButton>
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                     <MultiSelect
                         analyticsId="exercise-filter-category"
-                        label="Category"
+                        label={t('filterCategory')}
                         options={categoryOptions}
                         selected={categories}
                         onChange={setCategories}
                     />
                     <MultiSelect
                         analyticsId="exercise-filter-equipment"
-                        label="Equipment"
+                        label={t('filterEquipment')}
                         options={equipmentOptions}
                         selected={equipment}
                         onChange={setEquipment}
                     />
                     <MultiSelect
                         analyticsId="exercise-filter-muscle"
-                        label="Muscle"
+                        label={t('filterMuscle')}
                         options={muscleOptions}
                         selected={muscles}
                         onChange={setMuscles}
@@ -147,13 +160,13 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
                             onClick={reset}
                             className="rounded-full px-3 py-1.5 text-sm text-text-dim transition-colors duration-300 hover:text-text"
                         >
-                            Clear
+                            {t('clear')}
                         </TrackedButton>
                     ) : null}
                 </div>
 
                 {isLoading ? (
-                    <p className="mt-3 text-sm text-text-dim">Loading catalog…</p>
+                    <p className="mt-3 text-sm text-text-dim">{t('loadingCatalog')}</p>
                 ) : (
                     <ul className="mt-3 max-h-72 space-y-1 overflow-y-auto">
                         {filtered.map((exercise) => (
@@ -167,13 +180,14 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
                                 >
                                     <span className="text-sm text-text">{exercise.name}</span>
                                     <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                                        {exercise.category} · {exercise.equipment} · {exercise.primaryMuscle}
+                                        {tt(`category.${exercise.category}`)} · {tt(`equipment.${exercise.equipment}`)}{' '}
+                                        · {tt(`muscle.${exercise.primaryMuscle}`)}
                                     </span>
                                 </TrackedButton>
                             </li>
                         ))}
                         {filtered.length === 0 ? (
-                            <li className="px-3 py-2.5 text-sm text-text-faint">No exercises match.</li>
+                            <li className="px-3 py-2.5 text-sm text-text-faint">{t('noExercisesMatch')}</li>
                         ) : null}
                     </ul>
                 )}

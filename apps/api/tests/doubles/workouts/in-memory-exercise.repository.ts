@@ -5,6 +5,7 @@ import {
     type ExerciseFilter,
     type ExercisePagination,
 } from '../../../src/modules/workouts/domain/repositories/exercise.repository'
+import type { SupportedLocale } from '../../../src/shared/i18n/locale'
 
 /**
  * In-memory ExerciseRepository. Mirrors the Drizzle ordering: by category in
@@ -13,6 +14,8 @@ import {
  */
 export class InMemoryExerciseRepository extends ExerciseRepository {
     private readonly references = new Map<string, number>()
+    /** `${exerciseId}:${locale}` → localized name. */
+    private readonly translations = new Map<string, string>()
 
     constructor(private items: ExerciseEntity[] = []) {
         super()
@@ -34,7 +37,13 @@ export class InMemoryExerciseRepository extends ExerciseRepository {
         )
     }
 
-    async findAll(filter?: ExerciseFilter, pagination?: ExercisePagination): Promise<ExerciseEntity[]> {
+    // `locale` is accepted for interface parity; the double returns canonical
+    // names (localization is exercised in the Drizzle integration tests).
+    async findAll(
+        filter?: ExerciseFilter,
+        pagination?: ExercisePagination,
+        _locale?: SupportedLocale,
+    ): Promise<ExerciseEntity[]> {
         const matched = this.match(filter)
         return pagination ? matched.slice(pagination.offset, pagination.offset + pagination.limit) : matched
     }
@@ -65,6 +74,23 @@ export class InMemoryExerciseRepository extends ExerciseRepository {
 
     async countReferences(exerciseId: string): Promise<number> {
         return this.references.get(exerciseId) ?? 0
+    }
+
+    async upsertTranslation(exerciseId: string, locale: SupportedLocale, name: string): Promise<void> {
+        this.translations.set(`${exerciseId}:${locale}`, name)
+    }
+
+    async deleteTranslation(exerciseId: string, locale: SupportedLocale): Promise<void> {
+        this.translations.delete(`${exerciseId}:${locale}`)
+    }
+
+    async translationsFor(exerciseIds: string[], locale: SupportedLocale): Promise<Map<string, string>> {
+        const out = new Map<string, string>()
+        for (const id of exerciseIds) {
+            const name = this.translations.get(`${id}:${locale}`)
+            if (name !== undefined) out.set(id, name)
+        }
+        return out
     }
 
     /** Test helper: pretend `count` workout entries reference this exercise. */

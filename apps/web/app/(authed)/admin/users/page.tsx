@@ -1,9 +1,10 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/cn'
-import { gqlErrorMessage } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import {
     type AdminUser,
@@ -25,17 +26,22 @@ import { TextsReveal } from '@/components/ui/texts-reveal'
 import { Tooltip } from '@/components/ui/tooltip'
 import { TrackedButton } from '@/components/ui/tracked'
 
-const ROLE_OPTIONS = [
-    { value: 'athlete', label: 'Athlete' },
-    { value: 'coach', label: 'Coach' },
-]
-const STATUS_OPTIONS = [
-    { value: 'active', label: 'Active' },
-    { value: 'disabled', label: 'Disabled' },
-    { value: 'deleted', label: 'Deleted' },
-]
-
 export default function AdminUsersPage() {
+    const t = useTranslations('admin')
+    const tc = useTranslations('common.role')
+    const roleOptions = [
+        { value: 'athlete', label: tc('athlete') },
+        { value: 'coach', label: tc('coach') },
+    ]
+    const statusOptions = [
+        { value: 'active', label: t('statusActive') },
+        { value: 'disabled', label: t('statusDisabled') },
+        { value: 'deleted', label: t('statusDeleted') },
+    ]
+    const statusLabel = (s: string) =>
+        s === 'active' ? t('statusActive') : s === 'disabled' ? t('statusDisabled') : t('statusDeleted')
+    const whoOf = (u: AdminUser) => (u.username ? `@${u.username}` : u.email)
+    const errorMessage = useErrorMessage()
     const { data: me } = useMe()
     const [rawSearch, setRawSearch] = useState('')
     const search = useDebouncedValue(rawSearch, 250)
@@ -82,7 +88,7 @@ export default function AdminUsersPage() {
         try {
             await setRole.mutateAsync({ userId: user.id, role })
         } catch (err) {
-            setError(gqlErrorMessage(err))
+            setError(errorMessage(err))
         }
     }
 
@@ -93,7 +99,7 @@ export default function AdminUsersPage() {
             await setAdmin.mutateAsync({ userId: adminTarget.user.id, isAdmin: adminTarget.next })
             setAdminTarget(null)
         } catch (err) {
-            setError(gqlErrorMessage(err))
+            setError(errorMessage(err))
         }
     }
 
@@ -104,15 +110,15 @@ export default function AdminUsersPage() {
             await setStatus.mutateAsync({ userId: statusTarget.user.id, disabled: statusTarget.disable })
             setStatusTarget(null)
         } catch (err) {
-            setError(gqlErrorMessage(err))
+            setError(errorMessage(err))
         }
     }
 
     return (
         <div>
             <TextsReveal>
-                <p className="font-mono text-eyebrow uppercase text-text-faint">Admin</p>
-                <h1 className="mt-1 font-display text-h2 tracking-tight">Users</h1>
+                <p className="font-mono text-eyebrow uppercase text-text-faint">{t('eyebrow')}</p>
+                <h1 className="mt-1 font-display text-h2 tracking-tight">{t('usersTitle')}</h1>
             </TextsReveal>
 
             <div className="mt-8">
@@ -125,20 +131,20 @@ export default function AdminUsersPage() {
                     analyticsId="admin-users-search"
                     value={rawSearch}
                     onChange={setRawSearch}
-                    placeholder="Search email…"
+                    placeholder={t('searchEmail')}
                     className="w-64"
                 />
                 <MultiSelect
                     analyticsId="admin-users-filter-role"
-                    label="Role"
-                    options={ROLE_OPTIONS}
+                    label={t('filterRole')}
+                    options={roleOptions}
                     selected={roles}
                     onChange={setRoles}
                 />
                 <MultiSelect
                     analyticsId="admin-users-filter-status"
-                    label="Status"
-                    options={STATUS_OPTIONS}
+                    label={t('filterStatus')}
+                    options={statusOptions}
                     selected={statuses}
                     onChange={setStatuses}
                 />
@@ -153,7 +159,7 @@ export default function AdminUsersPage() {
                             : 'text-text-dim ring-hairline hover:bg-white/[0.04] hover:text-text',
                     )}
                 >
-                    Admins only
+                    {t('adminsOnly')}
                 </TrackedButton>
             </div>
 
@@ -164,10 +170,10 @@ export default function AdminUsersPage() {
                 <table className="w-full min-w-[44rem] table-fixed border-collapse text-sm">
                     <thead>
                         <tr className="bg-white/[0.02] text-left font-mono text-eyebrow uppercase text-text-faint">
-                            <th className="px-5 py-3 font-normal">User</th>
-                            <th className="w-40 px-5 py-3 font-normal">Role</th>
-                            <th className="w-36 px-5 py-3 font-normal">Status</th>
-                            <th className="w-44 px-5 py-3 text-right font-normal">Admin</th>
+                            <th className="px-5 py-3 font-normal">{t('colUser')}</th>
+                            <th className="w-40 px-5 py-3 font-normal">{t('colRole')}</th>
+                            <th className="w-36 px-5 py-3 font-normal">{t('colStatus')}</th>
+                            <th className="w-44 px-5 py-3 text-right font-normal">{t('colAdmin')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -184,7 +190,7 @@ export default function AdminUsersPage() {
                         ) : rows.length === 0 ? (
                             <tr>
                                 <td colSpan={4} className="px-5 py-8 text-text-dim">
-                                    No users match these filters.
+                                    {t('noUsersMatch')}
                                 </td>
                             </tr>
                         ) : (
@@ -202,8 +208,8 @@ export default function AdminUsersPage() {
                                                         <Tooltip
                                                             label={
                                                                 user.emailVerified
-                                                                    ? 'Email verified'
-                                                                    : 'Email not verified'
+                                                                    ? t('emailVerified')
+                                                                    : t('emailNotVerified')
                                                             }
                                                         >
                                                             {user.emailVerified ? (
@@ -232,13 +238,13 @@ export default function AdminUsersPage() {
                                                     onChange={(e) => changeRole(user, e.target.value)}
                                                     className="py-1.5 text-xs"
                                                 >
-                                                    <option value="athlete">Athlete</option>
-                                                    <option value="coach">Coach</option>
+                                                    <option value="athlete">{tc('athlete')}</option>
+                                                    <option value="coach">{tc('coach')}</option>
                                                 </Select>
                                             </td>
                                             <td className="px-5 py-3">
                                                 {user.status === 'deleted' ? (
-                                                    <span className="text-text-faint">deleted</span>
+                                                    <span className="text-text-faint">{t('statusDeleted')}</span>
                                                 ) : (
                                                     (() => {
                                                         const statusButton = (
@@ -253,17 +259,17 @@ export default function AdminUsersPage() {
                                                                     })
                                                                 }
                                                                 className={cn(
-                                                                    'rounded-full px-2.5 py-0.5 text-xs capitalize ring-1 transition-colors duration-300 disabled:opacity-40',
+                                                                    'rounded-full px-2.5 py-0.5 text-xs ring-1 transition-colors duration-300 disabled:opacity-40',
                                                                     user.status === 'active'
                                                                         ? 'bg-pr/10 text-pr ring-pr/30 hover:bg-pr/20'
                                                                         : 'bg-amber/10 text-amber ring-amber/30 hover:bg-amber/20',
                                                                 )}
                                                             >
-                                                                {user.status}
+                                                                {statusLabel(user.status)}
                                                             </TrackedButton>
                                                         )
                                                         return isSelf ? (
-                                                            <Tooltip label="You can't disable your own account">
+                                                            <Tooltip label={t('cantDisableSelf')}>
                                                                 {statusButton}
                                                             </Tooltip>
                                                         ) : (
@@ -289,11 +295,11 @@ export default function AdminUsersPage() {
                                                                     : 'text-text-dim ring-hairline hover:bg-white/[0.04] hover:text-text',
                                                             )}
                                                         >
-                                                            {user.isAdmin ? 'Admin' : 'Make admin'}
+                                                            {user.isAdmin ? t('admin') : t('makeAdmin')}
                                                         </TrackedButton>
                                                     )
                                                     return isSelf && user.isAdmin ? (
-                                                        <Tooltip label="You can't revoke your own admin">
+                                                        <Tooltip label={t('cantRevokeSelf')}>
                                                             {adminButton}
                                                         </Tooltip>
                                                     ) : (
@@ -327,7 +333,7 @@ export default function AdminUsersPage() {
 
             {!isLoading && rows.length > 0 ? (
                 <p className="mt-3 text-right font-mono text-xs text-text-faint">
-                    {rows.length} of {total}
+                    {t('countOf', { shown: rows.length, total })}
                 </p>
             ) : null}
 
@@ -339,13 +345,15 @@ export default function AdminUsersPage() {
                     setAdminTarget(null)
                 }}
                 onConfirm={confirmAdmin}
-                title={adminTarget?.next ? 'Grant admin access?' : 'Revoke admin access?'}
+                title={adminTarget?.next ? t('grantTitle') : t('revokeTitle')}
                 description={
                     adminTarget
-                        ? `${adminTarget.user.username ? `@${adminTarget.user.username}` : adminTarget.user.email} will ${adminTarget.next ? 'gain' : 'lose'} full admin privileges.`
+                        ? adminTarget.next
+                            ? t('grantBody', { who: whoOf(adminTarget.user) })
+                            : t('revokeBody', { who: whoOf(adminTarget.user) })
                         : undefined
                 }
-                confirmLabel={adminTarget?.next ? 'Grant' : 'Revoke'}
+                confirmLabel={adminTarget?.next ? t('grant') : t('revoke')}
                 destructive={!adminTarget?.next}
                 pending={setAdmin.isPending}
                 error={error}
@@ -359,15 +367,15 @@ export default function AdminUsersPage() {
                     setStatusTarget(null)
                 }}
                 onConfirm={confirmStatus}
-                title={statusTarget?.disable ? 'Disable account?' : 'Re-enable account?'}
+                title={statusTarget?.disable ? t('disableTitle') : t('enableTitle')}
                 description={
                     statusTarget
                         ? statusTarget.disable
-                            ? `${statusTarget.user.username ? `@${statusTarget.user.username}` : statusTarget.user.email} will be signed out and unable to log in until re-enabled.`
-                            : `${statusTarget.user.username ? `@${statusTarget.user.username}` : statusTarget.user.email} will be able to log in again.`
+                            ? t('disableBody', { who: whoOf(statusTarget.user) })
+                            : t('enableBody', { who: whoOf(statusTarget.user) })
                         : undefined
                 }
-                confirmLabel={statusTarget?.disable ? 'Disable' : 'Re-enable'}
+                confirmLabel={statusTarget?.disable ? t('disable') : t('enable')}
                 destructive={statusTarget?.disable}
                 pending={setStatus.isPending}
                 error={error}

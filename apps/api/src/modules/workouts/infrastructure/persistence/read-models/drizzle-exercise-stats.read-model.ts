@@ -2,11 +2,13 @@ import { Inject, Injectable } from '@nestjs/common'
 import { and, desc, eq, gte, isNotNull, lte, type SQL, sql } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
+import { DEFAULT_LOCALE } from '../../../../../shared/i18n/locale'
 import {
     type ExerciseStatsFilter,
     ExerciseStatsReadModel,
     type ExerciseStatsRow,
 } from '../../../application/ports/exercise-stats.read-model'
+import { localizedExerciseName } from './localized-exercise-name'
 import { exercises } from '../schema/exercises.schema'
 import { workoutExerciseEntries } from '../schema/workout-exercise-entries.schema'
 import { workoutSessions } from '../schema/workout-sessions.schema'
@@ -35,7 +37,7 @@ export class DrizzleExerciseStatsReadModel extends ExerciseStatsReadModel {
             .select({
                 exerciseId: exercises.id,
                 slug: exercises.slug,
-                name: exercises.name,
+                name: localizedExerciseName(filter.locale ?? DEFAULT_LOCALE),
                 category: exercises.category,
                 totalVolumeKg: volume,
                 totalSets: sql<number>`count(${workoutSets.id})::int`,

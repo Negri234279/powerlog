@@ -21,8 +21,8 @@ function guardWith(roles: UserRoleValue[] | undefined): RolesGuard {
     return new RolesGuard(reflector)
 }
 
-const athlete: AuthUser = { userId: 'u-1', email: 'a@b.c', role: 'athlete', isAdmin: false, avatar: null }
-const coach: AuthUser = { userId: 'u-2', email: 'c@b.c', role: 'coach', isAdmin: false, avatar: null }
+const athlete: AuthUser = { userId: 'u-1', email: 'a@b.c', role: 'athlete', isAdmin: false, avatar: null, locale: null }
+const coach: AuthUser = { userId: 'u-2', email: 'c@b.c', role: 'coach', isAdmin: false, avatar: null, locale: null }
 
 describe('RolesGuard', () => {
     it('allows any request when no roles are required', () => {

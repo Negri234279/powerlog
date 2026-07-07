@@ -18,10 +18,12 @@ export function IntensityChart({
     data,
     label,
     intense,
+    seriesName = 'Sets',
 }: {
     data: IntensityBucket[]
     label: string
     intense: (value: number) => boolean
+    seriesName?: string
 }) {
     if (data.length === 0) return null
 
@@ -41,7 +43,7 @@ export function IntensityChart({
                         content={<ChartTooltip formatLabel={(l) => `${label} ${l}`} />}
                         cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                     />
-                    <Bar name="Sets" dataKey="sets" radius={[4, 4, 0, 0]} maxBarSize={56} isAnimationActive={false}>
+                    <Bar name={seriesName} dataKey="sets" radius={[4, 4, 0, 0]} maxBarSize={56} isAnimationActive={false}>
                         {data.map((d, i) => (
                             <Cell
                                 key={i}

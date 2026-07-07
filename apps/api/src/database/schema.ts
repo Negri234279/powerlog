@@ -15,6 +15,7 @@ export * from '../modules/auth/infrastructure/persistence/schema/email-verificat
 export * from '../modules/auth/infrastructure/persistence/schema/password-reset-tokens.schema'
 export * from '../modules/profile/infrastructure/persistence/schema/profiles.schema'
 export * from '../modules/workouts/infrastructure/persistence/schema/exercises.schema'
+export * from '../modules/workouts/infrastructure/persistence/schema/exercise-translations.schema'
 export * from '../modules/workouts/infrastructure/persistence/schema/workout-sessions.schema'
 export * from '../modules/workouts/infrastructure/persistence/schema/workout-exercise-entries.schema'
 export * from '../modules/workouts/infrastructure/persistence/schema/workout-sets.schema'

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { type ChangeEvent, type DragEvent, useEffect, useRef, useState } from 'react'
 
@@ -32,6 +33,7 @@ interface Staged {
  * next/image isn't used (the app isn't on Vercel).
  */
 export function AvatarCard({ profile }: { profile: ProfileData }) {
+    const t = useTranslations('profile')
     const upload = useUploadAvatar()
     const remove = useRemoveAvatar()
     const router = useRouter()
@@ -69,7 +71,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
                 return prepared
             })
         } catch {
-            setError('Could not read that image. Try another file.')
+            setError(t('readError'))
         }
     }
 
@@ -101,7 +103,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
             clearStaged()
             router.refresh()
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Upload failed. Try again.')
+            setError(err instanceof Error ? err.message : t('uploadError'))
         }
     }
 
@@ -114,7 +116,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
             router.refresh()
         } catch (err) {
             setConfirmRemove(false)
-            setError(err instanceof Error ? err.message : 'Could not remove the avatar.')
+            setError(err instanceof Error ? err.message : t('removeError'))
         }
     }
 
@@ -132,7 +134,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
                     }}
                     onDragLeave={() => setDragging(false)}
                     onDrop={onDrop}
-                    aria-label={shownSrc ? 'Change avatar' : 'Upload avatar'}
+                    aria-label={shownSrc ? t('avatarChangeAria') : t('avatarUploadAria')}
                     className={cn(
                         'group relative grid size-20 shrink-0 place-items-center overflow-hidden rounded-full bg-white/[0.06] font-mono text-2xl uppercase text-text outline-none ring-1 transition-all duration-300',
                         dragging
@@ -142,7 +144,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
                 >
                     {shownSrc ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={shownSrc} alt="Your avatar" className="size-full object-cover" />
+                        <img src={shownSrc} alt={t('avatarAlt')} className="size-full object-cover" />
                     ) : (
                         initials(profile.displayName)
                     )}
@@ -160,10 +162,8 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
 
                 {/* Meta + actions. */}
                 <div className="min-w-0 flex-1">
-                    <h2 className="font-display text-h3 leading-none text-text">Profile picture</h2>
-                    <p className="mt-1.5 text-sm text-text-dim">
-                        {staged ? 'New image ready to save.' : 'JPEG, PNG or WebP · up to 5 MB.'}
-                    </p>
+                    <h2 className="font-display text-h3 leading-none text-text">{t('avatarTitle')}</h2>
+                    <p className="mt-1.5 text-sm text-text-dim">{staged ? t('avatarReady') : t('avatarHint')}</p>
 
                     {error ? <p className="mt-2 text-sm text-ember">{error}</p> : null}
 
@@ -177,7 +177,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
                                     disabled={busy}
                                     className="rounded-full bg-ember px-4 py-2 text-sm font-medium text-bg transition-transform duration-300 ease-spring active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                                 >
-                                    {upload.isPending ? 'Saving…' : 'Save'}
+                                    {upload.isPending ? t('saving') : t('avatarSave')}
                                 </TrackedButton>
                                 <TrackedButton
                                     analyticsId="avatar-cancel"
@@ -186,7 +186,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
                                     disabled={busy}
                                     className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-50"
                                 >
-                                    Cancel
+                                    {t('cancel')}
                                 </TrackedButton>
                             </>
                         ) : (
@@ -198,7 +198,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
                                     disabled={busy}
                                     className="rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text active:scale-[0.98] disabled:opacity-50"
                                 >
-                                    {profile.avatarUrl ? 'Change' : 'Upload'}
+                                    {profile.avatarUrl ? t('change') : t('upload')}
                                 </TrackedButton>
                                 {profile.avatarUrl ? (
                                     <TrackedButton
@@ -206,7 +206,7 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
                                         type="button"
                                         onClick={() => setConfirmRemove(true)}
                                         disabled={busy}
-                                        aria-label="Remove avatar"
+                                        aria-label={t('removeAvatarAria')}
                                         className="grid size-9 place-items-center rounded-full text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-ember hover:ring-ember/30 active:scale-[0.98] disabled:opacity-50"
                                     >
                                         <Trash className="size-4" />
@@ -225,9 +225,9 @@ export function AvatarCard({ profile }: { profile: ProfileData }) {
                 open={confirmRemove}
                 onClose={() => setConfirmRemove(false)}
                 onConfirm={onRemove}
-                title="Remove avatar?"
-                description="Your profile picture will revert to your initials."
-                confirmLabel="Remove"
+                title={t('removeAvatarTitle')}
+                description={t('removeAvatarBody')}
+                confirmLabel={t('remove')}
                 destructive
                 pending={remove.isPending}
             />

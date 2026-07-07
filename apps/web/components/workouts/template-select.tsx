@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useMemo, useRef, useState } from 'react'
 
 import { cn } from '@/lib/cn'
@@ -36,6 +37,8 @@ export function TemplateCombobox({
     onChange: (template: SelectedTemplate | null) => void
     onBrowse: () => void
 }) {
+    const t = useTranslations('templates')
+    const tc = useTranslations('common')
     const { data: templates } = useWorkoutTemplates()
     const [open, setOpen] = useState(false)
     const [query, setQuery] = useState('')
@@ -64,7 +67,7 @@ export function TemplateCombobox({
                         analyticsId="template-combobox-clear"
                         type="button"
                         onClick={() => onChange(null)}
-                        aria-label="Clear template"
+                        aria-label={t('clearTemplate')}
                         className="-mr-1 grid size-5 shrink-0 place-items-center rounded-full transition-colors duration-300 hover:bg-ember/20"
                     >
                         <Close className="size-3.5" />
@@ -76,7 +79,7 @@ export function TemplateCombobox({
                     onClick={onBrowse}
                     className="rounded-2xl px-3 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                 >
-                    Browse
+                    {t('browse')}
                 </TrackedButton>
             </div>
         )
@@ -97,7 +100,7 @@ export function TemplateCombobox({
                         // Delay so a click on a list item registers before we close.
                         blurTimer.current = setTimeout(() => setOpen(false), 120)
                     }}
-                    placeholder="Search a template…"
+                    placeholder={t('searchTemplate')}
                     className="w-full rounded-2xl bg-bg/60 py-3 pl-10 pr-9 text-sm text-text ring-1 ring-hairline outline-none transition-colors duration-300 placeholder:text-text-faint focus:ring-ember/50"
                 />
                 <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-text-faint" />
@@ -121,7 +124,7 @@ export function TemplateCombobox({
                                 >
                                     <span className="truncate text-sm text-text">{template.name}</span>
                                     <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                                        {template.exerciseCount} ex · {template.setCount} sets
+                                        {tc('exSets', { ex: template.exerciseCount, sets: template.setCount })}
                                     </span>
                                 </TrackedButton>
                             </li>
@@ -136,7 +139,7 @@ export function TemplateCombobox({
                 onClick={onBrowse}
                 className="rounded-2xl px-3.5 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
             >
-                Browse
+                {t('browse')}
             </TrackedButton>
         </div>
     )
@@ -153,37 +156,38 @@ export function TemplateBrowseModal({
     onClose: () => void
     onSelect: (template: SelectedTemplate) => void
 }) {
+    const t = useTranslations('templates')
     const { data: templates, isLoading } = useWorkoutTemplates()
     const [query, setQuery] = useState('')
     const [expandedId, setExpandedId] = useState<string | null>(null)
 
     const term = query.trim().toLowerCase()
     const filtered = useMemo(
-        () => (templates ?? []).filter((t) => term === '' || t.name.toLowerCase().includes(term)),
+        () => (templates ?? []).filter((tpl) => term === '' || tpl.name.toLowerCase().includes(term)),
         [templates, term],
     )
 
     return (
         <Modal open={open} onClose={onClose} className="max-w-lg">
-            <h2 className="font-display text-h3 tracking-tight">Choose a template</h2>
-            <p className="mt-1 text-sm text-text-dim">Start a session pre-filled from one of your templates.</p>
+            <h2 className="font-display text-h3 tracking-tight">{t('chooseTitle')}</h2>
+            <p className="mt-1 text-sm text-text-dim">{t('chooseSubtitle')}</p>
 
             <div className="relative mt-4">
                 <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-text-faint" />
                 <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search templates…"
+                    placeholder={t('searchTemplates')}
                     className="w-full rounded-2xl bg-bg/60 py-3 pl-10 pr-4 text-sm text-text ring-1 ring-hairline outline-none transition-colors duration-300 placeholder:text-text-faint focus:ring-ember/50"
                 />
             </div>
 
             <div className="mt-4 max-h-[60vh] space-y-2 overflow-y-auto">
                 {isLoading ? (
-                    <p className="py-6 text-center text-sm text-text-dim">Loading templates…</p>
+                    <p className="py-6 text-center text-sm text-text-dim">{t('loadingTemplates')}</p>
                 ) : filtered.length === 0 ? (
                     <p className="py-6 text-center text-sm text-text-faint">
-                        {term === '' ? 'You have no templates yet.' : 'No templates match.'}
+                        {term === '' ? t('noneYetShort') : t('noMatch')}
                     </p>
                 ) : (
                     filtered.map((template) => (
@@ -212,6 +216,8 @@ function BrowseCard({
     onToggle: () => void
     onUse: () => void
 }) {
+    const t = useTranslations('templates')
+    const tc = useTranslations('common')
     return (
         <div className="rounded-2xl bg-bg/40 ring-1 ring-hairline">
             <div className="flex items-center gap-3 p-3">
@@ -223,14 +229,14 @@ function BrowseCard({
                 >
                     <p className="truncate text-sm font-medium text-text">{template.name}</p>
                     <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                        {template.exerciseCount} ex · {template.setCount} sets
+                        {tc('exSets', { ex: template.exerciseCount, sets: template.setCount })}
                     </p>
                 </TrackedButton>
                 <TrackedButton
                     analyticsId="template-browse-preview"
                     type="button"
                     onClick={onToggle}
-                    aria-label={expanded ? 'Hide preview' : 'Show preview'}
+                    aria-label={expanded ? t('hidePreview') : t('showPreview')}
                     className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.06] hover:text-text"
                 >
                     <ChevronDown className={cn('size-4 transition-transform duration-300', expanded && 'rotate-180')} />
@@ -241,7 +247,7 @@ function BrowseCard({
                     onClick={onUse}
                     className="shrink-0 rounded-full bg-ember/10 px-3.5 py-1.5 text-xs font-medium text-ember ring-1 ring-ember/30 transition-colors duration-300 hover:bg-ember/20"
                 >
-                    Use
+                    {t('use')}
                 </TrackedButton>
             </div>
             {expanded ? <TemplatePreview id={template.id} /> : null}
@@ -250,6 +256,8 @@ function BrowseCard({
 }
 
 function TemplatePreview({ id }: { id: string }) {
+    const t = useTranslations('templates')
+    const tw = useTranslations('workouts')
     const { data: me } = useMe()
     const units = unitsOf(me?.units)
     const { data: template, isLoading } = useWorkoutTemplate(id)
@@ -262,11 +270,11 @@ function TemplatePreview({ id }: { id: string }) {
     }, [exercises])
 
     if (isLoading || !template) {
-        return <p className="border-t border-hairline px-3 py-3 text-xs text-text-dim">Loading preview…</p>
+        return <p className="border-t border-hairline px-3 py-3 text-xs text-text-dim">{t('loadingPreview')}</p>
     }
 
     if (template.notes === null && template.exercises.length === 0) {
-        return <p className="border-t border-hairline px-3 py-3 text-xs text-text-faint">Empty template.</p>
+        return <p className="border-t border-hairline px-3 py-3 text-xs text-text-faint">{t('emptyTemplate')}</p>
     }
 
     return (
@@ -274,10 +282,12 @@ function TemplatePreview({ id }: { id: string }) {
             {template.notes ? <p className="text-xs text-text-dim">{template.notes}</p> : null}
             {template.exercises.map((exercise) => (
                 <div key={exercise.id}>
-                    <p className="text-xs font-medium text-text">{nameById.get(exercise.exerciseId) ?? 'Exercise'}</p>
+                    <p className="text-xs font-medium text-text">
+                        {nameById.get(exercise.exerciseId) ?? tw('exercise')}
+                    </p>
                     <p className="mt-0.5 font-mono text-[11px] text-text-faint">
                         {exercise.sets.length === 0
-                            ? 'no sets'
+                            ? t('noSets')
                             : exercise.sets.map((set) => formatSet(set, units)).join('  ·  ')}
                     </p>
                 </div>

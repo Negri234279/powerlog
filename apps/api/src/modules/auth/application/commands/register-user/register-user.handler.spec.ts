@@ -82,6 +82,7 @@ describe('RegisterUserHandler', () => {
             role: 'athlete',
             isAdmin: false,
             avatar: null,
+            locale: null,
         })
     })
 

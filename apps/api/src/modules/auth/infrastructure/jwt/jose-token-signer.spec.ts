@@ -43,6 +43,7 @@ const claims = {
     role: 'athlete',
     isAdmin: false,
     avatar: 'https://cdn.example.com/avatars/u-1.webp',
+    locale: 'es-ES',
 } as const
 
 describe('JoseTokenSigner', () => {

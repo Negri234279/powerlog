@@ -3,7 +3,10 @@ import { QueryBus } from '@nestjs/cqrs'
 import { Args, Query, Resolver } from '@nestjs/graphql'
 import { z } from 'zod'
 
+import { CurrentUser } from '../../../../auth/current-user.decorator'
+import type { AuthUser } from '../../../../auth/auth-user'
 import { JwtCookieGuard } from '../../../../auth/jwt-cookie.guard'
+import { toSupportedLocale } from '../../../../shared/i18n/locale'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import type { ExerciseView } from '../../application/queries/list-exercises/list-exercises.handler'
 import { ListExercisesQuery } from '../../application/queries/list-exercises/list-exercises.query'
@@ -20,10 +23,12 @@ export class ExerciseResolver {
 
     @Query(() => [ExerciseType], { description: 'The exercise catalog, optionally filtered by category.' })
     async exercises(
+        @CurrentUser() user: AuthUser,
         @Args('category', { type: () => String, nullable: true }, new ZodValidationPipe(categoryArgSchema))
         category?: ExerciseCategory,
     ): Promise<ExerciseType[]> {
-        const views = await this.queryBus.execute<ListExercisesQuery, ExerciseView[]>(new ListExercisesQuery(category))
+        const query = new ListExercisesQuery(category, toSupportedLocale(user.locale))
+        const views = await this.queryBus.execute<ListExercisesQuery, ExerciseView[]>(query)
         return views.map((view) => Object.assign(new ExerciseType(), view))
     }
 }

@@ -1,12 +1,12 @@
 import { Field, Int, ObjectType } from '@nestjs/graphql'
 
-import { ExerciseType } from './exercise.type'
+import { AdminExerciseType } from './admin-exercise.type'
 
 /** A page of catalog exercises with the total count, for the admin listing. */
 @ObjectType('AdminExercisePage')
 export class AdminExercisePageType {
-    @Field(() => [ExerciseType])
-    rows!: ExerciseType[]
+    @Field(() => [AdminExerciseType])
+    rows!: AdminExerciseType[]
 
     @Field(() => Int, { description: 'Total exercises matching the filter (ignoring pagination).' })
     total!: number

@@ -11,7 +11,10 @@ import { DeleteExerciseCommand } from '../../application/commands/delete-exercis
 import { UpdateExerciseCommand } from '../../application/commands/update-exercise/update-exercise.command'
 import type { ExercisePatch } from '../../domain/entities/exercise.entity'
 import type { ExerciseView } from '../../application/queries/list-exercises/list-exercises.handler'
-import type { AdminExercisePageView } from '../../application/queries/list-admin-exercises/list-admin-exercises.handler'
+import type {
+    AdminExercisePageView,
+    AdminExerciseView,
+} from '../../application/queries/list-admin-exercises/list-admin-exercises.handler'
 import { ListAdminExercisesQuery } from '../../application/queries/list-admin-exercises/list-admin-exercises.query'
 import type { ExerciseCategory, ExerciseEquipment, ExerciseMuscle } from '../../domain/exercise-taxonomy'
 import {
@@ -27,6 +30,7 @@ import {
     updateExerciseSchema,
 } from '../inputs/admin-exercise.inputs'
 import { AdminExercisePageType } from '../types/admin-exercise-page.type'
+import { AdminExerciseType } from '../types/admin-exercise.type'
 import { ExerciseType } from '../types/exercise.type'
 
 const uuidArg = z.string().uuid()
@@ -62,22 +66,22 @@ export class AdminExerciseResolver {
                 offset ?? 0,
             ),
         )
-        return { rows: page.rows.map(toType), total: page.total, limit: page.limit, offset: page.offset }
+        return { rows: page.rows.map(toAdminType), total: page.total, limit: page.limit, offset: page.offset }
     }
 
     @Mutation(() => ExerciseType, { description: 'Create a catalog exercise.' })
     async createExercise(
         @Args('input', new ZodValidationPipe(createExerciseSchema)) input: CreateExerciseInput,
     ): Promise<ExerciseType> {
-        const view = await this.commandBus.execute<CreateExerciseCommand, ExerciseView>(
-            new CreateExerciseCommand(
-                input.name,
-                input.category as ExerciseCategory,
-                input.equipment as ExerciseEquipment,
-                input.primaryMuscle as ExerciseMuscle,
-                input.slug,
-            ),
+        const command = new CreateExerciseCommand(
+            input.name,
+            input.category as ExerciseCategory,
+            input.equipment as ExerciseEquipment,
+            input.primaryMuscle as ExerciseMuscle,
+            input.slug,
+            input.nameEs,
         )
+        const view = await this.commandBus.execute<CreateExerciseCommand, ExerciseView>(command)
         return toType(view)
     }
 
@@ -91,9 +95,8 @@ export class AdminExerciseResolver {
         if (input.equipment != null) patch.equipment = input.equipment as ExerciseEquipment
         if (input.primaryMuscle != null) patch.primaryMuscle = input.primaryMuscle as ExerciseMuscle
 
-        const view = await this.commandBus.execute<UpdateExerciseCommand, ExerciseView>(
-            new UpdateExerciseCommand(input.exerciseId, patch),
-        )
+        const command = new UpdateExerciseCommand(input.exerciseId, patch, input.nameEs)
+        const view = await this.commandBus.execute<UpdateExerciseCommand, ExerciseView>(command)
         return toType(view)
     }
 
@@ -107,4 +110,8 @@ export class AdminExerciseResolver {
 
 function toType(view: ExerciseView): ExerciseType {
     return Object.assign(new ExerciseType(), view)
+}
+
+function toAdminType(view: AdminExerciseView): AdminExerciseType {
+    return Object.assign(new AdminExerciseType(), view)
 }

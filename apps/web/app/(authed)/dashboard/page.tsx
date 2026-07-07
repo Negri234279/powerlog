@@ -1,10 +1,11 @@
 'use client'
 
+import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 
 import { track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
-import { gqlErrorMessage } from '@/lib/graphql/error'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import { useTrainingSummary, useWorkoutHistory, type WorkoutHistoryItem } from '@/lib/graphql/hooks/use-workouts'
 import {
@@ -44,11 +45,12 @@ function currentWeekRange(): { from: string; to: string } {
     return { from: iso(monday, false), to: iso(sunday, true) }
 }
 
-function formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+function formatDate(iso: string, locale: string): string {
+    return new Date(iso).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 function StatusBadge({ status }: { status: string }) {
+    const t = useTranslations('common.status')
     const completed = status === 'completed'
     return (
         <span
@@ -57,7 +59,7 @@ function StatusBadge({ status }: { status: string }) {
                 completed ? 'bg-pr/10 text-pr' : 'bg-ember/10 text-ember',
             )}
         >
-            {completed ? 'Completed' : 'Planned'}
+            {completed ? t('completed') : t('planned')}
         </span>
     )
 }
@@ -93,6 +95,9 @@ function WeekStat({ label, value }: { label: string; value: string | number }) {
 }
 
 function WeekCard({ units }: { units: Units }) {
+    const t = useTranslations('dashboard')
+    const tc = useTranslations('common')
+    const locale = useLocale()
     const week = currentWeekRange()
     const { data: summary, isLoading: loadingSummary } = useTrainingSummary(week.from, week.to)
     const { data, isLoading: loadingPlanned } = useWorkoutHistory({ status: 'planned', from: week.from, to: week.to })
@@ -101,14 +106,14 @@ function WeekCard({ units }: { units: Units }) {
     return (
         <Panel className="md:col-span-2">
             <PanelHeader
-                title="This week"
+                title={t('weekTitle')}
                 action={
                     <TrackedLink
                         analyticsId="dashboard-all-workouts"
                         href="/workouts"
                         className="rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                     >
-                        All workouts
+                        {t('allWorkouts')}
                     </TrackedLink>
                 }
             />
@@ -117,15 +122,15 @@ function WeekCard({ units }: { units: Units }) {
                 <Skeleton className="mt-5 h-12 rounded-xl" />
             ) : (
                 <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    <WeekStat label="Sessions" value={summary?.sessions ?? 0} />
-                    <WeekStat label="Days" value={summary?.trainingDays ?? 0} />
-                    <WeekStat label="Sets" value={summary?.totalSets ?? 0} />
-                    <WeekStat label="Volume" value={formatWeight(summary?.totalVolumeKg ?? 0, units)} />
+                    <WeekStat label={t('sessions')} value={summary?.sessions ?? 0} />
+                    <WeekStat label={t('days')} value={summary?.trainingDays ?? 0} />
+                    <WeekStat label={t('sets')} value={summary?.totalSets ?? 0} />
+                    <WeekStat label={t('volume')} value={formatWeight(summary?.totalVolumeKg ?? 0, units)} />
                 </div>
             )}
 
             <div className="mt-6 border-t border-hairline pt-5">
-                <p className="font-mono text-eyebrow uppercase text-text-faint">Planned this week</p>
+                <p className="font-mono text-eyebrow uppercase text-text-faint">{t('plannedThisWeek')}</p>
                 {loadingPlanned ? (
                     <div className="mt-3 space-y-2">
                         {Array.from({ length: 2 }).map((_, i) => (
@@ -134,13 +139,13 @@ function WeekCard({ units }: { units: Units }) {
                     </div>
                 ) : planned.length === 0 ? (
                     <p className="mt-3 text-sm text-text-dim">
-                        Nothing planned for this week.{' '}
+                        {t('nothingPlanned')}{' '}
                         <TrackedLink
                             analyticsId="dashboard-plan-session"
                             href="/workouts"
                             className="text-text underline-offset-4 hover:underline"
                         >
-                            Plan a session
+                            {t('planSession')}
                         </TrackedLink>
                         .
                     </p>
@@ -155,11 +160,13 @@ function WeekCard({ units }: { units: Units }) {
                                 >
                                     <span className="flex items-center gap-2.5">
                                         <Calendar className="size-4 text-text-faint" />
-                                        <span className="text-sm text-text">{formatDate(session.performedAt)}</span>
+                                        <span className="text-sm text-text">
+                                            {formatDate(session.performedAt, locale)}
+                                        </span>
                                         <StatusBadge status={session.status} />
                                     </span>
                                     <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                                        {session.exerciseCount} ex · {session.setCount} sets
+                                        {tc('exSets', { ex: session.exerciseCount, sets: session.setCount })}
                                     </span>
                                 </TrackedLink>
                             </li>
@@ -183,6 +190,7 @@ function StrengthRow({ label, value }: { label: string; value: string }) {
 }
 
 function StrengthCard({ units }: { units: Units }) {
+    const t = useTranslations('dashboard')
     const { data: summary, isLoading } = useTrainingSummary()
     const hasAny =
         summary != null &&
@@ -191,12 +199,12 @@ function StrengthCard({ units }: { units: Units }) {
     return (
         <Panel>
             <PanelHeader
-                title="Strength"
+                title={t('strengthTitle')}
                 action={
                     <TrackedLink
                         analyticsId="dashboard-analytics"
                         href="/workouts/stats"
-                        aria-label="Analytics"
+                        aria-label={t('analytics')}
                         className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.06] hover:text-text"
                     >
                         <ChartLine className="size-4" />
@@ -207,21 +215,19 @@ function StrengthCard({ units }: { units: Units }) {
             {isLoading ? (
                 <Skeleton className="mt-5 h-32 rounded-xl" />
             ) : !hasAny ? (
-                <p className="mt-5 flex-1 text-sm text-text-dim">
-                    Log a few sets and your estimated 1RMs for the big three will show up here.
-                </p>
+                <p className="mt-5 flex-1 text-sm text-text-dim">{t('strengthEmpty')}</p>
             ) : (
                 <>
                     <div className="mt-5">
-                        <p className="font-mono text-eyebrow uppercase text-text-faint">Estimated total</p>
+                        <p className="font-mono text-eyebrow uppercase text-text-faint">{t('estimatedTotal')}</p>
                         <p className="mt-1 font-display text-h2 tracking-tight">
                             {formatWeight(summary?.estimatedTotalKg ?? 0, units)}
                         </p>
                     </div>
                     <div className="mt-4">
-                        <StrengthRow label="Squat e1RM" value={formatWeight(summary?.bestSquatE1rmKg, units)} />
-                        <StrengthRow label="Bench e1RM" value={formatWeight(summary?.bestBenchE1rmKg, units)} />
-                        <StrengthRow label="Deadlift e1RM" value={formatWeight(summary?.bestDeadliftE1rmKg, units)} />
+                        <StrengthRow label={t('squatE1rm')} value={formatWeight(summary?.bestSquatE1rmKg, units)} />
+                        <StrengthRow label={t('benchE1rm')} value={formatWeight(summary?.bestBenchE1rmKg, units)} />
+                        <StrengthRow label={t('deadliftE1rm')} value={formatWeight(summary?.bestDeadliftE1rmKg, units)} />
                     </div>
                 </>
             )}
@@ -232,20 +238,22 @@ function StrengthCard({ units }: { units: Units }) {
 // ── Recent sessions ──────────────────────────────────────────
 
 function RecentCard({ units }: { units: Units }) {
+    const t = useTranslations('dashboard')
+    const locale = useLocale()
     const { data, isLoading } = useWorkoutHistory({ limit: 5 })
     const sessions: WorkoutHistoryItem[] = data?.pages.flatMap((p) => p.items) ?? []
 
     return (
         <Panel>
             <PanelHeader
-                title="Recent sessions"
+                title={t('recentTitle')}
                 action={
                     <TrackedLink
                         analyticsId="dashboard-recent-view-all"
                         href="/workouts"
                         className="rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                     >
-                        View all
+                        {t('viewAll')}
                     </TrackedLink>
                 }
             />
@@ -257,7 +265,7 @@ function RecentCard({ units }: { units: Units }) {
                     ))}
                 </div>
             ) : sessions.length === 0 ? (
-                <p className="mt-5 flex-1 text-sm text-text-dim">No sessions yet — your history will build here.</p>
+                <p className="mt-5 flex-1 text-sm text-text-dim">{t('noSessions')}</p>
             ) : (
                 <ul className="mt-5 space-y-2">
                     {sessions.map((session) => (
@@ -268,7 +276,7 @@ function RecentCard({ units }: { units: Units }) {
                                 className="flex items-center justify-between gap-3 rounded-xl bg-bg/40 px-3.5 py-2.5 ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04]"
                             >
                                 <span className="flex items-center gap-2.5">
-                                    <span className="text-sm text-text">{formatDate(session.performedAt)}</span>
+                                    <span className="text-sm text-text">{formatDate(session.performedAt, locale)}</span>
                                     <StatusBadge status={session.status} />
                                 </span>
                                 <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
@@ -286,6 +294,9 @@ function RecentCard({ units }: { units: Units }) {
 // ── Start from a template ────────────────────────────────────
 
 function TemplatesCard() {
+    const t = useTranslations('dashboard')
+    const tc = useTranslations('common')
+    const errorMessage = useErrorMessage()
     const router = useRouter()
     const { data: templates, isLoading } = useWorkoutTemplates()
     const start = useCreateSessionFromTemplate()
@@ -301,7 +312,7 @@ function TemplatesCard() {
                     track('session_created_from_template', {})
                     router.push(`/workouts/${r.createSessionFromTemplate.id}`)
                 },
-                onError: (err) => setError(gqlErrorMessage(err)),
+                onError: (err) => setError(errorMessage(err)),
             },
         )
     }
@@ -309,14 +320,14 @@ function TemplatesCard() {
     return (
         <Panel>
             <PanelHeader
-                title="Start from a template"
+                title={t('templatesTitle')}
                 action={
                     <TrackedLink
                         analyticsId="dashboard-templates-manage"
                         href="/workouts/templates"
                         className="rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                     >
-                        Manage
+                        {t('manage')}
                     </TrackedLink>
                 }
             />
@@ -329,15 +340,15 @@ function TemplatesCard() {
                 </div>
             ) : top.length === 0 ? (
                 <p className="mt-5 flex-1 text-sm text-text-dim">
-                    No templates yet.{' '}
+                    {t('noTemplates')}{' '}
                     <TrackedLink
                         analyticsId="dashboard-templates-create"
                         href="/workouts/templates"
                         className="text-text underline-offset-4 hover:underline"
                     >
-                        Create one
+                        {t('createOne')}
                     </TrackedLink>{' '}
-                    to start sessions in a tap.
+                    {t('toStart')}
                 </p>
             ) : (
                 <ul className="mt-5 space-y-2">
@@ -351,7 +362,7 @@ function TemplatesCard() {
                                 <span className="min-w-0">
                                     <span className="block truncate text-sm text-text">{template.name}</span>
                                     <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                                        {template.exerciseCount} ex · {template.setCount} sets
+                                        {tc('exSets', { ex: template.exerciseCount, sets: template.setCount })}
                                     </span>
                                 </span>
                             </span>
@@ -362,7 +373,7 @@ function TemplatesCard() {
                                 disabled={start.isPending}
                                 className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/[0.06] px-3.5 py-1.5 text-xs font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-60"
                             >
-                                <Plus className="size-3.5" /> Start
+                                <Plus className="size-3.5" /> {t('start')}
                             </TrackedButton>
                         </li>
                     ))}
@@ -377,22 +388,28 @@ function TemplatesCard() {
 // ── Page ─────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+    const t = useTranslations('dashboard')
+    const tc = useTranslations('common')
     const { data: me, isLoading } = useMe()
     const units = unitsOf(me?.units)
 
     return (
         <div>
             <TextsReveal>
-                <p className="font-mono text-eyebrow uppercase text-text-faint">Dashboard</p>
+                <p className="font-mono text-eyebrow uppercase text-text-faint">{t('eyebrow')}</p>
                 <h1 className="mt-3 font-display text-display">
-                    <TextSwap text={isLoading ? 'Welcome back' : `Welcome, ${me?.username ?? 'lifter'}`} />
+                    <TextSwap
+                        text={
+                            isLoading ? t('welcomeBack') : t('welcome', { name: me?.username ?? t('lifter') })
+                        }
+                    />
                 </h1>
             </TextsReveal>
             <div className="mt-4 flex flex-wrap items-center gap-2">
                 {me ? (
                     <>
                         <span className="rounded-full bg-white/[0.05] px-3 py-1 font-mono text-eyebrow uppercase text-text-dim ring-1 ring-hairline">
-                            {me.role}
+                            {tc(`role.${me.role}`)}
                         </span>
                         <span
                             className={
@@ -403,10 +420,10 @@ export default function DashboardPage() {
                         >
                             {me.emailVerified ? (
                                 <>
-                                    <Check className="size-3.5" /> Email verified
+                                    <Check className="size-3.5" /> {t('emailVerified')}
                                 </>
                             ) : (
-                                'Verify your email'
+                                t('verifyEmail')
                             )}
                         </span>
                     </>
@@ -428,19 +445,19 @@ export default function DashboardPage() {
                 className="fixed bottom-6 right-6 z-40"
                 items={[
                     {
-                        label: 'Log a workout',
+                        label: t('logWorkout'),
                         href: '/workouts',
                         icon: <Calendar className="size-4" />,
                         analyticsId: 'quick-log-workout',
                     },
                     {
-                        label: 'Analytics',
+                        label: t('analytics'),
                         href: '/workouts/stats',
                         icon: <ChartLine className="size-4" />,
                         analyticsId: 'quick-analytics',
                     },
                     {
-                        label: 'Your profile',
+                        label: t('yourProfile'),
                         href: '/profile',
                         icon: <Target className="size-4" />,
                         analyticsId: 'quick-profile',

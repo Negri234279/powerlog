@@ -65,6 +65,7 @@ export class SessionIssuer {
             ...claims,
             username: snapshot.username,
             avatar: snapshot.avatarUrl,
+            locale: snapshot.locale,
         })
         const { raw, hash } = this.refreshGenerator.generate()
         const expiresAt = new Date(this.clock.now().getTime() + this.config.refreshTokenTtlMs)
