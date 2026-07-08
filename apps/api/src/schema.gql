@@ -221,6 +221,21 @@ type ExerciseStats {
   totalVolumeKg: Float!
 }
 
+input GenerateMesocycleWeekInput {
+  mesocycleId: ID!
+
+  """Replace the week’s still-planned sessions if it exists."""
+  replace: Boolean
+
+  """1-based week to generate."""
+  week: Int!
+
+  """
+  ISO date (YYYY-MM-DD) overriding the mesocycle start date as the anchor.
+  """
+  weekStartDate: String
+}
+
 type IntensityBucket {
   sets: Int!
 
@@ -276,6 +291,124 @@ type Me {
   username: String!
 }
 
+type Mesocycle {
+  createdAt: DateTime!
+
+  """1-based weeks already generated into sessions."""
+  generatedWeeks: [Int!]!
+  goal: String
+  id: ID!
+  microcycles: [Microcycle!]!
+  name: String!
+  notes: String
+  ownerId: ID!
+
+  """Anchor date of week 1 (unscheduled if null)."""
+  startDate: DateTime
+
+  """draft | active | completed | archived"""
+  status: String!
+  updatedAt: DateTime!
+}
+
+type MesocycleDayExercise {
+  exerciseId: ID!
+  id: ID!
+  notes: String
+  order: Int!
+  sets: [MesocycleDaySet!]!
+}
+
+input MesocycleDayExerciseInput {
+  exerciseId: ID!
+  notes: String
+  sets: [MesocycleDaySetInput!]!
+}
+
+type MesocycleDaySet {
+  id: ID!
+  notes: String
+  order: Int!
+  plannedReps: Int
+  plannedWeightKg: Float
+  rir: Int
+  rpe: Float
+}
+
+input MesocycleDaySetInput {
+  notes: String
+  plannedReps: Int
+  plannedWeight: Float
+
+  """Target reps in reserve (alternative to RPE)."""
+  rir: Int
+
+  """Target RPE 0–10 in half-point steps."""
+  rpe: Float
+
+  """Weight unit of the inputs: kg | lb (default kg)."""
+  unit: String
+}
+
+input MesocycleInput {
+  """Free-text goal (e.g. hypertrophy, strength, peak)."""
+  goal: String
+  microcycles: [MicrocycleInput!]!
+  name: String!
+  notes: String
+
+  """ISO date (YYYY-MM-DD) anchoring week 1."""
+  startDate: String
+}
+
+type MesocycleSummary {
+  dayCount: Int!
+  goal: String
+  id: ID!
+  name: String!
+  notes: String
+  startDate: DateTime
+
+  """draft | active | completed | archived"""
+  status: String!
+  updatedAt: DateTime!
+  weekCount: Int!
+}
+
+type Microcycle {
+  days: [MicrocycleDay!]!
+  id: ID!
+  label: String
+  notes: String
+
+  """1-based week position within the mesocycle."""
+  weekIndex: Int!
+}
+
+type MicrocycleDay {
+  """0–6 offset from the week start."""
+  dayOffset: Int!
+  exercises: [MesocycleDayExercise!]!
+  id: ID!
+  label: String
+  notes: String
+  order: Int!
+}
+
+input MicrocycleDayInput {
+  """0–6 offset from the week start."""
+  dayOffset: Int!
+  exercises: [MesocycleDayExerciseInput!]!
+  label: String
+  notes: String
+}
+
+input MicrocycleInput {
+  days: [MicrocycleDayInput!]!
+  label: String
+  notes: String
+}
+
 type Mutation {
   """Accept a pending invitation (links you to the coach)."""
   acceptInvitation(id: ID!): CoachInvitation!
@@ -300,6 +433,9 @@ type Mutation {
   """Create a catalog exercise."""
   createExercise(input: CreateExerciseInput!): Exercise!
 
+  """Create a mesocycle (weeks → days → programmed sets)."""
+  createMesocycle(input: MesocycleInput!): Mesocycle!
+
   """
   Create a session for yourself, pre-filled from one of your templates (status: planned).
   """
@@ -322,6 +458,9 @@ type Mutation {
   """Delete a catalog exercise (blocked if used in any workout)."""
   deleteExercise(exerciseId: ID!): Boolean!
 
+  """Delete a mesocycle (cascades to its weeks, days, exercises and sets)."""
+  deleteMesocycle(id: ID!): Boolean!
+
   """Delete a session (cascades to entries and sets)."""
   deleteWorkoutSession(id: ID!): Boolean!
 
@@ -332,6 +471,11 @@ type Mutation {
   Email a password-reset link (always succeeds, even if the email is unknown).
   """
   forgotPassword(email: String!): Boolean!
+
+  """
+  Generate one week of a mesocycle into dated planned sessions (one per training day).
+  """
+  generateMesocycleWeek(input: GenerateMesocycleWeekInput!): [WorkoutSession!]!
 
   """Invite an athlete by username (coaches only)."""
   inviteAthlete(username: String!): CoachInvitation!
@@ -385,6 +529,9 @@ type Mutation {
   """Revoke one session by id (logs out that device)."""
   revokeSession(id: String!): Boolean!
 
+  """Transition a mesocycle’s status (draft/active/completed/archived)."""
+  setMesocycleStatus(id: ID!, status: String!): Mesocycle!
+
   """Grant or revoke platform admin (cannot revoke your own)."""
   setUserAdmin(input: SetUserAdminInput!): AdminUser!
 
@@ -398,6 +545,9 @@ type Mutation {
 
   """Edit a catalog exercise (slug is immutable)."""
   updateExercise(input: UpdateExerciseInput!): Exercise!
+
+  """Replace a mesocycle’s details and its whole week/day/set tree."""
+  updateMesocycle(id: ID!, input: MesocycleInput!): Mesocycle!
 
   """Update the authenticated user’s profile fields."""
   updateProfile(input: UpdateProfileInput!): Profile!
@@ -530,6 +680,14 @@ type Query {
 
   """The currently authenticated user."""
   me: Me!
+
+  """One of the caller’s mesocycles, with its full tree."""
+  mesocycle(id: ID!): Mesocycle!
+
+  """
+  The caller's mesocycles (newest first), with cheap rollups; optional name search.
+  """
+  mesocycles(search: String): [MesocycleSummary!]!
 
   """Athletes linked to the caller."""
   myAthletes: [CoachUser!]!
@@ -807,6 +965,12 @@ type WorkoutSession {
   createdAt: DateTime!
   entries: [ExerciseEntry!]!
   id: ID!
+
+  """Mesocycle this session was generated from, if any."""
+  mesocycleId: ID
+
+  """1-based mesocycle week this session belongs to, if any."""
+  mesocycleWeek: Int
   notes: String
   performedAt: DateTime!
 

@@ -28,8 +28,31 @@ export class InMemoryWorkoutSessionRepository extends WorkoutSessionRepository {
         }
     }
 
+    async generatedWeeks(mesocycleId: string): Promise<number[]> {
+        const weeks = new Set<number>()
+        for (const session of this.store.values()) {
+            if (session.mesocycleId === mesocycleId && session.mesocycleWeek !== null) {
+                weeks.add(session.mesocycleWeek)
+            }
+        }
+        return [...weeks].sort((a, b) => a - b)
+    }
+
+    async deletePlannedByMesocycleWeek(mesocycleId: string, week: number): Promise<void> {
+        for (const [id, session] of this.store) {
+            if (session.mesocycleId === mesocycleId && session.mesocycleWeek === week && session.status === 'planned') {
+                this.store.delete(id)
+            }
+        }
+    }
+
     /** Test helper: number of stored sessions. */
     get size(): number {
         return this.store.size
+    }
+
+    /** Test helper: every stored session. */
+    all(): WorkoutSessionAggregate[] {
+        return [...this.store.values()]
     }
 }

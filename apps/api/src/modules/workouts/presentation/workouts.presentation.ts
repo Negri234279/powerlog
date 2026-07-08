@@ -2,6 +2,7 @@ import { AdminExerciseResolver } from './resolvers/admin-exercise.resolver'
 import { AdminWorkoutResolver } from './resolvers/admin-workout.resolver'
 import { AnalyticsResolver } from './resolvers/analytics.resolver'
 import { ExerciseResolver } from './resolvers/exercise.resolver'
+import { MesocycleResolver } from './resolvers/mesocycle.resolver'
 import { WorkoutSessionResolver } from './resolvers/workout-session.resolver'
 import { WorkoutTemplateResolver } from './resolvers/workout-template.resolver'
 
@@ -12,5 +13,6 @@ export const WORKOUTS_RESOLVERS = [
     AdminWorkoutResolver,
     WorkoutSessionResolver,
     WorkoutTemplateResolver,
+    MesocycleResolver,
     AnalyticsResolver,
 ]

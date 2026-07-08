@@ -30,6 +30,10 @@ export interface AnalyticsEventMap {
     workout_template_created: EmptyProps
     workout_template_updated: EmptyProps
     workout_template_deleted: EmptyProps
+    mesocycle_created: EmptyProps
+    mesocycle_updated: EmptyProps
+    mesocycle_deleted: EmptyProps
+    mesocycle_week_generated: EmptyProps
     session_created_from_template: EmptyProps
     set_logged: EmptyProps
     session_completed: EmptyProps

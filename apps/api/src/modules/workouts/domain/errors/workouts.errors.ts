@@ -137,3 +137,46 @@ export class WorkoutTemplateNotFoundError extends WorkoutsError {
         super('Workout template not found.')
     }
 }
+
+export class InvalidMesocycleNameError extends WorkoutsError {
+    readonly code = 'INVALID_MESOCYCLE_NAME'
+
+    constructor() {
+        super('A mesocycle name must be between 1 and 100 characters.')
+    }
+}
+
+export class MesocycleNotFoundError extends WorkoutsError {
+    readonly code = 'MESOCYCLE_NOT_FOUND'
+
+    constructor() {
+        super('Mesocycle not found.')
+    }
+}
+
+/** Tried to generate a week that has no matching microcycle in the mesocycle. */
+export class MesocycleWeekNotFoundError extends WorkoutsError {
+    readonly code = 'MESOCYCLE_WEEK_NOT_FOUND'
+
+    constructor() {
+        super('This mesocycle has no such week.')
+    }
+}
+
+/** Tried to generate a week whose sessions already exist (without `replace`). */
+export class MesocycleWeekAlreadyGeneratedError extends WorkoutsError {
+    readonly code = 'MESOCYCLE_WEEK_ALREADY_GENERATED'
+
+    constructor() {
+        super('This week has already been generated. Enable replace to regenerate it.')
+    }
+}
+
+/** Tried to generate a week with no start date to anchor it to. */
+export class MesocycleStartDateRequiredError extends WorkoutsError {
+    readonly code = 'MESOCYCLE_START_DATE_REQUIRED'
+
+    constructor() {
+        super('A start date is required to generate a week into dated sessions.')
+    }
+}

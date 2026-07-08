@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
@@ -68,5 +68,27 @@ export class DrizzleWorkoutSessionRepository extends WorkoutSessionRepository {
 
     async deleteAllByUser(userId: string): Promise<void> {
         await this.db.delete(workoutSessions).where(eq(workoutSessions.userId, userId))
+    }
+
+    async generatedWeeks(mesocycleId: string): Promise<number[]> {
+        const rows = await this.db
+            .selectDistinct({ week: workoutSessions.mesocycleWeek })
+            .from(workoutSessions)
+            .where(and(eq(workoutSessions.mesocycleId, mesocycleId), isNotNull(workoutSessions.mesocycleWeek)))
+            .orderBy(asc(workoutSessions.mesocycleWeek))
+
+        return rows.map((row) => row.week).filter((week): week is number => week !== null)
+    }
+
+    async deletePlannedByMesocycleWeek(mesocycleId: string, week: number): Promise<void> {
+        await this.db
+            .delete(workoutSessions)
+            .where(
+                and(
+                    eq(workoutSessions.mesocycleId, mesocycleId),
+                    eq(workoutSessions.mesocycleWeek, week),
+                    eq(workoutSessions.status, 'planned'),
+                ),
+            )
     }
 }

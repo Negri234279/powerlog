@@ -35,6 +35,8 @@ export interface WorkoutSessionView {
     performedAt: Date
     notes: string | null
     plannedByUserId: string | null
+    mesocycleId: string | null
+    mesocycleWeek: number | null
     createdAt: Date
     updatedAt: Date
     entries: ExerciseEntryView[]
@@ -48,6 +50,8 @@ export function toWorkoutSessionView(session: WorkoutSessionAggregate): WorkoutS
         performedAt: session.performedAt,
         notes: session.notes,
         plannedByUserId: session.plannedByUserId,
+        mesocycleId: session.mesocycleId,
+        mesocycleWeek: session.mesocycleWeek,
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
         entries: session.entries.map((entry) => ({

@@ -37,6 +37,14 @@ type Documents = {
     "\n    query MySessions {\n        mySessions {\n            id\n            current\n            userAgent\n            ip\n            lastUsedAt\n        }\n    }\n": typeof types.MySessionsDocument,
     "\n    mutation RevokeSession($id: String!) {\n        revokeSession(id: $id)\n    }\n": typeof types.RevokeSessionDocument,
     "\n    mutation RevokeOtherSessions {\n        revokeOtherSessions\n    }\n": typeof types.RevokeOtherSessionsDocument,
+    "\n    fragment MesocycleFields on Mesocycle {\n        id\n        ownerId\n        name\n        notes\n        goal\n        startDate\n        status\n        createdAt\n        updatedAt\n        generatedWeeks\n        microcycles {\n            id\n            weekIndex\n            label\n            notes\n            days {\n                id\n                order\n                dayOffset\n                label\n                notes\n                exercises {\n                    id\n                    exerciseId\n                    order\n                    notes\n                    sets {\n                        id\n                        order\n                        plannedWeightKg\n                        plannedReps\n                        rpe\n                        rir\n                        notes\n                    }\n                }\n            }\n        }\n    }\n": typeof types.MesocycleFieldsFragmentDoc,
+    "\n    query Mesocycles($search: String) {\n        mesocycles(search: $search) {\n            id\n            name\n            notes\n            goal\n            status\n            startDate\n            updatedAt\n            weekCount\n            dayCount\n        }\n    }\n": typeof types.MesocyclesDocument,
+    "\n    query Mesocycle($id: ID!) {\n        mesocycle(id: $id) {\n            ...MesocycleFields\n        }\n    }\n": typeof types.MesocycleDocument,
+    "\n    mutation CreateMesocycle($input: MesocycleInput!) {\n        createMesocycle(input: $input) {\n            ...MesocycleFields\n        }\n    }\n": typeof types.CreateMesocycleDocument,
+    "\n    mutation UpdateMesocycle($id: ID!, $input: MesocycleInput!) {\n        updateMesocycle(id: $id, input: $input) {\n            ...MesocycleFields\n        }\n    }\n": typeof types.UpdateMesocycleDocument,
+    "\n    mutation DeleteMesocycle($id: ID!) {\n        deleteMesocycle(id: $id)\n    }\n": typeof types.DeleteMesocycleDocument,
+    "\n    mutation SetMesocycleStatus($id: ID!, $status: String!) {\n        setMesocycleStatus(id: $id, status: $status) {\n            ...MesocycleFields\n        }\n    }\n": typeof types.SetMesocycleStatusDocument,
+    "\n    mutation GenerateMesocycleWeek($input: GenerateMesocycleWeekInput!) {\n        generateMesocycleWeek(input: $input) {\n            ...WorkoutSessionFields\n        }\n    }\n": typeof types.GenerateMesocycleWeekDocument,
     "\n    query Ping {\n        ping\n    }\n": typeof types.PingDocument,
     "\n    query MyProfile {\n        myProfile {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n            createdAt\n            updatedAt\n        }\n    }\n": typeof types.MyProfileDocument,
     "\n    mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n        }\n    }\n": typeof types.UpdateProfileDocument,
@@ -91,6 +99,14 @@ const documents: Documents = {
     "\n    query MySessions {\n        mySessions {\n            id\n            current\n            userAgent\n            ip\n            lastUsedAt\n        }\n    }\n": types.MySessionsDocument,
     "\n    mutation RevokeSession($id: String!) {\n        revokeSession(id: $id)\n    }\n": types.RevokeSessionDocument,
     "\n    mutation RevokeOtherSessions {\n        revokeOtherSessions\n    }\n": types.RevokeOtherSessionsDocument,
+    "\n    fragment MesocycleFields on Mesocycle {\n        id\n        ownerId\n        name\n        notes\n        goal\n        startDate\n        status\n        createdAt\n        updatedAt\n        generatedWeeks\n        microcycles {\n            id\n            weekIndex\n            label\n            notes\n            days {\n                id\n                order\n                dayOffset\n                label\n                notes\n                exercises {\n                    id\n                    exerciseId\n                    order\n                    notes\n                    sets {\n                        id\n                        order\n                        plannedWeightKg\n                        plannedReps\n                        rpe\n                        rir\n                        notes\n                    }\n                }\n            }\n        }\n    }\n": types.MesocycleFieldsFragmentDoc,
+    "\n    query Mesocycles($search: String) {\n        mesocycles(search: $search) {\n            id\n            name\n            notes\n            goal\n            status\n            startDate\n            updatedAt\n            weekCount\n            dayCount\n        }\n    }\n": types.MesocyclesDocument,
+    "\n    query Mesocycle($id: ID!) {\n        mesocycle(id: $id) {\n            ...MesocycleFields\n        }\n    }\n": types.MesocycleDocument,
+    "\n    mutation CreateMesocycle($input: MesocycleInput!) {\n        createMesocycle(input: $input) {\n            ...MesocycleFields\n        }\n    }\n": types.CreateMesocycleDocument,
+    "\n    mutation UpdateMesocycle($id: ID!, $input: MesocycleInput!) {\n        updateMesocycle(id: $id, input: $input) {\n            ...MesocycleFields\n        }\n    }\n": types.UpdateMesocycleDocument,
+    "\n    mutation DeleteMesocycle($id: ID!) {\n        deleteMesocycle(id: $id)\n    }\n": types.DeleteMesocycleDocument,
+    "\n    mutation SetMesocycleStatus($id: ID!, $status: String!) {\n        setMesocycleStatus(id: $id, status: $status) {\n            ...MesocycleFields\n        }\n    }\n": types.SetMesocycleStatusDocument,
+    "\n    mutation GenerateMesocycleWeek($input: GenerateMesocycleWeekInput!) {\n        generateMesocycleWeek(input: $input) {\n            ...WorkoutSessionFields\n        }\n    }\n": types.GenerateMesocycleWeekDocument,
     "\n    query Ping {\n        ping\n    }\n": types.PingDocument,
     "\n    query MyProfile {\n        myProfile {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n            createdAt\n            updatedAt\n        }\n    }\n": types.MyProfileDocument,
     "\n    mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n        }\n    }\n": types.UpdateProfileDocument,
@@ -228,6 +244,38 @@ export function graphql(source: "\n    mutation RevokeSession($id: String!) {\n 
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    mutation RevokeOtherSessions {\n        revokeOtherSessions\n    }\n"): (typeof documents)["\n    mutation RevokeOtherSessions {\n        revokeOtherSessions\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    fragment MesocycleFields on Mesocycle {\n        id\n        ownerId\n        name\n        notes\n        goal\n        startDate\n        status\n        createdAt\n        updatedAt\n        generatedWeeks\n        microcycles {\n            id\n            weekIndex\n            label\n            notes\n            days {\n                id\n                order\n                dayOffset\n                label\n                notes\n                exercises {\n                    id\n                    exerciseId\n                    order\n                    notes\n                    sets {\n                        id\n                        order\n                        plannedWeightKg\n                        plannedReps\n                        rpe\n                        rir\n                        notes\n                    }\n                }\n            }\n        }\n    }\n"): (typeof documents)["\n    fragment MesocycleFields on Mesocycle {\n        id\n        ownerId\n        name\n        notes\n        goal\n        startDate\n        status\n        createdAt\n        updatedAt\n        generatedWeeks\n        microcycles {\n            id\n            weekIndex\n            label\n            notes\n            days {\n                id\n                order\n                dayOffset\n                label\n                notes\n                exercises {\n                    id\n                    exerciseId\n                    order\n                    notes\n                    sets {\n                        id\n                        order\n                        plannedWeightKg\n                        plannedReps\n                        rpe\n                        rir\n                        notes\n                    }\n                }\n            }\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query Mesocycles($search: String) {\n        mesocycles(search: $search) {\n            id\n            name\n            notes\n            goal\n            status\n            startDate\n            updatedAt\n            weekCount\n            dayCount\n        }\n    }\n"): (typeof documents)["\n    query Mesocycles($search: String) {\n        mesocycles(search: $search) {\n            id\n            name\n            notes\n            goal\n            status\n            startDate\n            updatedAt\n            weekCount\n            dayCount\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query Mesocycle($id: ID!) {\n        mesocycle(id: $id) {\n            ...MesocycleFields\n        }\n    }\n"): (typeof documents)["\n    query Mesocycle($id: ID!) {\n        mesocycle(id: $id) {\n            ...MesocycleFields\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation CreateMesocycle($input: MesocycleInput!) {\n        createMesocycle(input: $input) {\n            ...MesocycleFields\n        }\n    }\n"): (typeof documents)["\n    mutation CreateMesocycle($input: MesocycleInput!) {\n        createMesocycle(input: $input) {\n            ...MesocycleFields\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation UpdateMesocycle($id: ID!, $input: MesocycleInput!) {\n        updateMesocycle(id: $id, input: $input) {\n            ...MesocycleFields\n        }\n    }\n"): (typeof documents)["\n    mutation UpdateMesocycle($id: ID!, $input: MesocycleInput!) {\n        updateMesocycle(id: $id, input: $input) {\n            ...MesocycleFields\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation DeleteMesocycle($id: ID!) {\n        deleteMesocycle(id: $id)\n    }\n"): (typeof documents)["\n    mutation DeleteMesocycle($id: ID!) {\n        deleteMesocycle(id: $id)\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation SetMesocycleStatus($id: ID!, $status: String!) {\n        setMesocycleStatus(id: $id, status: $status) {\n            ...MesocycleFields\n        }\n    }\n"): (typeof documents)["\n    mutation SetMesocycleStatus($id: ID!, $status: String!) {\n        setMesocycleStatus(id: $id, status: $status) {\n            ...MesocycleFields\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation GenerateMesocycleWeek($input: GenerateMesocycleWeekInput!) {\n        generateMesocycleWeek(input: $input) {\n            ...WorkoutSessionFields\n        }\n    }\n"): (typeof documents)["\n    mutation GenerateMesocycleWeek($input: GenerateMesocycleWeekInput!) {\n        generateMesocycleWeek(input: $input) {\n            ...WorkoutSessionFields\n        }\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

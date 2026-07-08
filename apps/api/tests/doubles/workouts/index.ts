@@ -1,6 +1,7 @@
 export { FakeClock } from './fake-clock'
 export { FakeIdGenerator } from './fake-id-generator'
 export { InMemoryExerciseRepository } from './in-memory-exercise.repository'
+export { InMemoryMesocycleRepository } from './in-memory-mesocycle.repository'
 export { InMemoryWorkoutSessionRepository } from './in-memory-workout-session.repository'
 export { InMemoryWorkoutTemplateRepository } from './in-memory-workout-template.repository'
 export { StubExerciseSessionHistoryReadModel } from './stub-exercise-session-history.read-model'

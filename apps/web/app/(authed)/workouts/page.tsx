@@ -32,7 +32,7 @@ import { FormError } from '@/components/ui/form-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
 import { Field, Input, Select } from '@/components/ui/field'
-import { Calendar, ChartLine, ChevronDown, Dumbbell, Plus, Search } from '@/components/ui/icons'
+import { Calendar, ChartLine, ChevronDown, Dumbbell, Plus, Search, Target } from '@/components/ui/icons'
 import { Menu } from '@/components/ui/menu'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
@@ -496,6 +496,14 @@ export default function WorkoutsPage() {
                     >
                         <Dumbbell className="size-4" />
                         {t('templates')}
+                    </TrackedLink>
+                    <TrackedLink
+                        analyticsId="workouts-mesocycles-link"
+                        href="/workouts/mesocycles"
+                        className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                    >
+                        <Target className="size-4" />
+                        {t('mesocycles')}
                     </TrackedLink>
                     <TrackedLink
                         analyticsId="workouts-stats-link"

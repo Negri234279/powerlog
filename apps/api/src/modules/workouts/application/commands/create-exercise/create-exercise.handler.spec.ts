@@ -46,7 +46,14 @@ describe('CreateExerciseHandler', () => {
         const { repo, handler } = setup()
 
         await handler.execute(
-            new CreateExerciseCommand('Romanian Deadlift', 'deadlift', 'barbell', 'hamstrings', null, 'Peso Muerto Rumano'),
+            new CreateExerciseCommand(
+                'Romanian Deadlift',
+                'deadlift',
+                'barbell',
+                'hamstrings',
+                null,
+                'Peso Muerto Rumano',
+            ),
         )
 
         expect(await repo.translationsFor(['ex-new'], 'es')).toEqual(new Map([['ex-new', 'Peso Muerto Rumano']]))

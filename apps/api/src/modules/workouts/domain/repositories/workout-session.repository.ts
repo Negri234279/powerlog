@@ -12,4 +12,9 @@ export abstract class WorkoutSessionRepository {
      *  erase workout data on account deletion. Sessions a coach planned for an
      *  athlete are owned by the athlete, so they're untouched when the coach leaves. */
     abstract deleteAllByUser(userId: string): Promise<void>
+    /** 1-based weeks of a mesocycle that already have generated sessions (ascending). */
+    abstract generatedWeeks(mesocycleId: string): Promise<number[]>
+    /** Remove the still-`planned` sessions of a mesocycle week (keeps completed ones),
+     *  so a week can be safely regenerated. */
+    abstract deletePlannedByMesocycleWeek(mesocycleId: string, week: number): Promise<void>
 }

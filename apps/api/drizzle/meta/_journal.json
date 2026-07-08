@@ -176,6 +176,20 @@
       "when": 1783362529029,
       "tag": "0024_seed_exercise_es",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1783452440749,
+      "tag": "0025_outstanding_wallop",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1783453156645,
+      "tag": "0026_hot_tomorrow_man",
+      "breakpoints": true
     }
   ]
 }

@@ -72,6 +72,12 @@ export class WorkoutSessionType {
     @Field(() => ID, { nullable: true, description: 'Coach who planned this session, if any.' })
     plannedByUserId?: string | null
 
+    @Field(() => ID, { nullable: true, description: 'Mesocycle this session was generated from, if any.' })
+    mesocycleId?: string | null
+
+    @Field(() => Int, { nullable: true, description: '1-based mesocycle week this session belongs to, if any.' })
+    mesocycleWeek?: number | null
+
     @Field()
     createdAt!: Date
 

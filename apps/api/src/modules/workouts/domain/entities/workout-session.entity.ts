@@ -12,6 +12,9 @@ export interface WorkoutSessionProps {
     notes: string | null
     /** Coach who planned this session, if any (soft ref). */
     plannedByUserId: string | null
+    /** If generated from a mesocycle: its id + 1-based week (soft refs). */
+    mesocycleId: string | null
+    mesocycleWeek: number | null
     createdAt: Date
     updatedAt: Date
     entries: ExerciseEntryEntity[]
@@ -33,6 +36,8 @@ export class WorkoutSessionAggregate {
         status?: WorkoutStatus
         notes?: string | null
         plannedByUserId?: string | null
+        mesocycleId?: string | null
+        mesocycleWeek?: number | null
         now: Date
     }): WorkoutSessionAggregate {
         return new WorkoutSessionAggregate({
@@ -42,6 +47,8 @@ export class WorkoutSessionAggregate {
             performedAt: input.performedAt,
             notes: input.notes ?? null,
             plannedByUserId: input.plannedByUserId ?? null,
+            mesocycleId: input.mesocycleId ?? null,
+            mesocycleWeek: input.mesocycleWeek ?? null,
             createdAt: input.now,
             updatedAt: input.now,
             entries: [],
@@ -126,6 +133,12 @@ export class WorkoutSessionAggregate {
     }
     get plannedByUserId(): string | null {
         return this.props.plannedByUserId
+    }
+    get mesocycleId(): string | null {
+        return this.props.mesocycleId
+    }
+    get mesocycleWeek(): number | null {
+        return this.props.mesocycleWeek
     }
     get createdAt(): Date {
         return this.props.createdAt

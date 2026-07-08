@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { WorkoutSessionMother, WorkoutTemplateMother } from '../../../../../tests/mothers/workouts'
+import { MesocycleMother, WorkoutSessionMother, WorkoutTemplateMother } from '../../../../../tests/mothers/workouts'
 import {
+    InMemoryMesocycleRepository,
     InMemoryWorkoutSessionRepository,
     InMemoryWorkoutTemplateRepository,
 } from '../../../../../tests/doubles/workouts'
@@ -24,27 +25,33 @@ function setup() {
         WorkoutTemplateMother.withTree(EXERCISE, { ownerId: USER }),
         WorkoutTemplateMother.withTree(EXERCISE, { ownerId: OTHER }),
     ])
-    const handler = new PurgeWorkoutsOnUserDeleted(sessions, templates)
-    return { sessions, templates, handler }
+    const mesocycles = new InMemoryMesocycleRepository([
+        MesocycleMother.withTree(EXERCISE, { ownerId: USER }),
+        MesocycleMother.withTree(EXERCISE, { ownerId: OTHER }),
+    ])
+    const handler = new PurgeWorkoutsOnUserDeleted(sessions, templates, mesocycles)
+    return { sessions, templates, mesocycles, handler }
 }
 
 describe('PurgeWorkoutsOnUserDeleted', () => {
-    it("erases the user's own sessions and templates, leaving others' intact", async () => {
-        const { sessions, templates, handler } = setup()
+    it("erases the user's own sessions, templates and mesocycles, leaving others' intact", async () => {
+        const { sessions, templates, mesocycles, handler } = setup()
 
         await handler.handle(new UserDeletedIntegrationEvent(USER))
 
         // Only the athlete-owned coach-planned session remains.
         expect(sessions.size).toBe(1)
-        // Only the other user's template remains.
+        // Only the other user's template + mesocycle remain.
         expect(templates.size).toBe(1)
+        expect(mesocycles.size).toBe(1)
     })
 
     it('is a no-op for a user with no workout data', async () => {
-        const { sessions, templates, handler } = setup()
+        const { sessions, templates, mesocycles, handler } = setup()
 
         await expect(handler.handle(new UserDeletedIntegrationEvent('ghost'))).resolves.toBeUndefined()
         expect(sessions.size).toBe(3)
         expect(templates.size).toBe(2)
+        expect(mesocycles.size).toBe(2)
     })
 })
