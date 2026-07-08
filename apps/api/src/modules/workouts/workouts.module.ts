@@ -15,6 +15,7 @@ import { ExerciseSessionHistoryReadModel } from './application/ports/exercise-se
 import { ExerciseStatsReadModel } from './application/ports/exercise-stats.read-model'
 import { IdGenerator } from './application/ports/id-generator.port'
 import { MesocycleListReadModel } from './application/ports/mesocycle-list.read-model'
+import { MesocycleMetrics } from './application/ports/mesocycle-metrics.port'
 import { TrainingDashboardReadModel } from './application/ports/training-dashboard.read-model'
 import { WorkoutHistoryReadModel } from './application/ports/workout-history.read-model'
 import { WorkoutTemplateListReadModel } from './application/ports/workout-template-list.read-model'
@@ -34,6 +35,7 @@ import { DrizzleExerciseRepository } from './infrastructure/persistence/reposito
 import { DrizzleMesocycleRepository } from './infrastructure/persistence/repositories/drizzle-mesocycle.repository'
 import { DrizzleWorkoutSessionRepository } from './infrastructure/persistence/repositories/drizzle-workout-session.repository'
 import { DrizzleWorkoutTemplateRepository } from './infrastructure/persistence/repositories/drizzle-workout-template.repository'
+import { PrometheusMesocycleMetrics } from './infrastructure/metrics/prometheus-mesocycle-metrics'
 import { SystemClock } from './infrastructure/time/system-clock'
 import { WORKOUTS_RESOLVERS } from './presentation/workouts.presentation'
 
@@ -52,6 +54,7 @@ const ADAPTERS: Provider[] = [
     { provide: TrainingDashboardReadModel, useClass: DrizzleTrainingDashboardReadModel },
     { provide: WorkoutTemplateListReadModel, useClass: DrizzleWorkoutTemplateListReadModel },
     { provide: MesocycleListReadModel, useClass: DrizzleMesocycleListReadModel },
+    { provide: MesocycleMetrics, useClass: PrometheusMesocycleMetrics },
 ]
 
 @Module({

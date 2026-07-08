@@ -1,4 +1,5 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { PinoLogger } from 'nestjs-pino'
 
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import {
@@ -11,6 +12,7 @@ import { WorkoutSessionRepository } from '../../../domain/repositories/workout-s
 import { materializeProgrammedExercises } from '../../materialize-template'
 import { Clock } from '../../ports/clock.port'
 import { IdGenerator } from '../../ports/id-generator.port'
+import { MesocycleMetrics } from '../../ports/mesocycle-metrics.port'
 import {
     type WorkoutSessionView,
     toWorkoutSessionView,
@@ -30,7 +32,11 @@ export class GenerateMesocycleWeekHandler implements ICommandHandler<
         private readonly sessions: WorkoutSessionRepository,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
-    ) {}
+        private readonly metrics: MesocycleMetrics,
+        private readonly logger?: PinoLogger,
+    ) {
+        this.logger?.setContext(GenerateMesocycleWeekHandler.name)
+    }
 
     async execute(command: GenerateMesocycleWeekCommand): Promise<WorkoutSessionView[]> {
         const mesocycle = await requireOwnedMesocycle(this.mesocycles, command.mesocycleId, command.userId)
@@ -73,6 +79,13 @@ export class GenerateMesocycleWeekHandler implements ICommandHandler<
             await this.sessions.save(session)
             views.push(toWorkoutSessionView(session))
         }
+
+        const mode = alreadyGenerated ? 'replace' : 'fresh'
+        this.metrics.recordSessionsGenerated(mode, views.length)
+        this.logger?.info(
+            { mesocycleId: mesocycle.id, week: command.week, sessions: views.length, mode },
+            'mesocycle week generated',
+        )
 
         return views
     }

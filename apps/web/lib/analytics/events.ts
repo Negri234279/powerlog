@@ -33,6 +33,7 @@ export interface AnalyticsEventMap {
     mesocycle_created: EmptyProps
     mesocycle_updated: EmptyProps
     mesocycle_deleted: EmptyProps
+    mesocycle_status_changed: { status: 'draft' | 'active' | 'completed' | 'archived' }
     mesocycle_week_generated: EmptyProps
     session_created_from_template: EmptyProps
     set_logged: EmptyProps

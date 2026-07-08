@@ -128,7 +128,12 @@ export default function MesocycleOverviewPage() {
                             analyticsId="mesocycle-set-status"
                             key={status}
                             type="button"
-                            onClick={() => setStatus.mutate({ id, status })}
+                            onClick={() =>
+                                setStatus.mutate(
+                                    { id, status },
+                                    { onSuccess: () => track('mesocycle_status_changed', { status }) },
+                                )
+                            }
                             disabled={setStatus.isPending}
                             className={cn(
                                 'rounded-full px-3.5 py-1.5 text-sm transition-colors duration-300 disabled:opacity-60',

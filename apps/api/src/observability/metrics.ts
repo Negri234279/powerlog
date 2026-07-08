@@ -19,6 +19,8 @@ export const METRIC = {
     r2Up: 'powerlog_r2_up',
     r2ProbeDuration: 'powerlog_r2_probe_seconds',
     notificationsCreated: 'powerlog_notifications_created_total',
+    mesocycleStatusTransitions: 'powerlog_mesocycle_status_transitions_total',
+    mesocycleSessionsGenerated: 'powerlog_mesocycle_sessions_generated_total',
     authLogins: 'powerlog_auth_logins_total',
     authRefresh: 'powerlog_auth_refresh_total',
     authRegistrations: 'powerlog_auth_registrations_total',
@@ -140,6 +142,21 @@ export const metricsProviders = [
         name: METRIC.notificationsCreated,
         help: 'Count of in-app notifications created, by type.',
         labelNames: ['type'],
+    }),
+    // Mesocycle lifecycle signals — dimensions the CQRS command name can't carry.
+    // Status transitions by target status (draft/active/completed/archived): the
+    // meso lifecycle funnel (set by PrometheusMesocycleMetrics).
+    makeCounterProvider({
+        name: METRIC.mesocycleStatusTransitions,
+        help: 'Count of mesocycle status transitions, by target status.',
+        labelNames: ['status'],
+    }),
+    // Planned sessions materialized when generating a mesocycle week, by mode
+    // (fresh first generation vs replace/regenerate). Incremented by session count.
+    makeCounterProvider({
+        name: METRIC.mesocycleSessionsGenerated,
+        help: 'Count of planned sessions generated from mesocycle weeks, by mode.',
+        labelNames: ['mode'],
     }),
     // Auth signals. method/status stay bounded enums (no userId/email).
     // Login attempts, by method and outcome (set by the auth handlers via AuthMetrics).

@@ -4,6 +4,7 @@ import { MesocycleMother } from '../../../../../../tests/mothers/workouts'
 import {
     FakeClock,
     FakeIdGenerator,
+    FakeMesocycleMetrics,
     InMemoryMesocycleRepository,
     InMemoryWorkoutSessionRepository,
 } from '../../../../../../tests/doubles/workouts'
@@ -26,8 +27,15 @@ const EXERCISE = 'ex-1'
 function setup(seed = MesocycleMother.withTree(EXERCISE, { id: 'm-1', ownerId: OWNER })) {
     const mesocycles = new InMemoryMesocycleRepository([seed])
     const sessions = new InMemoryWorkoutSessionRepository()
-    const handler = new GenerateMesocycleWeekHandler(mesocycles, sessions, new FakeClock(NOW), new FakeIdGenerator())
-    return { mesocycles, sessions, handler }
+    const metrics = new FakeMesocycleMetrics()
+    const handler = new GenerateMesocycleWeekHandler(
+        mesocycles,
+        sessions,
+        new FakeClock(NOW),
+        new FakeIdGenerator(),
+        metrics,
+    )
+    return { mesocycles, sessions, metrics, handler }
 }
 
 describe('GenerateMesocycleWeekHandler', () => {
@@ -44,6 +52,18 @@ describe('GenerateMesocycleWeekHandler', () => {
         expect(session.entries[0]!.sets.map((s) => s.plannedWeightKg)).toEqual([100, 90])
         expect(session.entries[0]!.sets.every((s) => s.weightKg === null)).toBe(true)
         expect(await sessions.generatedWeeks('m-1')).toEqual([1])
+    })
+
+    it('counts generated sessions as fresh on first generation and replace on regeneration', async () => {
+        const { metrics, handler } = setup()
+
+        await handler.execute(new GenerateMesocycleWeekCommand(OWNER, 'm-1', 1))
+        await handler.execute(new GenerateMesocycleWeekCommand(OWNER, 'm-1', 1, null, true))
+
+        expect(metrics.generations).toEqual([
+            { mode: 'fresh', sessions: 1 },
+            { mode: 'replace', sessions: 1 },
+        ])
     })
 
     it('offsets later weeks by 7 days per microcycle', async () => {

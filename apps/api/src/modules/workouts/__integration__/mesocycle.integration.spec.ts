@@ -8,7 +8,7 @@ import { Pool } from 'pg'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import * as schema from '../../../database/schema'
-import { FakeClock } from '../../../../tests/doubles/workouts'
+import { FakeClock, FakeMesocycleMetrics } from '../../../../tests/doubles/workouts'
 import { MesocycleMother } from '../../../../tests/mothers/workouts'
 import { GenerateMesocycleWeekCommand } from '../application/commands/generate-mesocycle-week/generate-mesocycle-week.command'
 import { GenerateMesocycleWeekHandler } from '../application/commands/generate-mesocycle-week/generate-mesocycle-week.handler'
@@ -157,6 +157,7 @@ describe('Mesocycle generation (integration)', () => {
             sessions,
             new FakeClock(new Date('2026-03-01T10:00:00.000Z')),
             new UuidGenerator(),
+            new FakeMesocycleMetrics(),
         )
     }
 
