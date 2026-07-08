@@ -452,6 +452,11 @@
     },
     "profile": {
         "eyebrow": "Account",
+        "heading": "Settings",
+        "nav": {
+            "profile": "Profile",
+            "security": "Account & security"
+        },
         "title": "Your profile",
         "intro": "This shapes how analytics and coaching read your training. Everything here is optional except your display name.",
         "loadError": "Couldn’t load your profile. Try refreshing.",

@@ -452,6 +452,11 @@
     },
     "profile": {
         "eyebrow": "Cuenta",
+        "heading": "Ajustes",
+        "nav": {
+            "profile": "Perfil",
+            "security": "Cuenta y seguridad"
+        },
         "title": "Tu perfil",
         "intro": "Esto define cómo las analíticas y el coaching interpretan tu entrenamiento. Todo aquí es opcional salvo tu nombre público.",
         "loadError": "No se pudo cargar tu perfil. Prueba a recargar.",

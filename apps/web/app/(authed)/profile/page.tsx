@@ -6,14 +6,9 @@ import { type FormEvent, useState } from 'react'
 import { track } from '@/lib/analytics/events'
 import { LanguageSwitcher } from '@/components/app/language-switcher'
 import { AvatarCard } from '@/components/profile/avatar-card'
-import { ChangePasswordCard } from '@/components/auth/change-password-card'
-import { DeleteAccountCard } from '@/components/auth/delete-account-card'
-import { EmailVerificationCard } from '@/components/auth/email-verification-card'
-import { SessionsCard } from '@/components/auth/sessions-card'
 import { Field, Input, Select, Textarea } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SubmitButton } from '@/components/ui/submit-button'
-import { TextsReveal } from '@/components/ui/texts-reveal'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { type ProfileData, useMyProfile, useUpdateProfile } from '@/lib/graphql/hooks/use-profile'
 
@@ -134,14 +129,10 @@ export default function ProfilePage() {
 
     return (
         <div>
-            <TextsReveal>
-                <p className="font-mono text-eyebrow uppercase text-text-faint">{t('eyebrow')}</p>
-                <h1 className="mt-3 font-display text-display">{t('title')}</h1>
-                <p className="mt-4 max-w-lg text-body text-text-dim">{t('intro')}</p>
-            </TextsReveal>
+            <p className="max-w-lg text-body text-text-dim">{t('intro')}</p>
 
             {profile ? (
-                <div className="mt-10">
+                <div className="mt-8">
                     <AvatarCard profile={profile} />
                 </div>
             ) : null}
@@ -161,13 +152,6 @@ export default function ProfilePage() {
                         <ProfileForm profile={profile} />
                     )}
                 </div>
-            </div>
-
-            <div className="mt-6 space-y-6">
-                <EmailVerificationCard />
-                <ChangePasswordCard />
-                <SessionsCard />
-                <DeleteAccountCard />
             </div>
         </div>
     )
