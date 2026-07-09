@@ -5,10 +5,14 @@ import type { AiProvider } from '../../../src/shared/ai-provider'
 
 /**
  * Stands in for a real provider. Records the API keys it was called with, so a
- * test can assert the decrypted key reached the provider — and only there.
+ * test can assert the decrypted key reached the provider — and only there — and
+ * replays a scripted sequence of completions, so a test can drive the retry path.
  */
 export class StubLlmProviderClient extends LlmProviderClient {
     readonly listModelsCalledWith: string[] = []
+    readonly completeCalls: LlmCompletionRequest[] = []
+    /** Answers handed out in order; the last one repeats once exhausted. */
+    private completions: string[] = ['']
 
     constructor(
         readonly provider: AiProvider,
@@ -18,6 +22,13 @@ export class StubLlmProviderClient extends LlmProviderClient {
         super()
     }
 
+    /** Script what the model answers, one entry per call. */
+    willAnswer(...completions: string[]): this {
+        this.completions = completions
+
+        return this
+    }
+
     async listModels(apiKey: string): Promise<LlmModel[]> {
         this.listModelsCalledWith.push(apiKey)
         if (this.failWith) throw this.failWith
@@ -25,10 +36,13 @@ export class StubLlmProviderClient extends LlmProviderClient {
         return this.models
     }
 
-    async complete(_request: LlmCompletionRequest): Promise<LlmCompletion> {
+    async complete(request: LlmCompletionRequest): Promise<LlmCompletion> {
+        this.completeCalls.push(request)
         if (this.failWith) throw this.failWith
 
-        return { text: '', model: '', usage: { inputTokens: 0, outputTokens: 0 } }
+        const text = this.completions[Math.min(this.completeCalls.length - 1, this.completions.length - 1)] ?? ''
+
+        return { text, model: request.model, usage: { inputTokens: 1, outputTokens: 1 } }
     }
 }
 

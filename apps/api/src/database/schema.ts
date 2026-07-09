@@ -31,3 +31,4 @@ export * from '../modules/notifications/infrastructure/persistence/schema/notifi
 export * from '../modules/coaching/infrastructure/persistence/schema/coach-athlete-invitations.schema'
 export * from '../modules/coaching/infrastructure/persistence/schema/coach-athlete.schema'
 export * from '../modules/ai/infrastructure/persistence/schema/ai-provider-configs.schema'
+export * from '../modules/ai/infrastructure/persistence/schema/ai-plan-drafts.schema'

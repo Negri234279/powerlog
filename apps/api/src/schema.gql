@@ -95,6 +95,45 @@ type AiModel {
   id: String!
 }
 
+type AiPlanDraft {
+  createdAt: DateTime!
+  id: ID!
+  messages: [AiPlanDraftMessage!]!
+
+  """The model that produced this proposal."""
+  model: String!
+
+  """"openai" or "anthropic"."""
+  provider: String!
+  sessionId: ID!
+  sets: [AiPlanDraftSet!]!
+
+  """"open", "accepted" or "discarded"."""
+  status: String!
+  updatedAt: DateTime!
+}
+
+type AiPlanDraftMessage {
+  content: String!
+  createdAt: DateTime!
+  id: ID!
+
+  """"user" or "assistant"."""
+  role: String!
+}
+
+type AiPlanDraftSet {
+  """The model’s one-line reason for this set."""
+  notes: String
+  plannedReps: Int
+  plannedWeightKg: Float
+  rir: Int
+  rpe: Float
+
+  """The set this target belongs to."""
+  setId: ID!
+}
+
 type AiProviderConfig {
   createdAt: DateTime!
 
@@ -438,6 +477,9 @@ type Mutation {
   """Accept a pending invitation (links you to the coach)."""
   acceptInvitation(id: ID!): CoachInvitation!
 
+  """Write the draft’s targets onto its session."""
+  acceptPlanDraft(draftId: ID!): AiPlanDraft!
+
   """Add an exercise to a session."""
   addExerciseEntry(input: AddExerciseEntryInput!): WorkoutSession!
 
@@ -495,6 +537,9 @@ type Mutation {
   """Delete a template (cascades to its exercises and sets)."""
   deleteWorkoutTemplate(id: ID!): Boolean!
 
+  """Throw away a draft without touching the session."""
+  discardPlanDraft(draftId: ID!): Boolean!
+
   """
   Email a password-reset link (always succeeds, even if the email is unknown).
   """
@@ -504,6 +549,11 @@ type Mutation {
   Generate one week of a mesocycle into dated planned sessions (one per training day).
   """
   generateMesocycleWeek(input: GenerateMesocycleWeekInput!): [WorkoutSession!]!
+
+  """
+  Ask the default AI provider to program a planned session. Supersedes any open draft.
+  """
+  generateSessionPlanDraft(sessionId: ID!): AiPlanDraft!
 
   """Invite an athlete by username (coaches only)."""
   inviteAthlete(username: String!): CoachInvitation!
@@ -532,6 +582,9 @@ type Mutation {
   Plan a session for one of your athletes (coaches only; status: planned).
   """
   planWorkoutSession(input: PlanWorkoutSessionInput!): WorkoutSession!
+
+  """Ask the model to revise an open draft."""
+  refinePlanDraft(input: RefinePlanDraftInput!): AiPlanDraft!
 
   """Rotate the session using the refresh cookie."""
   refresh: Me!
@@ -760,6 +813,9 @@ type Query {
   """Liveness ping for the GraphQL schema."""
   ping: String!
 
+  """The proposal awaiting a decision on this session, if any."""
+  sessionPlanDraft(sessionId: ID!): AiPlanDraft
+
   """
   e1RM progression and projection for one exercise, optionally within a date range.
   """
@@ -796,6 +852,13 @@ type Query {
   The caller's templates (name-ordered), with cheap rollups; optional name search.
   """
   workoutTemplates(search: String): [WorkoutTemplateSummary!]!
+}
+
+input RefinePlanDraftInput {
+  draftId: ID!
+
+  """What to change, e.g. "less volume, I slept badly"."""
+  message: String!
 }
 
 input RegisterInput {

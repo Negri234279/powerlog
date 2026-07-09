@@ -1,4 +1,7 @@
 export { FakeClock } from './fake-clock'
+export { FakeIdGenerator } from './fake-id-generator'
 export { FakeSecretCipher } from './fake-secret-cipher'
+export { InMemoryAiPlanDraftRepository } from './in-memory-ai-plan-draft.repository'
 export { InMemoryAiProviderConfigRepository } from './in-memory-ai-provider-config.repository'
+export { RecordingSessionPlanApplier, StubSessionPlanContextReader } from './session-plan-doubles'
 export { StubLlmProviderClient, stubRegistry } from './stub-llm-provider-client'
