@@ -708,13 +708,15 @@
         "providers": {
             "openai": {
                 "name": "OpenAI",
-                "body": "Use GPT models. Create a key in the OpenAI dashboard, under API keys.",
-                "placeholder": "sk-…"
+                "body": "Use GPT models. Requests run on your own OpenAI account.",
+                "placeholder": "sk-…",
+                "getKey": "Get a key in the OpenAI platform"
             },
             "anthropic": {
                 "name": "Anthropic",
-                "body": "Use Claude models. Create a key in the Anthropic console, under API keys.",
-                "placeholder": "sk-ant-…"
+                "body": "Use Claude models. Requests run on your own Anthropic account.",
+                "placeholder": "sk-ant-…",
+                "getKey": "Get a key in the Claude Console"
             }
         },
         "statusDefault": "Default",

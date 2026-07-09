@@ -708,13 +708,15 @@
         "providers": {
             "openai": {
                 "name": "OpenAI",
-                "body": "Usa modelos GPT. Crea una clave en el panel de OpenAI, en API keys.",
-                "placeholder": "sk-…"
+                "body": "Usa modelos GPT. Las peticiones salen de tu propia cuenta de OpenAI.",
+                "placeholder": "sk-…",
+                "getKey": "Obtener una clave en la plataforma de OpenAI"
             },
             "anthropic": {
                 "name": "Anthropic",
-                "body": "Usa modelos Claude. Crea una clave en la consola de Anthropic, en API keys.",
-                "placeholder": "sk-ant-…"
+                "body": "Usa modelos Claude. Las peticiones salen de tu propia cuenta de Anthropic.",
+                "placeholder": "sk-ant-…",
+                "getKey": "Obtener una clave en la Claude Console"
             }
         },
         "statusDefault": "Por defecto",

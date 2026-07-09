@@ -5,10 +5,11 @@ import { type ChangeEvent, type FormEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { Field, Input, Select } from '@/components/ui/field'
+import { ArrowUpRight } from '@/components/ui/icons'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { FormError } from '@/components/ui/form-error'
 import { SubmitButton } from '@/components/ui/submit-button'
-import { TrackedButton } from '@/components/ui/tracked'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import {
     type AiProvider,
@@ -20,6 +21,17 @@ import {
     useSetAiProviderKey,
     useUpdateAiProviderModel,
 } from '@/lib/graphql/hooks/use-ai-settings'
+
+/**
+ * Where each provider lets you mint an API key. Neither OpenAI nor Anthropic
+ * offers an OAuth flow that would let powerlog create the key for you — their
+ * consoles are the only supported route — so the least we can do is point
+ * straight at the page instead of describing it.
+ */
+const KEY_CONSOLE_URL: Record<AiProvider, string> = {
+    openai: 'https://platform.openai.com/api-keys',
+    anthropic: 'https://platform.claude.com/settings/keys',
+}
 
 /**
  * One provider's BYOK configuration. Two shapes in one card: a "connect" form
@@ -117,6 +129,18 @@ export function AiProviderCard({ provider, config }: { provider: AiProvider; con
                         <p className="font-mono text-eyebrow uppercase text-text-faint">{t('eyebrow')}</p>
                         <h2 className="mt-3 font-display text-h3 text-text">{t(`providers.${provider}.name`)}</h2>
                         <p className="mt-3 max-w-lg text-body text-text-dim">{t(`providers.${provider}.body`)}</p>
+
+                        {/* Shown whether or not a key is stored: rotating one sends you here too. */}
+                        <TrackedLink
+                            analyticsId={`ai-${provider}-console`}
+                            href={KEY_CONSOLE_URL[provider]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 inline-flex items-center gap-1 text-sm text-text underline-offset-4 transition-colors duration-300 hover:underline"
+                        >
+                            {t(`providers.${provider}.getKey`)}
+                            <ArrowUpRight className="size-3.5" />
+                        </TrackedLink>
                     </div>
 
                     {config ? (
