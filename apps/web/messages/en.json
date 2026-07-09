@@ -670,7 +670,16 @@
         "AI_PROVIDER_TIMEOUT": "The provider took too long to respond.",
         "AI_PROVIDER_UNAVAILABLE": "The provider is temporarily unavailable.",
         "AI_PROVIDER_REFUSED": "The model declined to answer that request.",
-        "AI_PROVIDER_UNSUPPORTED": "That AI provider is not supported."
+        "AI_PROVIDER_UNSUPPORTED": "That AI provider is not supported.",
+        "NO_DEFAULT_AI_PROVIDER": "Choose a default AI provider in your profile, and make sure it is not paused.",
+        "AI_MODEL_NOT_SELECTED": "Pick a model for your default AI provider first.",
+        "SESSION_NOT_PROGRAMMABLE": "That session cannot be programmed.",
+        "EMPTY_SESSION_PLAN": "Add at least one exercise with sets before generating a plan.",
+        "AI_PLAN_DRAFT_NOT_FOUND": "That plan no longer exists.",
+        "AI_PLAN_DRAFT_NOT_OPEN": "That plan has already been accepted or discarded.",
+        "CONFLICTING_PLAN_INTENSITY": "A set cannot have both an RPE and an RIR.",
+        "INVALID_AI_PLAN_RESPONSE": "The model did not return a usable plan. Try again.",
+        "INVALID_PLAN_DRAFT_STATUS": "That plan is in an unknown state."
     },
     "ai": {
         "eyebrow": "Provider",
@@ -711,5 +720,21 @@
         "statusDefault": "Default",
         "makeDefault": "Use by default",
         "defaultHint": "The provider powerlog uses when both are connected."
+    },
+    "aiPlan": {
+        "eyebrow": "Coach",
+        "title": "Program with AI",
+        "body": "Let your AI provider set the weight and reps for every set, from your recent sessions and the notes you wrote.",
+        "draftBody": "A proposal for this session. Nothing is written until you accept it.",
+        "generate": "Generate with AI",
+        "generating": "Thinking…",
+        "regenerate": "Regenerate",
+        "accept": "Accept plan",
+        "accepting": "Applying…",
+        "discard": "Discard",
+        "refine": "Send",
+        "refining": "Thinking…",
+        "refinePlaceholder": "Less volume, I slept badly…",
+        "refineAria": "Ask for a change to the plan"
     }
 }

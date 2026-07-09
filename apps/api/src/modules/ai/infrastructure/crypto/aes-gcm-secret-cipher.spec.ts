@@ -57,6 +57,29 @@ describe('AesGcmSecretCipher', () => {
         expect(() => cipher.decrypt(tampered)).toThrow(InvalidEncryptedSecretError)
     })
 
+    it('refuses a stored row whose iv or auth tag is the wrong size', () => {
+        const cipher = cipherWith(masterKey())
+        const encrypted = cipher.encrypt(ApiKeyVO.create(API_KEY))
+
+        // These are rejected by `createDecipheriv` / `setAuthTag`, before any
+        // decryption happens — they must still read as a corrupted row, not as
+        // an internal error.
+        const shortIv = EncryptedSecretVO.create({ ...encrypted.value, iv: Buffer.from('short').toString('base64') })
+        const longTag = EncryptedSecretVO.create({
+            ...encrypted.value,
+            authTag: Buffer.alloc(24, 1).toString('base64'),
+        })
+
+        expect(() => cipher.decrypt(shortIv)).toThrow(InvalidEncryptedSecretError)
+        expect(() => cipher.decrypt(longTag)).toThrow(InvalidEncryptedSecretError)
+    })
+
+    it('reports a misconfigured master key rather than blaming the stored row', () => {
+        const encrypted = cipherWith(masterKey()).encrypt(ApiKeyVO.create(API_KEY))
+
+        expect(() => cipherWith('').decrypt(encrypted)).toThrow(AiEncryptionKeyMisconfiguredError)
+    })
+
     it('refuses to decrypt with a different master key', () => {
         const encrypted = cipherWith(masterKey()).encrypt(ApiKeyVO.create(API_KEY))
 

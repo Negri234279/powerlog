@@ -46,10 +46,14 @@ export class AesGcmSecretCipher extends SecretCipher {
     }
 
     decrypt(secret: EncryptedSecretVO): ApiKeyVO {
-        const decipher = createDecipheriv(ALGORITHM, this.key(), Buffer.from(secret.iv, 'base64'))
-        decipher.setAuthTag(Buffer.from(secret.authTag, 'base64'))
+        // The master key is resolved outside the try: a misconfigured deployment
+        // must surface as itself, not be mistaken for a corrupted row.
+        const key = this.key()
 
         try {
+            const decipher = createDecipheriv(ALGORITHM, key, Buffer.from(secret.iv, 'base64'))
+            decipher.setAuthTag(Buffer.from(secret.authTag, 'base64'))
+
             const plaintext = Buffer.concat([
                 decipher.update(Buffer.from(secret.ciphertext, 'base64')),
                 decipher.final(),
@@ -57,8 +61,10 @@ export class AesGcmSecretCipher extends SecretCipher {
 
             return ApiKeyVO.create(plaintext.toString('utf8'))
         } catch {
-            // `final()` throws when the auth tag doesn't match: the row was
-            // tampered with, or the master key has been rotated underneath it.
+            // Three ways to land here, all meaning the stored row is unusable:
+            // an IV or auth tag of the wrong size (rejected by `createDecipheriv`
+            // and `setAuthTag`), or an auth tag that doesn't match (rejected by
+            // `final()`) — a tampered row, or a rotated master key.
             throw new InvalidEncryptedSecretError()
         }
     }

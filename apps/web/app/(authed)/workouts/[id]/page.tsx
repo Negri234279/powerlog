@@ -15,6 +15,7 @@ import {
 } from '@/lib/graphql/hooks/use-workouts'
 import { unitsOf } from '@/lib/units'
 import { AddExercise } from '@/components/workouts/add-exercise'
+import { AiPlanPanel } from '@/components/workouts/ai-plan-panel'
 import { ExerciseEntry } from '@/components/workouts/exercise-entry'
 import { FormError } from '@/components/ui/form-error'
 import { Check } from '@/components/ui/icons'
@@ -170,6 +171,13 @@ export default function WorkoutSessionPage() {
             </div>
 
             <FormError error={actionError} className="mt-4" />
+
+            {/* Only a planned session has targets left to program. */}
+            {completed ? null : (
+                <div className="mt-8">
+                    <AiPlanPanel sessionId={session.id} entries={session.entries} nameById={nameById} units={units} />
+                </div>
+            )}
 
             <div className="mt-10 space-y-4">
                 {session.entries.length > 0 ? (

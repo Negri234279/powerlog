@@ -44,6 +44,11 @@ export interface AnalyticsEventMap {
     ai_model_selected: { provider: 'openai' | 'anthropic' }
     ai_provider_toggled: { provider: 'openai' | 'anthropic'; action: 'enabled' | 'disabled' }
     ai_default_provider_changed: { provider: 'openai' | 'anthropic' }
+    // AI-programmed sessions. No session or exercise ids: unbounded, and PII-shaped.
+    ai_plan_generated: EmptyProps
+    ai_plan_refined: EmptyProps
+    ai_plan_accepted: EmptyProps
+    ai_plan_discarded: EmptyProps
     // Emitted only by TrackedButton / TrackedLink (components/ui/tracked.tsx);
     // `id` is the finite set of analyticsId literals used across the app.
     ui_click: { id: string; kind: 'button' | 'link' }

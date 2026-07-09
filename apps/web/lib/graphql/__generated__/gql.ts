@@ -23,6 +23,12 @@ type Documents = {
     "\n    mutation SetUserRole($input: SetUserRoleInput!) {\n        setUserRole(input: $input) {\n            id\n            role\n        }\n    }\n": typeof types.SetUserRoleDocument,
     "\n    mutation SetUserAdmin($input: SetUserAdminInput!) {\n        setUserAdmin(input: $input) {\n            id\n            isAdmin\n        }\n    }\n": typeof types.SetUserAdminDocument,
     "\n    mutation SetUserStatus($input: SetUserStatusInput!) {\n        setUserStatus(input: $input) {\n            id\n            status\n        }\n    }\n": typeof types.SetUserStatusDocument,
+    "\n    query SessionPlanDraft($sessionId: ID!) {\n        sessionPlanDraft(sessionId: $sessionId) {\n            ...AiPlanDraftFields\n        }\n    }\n": typeof types.SessionPlanDraftDocument,
+    "\n    fragment AiPlanDraftFields on AiPlanDraft {\n        id\n        sessionId\n        provider\n        model\n        status\n        sets {\n            setId\n            plannedWeightKg\n            plannedReps\n            rpe\n            rir\n            notes\n        }\n        messages {\n            id\n            role\n            content\n            createdAt\n        }\n        updatedAt\n    }\n": typeof types.AiPlanDraftFieldsFragmentDoc,
+    "\n    mutation GenerateSessionPlanDraft($sessionId: ID!) {\n        generateSessionPlanDraft(sessionId: $sessionId) {\n            ...AiPlanDraftFields\n        }\n    }\n": typeof types.GenerateSessionPlanDraftDocument,
+    "\n    mutation RefinePlanDraft($input: RefinePlanDraftInput!) {\n        refinePlanDraft(input: $input) {\n            ...AiPlanDraftFields\n        }\n    }\n": typeof types.RefinePlanDraftDocument,
+    "\n    mutation AcceptPlanDraft($draftId: ID!) {\n        acceptPlanDraft(draftId: $draftId) {\n            id\n            status\n        }\n    }\n": typeof types.AcceptPlanDraftDocument,
+    "\n    mutation DiscardPlanDraft($draftId: ID!) {\n        discardPlanDraft(draftId: $draftId)\n    }\n": typeof types.DiscardPlanDraftDocument,
     "\n    query MyAiSettings {\n        myAiSettings {\n            provider\n            keyLast4\n            model\n            enabled\n            isDefault\n            createdAt\n            updatedAt\n        }\n    }\n": typeof types.MyAiSettingsDocument,
     "\n    query AiModels($provider: String!) {\n        aiModels(provider: $provider) {\n            id\n            displayName\n        }\n    }\n": typeof types.AiModelsDocument,
     "\n    mutation SetAiProviderKey($input: SetAiProviderKeyInput!) {\n        setAiProviderKey(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n            createdAt\n            updatedAt\n        }\n    }\n": typeof types.SetAiProviderKeyDocument,
@@ -92,6 +98,12 @@ const documents: Documents = {
     "\n    mutation SetUserRole($input: SetUserRoleInput!) {\n        setUserRole(input: $input) {\n            id\n            role\n        }\n    }\n": types.SetUserRoleDocument,
     "\n    mutation SetUserAdmin($input: SetUserAdminInput!) {\n        setUserAdmin(input: $input) {\n            id\n            isAdmin\n        }\n    }\n": types.SetUserAdminDocument,
     "\n    mutation SetUserStatus($input: SetUserStatusInput!) {\n        setUserStatus(input: $input) {\n            id\n            status\n        }\n    }\n": types.SetUserStatusDocument,
+    "\n    query SessionPlanDraft($sessionId: ID!) {\n        sessionPlanDraft(sessionId: $sessionId) {\n            ...AiPlanDraftFields\n        }\n    }\n": types.SessionPlanDraftDocument,
+    "\n    fragment AiPlanDraftFields on AiPlanDraft {\n        id\n        sessionId\n        provider\n        model\n        status\n        sets {\n            setId\n            plannedWeightKg\n            plannedReps\n            rpe\n            rir\n            notes\n        }\n        messages {\n            id\n            role\n            content\n            createdAt\n        }\n        updatedAt\n    }\n": types.AiPlanDraftFieldsFragmentDoc,
+    "\n    mutation GenerateSessionPlanDraft($sessionId: ID!) {\n        generateSessionPlanDraft(sessionId: $sessionId) {\n            ...AiPlanDraftFields\n        }\n    }\n": types.GenerateSessionPlanDraftDocument,
+    "\n    mutation RefinePlanDraft($input: RefinePlanDraftInput!) {\n        refinePlanDraft(input: $input) {\n            ...AiPlanDraftFields\n        }\n    }\n": types.RefinePlanDraftDocument,
+    "\n    mutation AcceptPlanDraft($draftId: ID!) {\n        acceptPlanDraft(draftId: $draftId) {\n            id\n            status\n        }\n    }\n": types.AcceptPlanDraftDocument,
+    "\n    mutation DiscardPlanDraft($draftId: ID!) {\n        discardPlanDraft(draftId: $draftId)\n    }\n": types.DiscardPlanDraftDocument,
     "\n    query MyAiSettings {\n        myAiSettings {\n            provider\n            keyLast4\n            model\n            enabled\n            isDefault\n            createdAt\n            updatedAt\n        }\n    }\n": types.MyAiSettingsDocument,
     "\n    query AiModels($provider: String!) {\n        aiModels(provider: $provider) {\n            id\n            displayName\n        }\n    }\n": types.AiModelsDocument,
     "\n    mutation SetAiProviderKey($input: SetAiProviderKeyInput!) {\n        setAiProviderKey(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n            createdAt\n            updatedAt\n        }\n    }\n": types.SetAiProviderKeyDocument,
@@ -202,6 +214,30 @@ export function graphql(source: "\n    mutation SetUserAdmin($input: SetUserAdmi
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    mutation SetUserStatus($input: SetUserStatusInput!) {\n        setUserStatus(input: $input) {\n            id\n            status\n        }\n    }\n"): (typeof documents)["\n    mutation SetUserStatus($input: SetUserStatusInput!) {\n        setUserStatus(input: $input) {\n            id\n            status\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query SessionPlanDraft($sessionId: ID!) {\n        sessionPlanDraft(sessionId: $sessionId) {\n            ...AiPlanDraftFields\n        }\n    }\n"): (typeof documents)["\n    query SessionPlanDraft($sessionId: ID!) {\n        sessionPlanDraft(sessionId: $sessionId) {\n            ...AiPlanDraftFields\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    fragment AiPlanDraftFields on AiPlanDraft {\n        id\n        sessionId\n        provider\n        model\n        status\n        sets {\n            setId\n            plannedWeightKg\n            plannedReps\n            rpe\n            rir\n            notes\n        }\n        messages {\n            id\n            role\n            content\n            createdAt\n        }\n        updatedAt\n    }\n"): (typeof documents)["\n    fragment AiPlanDraftFields on AiPlanDraft {\n        id\n        sessionId\n        provider\n        model\n        status\n        sets {\n            setId\n            plannedWeightKg\n            plannedReps\n            rpe\n            rir\n            notes\n        }\n        messages {\n            id\n            role\n            content\n            createdAt\n        }\n        updatedAt\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation GenerateSessionPlanDraft($sessionId: ID!) {\n        generateSessionPlanDraft(sessionId: $sessionId) {\n            ...AiPlanDraftFields\n        }\n    }\n"): (typeof documents)["\n    mutation GenerateSessionPlanDraft($sessionId: ID!) {\n        generateSessionPlanDraft(sessionId: $sessionId) {\n            ...AiPlanDraftFields\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation RefinePlanDraft($input: RefinePlanDraftInput!) {\n        refinePlanDraft(input: $input) {\n            ...AiPlanDraftFields\n        }\n    }\n"): (typeof documents)["\n    mutation RefinePlanDraft($input: RefinePlanDraftInput!) {\n        refinePlanDraft(input: $input) {\n            ...AiPlanDraftFields\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation AcceptPlanDraft($draftId: ID!) {\n        acceptPlanDraft(draftId: $draftId) {\n            id\n            status\n        }\n    }\n"): (typeof documents)["\n    mutation AcceptPlanDraft($draftId: ID!) {\n        acceptPlanDraft(draftId: $draftId) {\n            id\n            status\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation DiscardPlanDraft($draftId: ID!) {\n        discardPlanDraft(draftId: $draftId)\n    }\n"): (typeof documents)["\n    mutation DiscardPlanDraft($draftId: ID!) {\n        discardPlanDraft(draftId: $draftId)\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
