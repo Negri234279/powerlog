@@ -29,7 +29,7 @@ export class AnthropicProviderClient extends LlmProviderClient {
     async listModels(apiKey: string): Promise<LlmModel[]> {
         const client = this.clientFor(apiKey)
 
-        return callProvider(async () => {
+        return callProvider(this.provider, async () => {
             const models: LlmModel[] = []
 
             for await (const model of client.models.list()) {
@@ -43,7 +43,7 @@ export class AnthropicProviderClient extends LlmProviderClient {
     async complete(request: LlmCompletionRequest): Promise<LlmCompletion> {
         const client = this.clientFor(request.apiKey)
 
-        return callProvider(async () => {
+        return callProvider(this.provider, async () => {
             const response = await client.messages.create({
                 model: request.model,
                 max_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,

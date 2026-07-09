@@ -1,15 +1,20 @@
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
 
+import type { AiProvider } from '../shared/ai-provider'
 import {
     type AiError,
     InvalidApiKeyError,
     ModelNotAvailableError,
     ProviderQuotaExceededError,
     ProviderRateLimitedError,
+    ProviderRequestRejectedError,
     ProviderTimeoutError,
     ProviderUnavailableError,
 } from './ai.errors'
+
+/** Long enough to be useful, short enough not to become the whole UI. */
+const MAX_DETAIL_LENGTH = 300
 
 /**
  * The fields both SDKs expose on their typed API errors. Read straight off the
@@ -36,6 +41,28 @@ function readApiError(error: unknown): ProviderApiError | undefined {
     return undefined
 }
 
+/**
+ * The provider's own human-readable explanation, dug out of its error body.
+ * OpenAI puts it at `error.message`; Anthropic nests it one level deeper, at
+ * `error.error.message`. Whitespace is collapsed and the text is capped, so a
+ * chatty provider can't spill a wall of text into the UI.
+ */
+function providerMessageOf(error: unknown): string | undefined {
+    let message: unknown
+
+    if (error instanceof OpenAI.APIError) {
+        message = (error.error as { message?: unknown } | undefined)?.message
+    } else if (error instanceof Anthropic.APIError) {
+        message = (error.error as { error?: { message?: unknown } } | undefined)?.error?.message
+    }
+
+    if (typeof message !== 'string') return undefined
+
+    const cleaned = message.replace(/\s+/g, ' ').trim()
+
+    return cleaned === '' ? undefined : cleaned.slice(0, MAX_DETAIL_LENGTH)
+}
+
 function isBillingFailure({ code, type }: ProviderApiError): boolean {
     // OpenAI signals an exhausted account with `insufficient_quota` on a 429;
     // Anthropic uses a `billing_error` type, which shares HTTP 403 with a plain
@@ -44,13 +71,12 @@ function isBillingFailure({ code, type }: ProviderApiError): boolean {
 }
 
 /**
- * Normalises a provider SDK failure into an `AiError`, or returns `undefined`
- * when the failure is not something the user can act on — a malformed request,
- * for instance, is our bug. Those are deliberately left unmapped so they bubble
- * up as an internal error and get logged, traced and counted rather than being
- * disguised as "the provider is unavailable".
+ * Normalises a provider SDK failure into an `AiError`, carrying the provider's
+ * own explanation where it has one. Returns `undefined` only when the failure
+ * came from somewhere else entirely (a bug in our code, say), so it can bubble
+ * up as an internal error rather than be disguised as a provider problem.
  */
-export function mapProviderError(error: unknown): AiError | undefined {
+export function mapProviderError(provider: AiProvider, error: unknown): AiError | undefined {
     // Ordered before APIConnectionError: the timeout error extends it.
     if (error instanceof OpenAI.APIConnectionTimeoutError || error instanceof Anthropic.APIConnectionTimeoutError) {
         return new ProviderTimeoutError()
@@ -75,6 +101,11 @@ export function mapProviderError(error: unknown): AiError | undefined {
     // 500 (api_error) and 529 (overloaded_error) are both transient.
     if (status !== undefined && status >= 500) return new ProviderUnavailableError()
 
+    // Anthropic answers a spent credit balance with a 400 `invalid_request_error`
+    // — the very shape it uses for a malformed request. The two cannot be told
+    // apart here, so pass the provider's own message through instead of guessing.
+    if (status === 400) return new ProviderRequestRejectedError(provider, providerMessageOf(error))
+
     return undefined
 }
 
@@ -82,11 +113,11 @@ export function mapProviderError(error: unknown): AiError | undefined {
  * Runs a provider SDK call, translating known failures into `AiError`s. Anything
  * unrecognised is rethrown untouched (see `mapProviderError`).
  */
-export async function callProvider<T>(call: () => Promise<T>): Promise<T> {
+export async function callProvider<T>(provider: AiProvider, call: () => Promise<T>): Promise<T> {
     try {
         return await call()
     } catch (error) {
-        const mapped = mapProviderError(error)
+        const mapped = mapProviderError(provider, error)
         if (mapped) throw mapped
 
         throw error

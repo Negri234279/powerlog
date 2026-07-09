@@ -7,10 +7,14 @@ import {
     ModelNotAvailableError,
     ProviderQuotaExceededError,
     ProviderRateLimitedError,
+    ProviderRequestRejectedError,
     ProviderTimeoutError,
     ProviderUnavailableError,
 } from './ai.errors'
-import { callProvider, mapProviderError } from './provider-error'
+import { callProvider, mapProviderError as map } from './provider-error'
+
+/** Most cases don't care which provider spoke; default to openai. */
+const mapProviderError = (error: unknown, provider: 'openai' | 'anthropic' = 'openai') => map(provider, error)
 
 /**
  * Errors are built with each SDK's own `APIError.generate`, the same factory the
@@ -20,8 +24,8 @@ import { callProvider, mapProviderError } from './provider-error'
 const openAiError = (status: number, body: Record<string, unknown> = {}) =>
     OpenAI.APIError.generate(status, { error: body }, undefined, new Headers())
 
-const anthropicError = (status: number, type?: string) =>
-    Anthropic.APIError.generate(status, { error: { type } }, undefined, new Headers())
+const anthropicError = (status: number, type?: string, message?: string) =>
+    Anthropic.APIError.generate(status, { type: 'error', error: { type, message } }, undefined, new Headers())
 
 describe('mapProviderError', () => {
     it('maps a rejected key to InvalidApiKeyError for either provider', () => {
@@ -64,22 +68,56 @@ describe('mapProviderError', () => {
         expect(mapProviderError(new Anthropic.APIConnectionError({}))).toBeInstanceOf(ProviderUnavailableError)
     })
 
-    it('leaves failures the user cannot act on unmapped', () => {
-        // A malformed request is our bug: it must surface as an internal error
-        // rather than be dressed up as a provider problem.
-        expect(mapProviderError(openAiError(400))).toBeUndefined()
+    it('surfaces the provider’s own words when it rejects the request', () => {
+        // Anthropic answers a spent credit balance with a 400, in the same shape
+        // it uses for a malformed request. "Internal server error" told the user
+        // nothing; the provider's sentence tells them exactly what to do.
+        const spent = anthropicError(
+            400,
+            'invalid_request_error',
+            'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.',
+        )
+
+        const mapped = mapProviderError(spent, 'anthropic')
+
+        expect(mapped).toBeInstanceOf(ProviderRequestRejectedError)
+        expect(mapped?.message).toContain('Anthropic:')
+        expect(mapped?.message).toContain('credit balance is too low')
+    })
+
+    it('names the provider that spoke', () => {
+        const mapped = mapProviderError(openAiError(400, { message: 'unsupported parameter' }), 'openai')
+
+        expect(mapped?.message).toBe('OpenAI: unsupported parameter')
+    })
+
+    it('falls back to a plain message when the provider gives no reason', () => {
+        expect(mapProviderError(openAiError(400))?.message).toBe('OpenAI rejected the request.')
+    })
+
+    it('collapses whitespace and caps a long provider message', () => {
+        const rambling = openAiError(400, { message: `a\n\n  ${'x'.repeat(500)}` })
+
+        const message = mapProviderError(rambling)!.message
+        expect(message).not.toContain('\n')
+        expect(message.length).toBeLessThan(340)
+    })
+
+    it('leaves failures that did not come from a provider unmapped', () => {
+        // A bug in our own code must surface as an internal error rather than be
+        // dressed up as a provider problem.
         expect(mapProviderError(new Error('boom'))).toBeUndefined()
     })
 })
 
 describe('callProvider', () => {
     it('returns the call result when it succeeds', async () => {
-        await expect(callProvider(async () => 'ok')).resolves.toBe('ok')
+        await expect(callProvider('openai', async () => 'ok')).resolves.toBe('ok')
     })
 
     it('translates a known provider failure into a domain error', async () => {
         await expect(
-            callProvider(() => {
+            callProvider('openai', () => {
                 throw openAiError(401)
             }),
         ).rejects.toBeInstanceOf(InvalidApiKeyError)
@@ -88,6 +126,6 @@ describe('callProvider', () => {
     it('rethrows an unrecognised failure untouched', async () => {
         const bug = new TypeError('cannot read property of undefined')
 
-        await expect(callProvider(() => Promise.reject(bug))).rejects.toBe(bug)
+        await expect(callProvider('openai', () => Promise.reject(bug))).rejects.toBe(bug)
     })
 })

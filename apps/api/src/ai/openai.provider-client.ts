@@ -46,7 +46,7 @@ export class OpenAiProviderClient extends LlmProviderClient {
     async listModels(apiKey: string): Promise<LlmModel[]> {
         const client = this.clientFor(apiKey)
 
-        return callProvider(async () => {
+        return callProvider(this.provider, async () => {
             const models: LlmModel[] = []
 
             // The page object auto-paginates while iterated.
@@ -61,7 +61,7 @@ export class OpenAiProviderClient extends LlmProviderClient {
     async complete(request: LlmCompletionRequest): Promise<LlmCompletion> {
         const client = this.clientFor(request.apiKey)
 
-        return callProvider(async () => {
+        return callProvider(this.provider, async () => {
             const response = await client.chat.completions.create({
                 model: request.model,
                 max_completion_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,

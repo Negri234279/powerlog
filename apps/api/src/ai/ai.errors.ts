@@ -1,4 +1,7 @@
 import { DomainError } from '../shared/domain/domain-error'
+import type { AiProvider } from '../shared/ai-provider'
+
+const PROVIDER_LABEL: Record<AiProvider, string> = { openai: 'OpenAI', anthropic: 'Anthropic' }
 
 /**
  * Errors raised by the LLM provider layer. Every failure the providers can hand
@@ -75,6 +78,28 @@ export class ProviderRefusedError extends AiError {
 
     constructor() {
         super('The model declined to answer this request.')
+    }
+}
+
+/**
+ * The provider refused the request outright (HTTP 400). Its own words are
+ * carried through to the user, because nobody explains "your credit balance is
+ * too low, go to Plans & Billing" better than the provider does — and it is the
+ * user's own account being talked about.
+ *
+ * A malformed request from us also lands here. That is a deliberate trade: the
+ * two are indistinguishable at the HTTP level (Anthropic returns 400 with
+ * `invalid_request_error` for both), and a user staring at "internal server
+ * error" learns nothing. Watch `domain_errors_total{code="AI_PROVIDER_REJECTED_REQUEST"}`
+ * — a sustained spike means we are sending bad requests, not that everyone ran
+ * out of credit at once.
+ */
+export class ProviderRequestRejectedError extends AiError {
+    readonly code = 'AI_PROVIDER_REJECTED_REQUEST'
+
+    constructor(provider: AiProvider, detail?: string) {
+        const label = PROVIDER_LABEL[provider]
+        super(detail ? `${label}: ${detail}` : `${label} rejected the request.`)
     }
 }
 
