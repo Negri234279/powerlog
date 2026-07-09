@@ -218,7 +218,10 @@ export default function ExerciseStatsPage() {
                         <KpiTile label={t('kpiTrainingDays')} value={String(summary?.trainingDays ?? 0)} />
                         <KpiTile label={t('kpiSets')} value={String(summary?.totalSets ?? 0)} />
                         <KpiTile label={t('kpiReps')} value={String(summary?.totalReps ?? 0)} />
-                        <KpiTile label={t('kpiAvgRpe')} value={summary?.avgRpe != null ? summary.avgRpe.toFixed(1) : '—'} />
+                        <KpiTile
+                            label={t('kpiAvgRpe')}
+                            value={summary?.avgRpe != null ? summary.avgRpe.toFixed(1) : '—'}
+                        />
                         <KpiTile label={t('kpiExercises')} value={String(summary?.distinctExercises ?? 0)} />
                     </div>
 
@@ -337,9 +340,7 @@ export default function ExerciseStatsPage() {
 
                     <SectionCard
                         title={t('intensityTitle')}
-                        subtitle={
-                            intensityMetric === 'rpe' ? t('intensityRpeSubtitle') : t('intensityRirSubtitle')
-                        }
+                        subtitle={intensityMetric === 'rpe' ? t('intensityRpeSubtitle') : t('intensityRirSubtitle')}
                         action={
                             <div className="inline-flex rounded-full bg-bg/60 p-1 ring-1 ring-hairline">
                                 {(['rpe', 'rir'] as const).map((m) => (
@@ -376,10 +377,7 @@ export default function ExerciseStatsPage() {
                     </SectionCard>
 
                     {/* 5 — Per-exercise table */}
-                    <SectionCard
-                        title={t('byExerciseTitle')}
-                        subtitle={prev ? t('deltaSubtitle') : t('mostTrained')}
-                    >
+                    <SectionCard title={t('byExerciseTitle')} subtitle={prev ? t('deltaSubtitle') : t('mostTrained')}>
                         {statsLoading ? (
                             <p className="text-sm text-text-dim">{t('crunching')}</p>
                         ) : sortedStats.length === 0 ? (

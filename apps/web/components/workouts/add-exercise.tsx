@@ -46,15 +46,30 @@ export function AddExercise({ sessionId }: { sessionId: string }) {
     const catalog = exercises ?? []
 
     const categoryOptions = useMemo(
-        () => optionsFor(catalog, (e) => e.category, (v) => tt(`category.${v}`)),
+        () =>
+            optionsFor(
+                catalog,
+                (e) => e.category,
+                (v) => tt(`category.${v}`),
+            ),
         [catalog, tt],
     )
     const equipmentOptions = useMemo(
-        () => optionsFor(catalog, (e) => e.equipment, (v) => tt(`equipment.${v}`)),
+        () =>
+            optionsFor(
+                catalog,
+                (e) => e.equipment,
+                (v) => tt(`equipment.${v}`),
+            ),
         [catalog, tt],
     )
     const muscleOptions = useMemo(
-        () => optionsFor(catalog, (e) => e.primaryMuscle, (v) => tt(`muscle.${v}`)),
+        () =>
+            optionsFor(
+                catalog,
+                (e) => e.primaryMuscle,
+                (v) => tt(`muscle.${v}`),
+            ),
         [catalog, tt],
     )
 

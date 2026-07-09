@@ -9,6 +9,7 @@ import type { Request } from 'express'
 import { ClsModule } from 'nestjs-cls'
 import { LoggerModule } from 'nestjs-pino'
 
+import { AiModule } from './ai/ai.module'
 import { AppResolver } from './app.resolver'
 import { isProd, isStaging, isTest, validateEnv } from './config/env'
 import { DatabaseModule } from './database/database.module'
@@ -107,6 +108,7 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
         ObservabilityModule,
         HealthModule,
         MailModule,
+        AiModule,
         // Feature modules (added per milestone):
         AuthModule,
         ProfileModule,

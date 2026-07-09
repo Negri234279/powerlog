@@ -21,6 +21,9 @@ export const METRIC = {
     notificationsCreated: 'powerlog_notifications_created_total',
     mesocycleStatusTransitions: 'powerlog_mesocycle_status_transitions_total',
     mesocycleSessionsGenerated: 'powerlog_mesocycle_sessions_generated_total',
+    llmRequests: 'powerlog_llm_requests_total',
+    llmRequestDuration: 'powerlog_llm_request_duration_seconds',
+    llmTokens: 'powerlog_llm_tokens_total',
     authLogins: 'powerlog_auth_logins_total',
     authRefresh: 'powerlog_auth_refresh_total',
     authRegistrations: 'powerlog_auth_registrations_total',
@@ -30,6 +33,11 @@ export const METRIC = {
 
 // Latency buckets in seconds (web/API request + DB call range).
 const DURATION_BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+
+// LLM calls live on a different timescale than the rest of the app: a long
+// completion takes tens of seconds, so DURATION_BUCKETS would pile everything
+// into the +Inf bucket and lose all resolution.
+const LLM_DURATION_BUCKETS = [0.25, 0.5, 1, 2.5, 5, 10, 20, 30, 60, 120]
 
 /** Prometheus metric providers, registered on the default registry. */
 export const metricsProviders = [
@@ -157,6 +165,29 @@ export const metricsProviders = [
         name: METRIC.mesocycleSessionsGenerated,
         help: 'Count of planned sessions generated from mesocycle weeks, by mode.',
         labelNames: ['mode'],
+    }),
+    // BYOK LLM calls (set by MeteredLlmProviderClient). `model` is deliberately
+    // NOT a label: users pick it from their own provider account, so it is
+    // unbounded from the app's point of view. provider/operation/status are
+    // bounded enums.
+    makeCounterProvider({
+        name: METRIC.llmRequests,
+        help: 'Count of LLM provider calls, by provider, operation and outcome.',
+        labelNames: ['provider', 'operation', 'status'],
+    }),
+    makeHistogramProvider({
+        name: METRIC.llmRequestDuration,
+        help: 'Duration of LLM provider calls in seconds.',
+        labelNames: ['provider', 'operation', 'status'],
+        buckets: LLM_DURATION_BUCKETS,
+        enableExemplars: true,
+    }),
+    // Tokens billed to the user's own provider account, split by direction.
+    // The cost is theirs (BYOK); this is a usage signal, not a billing source.
+    makeCounterProvider({
+        name: METRIC.llmTokens,
+        help: 'Count of LLM tokens consumed, by provider and direction (input/output).',
+        labelNames: ['provider', 'direction'],
     }),
     // Auth signals. method/status stay bounded enums (no userId/email).
     // Login attempts, by method and outcome (set by the auth handlers via AuthMetrics).

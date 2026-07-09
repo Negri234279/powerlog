@@ -227,7 +227,10 @@ function StrengthCard({ units }: { units: Units }) {
                     <div className="mt-4">
                         <StrengthRow label={t('squatE1rm')} value={formatWeight(summary?.bestSquatE1rmKg, units)} />
                         <StrengthRow label={t('benchE1rm')} value={formatWeight(summary?.bestBenchE1rmKg, units)} />
-                        <StrengthRow label={t('deadliftE1rm')} value={formatWeight(summary?.bestDeadliftE1rmKg, units)} />
+                        <StrengthRow
+                            label={t('deadliftE1rm')}
+                            value={formatWeight(summary?.bestDeadliftE1rmKg, units)}
+                        />
                     </div>
                 </>
             )}
@@ -399,9 +402,7 @@ export default function DashboardPage() {
                 <p className="font-mono text-eyebrow uppercase text-text-faint">{t('eyebrow')}</p>
                 <h1 className="mt-3 font-display text-display">
                     <TextSwap
-                        text={
-                            isLoading ? t('welcomeBack') : t('welcome', { name: me?.username ?? t('lifter') })
-                        }
+                        text={isLoading ? t('welcomeBack') : t('welcome', { name: me?.username ?? t('lifter') })}
                     />
                 </h1>
             </TextsReveal>

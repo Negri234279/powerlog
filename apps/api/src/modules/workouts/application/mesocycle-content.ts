@@ -65,7 +65,7 @@ export async function buildMesocycleContent(
             ),
         ),
     ]
-    
+
     for (const exerciseId of uniqueExerciseIds) {
         if (!(await exercises.findById(exerciseId))) {
             throw new ExerciseNotFoundError()

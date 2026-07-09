@@ -299,9 +299,7 @@ export default function AdminUsersPage() {
                                                         </TrackedButton>
                                                     )
                                                     return isSelf && user.isAdmin ? (
-                                                        <Tooltip label={t('cantRevokeSelf')}>
-                                                            {adminButton}
-                                                        </Tooltip>
+                                                        <Tooltip label={t('cantRevokeSelf')}>{adminButton}</Tooltip>
                                                     ) : (
                                                         adminButton
                                                     )

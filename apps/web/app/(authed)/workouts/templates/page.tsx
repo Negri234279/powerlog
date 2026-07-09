@@ -199,9 +199,7 @@ export default function TemplatesPage() {
                             <span className="grid size-12 place-items-center rounded-2xl bg-white/[0.05] text-text-dim ring-1 ring-hairline">
                                 <Dumbbell className="size-6" />
                             </span>
-                            <h2 className="mt-5 font-display text-h3">
-                                {hasSearch ? t('noMatching') : t('noneYet')}
-                            </h2>
+                            <h2 className="mt-5 font-display text-h3">{hasSearch ? t('noMatching') : t('noneYet')}</h2>
                             <p className="mt-2 max-w-sm text-body text-text-dim">
                                 {hasSearch ? t('tryDifferent') : t('emptyBody')}
                             </p>
