@@ -90,6 +90,28 @@ type AdminWorkoutStats {
   sets: Int!
 }
 
+type AiModel {
+  displayName: String!
+  id: String!
+}
+
+type AiProviderConfig {
+  createdAt: DateTime!
+
+  """Whether powerlog may use this key."""
+  enabled: Boolean!
+
+  """Last four characters of the stored key."""
+  keyLast4: String!
+
+  """Selected model id; null → none picked yet."""
+  model: String
+
+  """"openai" or "anthropic"."""
+  provider: String!
+  updatedAt: DateTime!
+}
+
 input ChangePasswordInput {
   currentPassword: String
   newPassword: String!
@@ -455,6 +477,9 @@ type Mutation {
   """
   deleteAccount: Boolean!
 
+  """Forget the stored key for a provider. Idempotent."""
+  deleteAiProviderKey(provider: String!): Boolean!
+
   """Delete a catalog exercise (blocked if used in any workout)."""
   deleteExercise(exerciseId: ID!): Boolean!
 
@@ -529,6 +554,14 @@ type Mutation {
   """Revoke one session by id (logs out that device)."""
   revokeSession(id: String!): Boolean!
 
+  """Enable or disable a configured provider."""
+  setAiProviderEnabled(input: SetAiProviderEnabledInput!): AiProviderConfig!
+
+  """
+  Store or replace the API key for a provider. Verified against the provider first.
+  """
+  setAiProviderKey(input: SetAiProviderKeyInput!): AiProviderConfig!
+
   """Transition a mesocycle’s status (draft/active/completed/archived)."""
   setMesocycleStatus(id: ID!, status: String!): Mesocycle!
 
@@ -542,6 +575,9 @@ type Mutation {
   Disable (suspend) or re-enable a user account. Disabling signs them out.
   """
   setUserStatus(input: SetUserStatusInput!): AdminUser!
+
+  """Select the model used for a configured provider."""
+  updateAiProviderModel(input: UpdateAiProviderModelInput!): AiProviderConfig!
 
   """Edit a catalog exercise (slug is immutable)."""
   updateExercise(input: UpdateExerciseInput!): Exercise!
@@ -665,6 +701,9 @@ type Query {
   """Aggregate training counts (admin only)."""
   adminWorkoutStats: AdminWorkoutStats!
 
+  """Models the stored key may call, fetched live from the provider."""
+  aiModels(provider: String!): [AiModel!]!
+
   """
   The caller's recent completed sessions logging one exercise, with their performed sets.
   """
@@ -688,6 +727,9 @@ type Query {
   The caller's mesocycles (newest first), with cheap rollups; optional name search.
   """
   mesocycles(search: String): [MesocycleSummary!]!
+
+  """Providers the authenticated user has configured."""
+  myAiSettings: [AiProviderConfig!]!
 
   """Athletes linked to the caller."""
   myAthletes: [CoachUser!]!
@@ -785,6 +827,24 @@ type Session {
   userAgent: String
 }
 
+input SetAiProviderEnabledInput {
+  enabled: Boolean!
+
+  """"openai" or "anthropic"."""
+  provider: String!
+}
+
+input SetAiProviderKeyInput {
+  """The provider API key. Stored encrypted; never returned."""
+  apiKey: String!
+
+  """Model to select; must be callable with this key."""
+  model: String
+
+  """"openai" or "anthropic"."""
+  provider: String!
+}
+
 input SetUserAdminInput {
   isAdmin: Boolean!
   userId: ID!
@@ -874,6 +934,14 @@ type TrainingSummary {
 
   """Distinct calendar days trained."""
   trainingDays: Int!
+}
+
+input UpdateAiProviderModelInput {
+  """Model id, or null to clear the selection."""
+  model: String
+
+  """"openai" or "anthropic"."""
+  provider: String!
 }
 
 input UpdateExerciseInput {

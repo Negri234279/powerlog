@@ -16,6 +16,7 @@ import { DatabaseModule } from './database/database.module'
 import { GraphqlModule } from './graphql/graphql.module'
 import { HealthModule } from './health/health.module'
 import { MailModule } from './mail/mail.module'
+import { AiSettingsModule } from './modules/ai/ai-settings.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { CoachingModule } from './modules/coaching/coaching.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
@@ -115,6 +116,7 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
         WorkoutsModule,
         NotificationsModule,
         CoachingModule,
+        AiSettingsModule,
     ],
     providers: [AppResolver, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],
 })

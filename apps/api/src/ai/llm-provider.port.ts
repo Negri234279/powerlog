@@ -1,11 +1,6 @@
-/** The LLM providers powerlog can talk to. Used as a bounded metric label. */
-export const AI_PROVIDERS = ['openai', 'anthropic'] as const
+import type { AiProvider } from '../shared/ai-provider'
 
-export type AiProvider = (typeof AI_PROVIDERS)[number]
-
-export function isAiProvider(value: string): value is AiProvider {
-    return (AI_PROVIDERS as readonly string[]).includes(value)
-}
+export type { AiProvider }
 
 /** A model the user's key is allowed to call, as reported by the provider. */
 export interface LlmModel {

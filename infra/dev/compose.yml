@@ -89,6 +89,9 @@ services:
       SMTP_PORT: "1025"
       AVATAR_DIR: /app/apps/api/public/avatars
       AVATAR_PUBLIC_BASE_URL: http://localhost:4000/avatars
+      # BYOK master key (AES-256-GCM). Throwaway dev default — it only ever
+      # encrypts keys in the local database. Real envs inject their own.
+      AI_ENCRYPTION_KEY: ${AI_ENCRYPTION_KEY:-Rcm3M6WDGav0aytwV+pkxy6UHSVsP4/z+HjgkNmSMeI=}
       OTEL_SERVICE_NAME: powerlog-api
       OTEL_EXPORTER_OTLP_ENDPOINT: http://powerlog-tempo:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf

@@ -1,14 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { type AiProvider, isAiProvider } from '../shared/ai-provider'
 import { UnsupportedProviderError } from './ai.errors'
-import {
-    type AiProvider,
-    isAiProvider,
-    type LlmCompletion,
-    type LlmCompletionRequest,
-    type LlmModel,
-    LlmProviderClient,
-} from './llm-provider.port'
+import { type LlmCompletion, type LlmCompletionRequest, type LlmModel, LlmProviderClient } from './llm-provider.port'
 import { LlmProviderRegistry } from './llm-provider.registry'
 
 class StubProviderClient extends LlmProviderClient {

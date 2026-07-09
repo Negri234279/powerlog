@@ -102,6 +102,14 @@ export const envSchema = z.object({
     R2_BUCKET: z.string().default(''),
     R2_PUBLIC_URL: z.string().default(''),
 
+    // ── AI (BYOK) ──────────────────────────────────────────────────
+    // Master key for AES-256-GCM encryption of the users' provider API keys:
+    // 32 random bytes, base64-encoded (`openssl rand -base64 32`). Empty is
+    // allowed so the app boots without it — only the AI settings calls fail,
+    // and they fail loudly (AI_ENCRYPTION_KEY_MISCONFIGURED).
+    // Rotating it makes every stored key undecryptable; users must re-enter them.
+    AI_ENCRYPTION_KEY: z.string().default(''),
+
     // ── Observability (OpenTelemetry → Tempo) ──────────────────────
     OTEL_SERVICE_NAME: z.string().default('powerlog-api'),
     // OTLP/HTTP base endpoint. Empty (or OTEL_SDK_DISABLED) disables exporting.
