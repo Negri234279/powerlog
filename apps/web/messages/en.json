@@ -455,7 +455,8 @@
         "heading": "Settings",
         "nav": {
             "profile": "Profile",
-            "security": "Account & security"
+            "security": "Account & security",
+            "ai": "AI"
         },
         "title": "Your profile",
         "intro": "This shapes how analytics and coaching read your training. Everything here is optional except your display name.",
@@ -656,6 +657,56 @@
         "WORKOUT_SESSION_NOT_FOUND": "Workout session not found.",
         "WORKOUT_TEMPLATE_NOT_FOUND": "Workout template not found.",
         "INVALID_TEMPLATE_NAME": "A template name must be between 1 and 100 characters.",
-        "CONFLICTING_INTENSITY": "A set can record either RPE or RIR, not both."
+        "CONFLICTING_INTENSITY": "A set can record either RPE or RIR, not both.",
+        "INVALID_AI_PROVIDER": "That AI provider is not supported.",
+        "INVALID_API_KEY_FORMAT": "That does not look like an API key.",
+        "AI_PROVIDER_CONFIG_NOT_FOUND": "No API key is configured for that provider.",
+        "INVALID_ENCRYPTED_SECRET": "The stored key could not be read. Enter it again.",
+        "AI_ENCRYPTION_KEY_MISCONFIGURED": "AI is not configured on this server.",
+        "AI_PROVIDER_UNAUTHORIZED": "The provider rejected that API key.",
+        "AI_PROVIDER_RATE_LIMITED": "Your provider is rate limiting requests. Try again in a moment.",
+        "AI_PROVIDER_QUOTA_EXCEEDED": "Your provider account has no quota left. Check its billing settings.",
+        "AI_MODEL_NOT_AVAILABLE": "That model is not available for your API key.",
+        "AI_PROVIDER_TIMEOUT": "The provider took too long to respond.",
+        "AI_PROVIDER_UNAVAILABLE": "The provider is temporarily unavailable.",
+        "AI_PROVIDER_REFUSED": "The model declined to answer that request.",
+        "AI_PROVIDER_UNSUPPORTED": "That AI provider is not supported."
+    },
+    "ai": {
+        "eyebrow": "Provider",
+        "intro": "Connect your own OpenAI or Anthropic key so powerlog can analyse your training. Requests run on your provider account, so the cost and the rate limits are the ones on your own plan.",
+        "loadError": "We could not load your AI settings.",
+        "apiKey": "API key",
+        "apiKeyHint": "Stored encrypted. It is never shown again, and never leaves the server.",
+        "connect": "Connect",
+        "saveNewKey": "Save new key",
+        "storedKey": "Stored key",
+        "maskedKey": "•••• •••• {last4}",
+        "model": "Model",
+        "modelHint": "Fetched live from the provider with your key.",
+        "modelUnset": "No model selected",
+        "modelsLoading": "Loading models…",
+        "modelsError": "We could not reach the provider to list its models.",
+        "statusActive": "Active",
+        "statusPaused": "Paused",
+        "pause": "Pause",
+        "resume": "Resume",
+        "replaceKey": "Replace key",
+        "removeKey": "Remove key",
+        "removeKeyTitle": "Remove this key?",
+        "removeKeyBody": "powerlog will forget your {provider} key. Nothing is revoked on the provider side — do that from their dashboard if you want the key dead.",
+        "cancel": "Cancel",
+        "providers": {
+            "openai": {
+                "name": "OpenAI",
+                "body": "Use GPT models. Create a key in the OpenAI dashboard, under API keys.",
+                "placeholder": "sk-…"
+            },
+            "anthropic": {
+                "name": "Anthropic",
+                "body": "Use Claude models. Create a key in the Anthropic console, under API keys.",
+                "placeholder": "sk-ant-…"
+            }
+        }
     }
 }

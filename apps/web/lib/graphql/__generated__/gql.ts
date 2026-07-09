@@ -23,6 +23,12 @@ type Documents = {
     "\n    mutation SetUserRole($input: SetUserRoleInput!) {\n        setUserRole(input: $input) {\n            id\n            role\n        }\n    }\n": typeof types.SetUserRoleDocument,
     "\n    mutation SetUserAdmin($input: SetUserAdminInput!) {\n        setUserAdmin(input: $input) {\n            id\n            isAdmin\n        }\n    }\n": typeof types.SetUserAdminDocument,
     "\n    mutation SetUserStatus($input: SetUserStatusInput!) {\n        setUserStatus(input: $input) {\n            id\n            status\n        }\n    }\n": typeof types.SetUserStatusDocument,
+    "\n    query MyAiSettings {\n        myAiSettings {\n            provider\n            keyLast4\n            model\n            enabled\n            createdAt\n            updatedAt\n        }\n    }\n": typeof types.MyAiSettingsDocument,
+    "\n    query AiModels($provider: String!) {\n        aiModels(provider: $provider) {\n            id\n            displayName\n        }\n    }\n": typeof types.AiModelsDocument,
+    "\n    mutation SetAiProviderKey($input: SetAiProviderKeyInput!) {\n        setAiProviderKey(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n            createdAt\n            updatedAt\n        }\n    }\n": typeof types.SetAiProviderKeyDocument,
+    "\n    mutation UpdateAiProviderModel($input: UpdateAiProviderModelInput!) {\n        updateAiProviderModel(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n        }\n    }\n": typeof types.UpdateAiProviderModelDocument,
+    "\n    mutation SetAiProviderEnabled($input: SetAiProviderEnabledInput!) {\n        setAiProviderEnabled(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n        }\n    }\n": typeof types.SetAiProviderEnabledDocument,
+    "\n    mutation DeleteAiProviderKey($provider: String!) {\n        deleteAiProviderKey(provider: $provider)\n    }\n": typeof types.DeleteAiProviderKeyDocument,
     "\n    query Me {\n        me {\n            id\n            email\n            username\n            role\n            isAdmin\n            units\n            emailVerified\n            hasPassword\n            createdAt\n        }\n    }\n": typeof types.MeDocument,
     "\n    mutation Register($input: RegisterInput!) {\n        register(input: $input) {\n            id\n        }\n    }\n": typeof types.RegisterDocument,
     "\n    mutation Login($input: LoginInput!) {\n        login(input: $input) {\n            id\n        }\n    }\n": typeof types.LoginDocument,
@@ -85,6 +91,12 @@ const documents: Documents = {
     "\n    mutation SetUserRole($input: SetUserRoleInput!) {\n        setUserRole(input: $input) {\n            id\n            role\n        }\n    }\n": types.SetUserRoleDocument,
     "\n    mutation SetUserAdmin($input: SetUserAdminInput!) {\n        setUserAdmin(input: $input) {\n            id\n            isAdmin\n        }\n    }\n": types.SetUserAdminDocument,
     "\n    mutation SetUserStatus($input: SetUserStatusInput!) {\n        setUserStatus(input: $input) {\n            id\n            status\n        }\n    }\n": types.SetUserStatusDocument,
+    "\n    query MyAiSettings {\n        myAiSettings {\n            provider\n            keyLast4\n            model\n            enabled\n            createdAt\n            updatedAt\n        }\n    }\n": types.MyAiSettingsDocument,
+    "\n    query AiModels($provider: String!) {\n        aiModels(provider: $provider) {\n            id\n            displayName\n        }\n    }\n": types.AiModelsDocument,
+    "\n    mutation SetAiProviderKey($input: SetAiProviderKeyInput!) {\n        setAiProviderKey(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n            createdAt\n            updatedAt\n        }\n    }\n": types.SetAiProviderKeyDocument,
+    "\n    mutation UpdateAiProviderModel($input: UpdateAiProviderModelInput!) {\n        updateAiProviderModel(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n        }\n    }\n": types.UpdateAiProviderModelDocument,
+    "\n    mutation SetAiProviderEnabled($input: SetAiProviderEnabledInput!) {\n        setAiProviderEnabled(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n        }\n    }\n": types.SetAiProviderEnabledDocument,
+    "\n    mutation DeleteAiProviderKey($provider: String!) {\n        deleteAiProviderKey(provider: $provider)\n    }\n": types.DeleteAiProviderKeyDocument,
     "\n    query Me {\n        me {\n            id\n            email\n            username\n            role\n            isAdmin\n            units\n            emailVerified\n            hasPassword\n            createdAt\n        }\n    }\n": types.MeDocument,
     "\n    mutation Register($input: RegisterInput!) {\n        register(input: $input) {\n            id\n        }\n    }\n": types.RegisterDocument,
     "\n    mutation Login($input: LoginInput!) {\n        login(input: $input) {\n            id\n        }\n    }\n": types.LoginDocument,
@@ -188,6 +200,30 @@ export function graphql(source: "\n    mutation SetUserAdmin($input: SetUserAdmi
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    mutation SetUserStatus($input: SetUserStatusInput!) {\n        setUserStatus(input: $input) {\n            id\n            status\n        }\n    }\n"): (typeof documents)["\n    mutation SetUserStatus($input: SetUserStatusInput!) {\n        setUserStatus(input: $input) {\n            id\n            status\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query MyAiSettings {\n        myAiSettings {\n            provider\n            keyLast4\n            model\n            enabled\n            createdAt\n            updatedAt\n        }\n    }\n"): (typeof documents)["\n    query MyAiSettings {\n        myAiSettings {\n            provider\n            keyLast4\n            model\n            enabled\n            createdAt\n            updatedAt\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query AiModels($provider: String!) {\n        aiModels(provider: $provider) {\n            id\n            displayName\n        }\n    }\n"): (typeof documents)["\n    query AiModels($provider: String!) {\n        aiModels(provider: $provider) {\n            id\n            displayName\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation SetAiProviderKey($input: SetAiProviderKeyInput!) {\n        setAiProviderKey(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n            createdAt\n            updatedAt\n        }\n    }\n"): (typeof documents)["\n    mutation SetAiProviderKey($input: SetAiProviderKeyInput!) {\n        setAiProviderKey(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n            createdAt\n            updatedAt\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation UpdateAiProviderModel($input: UpdateAiProviderModelInput!) {\n        updateAiProviderModel(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n        }\n    }\n"): (typeof documents)["\n    mutation UpdateAiProviderModel($input: UpdateAiProviderModelInput!) {\n        updateAiProviderModel(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation SetAiProviderEnabled($input: SetAiProviderEnabledInput!) {\n        setAiProviderEnabled(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n        }\n    }\n"): (typeof documents)["\n    mutation SetAiProviderEnabled($input: SetAiProviderEnabledInput!) {\n        setAiProviderEnabled(input: $input) {\n            provider\n            keyLast4\n            model\n            enabled\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation DeleteAiProviderKey($provider: String!) {\n        deleteAiProviderKey(provider: $provider)\n    }\n"): (typeof documents)["\n    mutation DeleteAiProviderKey($provider: String!) {\n        deleteAiProviderKey(provider: $provider)\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

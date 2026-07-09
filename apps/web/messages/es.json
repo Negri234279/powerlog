@@ -455,7 +455,8 @@
         "heading": "Ajustes",
         "nav": {
             "profile": "Perfil",
-            "security": "Cuenta y seguridad"
+            "security": "Cuenta y seguridad",
+            "ai": "IA"
         },
         "title": "Tu perfil",
         "intro": "Esto define cómo las analíticas y el coaching interpretan tu entrenamiento. Todo aquí es opcional salvo tu nombre público.",
@@ -656,6 +657,56 @@
         "WORKOUT_SESSION_NOT_FOUND": "Sesión de entrenamiento no encontrada.",
         "WORKOUT_TEMPLATE_NOT_FOUND": "Plantilla de entrenamiento no encontrada.",
         "INVALID_TEMPLATE_NAME": "El nombre de la plantilla debe tener entre 1 y 100 caracteres.",
-        "CONFLICTING_INTENSITY": "Una serie puede registrar RPE o RIR, no ambos."
+        "CONFLICTING_INTENSITY": "Una serie puede registrar RPE o RIR, no ambos.",
+        "INVALID_AI_PROVIDER": "Ese proveedor de IA no está soportado.",
+        "INVALID_API_KEY_FORMAT": "Eso no parece una clave de API.",
+        "AI_PROVIDER_CONFIG_NOT_FOUND": "No hay ninguna clave configurada para ese proveedor.",
+        "INVALID_ENCRYPTED_SECRET": "No se ha podido leer la clave guardada. Vuelve a introducirla.",
+        "AI_ENCRYPTION_KEY_MISCONFIGURED": "La IA no está configurada en este servidor.",
+        "AI_PROVIDER_UNAUTHORIZED": "El proveedor ha rechazado esa clave de API.",
+        "AI_PROVIDER_RATE_LIMITED": "Tu proveedor está limitando las peticiones. Prueba en un momento.",
+        "AI_PROVIDER_QUOTA_EXCEEDED": "Tu cuenta del proveedor no tiene saldo. Revisa su facturación.",
+        "AI_MODEL_NOT_AVAILABLE": "Ese modelo no está disponible para tu clave.",
+        "AI_PROVIDER_TIMEOUT": "El proveedor ha tardado demasiado en responder.",
+        "AI_PROVIDER_UNAVAILABLE": "El proveedor no está disponible temporalmente.",
+        "AI_PROVIDER_REFUSED": "El modelo ha declinado responder a esa petición.",
+        "AI_PROVIDER_UNSUPPORTED": "Ese proveedor de IA no está soportado."
+    },
+    "ai": {
+        "eyebrow": "Proveedor",
+        "intro": "Conecta tu propia clave de OpenAI o Anthropic para que powerlog analice tus entrenamientos. Las peticiones salen de tu cuenta del proveedor, así que el coste y los límites son los de tu plan.",
+        "loadError": "No hemos podido cargar tus ajustes de IA.",
+        "apiKey": "Clave de API",
+        "apiKeyHint": "Se guarda cifrada. No se vuelve a mostrar y nunca sale del servidor.",
+        "connect": "Conectar",
+        "saveNewKey": "Guardar la nueva clave",
+        "storedKey": "Clave guardada",
+        "maskedKey": "•••• •••• {last4}",
+        "model": "Modelo",
+        "modelHint": "Se consulta en vivo al proveedor con tu clave.",
+        "modelUnset": "Sin modelo seleccionado",
+        "modelsLoading": "Cargando modelos…",
+        "modelsError": "No hemos podido consultar los modelos al proveedor.",
+        "statusActive": "Activo",
+        "statusPaused": "En pausa",
+        "pause": "Pausar",
+        "resume": "Reanudar",
+        "replaceKey": "Sustituir clave",
+        "removeKey": "Eliminar clave",
+        "removeKeyTitle": "¿Eliminar esta clave?",
+        "removeKeyBody": "powerlog olvidará tu clave de {provider}. No se revoca nada en el proveedor: hazlo desde su panel si quieres inutilizarla.",
+        "cancel": "Cancelar",
+        "providers": {
+            "openai": {
+                "name": "OpenAI",
+                "body": "Usa modelos GPT. Crea una clave en el panel de OpenAI, en API keys.",
+                "placeholder": "sk-…"
+            },
+            "anthropic": {
+                "name": "Anthropic",
+                "body": "Usa modelos Claude. Crea una clave en la consola de Anthropic, en API keys.",
+                "placeholder": "sk-ant-…"
+            }
+        }
     }
 }

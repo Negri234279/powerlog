@@ -38,6 +38,11 @@ export interface AnalyticsEventMap {
     session_created_from_template: EmptyProps
     set_logged: EmptyProps
     session_completed: EmptyProps
+    // BYOK AI settings. `provider` is a bounded enum; the key never appears here.
+    ai_key_configured: { provider: 'openai' | 'anthropic' }
+    ai_key_removed: { provider: 'openai' | 'anthropic' }
+    ai_model_selected: { provider: 'openai' | 'anthropic' }
+    ai_provider_toggled: { provider: 'openai' | 'anthropic'; action: 'enabled' | 'disabled' }
     // Emitted only by TrackedButton / TrackedLink (components/ui/tracked.tsx);
     // `id` is the finite set of analyticsId literals used across the app.
     ui_click: { id: string; kind: 'button' | 'link' }
