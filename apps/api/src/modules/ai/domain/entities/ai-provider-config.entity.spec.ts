@@ -44,6 +44,30 @@ describe('AiProviderConfigAggregate', () => {
         expect(config.keyLast4).toBe('abcd')
     })
 
+    it('is not the default unless it is created as one', () => {
+        expect(AiProviderConfigMother.create().isDefault).toBe(false)
+        expect(AiProviderConfigMother.create({ isDefault: true }).isDefault).toBe(true)
+    })
+
+    it('steps up to and down from being the default', () => {
+        const config = AiProviderConfigMother.create()
+
+        config.setDefault(true, LATER)
+        expect(config.isDefault).toBe(true)
+
+        config.setDefault(false, LATER)
+        expect(config.isDefault).toBe(false)
+    })
+
+    it('does not touch updatedAt when the default flag is unchanged', () => {
+        const config = AiProviderConfigMother.create()
+        const before = config.updatedAt
+
+        config.setDefault(false, LATER)
+
+        expect(config.updatedAt).toEqual(before)
+    })
+
     it('does not touch updatedAt when the enabled flag is unchanged', () => {
         const config = AiProviderConfigMother.create()
         const before = config.updatedAt

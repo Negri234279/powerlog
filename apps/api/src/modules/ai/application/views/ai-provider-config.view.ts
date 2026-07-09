@@ -10,6 +10,8 @@ export interface AiProviderConfigView {
     keyLast4: string
     model: string | null
     enabled: boolean
+    /** The provider the AI features reach for when several are configured. */
+    isDefault: boolean
     createdAt: Date
     updatedAt: Date
 }
@@ -20,6 +22,7 @@ export function toAiProviderConfigView(config: AiProviderConfigAggregate): AiPro
         keyLast4: config.keyLast4,
         model: config.model,
         enabled: config.enabled,
+        isDefault: config.isDefault,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt,
     }

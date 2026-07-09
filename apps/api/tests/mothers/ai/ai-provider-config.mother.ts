@@ -19,6 +19,7 @@ interface AiProviderConfigOverrides {
     provider?: AiProvider
     rawKey?: string
     model?: string | null
+    isDefault?: boolean
 }
 
 function create(overrides: AiProviderConfigOverrides = {}): AiProviderConfigAggregate {
@@ -30,6 +31,7 @@ function create(overrides: AiProviderConfigOverrides = {}): AiProviderConfigAggr
         encryptedKey: encryptedSecret(rawKey),
         keyLast4: rawKey.slice(-4),
         model: overrides.model ?? null,
+        isDefault: overrides.isDefault ?? false,
         now: DEFAULT_NOW,
     })
 }

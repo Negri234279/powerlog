@@ -707,6 +707,9 @@
                 "body": "Usa modelos Claude. Crea una clave en la consola de Anthropic, en API keys.",
                 "placeholder": "sk-ant-…"
             }
-        }
+        },
+        "statusDefault": "Por defecto",
+        "makeDefault": "Usar por defecto",
+        "defaultHint": "El proveedor que powerlog usa cuando tienes los dos conectados."
     }
 }

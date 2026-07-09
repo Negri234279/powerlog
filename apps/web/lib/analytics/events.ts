@@ -43,6 +43,7 @@ export interface AnalyticsEventMap {
     ai_key_removed: { provider: 'openai' | 'anthropic' }
     ai_model_selected: { provider: 'openai' | 'anthropic' }
     ai_provider_toggled: { provider: 'openai' | 'anthropic'; action: 'enabled' | 'disabled' }
+    ai_default_provider_changed: { provider: 'openai' | 'anthropic' }
     // Emitted only by TrackedButton / TrackedLink (components/ui/tracked.tsx);
     // `id` is the finite set of analyticsId literals used across the app.
     ui_click: { id: string; kind: 'button' | 'link' }

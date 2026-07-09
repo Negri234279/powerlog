@@ -11,6 +11,13 @@ export abstract class AiProviderConfigRepository {
     /** Every provider the user has configured, for the settings screen. */
     abstract findAllByUser(userId: string): Promise<AiProviderConfigAggregate[]>
     abstract save(config: AiProviderConfigAggregate): Promise<void>
+    /**
+     * Upserts several configurations atomically. Needed for the "at most one
+     * default per user" rule, which spans rows: the old default must be cleared
+     * and the new one set together, or a crash in between leaves the user with
+     * none — or trips the partial unique index.
+     */
+    abstract saveAll(configs: readonly AiProviderConfigAggregate[]): Promise<void>
     abstract delete(userId: string, provider: AiProvider): Promise<void>
     /** Hard-delete every configuration a user owns (account erasure). */
     abstract deleteAllByUser(userId: string): Promise<void>

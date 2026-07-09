@@ -12,6 +12,7 @@ export const MyAiSettingsDocument = graphql(`
             keyLast4
             model
             enabled
+            isDefault
             createdAt
             updatedAt
         }
@@ -58,6 +59,15 @@ export const SetAiProviderEnabledDocument = graphql(`
             keyLast4
             model
             enabled
+        }
+    }
+`)
+
+export const SetAiProviderDefaultDocument = graphql(`
+    mutation SetAiProviderDefault($provider: String!) {
+        setAiProviderDefault(provider: $provider) {
+            provider
+            isDefault
         }
     }
 `)

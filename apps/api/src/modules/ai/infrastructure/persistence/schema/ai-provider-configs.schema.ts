@@ -1,4 +1,5 @@
-import { boolean, pgEnum, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { boolean, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 import { AI_PROVIDERS } from '../../../../../shared/ai-provider'
 
@@ -29,8 +30,19 @@ export const aiProviderConfigs = pgTable(
         // Chosen model id (provider-specific, e.g. "claude-opus-4-8"); null → none picked.
         model: text('model'),
         enabled: boolean('enabled').notNull().default(true),
+        // The provider the AI features reach for when the user has configured more
+        // than one. At most one per user — enforced below, in the database.
+        isDefault: boolean('is_default').notNull().default(false),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },
-    (table) => [primaryKey({ columns: [table.userId, table.provider] })],
+    (table) => [
+        primaryKey({ columns: [table.userId, table.provider] }),
+        // A partial unique index: only the rows where is_default is true take part,
+        // so a user can hold many providers but never two defaults. The application
+        // clears the old default in the same transaction; this is the backstop.
+        uniqueIndex('ai_provider_configs_one_default_per_user')
+            .on(table.userId)
+            .where(sql`${table.isDefault}`),
+    ],
 )

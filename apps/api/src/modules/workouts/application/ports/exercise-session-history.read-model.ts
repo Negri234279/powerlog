@@ -20,6 +20,8 @@ export interface ExerciseSessionHistorySet {
     rpe: number | null
     rir: number | null
     e1rmKg: number | null
+    /** What the athlete wrote about this set ("felt heavy", "belt on"). */
+    notes: string | null
 }
 
 /** One past session that included the exercise, with its logged (actual) sets. */
@@ -28,6 +30,14 @@ export interface ExerciseSessionHistoryRow {
     performedAt: Date
     status: WorkoutStatus
     sets: ExerciseSessionHistorySet[]
+    /** The session's own note. */
+    sessionNotes: string | null
+    /**
+     * Notes on the exercise entries for this exercise in that session. A session
+     * may hold the same exercise more than once (e.g. a top set and back-offs as
+     * separate entries), so distinct notes are joined rather than picked from one.
+     */
+    exerciseNotes: string | null
 }
 
 /**

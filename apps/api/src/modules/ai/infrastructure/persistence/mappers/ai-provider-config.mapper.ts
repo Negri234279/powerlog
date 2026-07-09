@@ -19,6 +19,7 @@ export const AiProviderConfigMapper = {
             keyLast4: row.keyLast4,
             model: row.model,
             enabled: row.enabled,
+            isDefault: row.isDefault,
             createdAt: row.createdAt,
             updatedAt: row.updatedAt,
         })
@@ -34,6 +35,7 @@ export const AiProviderConfigMapper = {
             keyLast4: config.keyLast4,
             model: config.model,
             enabled: config.enabled,
+            isDefault: config.isDefault,
             createdAt: config.createdAt,
             updatedAt: config.updatedAt,
         }

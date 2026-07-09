@@ -1,4 +1,5 @@
 import { DeleteAiProviderKeyHandler } from './commands/delete-ai-provider-key/delete-ai-provider-key.handler'
+import { SetAiProviderDefaultHandler } from './commands/set-ai-provider-default/set-ai-provider-default.handler'
 import { SetAiProviderEnabledHandler } from './commands/set-ai-provider-enabled/set-ai-provider-enabled.handler'
 import { SetAiProviderKeyHandler } from './commands/set-ai-provider-key/set-ai-provider-key.handler'
 import { UpdateAiProviderModelHandler } from './commands/update-ai-provider-model/update-ai-provider-model.handler'
@@ -11,6 +12,7 @@ export const AI_COMMAND_HANDLERS = [
     SetAiProviderKeyHandler,
     UpdateAiProviderModelHandler,
     SetAiProviderEnabledHandler,
+    SetAiProviderDefaultHandler,
     DeleteAiProviderKeyHandler,
 ]
 

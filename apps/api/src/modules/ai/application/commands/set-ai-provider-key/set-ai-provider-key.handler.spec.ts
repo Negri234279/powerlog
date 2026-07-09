@@ -60,9 +60,27 @@ describe('SetAiProviderKeyHandler', () => {
             keyLast4: 'cdef',
             model: null,
             enabled: true,
+            isDefault: true,
             createdAt: expect.any(Date),
             updatedAt: expect.any(Date),
         })
+    })
+
+    it('makes the first configured provider the default', async () => {
+        const command = new SetAiProviderKeyCommand(USER_ID, 'openai', API_KEY)
+
+        const view = await buildHandler().execute(command)
+
+        expect(view.isDefault).toBe(true)
+    })
+
+    it('does not steal the default from an already configured provider', async () => {
+        configs.seed(AiProviderConfigMother.anthropic({ userId: USER_ID, isDefault: true }))
+        const command = new SetAiProviderKeyCommand(USER_ID, 'openai', API_KEY)
+
+        const view = await buildHandler().execute(command)
+
+        expect(view.isDefault).toBe(false)
     })
 
     it('verifies the key against the provider before persisting anything', async () => {

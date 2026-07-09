@@ -1,0 +1,2 @@
+ALTER TABLE "ai_provider_configs" ADD COLUMN "is_default" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "ai_provider_configs_one_default_per_user" ON "ai_provider_configs" USING btree ("user_id") WHERE "ai_provider_configs"."is_default";

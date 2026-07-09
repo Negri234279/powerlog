@@ -40,14 +40,25 @@ export class DrizzleExerciseSessionHistoryReadModel extends ExerciseSessionHisto
             'reps', ${workoutSets.reps},
             'rpe', ${workoutSets.rpe},
             'rir', ${workoutSets.rir},
-            'e1rmKg', ${workoutSets.e1rmKg}
+            'e1rmKg', ${workoutSets.e1rmKg},
+            'notes', ${workoutSets.notes}
         ) order by ${workoutExerciseEntries.order}, ${workoutSets.order})`
+
+        // The same exercise can appear as several entries in one session, so the
+        // distinct entry notes are joined instead of an arbitrary one being picked.
+        const exerciseNotes = sql<
+            string | null
+        >`nullif(string_agg(distinct ${workoutExerciseEntries.notes}, ' · '), '')`
 
         const rows = await this.db
             .select({
                 sessionId: workoutSessions.id,
                 performedAt: workoutSessions.performedAt,
                 status: workoutSessions.status,
+                // Functionally dependent on the grouped primary key, so Postgres
+                // accepts it without an aggregate.
+                sessionNotes: workoutSessions.notes,
+                exerciseNotes,
                 sets,
             })
             .from(workoutSessions)
@@ -62,6 +73,8 @@ export class DrizzleExerciseSessionHistoryReadModel extends ExerciseSessionHisto
             sessionId: row.sessionId,
             performedAt: row.performedAt,
             status: row.status as WorkoutStatus,
+            sessionNotes: row.sessionNotes,
+            exerciseNotes: row.exerciseNotes,
             sets: row.sets.map((set) => ({
                 plannedWeightKg: set.plannedWeightKg === null ? null : Number(set.plannedWeightKg),
                 plannedReps: set.plannedReps === null ? null : Number(set.plannedReps),
@@ -70,6 +83,7 @@ export class DrizzleExerciseSessionHistoryReadModel extends ExerciseSessionHisto
                 rpe: set.rpe === null ? null : Number(set.rpe),
                 rir: set.rir === null ? null : Number(set.rir),
                 e1rmKg: set.e1rmKg === null ? null : Number(set.e1rmKg),
+                notes: set.notes ?? null,
             })),
         }))
     }

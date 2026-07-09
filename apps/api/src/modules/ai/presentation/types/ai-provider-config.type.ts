@@ -23,6 +23,9 @@ export class AiProviderConfigType {
     @Field(() => Boolean, { description: 'Whether powerlog may use this key.' })
     enabled!: boolean
 
+    @Field(() => Boolean, { description: 'The provider the AI features use when several are configured.' })
+    isDefault!: boolean
+
     @Field(() => Date)
     createdAt!: Date
 

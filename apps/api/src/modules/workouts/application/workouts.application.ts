@@ -18,12 +18,14 @@ import { PlanWorkoutSessionHandler } from './commands/plan-workout-session/plan-
 import { RemoveExerciseEntryHandler } from './commands/remove-exercise-entry/remove-exercise-entry.handler'
 import { RemoveSetHandler } from './commands/remove-set/remove-set.handler'
 import { UpdateExerciseHandler } from './commands/update-exercise/update-exercise.handler'
+import { ApplySessionPlanHandler } from './commands/apply-session-plan/apply-session-plan.handler'
 import { UpdateSetHandler } from './commands/update-set/update-set.handler'
 import { UpdateWorkoutSessionHandler } from './commands/update-workout-session/update-workout-session.handler'
 import { UpdateWorkoutTemplateHandler } from './commands/update-workout-template/update-workout-template.handler'
 import { PurgeWorkoutsOnUserDeleted } from './event-handlers/purge-workouts-on-user-deleted.handler'
 import { AdminWorkoutStatsHandler } from './queries/admin-workout-stats/admin-workout-stats.handler'
 import { GetExerciseSessionHistoryHandler } from './queries/get-exercise-session-history/get-exercise-session-history.handler'
+import { GetSessionPlanContextHandler } from './queries/get-session-plan-context/get-session-plan-context.handler'
 import { GetExerciseStatsHandler } from './queries/get-exercise-stats/get-exercise-stats.handler'
 import { GetMesocycleHandler } from './queries/get-mesocycle/get-mesocycle.handler'
 import { GetStrengthProgressionHandler } from './queries/get-strength-progression/get-strength-progression.handler'
@@ -45,6 +47,7 @@ export const WORKOUTS_COMMAND_HANDLERS = [
     RemoveExerciseEntryHandler,
     LogSetHandler,
     UpdateSetHandler,
+    ApplySessionPlanHandler,
     RemoveSetHandler,
     CompleteWorkoutSessionHandler,
     UpdateWorkoutSessionHandler,
@@ -77,6 +80,7 @@ export const WORKOUTS_QUERY_HANDLERS = [
     ListMesocyclesHandler,
     GetExerciseStatsHandler,
     GetExerciseSessionHistoryHandler,
+    GetSessionPlanContextHandler,
     ListWorkoutSessionsHandler,
     GetTrainingSummaryHandler,
     GetVolumeSeriesHandler,

@@ -31,6 +31,12 @@ export class InMemoryAiProviderConfigRepository extends AiProviderConfigReposito
         this.rows.set(keyOf(config.userId, config.provider.value), config)
     }
 
+    async saveAll(configs: readonly AiProviderConfigAggregate[]): Promise<void> {
+        for (const config of configs) {
+            await this.save(config)
+        }
+    }
+
     async delete(userId: string, provider: AiProvider): Promise<void> {
         this.rows.delete(keyOf(userId, provider))
     }

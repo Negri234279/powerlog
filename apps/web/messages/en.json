@@ -707,6 +707,9 @@
                 "body": "Use Claude models. Create a key in the Anthropic console, under API keys.",
                 "placeholder": "sk-ant-…"
             }
-        }
+        },
+        "statusDefault": "Default",
+        "makeDefault": "Use by default",
+        "defaultHint": "The provider powerlog uses when both are connected."
     }
 }

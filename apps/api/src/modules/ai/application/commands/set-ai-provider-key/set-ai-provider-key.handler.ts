@@ -39,7 +39,8 @@ export class SetAiProviderKeyHandler implements ICommandHandler<SetAiProviderKey
 
         const now = this.clock.now()
         const encryptedKey = this.cipher.encrypt(apiKey)
-        const existing = await this.configs.findByUserAndProvider(command.userId, provider.value)
+        const all = await this.configs.findAllByUser(command.userId)
+        const existing = all.find((config) => config.provider.value === provider.value)
 
         if (existing) {
             existing.replaceKey(encryptedKey, apiKey.last4, now)
@@ -54,6 +55,9 @@ export class SetAiProviderKeyHandler implements ICommandHandler<SetAiProviderKey
                 encryptedKey,
                 keyLast4: apiKey.last4,
                 model: command.model,
+                // Nothing configured yet: this one becomes the default, so the AI
+                // features have a provider to reach for without a second step.
+                isDefault: all.length === 0,
                 now,
             })
 

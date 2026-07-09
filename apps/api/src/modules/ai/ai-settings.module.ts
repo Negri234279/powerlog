@@ -1,5 +1,9 @@
 import { Module, type Provider } from '@nestjs/common'
 
+import { CommandBusSessionPlanApplier } from '../../planning/command-bus-session-plan-applier'
+import { QueryBusSessionPlanContextReader } from '../../planning/query-bus-session-plan-context-reader'
+import { SessionPlanApplier } from '../../shared/contracts/session-plan-applier'
+import { SessionPlanContextReader } from '../../shared/contracts/session-plan-context'
 import { AuthModule } from '../auth/auth.module'
 import { AI_COMMAND_HANDLERS, AI_EVENT_HANDLERS, AI_QUERY_HANDLERS } from './application/ai.application'
 import { Clock } from './application/ports/clock.port'
@@ -15,6 +19,9 @@ const ADAPTERS: Provider[] = [
     { provide: Clock, useClass: SystemClock },
     { provide: SecretCipher, useClass: AesGcmSecretCipher },
     { provide: AiProviderConfigRepository, useClass: DrizzleAiProviderConfigRepository },
+    // Cross-module contracts, bridged over the CQRS buses and handled by workouts.
+    { provide: SessionPlanContextReader, useClass: QueryBusSessionPlanContextReader },
+    { provide: SessionPlanApplier, useClass: CommandBusSessionPlanApplier },
 ]
 
 /**

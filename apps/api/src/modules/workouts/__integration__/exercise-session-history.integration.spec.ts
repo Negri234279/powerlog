@@ -69,6 +69,7 @@ describe('Exercise session history (integration)', () => {
                 rpe: 8,
                 rir: null,
                 e1rmKg: expect.closeTo(119.58, 2),
+                notes: null,
             },
             {
                 plannedWeightKg: null,
@@ -78,8 +79,43 @@ describe('Exercise session history (integration)', () => {
                 rpe: null,
                 rir: 2,
                 e1rmKg: expect.closeTo(114, 2),
+                notes: 'backoff',
             },
         ])
+    })
+
+    it('carries the notes the athlete wrote, at every level', async () => {
+        const userA = randomUUID()
+        await sessions.save(
+            WorkoutSessionMother.withTree(exA, {
+                userId: userA,
+                performedAt: new Date('2026-01-10T00:00:00Z'),
+                notes: 'slept badly',
+            }),
+        )
+
+        const [row] = await history.forExercise({ userId: userA, exerciseId: exA, limit: 3 })
+
+        // These three feed the AI's prescription; without them it programs blind.
+        expect(row?.sessionNotes).toBe('slept badly')
+        expect(row?.exerciseNotes).toBe('top set then backoff')
+        expect(row?.sets[1]?.notes).toBe('backoff')
+    })
+
+    it('leaves the notes null when the athlete wrote none', async () => {
+        const userA = randomUUID()
+        const session = WorkoutSessionMother.empty({ userId: userA, performedAt: new Date('2026-01-10T00:00:00Z') })
+        const entry = session.addEntry({ id: randomUUID(), exerciseId: exA }, new Date())
+        session.addSet(entry.id, { id: randomUUID(), weight: WeightVO.create(100), reps: RepsVO.create(5) }, new Date())
+        session.complete(new Date())
+        await sessions.save(session)
+
+        const [row] = await history.forExercise({ userId: userA, exerciseId: exA, limit: 3 })
+
+        // `string_agg` over a single NULL entry note must not yield an empty string.
+        expect(row?.sessionNotes).toBeNull()
+        expect(row?.exerciseNotes).toBeNull()
+        expect(row?.sets[0]?.notes).toBeNull()
     })
 
     it('excludes the given session and other exercises, and is user-scoped', async () => {

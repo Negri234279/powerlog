@@ -6,6 +6,7 @@ import {
     AiModelsDocument,
     DeleteAiProviderKeyDocument,
     MyAiSettingsDocument,
+    SetAiProviderDefaultDocument,
     SetAiProviderEnabledDocument,
     SetAiProviderKeyDocument,
     UpdateAiProviderModelDocument,
@@ -76,6 +77,11 @@ export function useSetAiProviderEnabled() {
     return useAiSettingsMutation((input: { provider: AiProvider; enabled: boolean }) =>
         gqlRequest(SetAiProviderEnabledDocument, { input }),
     )
+}
+
+/** Promoting one provider demotes the other, so refetch the whole list. */
+export function useSetAiProviderDefault() {
+    return useAiSettingsMutation((provider: AiProvider) => gqlRequest(SetAiProviderDefaultDocument, { provider }))
 }
 
 export function useDeleteAiProviderKey() {

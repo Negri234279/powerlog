@@ -101,6 +101,9 @@ type AiProviderConfig {
   """Whether powerlog may use this key."""
   enabled: Boolean!
 
+  """The provider the AI features use when several are configured."""
+  isDefault: Boolean!
+
   """Last four characters of the stored key."""
   keyLast4: String!
 
@@ -553,6 +556,11 @@ type Mutation {
 
   """Revoke one session by id (logs out that device)."""
   revokeSession(id: String!): Boolean!
+
+  """
+  Make this the provider the AI features use. Any previous default steps down.
+  """
+  setAiProviderDefault(provider: String!): AiProviderConfig!
 
   """Enable or disable a configured provider."""
   setAiProviderEnabled(input: SetAiProviderEnabledInput!): AiProviderConfig!

@@ -15,6 +15,7 @@ import {
     type AiProviderConfig,
     useAiModels,
     useDeleteAiProviderKey,
+    useSetAiProviderDefault,
     useSetAiProviderEnabled,
     useSetAiProviderKey,
     useUpdateAiProviderModel,
@@ -34,6 +35,7 @@ export function AiProviderCard({ provider, config }: { provider: AiProvider; con
     const setKey = useSetAiProviderKey()
     const updateModel = useUpdateAiProviderModel()
     const setEnabled = useSetAiProviderEnabled()
+    const setDefault = useSetAiProviderDefault()
     const deleteKey = useDeleteAiProviderKey()
 
     const [replacing, setReplacing] = useState(false)
@@ -86,6 +88,16 @@ export function AiProviderCard({ provider, config }: { provider: AiProvider; con
         }
     }
 
+    async function onMakeDefault() {
+        setFormError(null)
+        try {
+            await setDefault.mutateAsync(provider)
+            track('ai_default_provider_changed', { provider })
+        } catch (error) {
+            setFormError(errorMessage(error))
+        }
+    }
+
     async function onDelete() {
         setFormError(null)
         try {
@@ -108,9 +120,16 @@ export function AiProviderCard({ provider, config }: { provider: AiProvider; con
                     </div>
 
                     {config ? (
-                        <span className="whitespace-nowrap rounded-full bg-white/[0.06] px-3 py-1 font-mono text-eyebrow uppercase text-text-dim">
-                            {config.enabled ? t('statusActive') : t('statusPaused')}
-                        </span>
+                        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                            {config.isDefault ? (
+                                <span className="whitespace-nowrap rounded-full bg-pr/10 px-3 py-1 font-mono text-eyebrow uppercase text-pr">
+                                    {t('statusDefault')}
+                                </span>
+                            ) : null}
+                            <span className="whitespace-nowrap rounded-full bg-white/[0.06] px-3 py-1 font-mono text-eyebrow uppercase text-text-dim">
+                                {config.enabled ? t('statusActive') : t('statusPaused')}
+                            </span>
+                        </div>
                     ) : null}
                 </div>
 
@@ -148,6 +167,19 @@ export function AiProviderCard({ provider, config }: { provider: AiProvider; con
                         <FormError error={formError} />
 
                         <div className="flex flex-wrap items-center gap-3">
+                            {config.isDefault ? null : (
+                                <TrackedButton
+                                    analyticsId={`ai-${provider}-make-default`}
+                                    type="button"
+                                    onClick={onMakeDefault}
+                                    disabled={setDefault.isPending}
+                                    title={t('defaultHint')}
+                                    className="rounded-full bg-white/[0.06] px-4 py-2 text-sm text-text transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-50"
+                                >
+                                    {t('makeDefault')}
+                                </TrackedButton>
+                            )}
+
                             <TrackedButton
                                 analyticsId={`ai-${provider}-toggle`}
                                 type="button"

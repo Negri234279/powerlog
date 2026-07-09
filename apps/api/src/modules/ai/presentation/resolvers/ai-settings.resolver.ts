@@ -9,6 +9,7 @@ import { CurrentUser } from '../../../../auth/current-user.decorator'
 import { JwtCookieGuard } from '../../../../auth/jwt-cookie.guard'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import { DeleteAiProviderKeyCommand } from '../../application/commands/delete-ai-provider-key/delete-ai-provider-key.command'
+import { SetAiProviderDefaultCommand } from '../../application/commands/set-ai-provider-default/set-ai-provider-default.command'
 import { SetAiProviderEnabledCommand } from '../../application/commands/set-ai-provider-enabled/set-ai-provider-enabled.command'
 import { SetAiProviderKeyCommand } from '../../application/commands/set-ai-provider-key/set-ai-provider-key.command'
 import { UpdateAiProviderModelCommand } from '../../application/commands/update-ai-provider-model/update-ai-provider-model.command'
@@ -89,6 +90,18 @@ export class AiSettingsResolver {
         const command = new SetAiProviderEnabledCommand(user.userId, input.provider, input.enabled)
 
         return toType(await this.commandBus.execute<SetAiProviderEnabledCommand, AiProviderConfigView>(command))
+    }
+
+    @Mutation(() => AiProviderConfigType, {
+        description: 'Make this the provider the AI features use. Any previous default steps down.',
+    })
+    async setAiProviderDefault(
+        @CurrentUser() user: AuthUser,
+        @Args('provider', new ZodValidationPipe(aiProviderSchema)) provider: string,
+    ): Promise<AiProviderConfigType> {
+        const command = new SetAiProviderDefaultCommand(user.userId, provider)
+
+        return toType(await this.commandBus.execute<SetAiProviderDefaultCommand, AiProviderConfigView>(command))
     }
 
     @Mutation(() => Boolean, { description: 'Forget the stored key for a provider. Idempotent.' })

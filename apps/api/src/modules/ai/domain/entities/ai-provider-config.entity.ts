@@ -13,6 +13,8 @@ export interface AiProviderConfigProps {
     model: string | null
     /** Lets the user park a key without it being used. */
     enabled: boolean
+    /** The provider the AI features use when several are configured. */
+    isDefault: boolean
     createdAt: Date
     updatedAt: Date
 }
@@ -37,6 +39,8 @@ export class AiProviderConfigAggregate {
         encryptedKey: EncryptedSecretVO
         keyLast4: string
         model?: string | null
+        /** The first provider a user configures becomes their default. */
+        isDefault?: boolean
         now: Date
     }): AiProviderConfigAggregate {
         return new AiProviderConfigAggregate({
@@ -46,6 +50,7 @@ export class AiProviderConfigAggregate {
             keyLast4: input.keyLast4,
             model: input.model ?? null,
             enabled: true,
+            isDefault: input.isDefault ?? false,
             createdAt: input.now,
             updatedAt: input.now,
         })
@@ -75,6 +80,19 @@ export class AiProviderConfigAggregate {
         this.props.updatedAt = now
     }
 
+    /**
+     * Make this the user's default provider, or step down from it. "At most one
+     * default per user" spans several aggregates, so it can't be enforced here —
+     * the command handler flips the others in the same transaction, and a partial
+     * unique index backs it up.
+     */
+    setDefault(isDefault: boolean, now: Date): void {
+        if (this.props.isDefault === isDefault) return
+
+        this.props.isDefault = isDefault
+        this.props.updatedAt = now
+    }
+
     get userId(): string {
         return this.props.userId
     }
@@ -92,6 +110,9 @@ export class AiProviderConfigAggregate {
     }
     get enabled(): boolean {
         return this.props.enabled
+    }
+    get isDefault(): boolean {
+        return this.props.isDefault
     }
     get createdAt(): Date {
         return this.props.createdAt

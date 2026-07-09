@@ -8,6 +8,9 @@ import { AiProviderConfigRepository } from '../../../domain/repositories/ai-prov
 import { AiProviderConfigMapper } from '../mappers/ai-provider-config.mapper'
 import { aiProviderConfigs } from '../schema/ai-provider-configs.schema'
 
+/** The Drizzle client, or a transaction handle from `db.transaction(...)`. */
+type DbOrTx = Database | Parameters<Parameters<Database['transaction']>[0]>[0]
+
 @Injectable()
 export class DrizzleAiProviderConfigRepository extends AiProviderConfigRepository {
     constructor(@Inject(DRIZZLE) private readonly db: Database) {
@@ -31,9 +34,26 @@ export class DrizzleAiProviderConfigRepository extends AiProviderConfigRepositor
     }
 
     async save(config: AiProviderConfigAggregate): Promise<void> {
+        await this.upsert(this.db, config)
+    }
+
+    async saveAll(configs: readonly AiProviderConfigAggregate[]): Promise<void> {
+        await this.db.transaction(async (tx) => {
+            // Clear the stepping-down defaults before setting the new one, or the
+            // partial unique index sees two `is_default` rows mid-transaction.
+            for (const config of configs.filter((candidate) => !candidate.isDefault)) {
+                await this.upsert(tx, config)
+            }
+            for (const config of configs.filter((candidate) => candidate.isDefault)) {
+                await this.upsert(tx, config)
+            }
+        })
+    }
+
+    private async upsert(db: DbOrTx, config: AiProviderConfigAggregate): Promise<void> {
         const row = AiProviderConfigMapper.toPersistence(config)
 
-        await this.db
+        await db
             .insert(aiProviderConfigs)
             .values(row)
             .onConflictDoUpdate({
@@ -45,6 +65,7 @@ export class DrizzleAiProviderConfigRepository extends AiProviderConfigRepositor
                     keyLast4: row.keyLast4,
                     model: row.model,
                     enabled: row.enabled,
+                    isDefault: row.isDefault,
                     updatedAt: row.updatedAt,
                 },
             })
