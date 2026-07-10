@@ -45,7 +45,7 @@ export interface AnalyticsEventMap {
     ai_provider_toggled: { provider: 'openai' | 'anthropic'; action: 'enabled' | 'disabled' }
     ai_default_provider_changed: { provider: 'openai' | 'anthropic' }
     // AI-programmed sessions. No session or exercise ids: unbounded, and PII-shaped.
-    ai_plan_generated: EmptyProps
+    ai_plan_generated: { scope: 'session' | 'exercise' }
     ai_plan_refined: EmptyProps
     ai_plan_accepted: EmptyProps
     ai_plan_discarded: EmptyProps

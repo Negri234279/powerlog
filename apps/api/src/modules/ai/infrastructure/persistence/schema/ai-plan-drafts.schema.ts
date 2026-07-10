@@ -30,6 +30,8 @@ export const aiPlanDrafts = pgTable(
         id: uuid('id').primaryKey(),
         userId: uuid('user_id').notNull(),
         sessionId: uuid('session_id').notNull(),
+        // The single exercise entry programmed; null = the whole session.
+        entryId: uuid('entry_id'),
         provider: aiProviderEnum('provider').notNull(),
         // The model that produced it — the same session re-proposed by another
         // model is a different draft, and the history should say which was which.
@@ -49,8 +51,10 @@ export const aiPlanDrafts = pgTable(
 )
 
 /**
- * `ai_plan_draft_sets` — the prescribed target for one set of the session. Keyed
- * by the set it programs: the draft never creates sets, it only fills them in.
+ * `ai_plan_draft_sets` — one prescribed working set, addressed positionally
+ * within its exercise entry. The model owns the set count, so a draft may hold
+ * more positions than the session currently has sets; workouts creates the
+ * missing ones on accept.
  */
 export const aiPlanDraftSets = pgTable(
     'ai_plan_draft_sets',
@@ -58,14 +62,16 @@ export const aiPlanDraftSets = pgTable(
         draftId: uuid('draft_id')
             .notNull()
             .references(() => aiPlanDrafts.id, { onDelete: 'cascade' }),
-        setId: uuid('set_id').notNull(),
+        entryId: uuid('entry_id').notNull(),
+        // 1-based position within the entry.
+        order: integer('order').notNull(),
         plannedWeightKg: doublePrecision('planned_weight_kg'),
         plannedReps: integer('planned_reps'),
         rpe: doublePrecision('rpe'),
         rir: integer('rir'),
         notes: text('notes'),
     },
-    (table) => [primaryKey({ columns: [table.draftId, table.setId] })],
+    (table) => [primaryKey({ columns: [table.draftId, table.entryId, table.order] })],
 )
 
 /** `ai_plan_draft_messages` — the refinement conversation attached to a draft. */

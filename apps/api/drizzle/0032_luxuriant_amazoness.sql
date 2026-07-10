@@ -1,0 +1,1 @@
+ALTER TABLE "ai_plan_draft_sets" DROP COLUMN "set_id";

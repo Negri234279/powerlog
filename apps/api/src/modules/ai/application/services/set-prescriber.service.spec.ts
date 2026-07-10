@@ -20,9 +20,15 @@ const RAW_KEY = 'sk-stored-0123456789abcd'
 
 const validPlan = JSON.stringify({
     rationale: 'Progressed the top set.',
-    sets: [
-        { setId: 'set-1', weightKg: 102.5, reps: 5, rpe: 8, rir: null, note: null },
-        { setId: 'set-2', weightKg: 90, reps: 8, rpe: null, rir: 2, note: null },
+    exercises: [
+        {
+            entryId: 'entry-1',
+            sets: [
+                { weightKg: 102.5, reps: 5, rpe: 8, rir: null, note: null },
+                { weightKg: 90, reps: 8, rpe: null, rir: 2, note: null },
+                { weightKg: 90, reps: 8, rpe: null, rir: 2, note: null },
+            ],
+        },
     ],
 })
 
@@ -82,7 +88,9 @@ describe('SetPrescriber', () => {
 
             const plan = await prescriber.prescribe(configuredDefault(), SessionPlanContextMother.create())
 
-            expect(plan.sets).toHaveLength(2)
+            // Three sets proposed for an exercise that only had two: the model
+            // owns the set count now.
+            expect(plan.sets).toHaveLength(3)
             expect(openai.completeCalls).toHaveLength(1)
         })
 
@@ -100,7 +108,7 @@ describe('SetPrescriber', () => {
 
             const plan = await buildPrescriber().prescribe(configuredDefault(), SessionPlanContextMother.create())
 
-            expect(plan.sets).toHaveLength(2)
+            expect(plan.sets).toHaveLength(3)
             expect(openai.completeCalls).toHaveLength(2)
             // The retry replays the bad answer and the reason it was rejected.
             const retryMessages = openai.completeCalls[1]!.messages
@@ -129,9 +137,32 @@ describe('SetPrescriber', () => {
             openai.willAnswer(validPlan)
             const thread = [{ role: 'user' as const, content: 'less volume' }]
 
-            await buildPrescriber().prescribe(configuredDefault(), SessionPlanContextMother.create(), thread)
+            await buildPrescriber().prescribe(configuredDefault(), SessionPlanContextMother.create(), { thread })
 
             expect(openai.completeCalls[0]?.messages.at(-1)).toMatchObject({ content: 'less volume' })
+        })
+
+        it('passes the athlete’s extra info to the model, outranking the history', async () => {
+            openai.willAnswer(validPlan)
+
+            await buildPrescriber().prescribe(configuredDefault(), SessionPlanContextMother.create(), {
+                extraInfo: 'shoulder is sore',
+            })
+
+            const prompt = openai.completeCalls[0]!.messages[0]!.content
+            expect(prompt).toContain('shoulder is sore')
+            expect(prompt).toContain('outranks the history')
+        })
+
+        it('tells the model when only one exercise is being programmed', async () => {
+            openai.willAnswer(validPlan)
+
+            await buildPrescriber().prescribe(configuredDefault(), SessionPlanContextMother.create())
+
+            // The mother's context holds a single exercise.
+            expect(openai.completeCalls[0]!.messages[0]!.content).toContain(
+                "Program today's working sets for this one exercise",
+            )
         })
     })
 })

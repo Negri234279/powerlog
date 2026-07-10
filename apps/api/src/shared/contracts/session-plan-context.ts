@@ -66,6 +66,10 @@ export abstract class SessionPlanContextReader {
      * Gathers the context for a session the user owns, or returns null when it
      * does not exist, is not theirs, or is not still `planned` — a completed
      * session has nothing left to program.
+     *
+     * `entryId` narrows it to one exercise of the session; omit it for all of them.
+     * An entry that isn't in the session yields an empty exercise list, not a
+     * different session's data.
      */
-    abstract read(userId: string, sessionId: string): Promise<SessionPlanContext | null>
+    abstract read(userId: string, sessionId: string, entryId?: string): Promise<SessionPlanContext | null>
 }

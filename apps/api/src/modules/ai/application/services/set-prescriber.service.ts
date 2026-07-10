@@ -15,8 +15,14 @@ import { SecretCipher } from '../ports/secret-cipher.port'
 import { buildPlanUserPrompt, buildRetryPrompt, PLAN_SYSTEM_PROMPT } from './plan-prompt.service'
 import { type ParsedPlan, parsePlanResponse, PlanResponseRejection } from './plan-response.parser'
 
-/** Enough for a long session's worth of sets plus the rationale. */
-const MAX_TOKENS = 4096
+/**
+ * The ceiling covers reasoning as well as the answer: Sonnet 5 runs adaptive
+ * thinking when the `thinking` param is omitted (as our Anthropic adapter does),
+ * and OpenAI's reasoning models spend from the same budget. 4096 was enough for
+ * the JSON alone but let the thinking starve it — the answer came back truncated
+ * and failed validation. Only what the model actually generates is billed.
+ */
+const MAX_TOKENS = 16000
 
 @Injectable()
 export class SetPrescriber {
@@ -51,14 +57,17 @@ export class SetPrescriber {
     async prescribe(
         config: AiProviderConfigAggregate,
         context: SessionPlanContext,
-        thread: readonly LlmMessage[] = [],
+        options: { thread?: readonly LlmMessage[]; extraInfo?: string | null } = {},
     ): Promise<ParsedPlan> {
-        const expectedSetIds = context.exercises.flatMap((exercise) => exercise.sets.map((set) => set.setId))
+        const expectedEntryIds = context.exercises.map((exercise) => exercise.entryId)
         const apiKey = this.cipher.decrypt(config.encryptedKey)
         const client = this.providers.for(config.provider.value)
         const model = config.model as string
 
-        const messages: LlmMessage[] = [{ role: 'user', content: buildPlanUserPrompt(context) }, ...thread]
+        const messages: LlmMessage[] = [
+            { role: 'user', content: buildPlanUserPrompt(context, options.extraInfo) },
+            ...(options.thread ?? []),
+        ]
 
         for (let attempt = 1; attempt <= 2; attempt++) {
             const completion = await client.complete({
@@ -70,7 +79,7 @@ export class SetPrescriber {
             })
 
             try {
-                return parsePlanResponse(completion.text, expectedSetIds)
+                return parsePlanResponse(completion.text, expectedEntryIds)
             } catch (error) {
                 if (!(error instanceof PlanResponseRejection) || attempt === 2) {
                     this.logger.warn(

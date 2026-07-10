@@ -674,7 +674,6 @@
         "NO_DEFAULT_AI_PROVIDER": "Elige un proveedor de IA por defecto en tu perfil, y comprueba que no está en pausa.",
         "AI_MODEL_NOT_SELECTED": "Elige antes un modelo para tu proveedor por defecto.",
         "SESSION_NOT_PROGRAMMABLE": "Esa sesión no se puede programar.",
-        "EMPTY_SESSION_PLAN": "Añade al menos un ejercicio con series antes de generar un plan.",
         "AI_PLAN_DRAFT_NOT_FOUND": "Ese plan ya no existe.",
         "AI_PLAN_DRAFT_NOT_OPEN": "Ese plan ya se aceptó o se descartó.",
         "CONFLICTING_PLAN_INTENSITY": "Una serie no puede tener RPE y RIR a la vez.",
@@ -737,6 +736,10 @@
         "refine": "Enviar",
         "refining": "Pensando…",
         "refinePlaceholder": "Menos volumen, he dormido mal…",
-        "refineAria": "Pedir un cambio en el plan"
+        "refineAria": "Pedir un cambio en el plan",
+        "extraInfo": "Información extra (opcional)",
+        "extraInfoHint": "Lo que el modelo deba saber. Manda sobre lo que sugiere tu historial.",
+        "extraInfoPlaceholder": "El hombro está tocado, press suave…",
+        "orOneExercise": "O programa un solo ejercicio"
     }
 }

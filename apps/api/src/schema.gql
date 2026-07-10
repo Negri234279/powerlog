@@ -97,6 +97,9 @@ type AiModel {
 
 type AiPlanDraft {
   createdAt: DateTime!
+
+  """The single exercise programmed; null → the whole session."""
+  entryId: ID
   id: ID!
   messages: [AiPlanDraftMessage!]!
 
@@ -123,15 +126,18 @@ type AiPlanDraftMessage {
 }
 
 type AiPlanDraftSet {
+  """The exercise entry this set belongs to."""
+  entryId: ID!
+
   """The model’s one-line reason for this set."""
   notes: String
+
+  """1-based position within the entry."""
+  order: Int!
   plannedReps: Int
   plannedWeightKg: Float
   rir: Int
   rpe: Float
-
-  """The set this target belongs to."""
-  setId: ID!
 }
 
 type AiProviderConfig {
@@ -298,6 +304,17 @@ input GenerateMesocycleWeekInput {
   ISO date (YYYY-MM-DD) overriding the mesocycle start date as the anchor.
   """
   weekStartDate: String
+}
+
+input GenerateSessionPlanDraftInput {
+  """Program only this exercise entry; omit for the whole session."""
+  entryId: ID
+
+  """
+  Anything the model should know, e.g. "shoulder is sore, keep pressing light".
+  """
+  extraInfo: String
+  sessionId: ID!
 }
 
 type IntensityBucket {
@@ -551,9 +568,9 @@ type Mutation {
   generateMesocycleWeek(input: GenerateMesocycleWeekInput!): [WorkoutSession!]!
 
   """
-  Ask the default AI provider to program a planned session. Supersedes any open draft.
+  Ask the default AI provider to program a planned session, or one exercise of it. Supersedes any open draft.
   """
-  generateSessionPlanDraft(sessionId: ID!): AiPlanDraft!
+  generateSessionPlanDraft(input: GenerateSessionPlanDraftInput!): AiPlanDraft!
 
   """Invite an athlete by username (coaches only)."""
   inviteAthlete(username: String!): CoachInvitation!

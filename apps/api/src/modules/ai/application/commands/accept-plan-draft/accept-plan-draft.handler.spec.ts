@@ -31,7 +31,11 @@ describe('AcceptPlanDraftHandler', () => {
         const view = await buildHandler().execute(command)
 
         expect(applier.applied).toEqual([
-            { userId: USER_ID, sessionId: 'session-1', sets: [expect.objectContaining({ setId: 'set-1' })] },
+            {
+                userId: USER_ID,
+                sessionId: 'session-1',
+                sets: [expect.objectContaining({ entryId: 'entry-1', order: 1 })],
+            },
         ])
         expect(view.status).toBe('accepted')
     })

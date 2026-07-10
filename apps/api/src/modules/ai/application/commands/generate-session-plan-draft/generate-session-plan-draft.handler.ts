@@ -3,7 +3,7 @@ import { PinoLogger } from 'nestjs-pino'
 
 import { SessionPlanContextReader } from '../../../../../shared/contracts/session-plan-context'
 import { AiPlanDraftAggregate } from '../../../domain/entities/ai-plan-draft.entity'
-import { EmptySessionPlanError, SessionNotProgrammableError } from '../../../domain/errors/ai-plan.errors'
+import { SessionNotProgrammableError } from '../../../domain/errors/ai-plan.errors'
 import { AiPlanDraftRepository } from '../../../domain/repositories/ai-plan-draft.repository'
 import { Clock } from '../../ports/clock.port'
 import { IdGenerator } from '../../ports/id-generator.port'
@@ -32,11 +32,12 @@ export class GenerateSessionPlanDraftHandler implements ICommandHandler<
         // athlete waits for anything.
         const config = await this.prescriber.resolveConfig(command.userId)
 
-        const context = await this.context.read(command.userId, command.sessionId)
-        if (!context) throw new SessionNotProgrammableError()
-        if (context.exercises.every((exercise) => exercise.sets.length === 0)) throw new EmptySessionPlanError()
+        const context = await this.context.read(command.userId, command.sessionId, command.entryId ?? undefined)
+        // No exercises means the session is empty, or the named entry is not in
+        // it. Exercises *without sets* are fine — the model proposes the scheme.
+        if (!context || context.exercises.length === 0) throw new SessionNotProgrammableError()
 
-        const parsed = await this.prescriber.prescribe(config, context)
+        const parsed = await this.prescriber.prescribe(config, context, { extraInfo: command.extraInfo })
         const now = this.clock.now()
 
         // A session holds one proposal at a time; the old one is superseded.
@@ -50,17 +51,26 @@ export class GenerateSessionPlanDraftHandler implements ICommandHandler<
             id: this.ids.uuid(),
             userId: command.userId,
             sessionId: command.sessionId,
+            entryId: command.entryId,
             provider: config.provider,
             model: config.model as string,
             sets: parsed.sets,
             rationale: parsed.rationale,
             rationaleId: this.ids.uuid(),
+            // Kept in the thread so a later refinement — and the athlete — can see
+            // what was asked for in the first place.
+            ...(command.extraInfo ? { request: { id: this.ids.uuid(), content: command.extraInfo } } : {}),
             now,
         })
 
         await this.drafts.save(draft)
         this.logger.info(
-            { sessionId: command.sessionId, provider: config.provider.value, sets: parsed.sets.length },
+            {
+                sessionId: command.sessionId,
+                provider: config.provider.value,
+                sets: parsed.sets.length,
+                scope: command.entryId ? 'exercise' : 'session',
+            },
             'session plan drafted',
         )
 

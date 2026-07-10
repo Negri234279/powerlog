@@ -1,7 +1,8 @@
 import type { AiPlanDraftAggregate } from '../../domain/entities/ai-plan-draft.entity'
 
 export interface AiPlanDraftSetView {
-    setId: string
+    entryId: string
+    order: number
     plannedWeightKg: number | null
     plannedReps: number | null
     rpe: number | null
@@ -19,6 +20,8 @@ export interface AiPlanDraftMessageView {
 export interface AiPlanDraftView {
     id: string
     sessionId: string
+    /** The single exercise programmed; null → the whole session. */
+    entryId: string | null
     provider: string
     model: string
     status: string
@@ -32,6 +35,7 @@ export function toAiPlanDraftView(draft: AiPlanDraftAggregate): AiPlanDraftView 
     return {
         id: draft.id,
         sessionId: draft.sessionId,
+        entryId: draft.entryId,
         provider: draft.provider.value,
         model: draft.model,
         status: draft.status.value,

@@ -13,11 +13,7 @@ import {
 import { silentLogger } from '../../../../../../tests/doubles/shared'
 import { AiPlanDraftMother, AiProviderConfigMother, SessionPlanContextMother } from '../../../../../../tests/mothers/ai'
 import type { SessionPlanContext } from '../../../../../shared/contracts/session-plan-context'
-import {
-    EmptySessionPlanError,
-    NoDefaultAiProviderError,
-    SessionNotProgrammableError,
-} from '../../../domain/errors/ai-plan.errors'
+import { NoDefaultAiProviderError, SessionNotProgrammableError } from '../../../domain/errors/ai-plan.errors'
 import { SetPrescriber } from '../../services/set-prescriber.service'
 import { GenerateSessionPlanDraftCommand } from './generate-session-plan-draft.command'
 import { GenerateSessionPlanDraftHandler } from './generate-session-plan-draft.handler'
@@ -27,9 +23,15 @@ const SESSION_ID = 'session-1'
 
 const validPlan = JSON.stringify({
     rationale: 'Progressed the top set.',
-    sets: [
-        { setId: 'set-1', weightKg: 102.5, reps: 5, rpe: 8, rir: null, note: null },
-        { setId: 'set-2', weightKg: 90, reps: 8, rpe: null, rir: 2, note: null },
+    exercises: [
+        {
+            entryId: 'entry-1',
+            sets: [
+                { weightKg: 102.5, reps: 5, rpe: 8, rir: null, note: null },
+                { weightKg: 90, reps: 8, rpe: null, rir: 2, note: null },
+                { weightKg: 90, reps: 8, rpe: null, rir: 2, note: null },
+            ],
+        },
     ],
 })
 
@@ -37,16 +39,20 @@ describe('GenerateSessionPlanDraftHandler', () => {
     let drafts: InMemoryAiPlanDraftRepository
     let configs: InMemoryAiProviderConfigRepository
     let openai: StubLlmProviderClient
+    let reader: StubSessionPlanContextReader
 
-    const buildHandler = (context: SessionPlanContext | null = SessionPlanContextMother.create()) =>
-        new GenerateSessionPlanDraftHandler(
+    const buildHandler = (context: SessionPlanContext | null = SessionPlanContextMother.create()) => {
+        reader = new StubSessionPlanContextReader(context)
+
+        return new GenerateSessionPlanDraftHandler(
             drafts,
-            new StubSessionPlanContextReader(context),
+            reader,
             new SetPrescriber(configs, new FakeSecretCipher(), stubRegistry(openai), silentLogger()),
             new FakeClock(),
             new FakeIdGenerator('draft'),
             silentLogger(),
         )
+    }
 
     beforeEach(() => {
         drafts = new InMemoryAiPlanDraftRepository()
@@ -55,13 +61,18 @@ describe('GenerateSessionPlanDraftHandler', () => {
         openai = new StubLlmProviderClient('openai').willAnswer(validPlan)
     })
 
-    it('drafts a plan for every set of the session', async () => {
+    it('drafts a plan for every exercise, with the set count the model chose', async () => {
         const command = new GenerateSessionPlanDraftCommand(USER_ID, SESSION_ID)
 
         const view = await buildHandler().execute(command)
 
         expect(view.status).toBe('open')
-        expect(view.sets.map((set) => set.setId)).toEqual(['set-1', 'set-2'])
+        // The session had two sets; the model proposed three. That is the feature.
+        expect(view.sets.map((set) => [set.entryId, set.order])).toEqual([
+            ['entry-1', 1],
+            ['entry-1', 2],
+            ['entry-1', 3],
+        ])
         expect(view.messages[0]?.content).toBe('Progressed the top set.')
     })
 
@@ -85,6 +96,54 @@ describe('GenerateSessionPlanDraftHandler', () => {
         expect(await drafts.findOpenBySession(USER_ID, SESSION_ID)).not.toBeNull()
     })
 
+    it('narrows the context to one exercise when asked, and remembers the scope', async () => {
+        const command = new GenerateSessionPlanDraftCommand(USER_ID, SESSION_ID, 'entry-1')
+
+        const view = await buildHandler().execute(command)
+
+        // Workouts must not gather history for exercises nobody asked about.
+        expect(reader.readCalls).toEqual([{ sessionId: SESSION_ID, entryId: 'entry-1' }])
+        // Stored so a later refinement keeps the same scope.
+        expect(view.entryId).toBe('entry-1')
+    })
+
+    it('takes the whole session when no exercise is named', async () => {
+        const command = new GenerateSessionPlanDraftCommand(USER_ID, SESSION_ID)
+
+        const view = await buildHandler().execute(command)
+
+        expect(reader.readCalls).toEqual([{ sessionId: SESSION_ID }])
+        expect(view.entryId).toBeNull()
+    })
+
+    it('refuses an exercise that is not in the session', async () => {
+        // Filtered out upstream, so the context comes back with no exercises.
+        const empty = { ...SessionPlanContextMother.create(), exercises: [] }
+        const command = new GenerateSessionPlanDraftCommand(USER_ID, SESSION_ID, 'entry-nope')
+
+        await expect(buildHandler(empty).execute(command)).rejects.toThrow(SessionNotProgrammableError)
+        expect(openai.completeCalls).toEqual([])
+    })
+
+    it('sends the athlete’s extra info to the model and keeps it in the thread', async () => {
+        const command = new GenerateSessionPlanDraftCommand(USER_ID, SESSION_ID, null, 'shoulder is sore')
+
+        const view = await buildHandler().execute(command)
+
+        expect(openai.completeCalls[0]?.messages[0]?.content).toContain('shoulder is sore')
+        expect(view.messages[0]).toMatchObject({ role: 'user', content: 'shoulder is sore' })
+        expect(view.messages[1]?.role).toBe('assistant')
+    })
+
+    it('opens the thread with the model’s rationale when nothing extra was said', async () => {
+        const command = new GenerateSessionPlanDraftCommand(USER_ID, SESSION_ID)
+
+        const view = await buildHandler().execute(command)
+
+        expect(view.messages).toHaveLength(1)
+        expect(view.messages[0]?.role).toBe('assistant')
+    })
+
     it('fails before calling the provider when no default key is set', async () => {
         configs = new InMemoryAiProviderConfigRepository()
         const command = new GenerateSessionPlanDraftCommand(USER_ID, SESSION_ID)
@@ -100,13 +159,14 @@ describe('GenerateSessionPlanDraftHandler', () => {
         expect(openai.completeCalls).toEqual([])
     })
 
-    it('refuses a session with no sets to prescribe', async () => {
+    it('programs an exercise that has no sets yet — the model proposes the scheme', async () => {
         const command = new GenerateSessionPlanDraftCommand(USER_ID, SESSION_ID)
 
-        await expect(buildHandler(SessionPlanContextMother.withoutSets()).execute(command)).rejects.toThrow(
-            EmptySessionPlanError,
-        )
-        expect(openai.completeCalls).toEqual([])
+        const view = await buildHandler(SessionPlanContextMother.withoutSets()).execute(command)
+
+        // The athlete only picked the exercise; the AI decided on three sets.
+        expect(view.sets).toHaveLength(3)
+        expect(openai.completeCalls).toHaveLength(1)
     })
 
     it('stores nothing when the model never returns a usable plan', async () => {

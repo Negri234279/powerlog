@@ -14,12 +14,14 @@ export const AiPlanDraftMapper = {
             id: draft.id,
             userId: draft.userId,
             sessionId: draft.sessionId,
+            entryId: draft.entryId,
             provider: AiProviderVO.create(draft.provider),
             model: draft.model,
             status: PlanDraftStatusVO.create(draft.status),
             sets: sets.map(
                 (set): PlanDraftSet => ({
-                    setId: set.setId,
+                    entryId: set.entryId,
+                    order: set.order,
                     plannedWeightKg: set.plannedWeightKg,
                     plannedReps: set.plannedReps,
                     rpe: set.rpe,
@@ -45,6 +47,7 @@ export const AiPlanDraftMapper = {
             id: draft.id,
             userId: draft.userId,
             sessionId: draft.sessionId,
+            entryId: draft.entryId,
             provider: draft.provider.value,
             model: draft.model,
             status: draft.status.value,

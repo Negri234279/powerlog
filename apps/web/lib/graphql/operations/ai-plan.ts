@@ -16,11 +16,13 @@ export const AiPlanDraftFieldsFragment = graphql(`
     fragment AiPlanDraftFields on AiPlanDraft {
         id
         sessionId
+        entryId
         provider
         model
         status
         sets {
-            setId
+            entryId
+            order
             plannedWeightKg
             plannedReps
             rpe
@@ -38,8 +40,8 @@ export const AiPlanDraftFieldsFragment = graphql(`
 `)
 
 export const GenerateSessionPlanDraftDocument = graphql(`
-    mutation GenerateSessionPlanDraft($sessionId: ID!) {
-        generateSessionPlanDraft(sessionId: $sessionId) {
+    mutation GenerateSessionPlanDraft($input: GenerateSessionPlanDraftInput!) {
+        generateSessionPlanDraft(input: $input) {
             ...AiPlanDraftFields
         }
     }

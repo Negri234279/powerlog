@@ -8,8 +8,10 @@ import type { PlanDraftSet } from '../../domain/entities/ai-plan-draft.entity'
  */
 export class PlanResponseRejection extends Error {}
 
+/** More than this per exercise reads as the model looping, not programming. */
+const MAX_SETS_PER_EXERCISE = 8
+
 const setSchema = z.object({
-    setId: z.string().min(1),
     weightKg: z.number().positive().max(1000).nullish(),
     reps: z.number().int().min(1).max(100).nullish(),
     rpe: z.number().min(1).max(10).nullish(),
@@ -17,9 +19,14 @@ const setSchema = z.object({
     note: z.string().max(200).nullish(),
 })
 
+const exerciseSchema = z.object({
+    entryId: z.string().min(1),
+    sets: z.array(setSchema).min(1).max(MAX_SETS_PER_EXERCISE),
+})
+
 const planSchema = z.object({
     rationale: z.string().min(1).max(4000),
-    sets: z.array(setSchema).min(1),
+    exercises: z.array(exerciseSchema).min(1),
 })
 
 export interface ParsedPlan {
@@ -42,12 +49,13 @@ function extractJson(text: string): string {
 
 /**
  * Turns the model's answer into a plan, or rejects it with a reason the model
- * can act on. The set ids are checked against the ones the model was given: it
- * must prescribe each of them exactly once, and nothing else. That check is what
- * makes the rest of the pipeline safe — a hallucinated set id never gets as far
- * as the database.
+ * can act on. The entry ids are checked against the ones the model was given:
+ * it must program each exercise exactly once, and nothing else — a hallucinated
+ * entry never gets as far as the database. Within an exercise the model owns
+ * the set count (that is the point); positions are assigned by array order, so
+ * it cannot fumble them either.
  */
-export function parsePlanResponse(text: string, expectedSetIds: readonly string[]): ParsedPlan {
+export function parsePlanResponse(text: string, expectedEntryIds: readonly string[]): ParsedPlan {
     let raw: unknown
     try {
         raw = JSON.parse(extractJson(text))
@@ -63,32 +71,42 @@ export function parsePlanResponse(text: string, expectedSetIds: readonly string[
         throw new PlanResponseRejection(`${path}: ${issue?.message ?? 'invalid'}`)
     }
 
-    const expected = new Set(expectedSetIds)
+    const expected = new Set(expectedEntryIds)
     const seen = new Set<string>()
+    const sets: PlanDraftSet[] = []
 
-    const sets: PlanDraftSet[] = result.data.sets.map((set) => {
-        if (!expected.has(set.setId)) throw new PlanResponseRejection(`"${set.setId}" is not one of the given set ids`)
-        if (seen.has(set.setId)) throw new PlanResponseRejection(`"${set.setId}" was prescribed twice`)
-        seen.add(set.setId)
-
-        const rpe = set.rpe ?? null
-        const rir = set.rir ?? null
-        if (rpe !== null && rir !== null) {
-            throw new PlanResponseRejection(`set "${set.setId}" has both an rpe and an rir; give only one`)
+    for (const exercise of result.data.exercises) {
+        if (!expected.has(exercise.entryId)) {
+            throw new PlanResponseRejection(`"${exercise.entryId}" is not one of the given entryId values`)
         }
-
-        return {
-            setId: set.setId,
-            plannedWeightKg: set.weightKg ?? null,
-            plannedReps: set.reps ?? null,
-            rpe,
-            rir,
-            notes: set.note ?? null,
+        if (seen.has(exercise.entryId)) {
+            throw new PlanResponseRejection(`exercise "${exercise.entryId}" was programmed twice`)
         }
-    })
+        seen.add(exercise.entryId)
 
-    const missing = expectedSetIds.filter((setId) => !seen.has(setId))
-    if (missing.length > 0) throw new PlanResponseRejection(`${missing.length} set(s) were left unprescribed`)
+        exercise.sets.forEach((set, index) => {
+            const rpe = set.rpe ?? null
+            const rir = set.rir ?? null
+            if (rpe !== null && rir !== null) {
+                throw new PlanResponseRejection(
+                    `set ${index + 1} of "${exercise.entryId}" has both an rpe and an rir; give only one`,
+                )
+            }
+
+            sets.push({
+                entryId: exercise.entryId,
+                order: index + 1,
+                plannedWeightKg: set.weightKg ?? null,
+                plannedReps: set.reps ?? null,
+                rpe,
+                rir,
+                notes: set.note ?? null,
+            })
+        })
+    }
+
+    const missing = expectedEntryIds.filter((entryId) => !seen.has(entryId))
+    if (missing.length > 0) throw new PlanResponseRejection(`${missing.length} exercise(s) were left unprogrammed`)
 
     return { rationale: result.data.rationale, sets }
 }

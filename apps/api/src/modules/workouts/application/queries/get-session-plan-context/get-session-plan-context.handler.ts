@@ -36,8 +36,12 @@ export class GetSessionPlanContextHandler implements IQueryHandler<
         const session = await this.sessions.findById(query.sessionId)
         if (!session || session.userId !== query.userId || session.status !== 'planned') return null
 
+        // Narrowing to one entry keeps the history lookups to the exercise that
+        // was actually asked about.
+        const entries = query.entryId ? session.entries.filter((entry) => entry.id === query.entryId) : session.entries
+
         const exercises: ExercisePlanContext[] = []
-        for (const entry of session.entries) {
+        for (const entry of entries) {
             exercises.push(await this.contextFor(entry, query))
         }
 

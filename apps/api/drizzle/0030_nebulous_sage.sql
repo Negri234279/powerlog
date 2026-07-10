@@ -1,0 +1,1 @@
+ALTER TABLE "ai_plan_drafts" ADD COLUMN "entry_id" uuid;

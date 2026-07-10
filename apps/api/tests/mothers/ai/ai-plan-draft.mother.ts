@@ -6,7 +6,8 @@ const DEFAULT_USER_ID = '11111111-1111-4111-8111-111111111111'
 const DEFAULT_NOW = new Date('2026-01-01T00:00:00.000Z')
 
 export const planDraftSet = (overrides: Partial<PlanDraftSet> = {}): PlanDraftSet => ({
-    setId: 'set-1',
+    entryId: 'entry-1',
+    order: 1,
     plannedWeightKg: 100,
     plannedReps: 5,
     rpe: 8,
@@ -19,6 +20,8 @@ interface DraftOverrides {
     id?: string
     userId?: string
     sessionId?: string
+    /** The single exercise programmed; omit for a whole-session draft. */
+    entryId?: string | null
     provider?: AiProvider
     model?: string
     sets?: PlanDraftSet[]
@@ -31,6 +34,7 @@ export const AiPlanDraftMother = {
             id: overrides.id ?? 'draft-1',
             userId: overrides.userId ?? DEFAULT_USER_ID,
             sessionId: overrides.sessionId ?? 'session-1',
+            entryId: overrides.entryId ?? null,
             provider: AiProviderVO.create(overrides.provider ?? 'openai'),
             model: overrides.model ?? 'gpt-5',
             sets: overrides.sets ?? [planDraftSet()],

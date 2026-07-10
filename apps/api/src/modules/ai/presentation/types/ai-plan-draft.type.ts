@@ -1,10 +1,13 @@
 import { Field, Float, ID, Int, ObjectType } from '@nestjs/graphql'
 
-/** A target the model proposes for one existing set. Weights are kg. */
+/** A proposed working set, positional within its exercise entry. Weights are kg. */
 @ObjectType('AiPlanDraftSet')
 export class AiPlanDraftSetType {
-    @Field(() => ID, { description: 'The set this target belongs to.' })
-    setId!: string
+    @Field(() => ID, { description: 'The exercise entry this set belongs to.' })
+    entryId!: string
+
+    @Field(() => Int, { description: '1-based position within the entry.' })
+    order!: number
 
     @Field(() => Float, { nullable: true })
     plannedWeightKg!: number | null
@@ -49,6 +52,9 @@ export class AiPlanDraftType {
 
     @Field(() => ID)
     sessionId!: string
+
+    @Field(() => ID, { nullable: true, description: 'The single exercise programmed; null → the whole session.' })
+    entryId!: string | null
 
     @Field(() => String, { description: '"openai" or "anthropic".' })
     provider!: string

@@ -10,5 +10,11 @@ export class GetSessionPlanContextQuery {
         public readonly sessionId: string,
         /** How many past sessions of each exercise to include. */
         public readonly historyLimit: number,
+        /**
+         * Narrow the context to a single exercise entry of the session; `null`
+         * takes the whole session. Filtering here rather than in the caller means
+         * workouts never fetches history for exercises nobody asked about.
+         */
+        public readonly entryId: string | null = null,
     ) {}
 }

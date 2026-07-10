@@ -24,14 +24,6 @@ export class SessionNotProgrammableError extends AiSettingsError {
     }
 }
 
-/** The session has no exercises, so there is nothing to prescribe. */
-export class EmptySessionPlanError extends AiSettingsError {
-    readonly code = 'EMPTY_SESSION_PLAN'
-    constructor() {
-        super('Add at least one exercise to the session before generating a plan.')
-    }
-}
-
 export class AiPlanDraftNotFoundError extends AiSettingsError {
     readonly code = 'AI_PLAN_DRAFT_NOT_FOUND'
     constructor() {

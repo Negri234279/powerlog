@@ -20,8 +20,8 @@ export class QueryBusSessionPlanContextReader extends SessionPlanContextReader {
         super()
     }
 
-    async read(userId: string, sessionId: string): Promise<SessionPlanContext | null> {
-        const query = new GetSessionPlanContextQuery(userId, sessionId, HISTORY_LIMIT)
+    async read(userId: string, sessionId: string, entryId?: string): Promise<SessionPlanContext | null> {
+        const query = new GetSessionPlanContextQuery(userId, sessionId, HISTORY_LIMIT, entryId ?? null)
 
         return this.queryBus.execute<GetSessionPlanContextQuery, SessionPlanContext | null>(query)
     }

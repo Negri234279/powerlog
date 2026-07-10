@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { ApplySessionPlanCommand } from '../../../../../shared/contracts/apply-session-plan.command'
 import type { PrescribedSet } from '../../../../../shared/contracts/session-plan-applier'
-import { FakeClock, InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
+import { FakeClock, FakeIdGenerator, InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
 import { WorkoutSessionMother } from '../../../../../../tests/mothers/workouts'
 import type { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
-import { WorkoutSessionNotFoundError, WorkoutSetNotFoundError } from '../../../domain/errors/workouts.errors'
+import { ExerciseEntryNotFoundError, WorkoutSessionNotFoundError } from '../../../domain/errors/workouts.errors'
 import { ApplySessionPlanHandler } from './apply-session-plan.handler'
 
 const USER_ID = randomUUID()
@@ -24,10 +24,12 @@ function plannedSession(overrides: { userId?: string } = {}): WorkoutSessionAggr
     return session
 }
 
+const entryOf = (session: WorkoutSessionAggregate) => session.entries[0]!
 const setsOf = (session: WorkoutSessionAggregate) => session.entries[0]!.sets
 
-const prescribe = (setId: string, overrides: Partial<PrescribedSet> = {}): PrescribedSet => ({
-    setId,
+const prescribe = (entryId: string, order: number, overrides: Partial<PrescribedSet> = {}): PrescribedSet => ({
+    entryId,
+    order,
     plannedWeightKg: 100,
     plannedReps: 5,
     rpe: 8,
@@ -39,44 +41,102 @@ const prescribe = (setId: string, overrides: Partial<PrescribedSet> = {}): Presc
 describe('ApplySessionPlanHandler', () => {
     let sessions: InMemoryWorkoutSessionRepository
 
-    const buildHandler = () => new ApplySessionPlanHandler(sessions, new FakeClock())
+    const buildHandler = () => new ApplySessionPlanHandler(sessions, new FakeClock(), new FakeIdGenerator())
 
     beforeEach(() => {
         sessions = new InMemoryWorkoutSessionRepository()
     })
 
-    it('writes the prescribed targets onto the planned sets', async () => {
+    it('fills the existing sets positionally', async () => {
         const session = plannedSession()
         await sessions.save(session)
-        const [first] = setsOf(session)
-        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(first!.id)])
+        const entryId = entryOf(session).id
+        const command = new ApplySessionPlanCommand(USER_ID, session.id, [
+            prescribe(entryId, 1),
+            prescribe(entryId, 2, { plannedWeightKg: 90, rpe: null, rir: 2 }),
+        ])
 
         await buildHandler().execute(command)
 
-        const updated = setsOf((await sessions.findById(session.id))!)[0]!
-        expect(updated.plannedWeight?.value).toBe(100)
-        expect(updated.plannedReps?.value).toBe(5)
-        expect(updated.rpe?.value).toBe(8)
+        const sets = setsOf((await sessions.findById(session.id))!)
+        expect(sets).toHaveLength(2)
+        expect(sets[0]!.plannedWeight?.value).toBe(100)
+        expect(sets[1]!.plannedWeight?.value).toBe(90)
+        expect(sets[1]!.rir?.value).toBe(2)
+    })
+
+    it('creates the sets the plan proposes beyond what the session has', async () => {
+        const session = plannedSession()
+        await sessions.save(session)
+        const entryId = entryOf(session).id
+        // The session has two sets; the model prescribed four.
+        const command = new ApplySessionPlanCommand(USER_ID, session.id, [
+            prescribe(entryId, 1),
+            prescribe(entryId, 2),
+            prescribe(entryId, 3, { plannedWeightKg: 90 }),
+            prescribe(entryId, 4, { plannedWeightKg: 85 }),
+        ])
+
+        await buildHandler().execute(command)
+
+        const sets = setsOf((await sessions.findById(session.id))!)
+        expect(sets).toHaveLength(4)
+        expect(sets.map((set) => set.order)).toEqual([1, 2, 3, 4])
+        expect(sets[3]!.plannedWeight?.value).toBe(85)
+        // A created set is planned-only: nothing performed on it.
+        expect(sets[3]!.weight).toBeNull()
+    })
+
+    it('programs an entry that has no sets at all', async () => {
+        const session = WorkoutSessionMother.empty({ userId: USER_ID, status: 'planned' })
+        const entry = session.addEntry({ id: randomUUID(), exerciseId: EXERCISE_ID }, NOW)
+        await sessions.save(session)
+        const command = new ApplySessionPlanCommand(USER_ID, session.id, [
+            prescribe(entry.id, 1),
+            prescribe(entry.id, 2),
+            prescribe(entry.id, 3),
+        ])
+
+        await buildHandler().execute(command)
+
+        expect(setsOf((await sessions.findById(session.id))!)).toHaveLength(3)
+    })
+
+    it('leaves extra existing sets untouched when the plan proposes fewer', async () => {
+        const session = plannedSession()
+        await sessions.save(session)
+        const entryId = entryOf(session).id
+        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(entryId, 1)])
+
+        await buildHandler().execute(command)
+
+        const sets = setsOf((await sessions.findById(session.id))!)
+        // Never deletes what the athlete created.
+        expect(sets).toHaveLength(2)
+        expect(sets[1]!.plannedWeight).toBeNull()
     })
 
     it('never touches performed values', async () => {
         const session = plannedSession()
         await sessions.save(session)
-        const [first] = setsOf(session)
-        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(first!.id)])
+        const entryId = entryOf(session).id
+        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(entryId, 1)])
 
         await buildHandler().execute(command)
 
-        const updated = setsOf((await sessions.findById(session.id))!)[0]!
-        expect(updated.weight).toBeNull()
-        expect(updated.reps).toBeNull()
+        const first = setsOf((await sessions.findById(session.id))!)[0]!
+        expect(first.weight).toBeNull()
+        expect(first.reps).toBeNull()
     })
 
     it('leaves the athlete’s own note alone when the plan carries none', async () => {
         const session = plannedSession()
         await sessions.save(session)
-        const second = setsOf(session)[1]!
-        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(second.id, { notes: null })])
+        const entryId = entryOf(session).id
+        const command = new ApplySessionPlanCommand(USER_ID, session.id, [
+            prescribe(entryId, 1),
+            prescribe(entryId, 2, { notes: null }),
+        ])
 
         await buildHandler().execute(command)
 
@@ -86,48 +146,50 @@ describe('ApplySessionPlanHandler', () => {
     it('replaces the note when the plan carries one', async () => {
         const session = plannedSession()
         await sessions.save(session)
-        const second = setsOf(session)[1]!
-        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(second.id, { notes: 'backoff' })])
+        const entryId = entryOf(session).id
+        const command = new ApplySessionPlanCommand(USER_ID, session.id, [
+            prescribe(entryId, 1),
+            prescribe(entryId, 2, { notes: 'back-off' }),
+        ])
 
         await buildHandler().execute(command)
 
-        expect(setsOf((await sessions.findById(session.id))!)[1]!.notes).toBe('backoff')
+        expect(setsOf((await sessions.findById(session.id))!)[1]!.notes).toBe('back-off')
     })
 
-    it('rejects a plan naming a set that is not in the session, changing nothing', async () => {
+    it('rejects a plan naming an entry that is not in the session, changing nothing', async () => {
         const session = plannedSession()
         await sessions.save(session)
-        const [first] = setsOf(session)
-        // A stale plan: one real set, one that has since been deleted.
+        const entryId = entryOf(session).id
         const command = new ApplySessionPlanCommand(USER_ID, session.id, [
-            prescribe(first!.id),
-            prescribe(randomUUID()),
+            prescribe(entryId, 1),
+            prescribe(randomUUID(), 1),
         ])
 
-        await expect(buildHandler().execute(command)).rejects.toThrow(WorkoutSetNotFoundError)
+        await expect(buildHandler().execute(command)).rejects.toThrow(ExerciseEntryNotFoundError)
         expect(setsOf((await sessions.findById(session.id))!)[0]!.plannedWeight).toBeNull()
     })
 
     it('refuses to program another user’s session', async () => {
         const session = plannedSession({ userId: randomUUID() })
         await sessions.save(session)
-        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(setsOf(session)[0]!.id)])
+        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(entryOf(session).id, 1)])
 
         await expect(buildHandler().execute(command)).rejects.toThrow(WorkoutSessionNotFoundError)
     })
 
     it('refuses to rewrite a session already trained', async () => {
         const session = plannedSession()
-        const setId = setsOf(session)[0]!.id
+        const entryId = entryOf(session).id
         session.complete(NOW)
         await sessions.save(session)
-        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(setId)])
+        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(entryId, 1)])
 
         await expect(buildHandler().execute(command)).rejects.toThrow(WorkoutSessionNotFoundError)
     })
 
     it('refuses a session that does not exist', async () => {
-        const command = new ApplySessionPlanCommand(USER_ID, randomUUID(), [prescribe(randomUUID())])
+        const command = new ApplySessionPlanCommand(USER_ID, randomUUID(), [prescribe(randomUUID(), 1)])
 
         await expect(buildHandler().execute(command)).rejects.toThrow(WorkoutSessionNotFoundError)
     })

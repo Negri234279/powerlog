@@ -5,13 +5,14 @@ import { type FormEvent, useMemo, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { FormError } from '@/components/ui/form-error'
-import { Input } from '@/components/ui/field'
+import { Field, Input, Textarea } from '@/components/ui/field'
 import { Bolt } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
 import { kgTo, type Units } from '@/lib/units'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import {
     type AiPlanDraft,
+    type GeneratePlanVariables,
     useAcceptPlanDraft,
     useDiscardPlanDraft,
     useGenerateSessionPlanDraft,
@@ -55,8 +56,10 @@ export function AiPlanPanel({
     const t = useTranslations('aiPlan')
     const errorMessage = useErrorMessage()
 
-    const hasSets = entries.some((entry) => entry.sets.length > 0)
-    const { data: draft, isLoading } = useSessionPlanDraft(sessionId, hasSets)
+    // Any exercise is programmable now — the model proposes the set scheme, so
+    // an entry without sets is exactly the case the feature is for.
+    const hasEntries = entries.length > 0
+    const { data: draft, isLoading } = useSessionPlanDraft(sessionId, hasEntries)
 
     const generate = useGenerateSessionPlanDraft(sessionId)
     const refine = useRefinePlanDraft(sessionId)
@@ -64,21 +67,33 @@ export function AiPlanPanel({
     const discard = useDiscardPlanDraft(sessionId)
 
     const [error, setError] = useState<string | null>(null)
+    const [extraInfo, setExtraInfo] = useState('')
 
-    // The draft addresses sets by id; the session says which exercise each is in.
+    /** Every exercise of the session, for the per-exercise generate buttons. */
+    const programmable = useMemo(
+        () => entries.map((entry) => ({ id: entry.id, name: nameById.get(entry.exerciseId) ?? '' })),
+        [entries, nameById],
+    )
+
+    // The proposal is grouped per exercise entry; the session names the lift.
     const proposalByEntry = useMemo(() => {
-        const bySetId = new Map((draft?.sets ?? []).map((set) => [set.setId, set]))
+        const byEntry = new Map<string, ProposedSet[]>()
+        for (const set of draft?.sets ?? []) {
+            const list = byEntry.get(set.entryId) ?? []
+            list.push(set)
+            byEntry.set(set.entryId, list)
+        }
 
         return entries
+            .filter((entry) => byEntry.has(entry.id))
             .map((entry) => ({
                 entryId: entry.id,
                 name: nameById.get(entry.exerciseId) ?? '',
-                sets: entry.sets.flatMap((set) => {
-                    const proposed = bySetId.get(set.id)
-                    return proposed ? [{ order: set.order, proposed }] : []
-                }),
+                sets: byEntry
+                    .get(entry.id)!
+                    .slice()
+                    .sort((a, b) => a.order - b.order),
             }))
-            .filter((entry) => entry.sets.length > 0)
     }, [draft, entries, nameById])
 
     async function run(action: () => Promise<unknown>, onDone?: () => void) {
@@ -91,10 +106,13 @@ export function AiPlanPanel({
         }
     }
 
-    const onGenerate = () =>
+    const onGenerate = (variables: GeneratePlanVariables = {}) =>
         run(
-            () => generate.mutateAsync(),
-            () => track('ai_plan_generated', {}),
+            () => generate.mutateAsync({ extraInfo: extraInfo.trim() || null, ...variables }),
+            () => {
+                track('ai_plan_generated', { scope: variables.entryId ? 'exercise' : 'session' })
+                setExtraInfo('')
+            },
         )
 
     const onAccept = () => {
@@ -129,7 +147,7 @@ export function AiPlanPanel({
         )
     }
 
-    if (!hasSets || isLoading) return null
+    if (!hasEntries || isLoading) return null
 
     const busy = generate.isPending || refine.isPending || accept.isPending || discard.isPending
 
@@ -157,12 +175,12 @@ export function AiPlanPanel({
                                 <div key={entry.entryId}>
                                     <p className="font-mono text-eyebrow uppercase text-text-dim">{entry.name}</p>
                                     <ul className="mt-2 space-y-1">
-                                        {entry.sets.map(({ order, proposed }) => (
+                                        {entry.sets.map((proposed) => (
                                             <li
-                                                key={proposed.setId}
+                                                key={proposed.order}
                                                 className="flex flex-wrap items-baseline gap-x-3 text-sm text-text"
                                             >
-                                                <span className="font-mono text-text-faint">{order}</span>
+                                                <span className="font-mono text-text-faint">{proposed.order}</span>
                                                 <span>{formatTarget(proposed, units)}</span>
                                                 {proposed.notes ? (
                                                     <span className="text-text-dim">— {proposed.notes}</span>
@@ -219,7 +237,9 @@ export function AiPlanPanel({
                             <TrackedButton
                                 analyticsId="ai-plan-regenerate"
                                 type="button"
-                                onClick={onGenerate}
+                                // Regenerating keeps the draft's scope: a proposal for
+                                // one exercise stays about that exercise.
+                                onClick={() => void onGenerate({ entryId: draft.entryId })}
                                 disabled={busy}
                                 className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-50"
                             >
@@ -238,19 +258,55 @@ export function AiPlanPanel({
                         </div>
                     </div>
                 ) : (
-                    <div className="mt-6 space-y-4">
+                    <div className="mt-6 space-y-5">
+                        <div className="max-w-lg">
+                            <Field label={t('extraInfo')} htmlFor="ai-plan-extra" hint={t('extraInfoHint')}>
+                                <Textarea
+                                    id="ai-plan-extra"
+                                    value={extraInfo}
+                                    onChange={(event) => setExtraInfo(event.target.value)}
+                                    maxLength={1000}
+                                    placeholder={t('extraInfoPlaceholder')}
+                                    disabled={busy}
+                                />
+                            </Field>
+                        </div>
+
                         <FormError error={error} />
 
-                        <TrackedButton
-                            analyticsId="ai-plan-generate"
-                            type="button"
-                            onClick={onGenerate}
-                            disabled={busy}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-4 py-2 text-sm text-text transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-60"
-                        >
-                            <Bolt className="size-4" />
-                            {generate.isPending ? t('generating') : t('generate')}
-                        </TrackedButton>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <TrackedButton
+                                analyticsId="ai-plan-generate"
+                                type="button"
+                                onClick={() => void onGenerate()}
+                                disabled={busy}
+                                className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-4 py-2 text-sm text-text transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-60"
+                            >
+                                <Bolt className="size-4" />
+                                {generate.isPending ? t('generating') : t('generate')}
+                            </TrackedButton>
+                        </div>
+
+                        {/* One exercise at a time: the same job on a smaller scope. */}
+                        {programmable.length > 1 ? (
+                            <div>
+                                <p className="font-mono text-eyebrow uppercase text-text-faint">{t('orOneExercise')}</p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {programmable.map((entry) => (
+                                        <TrackedButton
+                                            key={entry.id}
+                                            analyticsId="ai-plan-generate-exercise"
+                                            type="button"
+                                            onClick={() => void onGenerate({ entryId: entry.id })}
+                                            disabled={busy}
+                                            className="rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text disabled:opacity-50"
+                                        >
+                                            {entry.name}
+                                        </TrackedButton>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
                 )}
             </div>

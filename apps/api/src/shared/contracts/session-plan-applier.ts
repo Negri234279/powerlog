@@ -5,14 +5,17 @@
  * caller (unlike a fire-and-forget event) and the draft is only marked accepted
  * once the write succeeded. Mirrors `ProfileProvisioner`.
  *
- * The plan only ever fills in *targets* on sets that already exist: the AI
- * cannot add, remove or reorder sets, and cannot touch a session that is no
- * longer `planned`. Sets are addressed by their id, so a plan built against a
- * session the user has since edited is rejected rather than applied to the wrong
- * set.
+ * Sets are addressed **positionally within an exercise entry**, because the
+ * model decides how many working sets a day should have: position `n` fills the
+ * entry's nth existing set, and positions past the end create new planned sets.
+ * The plan never deletes or reorders anything the athlete already has, only
+ * fills targets in — and it cannot touch a session that is no longer `planned`.
  */
 export interface PrescribedSet {
-    setId: string
+    /** The exercise entry this set belongs to. */
+    entryId: string
+    /** 1-based position within the entry. */
+    order: number
     plannedWeightKg: number | null
     plannedReps: number | null
     rpe: number | null

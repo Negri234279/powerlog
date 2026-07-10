@@ -69,7 +69,11 @@ export class DrizzleAiPlanDraftRepository extends AiPlanDraftRepository {
 
     private async hydrate(draft: typeof aiPlanDrafts.$inferSelect): Promise<AiPlanDraftAggregate> {
         const [sets, messages] = await Promise.all([
-            this.db.select().from(aiPlanDraftSets).where(eq(aiPlanDraftSets.draftId, draft.id)),
+            this.db
+                .select()
+                .from(aiPlanDraftSets)
+                .where(eq(aiPlanDraftSets.draftId, draft.id))
+                .orderBy(asc(aiPlanDraftSets.entryId), asc(aiPlanDraftSets.order)),
             this.db
                 .select()
                 .from(aiPlanDraftMessages)

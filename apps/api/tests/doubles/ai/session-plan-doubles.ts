@@ -1,13 +1,21 @@
 import { type SessionPlanContext, SessionPlanContextReader } from '../../../src/shared/contracts/session-plan-context'
 import { SessionPlanApplier, type SessionPlanInput } from '../../../src/shared/contracts/session-plan-applier'
 
-/** Returns a canned context, or null to stand for "not programmable". */
+/**
+ * Returns a canned context, or null to stand for "not programmable". Records the
+ * scope it was asked for, so a test can assert that a single-exercise draft is
+ * built — and later refined — against that exercise alone.
+ */
 export class StubSessionPlanContextReader extends SessionPlanContextReader {
+    readonly readCalls: { sessionId: string; entryId?: string }[] = []
+
     constructor(private readonly context: SessionPlanContext | null) {
         super()
     }
 
-    async read(): Promise<SessionPlanContext | null> {
+    async read(_userId: string, sessionId: string, entryId?: string): Promise<SessionPlanContext | null> {
+        this.readCalls.push(entryId === undefined ? { sessionId } : { sessionId, entryId })
+
         return this.context
     }
 }

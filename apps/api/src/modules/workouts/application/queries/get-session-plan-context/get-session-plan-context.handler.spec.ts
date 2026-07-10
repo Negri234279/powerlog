@@ -118,6 +118,31 @@ describe('GetSessionPlanContextHandler', () => {
         ])
     })
 
+    it('narrows to a single exercise entry when one is named', async () => {
+        const session = plannedSession()
+        const other = session.addEntry({ id: randomUUID(), exerciseId: randomUUID() }, NOW)
+        session.addSet(other.id, { id: randomUUID() }, NOW)
+        await sessions.save(session)
+        const target = session.entries[0]!.id
+        const query = new GetSessionPlanContextQuery(USER_ID, session.id, 6, target)
+
+        const context = await buildHandler().execute(query)
+
+        expect(context?.exercises).toHaveLength(1)
+        expect(context?.exercises[0]?.entryId).toBe(target)
+    })
+
+    it('returns no exercises for an entry that is not in the session', async () => {
+        const session = plannedSession()
+        await sessions.save(session)
+        const query = new GetSessionPlanContextQuery(USER_ID, session.id, 6, randomUUID())
+
+        const context = await buildHandler().execute(query)
+
+        // Never another entry's data — the caller turns this into "not programmable".
+        expect(context?.exercises).toEqual([])
+    })
+
     it('returns null for another user’s session', async () => {
         const session = plannedSession({ userId: randomUUID() })
         await sessions.save(session)

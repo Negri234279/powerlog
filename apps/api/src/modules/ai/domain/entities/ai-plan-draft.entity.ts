@@ -3,10 +3,17 @@ import type { AiProviderVO } from '../value-objects/ai-provider.vo'
 import { PlanDraftStatusVO } from '../value-objects/plan-draft-status.vo'
 import { AiPlanMessageEntity, type PlanMessageRole } from './ai-plan-message.entity'
 
-/** A prescribed target for one existing set of the planned session. */
+/**
+ * A prescribed working set, addressed positionally within its exercise entry.
+ * The model decides how many sets a day should have, so a draft can propose
+ * more sets than the session currently holds — workouts creates the missing
+ * ones when the draft is accepted.
+ */
 export interface PlanDraftSet {
-    /** The set this target belongs to. The draft never creates sets. */
-    setId: string
+    /** The exercise entry this set belongs to. */
+    entryId: string
+    /** 1-based position within the entry. */
+    order: number
     plannedWeightKg: number | null
     plannedReps: number | null
     rpe: number | null
@@ -20,6 +27,12 @@ export interface AiPlanDraftProps {
     userId: string
     /** The planned session this draft programs (soft reference). */
     sessionId: string
+    /**
+     * The single exercise entry this draft programs; null means the whole
+     * session. A refinement must be asked with the same scope, or the model would
+     * be handed sets the draft never proposed.
+     */
+    entryId: string | null
     provider: AiProviderVO
     model: string
     status: PlanDraftStatusVO
@@ -48,25 +61,43 @@ export class AiPlanDraftAggregate {
         id: string
         userId: string
         sessionId: string
+        entryId?: string | null
         provider: AiProviderVO
         model: string
         sets: PlanDraftSet[]
         /** The model's rationale for this first proposal. */
         rationale: string
         rationaleId: string
+        /** What the athlete told the model when asking for it, if anything. */
+        request?: { id: string; content: string }
         now: Date
     }): AiPlanDraftAggregate {
         assertIntensityIsUnambiguous(input.sets)
+
+        const request = input.request
+            ? [
+                  AiPlanMessageEntity.create({
+                      id: input.request.id,
+                      role: 'user' as const,
+                      content: input.request.content,
+                      createdAt: input.now,
+                  }),
+              ]
+            : []
 
         return new AiPlanDraftAggregate({
             id: input.id,
             userId: input.userId,
             sessionId: input.sessionId,
+            entryId: input.entryId ?? null,
             provider: input.provider,
             model: input.model,
             status: PlanDraftStatusVO.open(),
             sets: input.sets,
+            // The athlete's request comes first, so the thread reads as the
+            // conversation it was.
             messages: [
+                ...request,
                 AiPlanMessageEntity.create({
                     id: input.rationaleId,
                     role: 'assistant',
@@ -134,6 +165,9 @@ export class AiPlanDraftAggregate {
     }
     get sessionId(): string {
         return this.props.sessionId
+    }
+    get entryId(): string | null {
+        return this.props.entryId
     }
     get provider(): AiProviderVO {
         return this.props.provider

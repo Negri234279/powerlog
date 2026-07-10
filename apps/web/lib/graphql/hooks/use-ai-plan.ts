@@ -29,12 +29,19 @@ export function useSessionPlanDraft(sessionId: string, enabled: boolean) {
  * fresh draft is written straight into the cache instead of triggering a refetch
  * that would ask the server for what we already hold.
  */
+/** `entryId` programs a single exercise; omit it for the whole session. */
+export interface GeneratePlanVariables {
+    entryId?: string | null
+    extraInfo?: string | null
+}
+
 export function useGenerateSessionPlanDraft(sessionId: string) {
     const qc = useQueryClient()
 
     return useMutation({
-        mutationFn: async () =>
-            (await gqlRequest(GenerateSessionPlanDraftDocument, { sessionId })).generateSessionPlanDraft,
+        mutationFn: async (variables: GeneratePlanVariables = {}) =>
+            (await gqlRequest(GenerateSessionPlanDraftDocument, { input: { sessionId, ...variables } }))
+                .generateSessionPlanDraft,
         onSuccess: (draft) => qc.setQueryData(draftKey(sessionId), draft),
     })
 }

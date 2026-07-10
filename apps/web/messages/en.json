@@ -674,7 +674,6 @@
         "NO_DEFAULT_AI_PROVIDER": "Choose a default AI provider in your profile, and make sure it is not paused.",
         "AI_MODEL_NOT_SELECTED": "Pick a model for your default AI provider first.",
         "SESSION_NOT_PROGRAMMABLE": "That session cannot be programmed.",
-        "EMPTY_SESSION_PLAN": "Add at least one exercise with sets before generating a plan.",
         "AI_PLAN_DRAFT_NOT_FOUND": "That plan no longer exists.",
         "AI_PLAN_DRAFT_NOT_OPEN": "That plan has already been accepted or discarded.",
         "CONFLICTING_PLAN_INTENSITY": "A set cannot have both an RPE and an RIR.",
@@ -737,6 +736,10 @@
         "refine": "Send",
         "refining": "Thinking…",
         "refinePlaceholder": "Less volume, I slept badly…",
-        "refineAria": "Ask for a change to the plan"
+        "refineAria": "Ask for a change to the plan",
+        "extraInfo": "Extra info (optional)",
+        "extraInfoHint": "Anything the model should know. It outranks what your history suggests.",
+        "extraInfoPlaceholder": "Shoulder is sore, keep pressing light…",
+        "orOneExercise": "Or program just one exercise"
     }
 }

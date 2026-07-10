@@ -33,15 +33,18 @@ export class RefinePlanDraftHandler implements ICommandHandler<RefinePlanDraftCo
 
         const config = await this.prescriber.resolveConfig(command.userId)
 
-        const context = await this.context.read(command.userId, draft.sessionId)
-        if (!context) throw new SessionNotProgrammableError()
+        // The same scope the draft was made with: a draft for one exercise must be
+        // revised against that exercise alone, or the model is handed sets it never
+        // proposed and the answer fails validation.
+        const context = await this.context.read(command.userId, draft.sessionId, draft.entryId ?? undefined)
+        if (!context || context.exercises.length === 0) throw new SessionNotProgrammableError()
 
         const thread: LlmMessage[] = [
             ...draft.messages.map((message) => ({ role: message.role, content: message.content })),
             { role: 'user' as const, content: buildRefinePrompt(command.message, draft.sets) },
         ]
 
-        const parsed = await this.prescriber.prescribe(config, context, thread)
+        const parsed = await this.prescriber.prescribe(config, context, { thread })
         const now = this.clock.now()
 
         // Recorded only once the model answered: a failed call leaves no trace of

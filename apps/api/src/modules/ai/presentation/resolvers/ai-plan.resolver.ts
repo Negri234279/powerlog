@@ -13,6 +13,10 @@ import { GenerateSessionPlanDraftCommand } from '../../application/commands/gene
 import { RefinePlanDraftCommand } from '../../application/commands/refine-plan-draft/refine-plan-draft.command'
 import { GetSessionPlanDraftQuery } from '../../application/queries/get-session-plan-draft/get-session-plan-draft.query'
 import type { AiPlanDraftView } from '../../application/views/ai-plan-draft.view'
+import {
+    GenerateSessionPlanDraftInput,
+    generateSessionPlanDraftSchema,
+} from '../inputs/generate-session-plan-draft.input'
 import { RefinePlanDraftInput, refinePlanDraftSchema, uuidSchema } from '../inputs/refine-plan-draft.input'
 import { AiPlanDraftType } from '../types/ai-plan-draft.type'
 
@@ -43,14 +47,20 @@ export class AiPlanResolver {
     }
 
     @Mutation(() => AiPlanDraftType, {
-        description: 'Ask the default AI provider to program a planned session. Supersedes any open draft.',
+        description:
+            'Ask the default AI provider to program a planned session, or one exercise of it. Supersedes any open draft.',
     })
     @Throttle({ default: { limit: 10, ttl: 60_000 } })
     async generateSessionPlanDraft(
         @CurrentUser() user: AuthUser,
-        @Args('sessionId', { type: () => ID }, new ZodValidationPipe(uuidSchema)) sessionId: string,
+        @Args('input', new ZodValidationPipe(generateSessionPlanDraftSchema)) input: GenerateSessionPlanDraftInput,
     ): Promise<AiPlanDraftType> {
-        const command = new GenerateSessionPlanDraftCommand(user.userId, sessionId)
+        const command = new GenerateSessionPlanDraftCommand(
+            user.userId,
+            input.sessionId,
+            input.entryId ?? null,
+            input.extraInfo ?? null,
+        )
 
         return toType(await this.commandBus.execute<GenerateSessionPlanDraftCommand, AiPlanDraftView>(command))
     }
