@@ -14,6 +14,8 @@ import { silentLogger } from '../../../../../../tests/doubles/shared'
 import { AiPlanDraftMother, AiProviderConfigMother, SessionPlanContextMother } from '../../../../../../tests/mothers/ai'
 import type { SessionPlanContext } from '../../../../../shared/contracts/session-plan-context'
 import { NoDefaultAiProviderError, SessionNotProgrammableError } from '../../../domain/errors/ai-plan.errors'
+import { AiConversation } from '../../services/ai-conversation.service'
+import { AiProviderResolver } from '../../services/ai-provider-resolver.service'
 import { SetPrescriber } from '../../services/set-prescriber.service'
 import { GenerateSessionPlanDraftCommand } from './generate-session-plan-draft.command'
 import { GenerateSessionPlanDraftHandler } from './generate-session-plan-draft.handler'
@@ -47,7 +49,10 @@ describe('GenerateSessionPlanDraftHandler', () => {
         return new GenerateSessionPlanDraftHandler(
             drafts,
             reader,
-            new SetPrescriber(configs, new FakeSecretCipher(), stubRegistry(openai), silentLogger()),
+            new SetPrescriber(
+                new AiProviderResolver(configs),
+                new AiConversation(new FakeSecretCipher(), stubRegistry(openai), silentLogger()),
+            ),
             new FakeClock(),
             new FakeIdGenerator('draft'),
             silentLogger(),

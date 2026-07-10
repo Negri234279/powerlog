@@ -25,6 +25,7 @@ import { UpdateWorkoutTemplateHandler } from './commands/update-workout-template
 import { PurgeWorkoutsOnUserDeleted } from './event-handlers/purge-workouts-on-user-deleted.handler'
 import { AdminWorkoutStatsHandler } from './queries/admin-workout-stats/admin-workout-stats.handler'
 import { GetExerciseSessionHistoryHandler } from './queries/get-exercise-session-history/get-exercise-session-history.handler'
+import { GetMesocycleDesignContextHandler } from './queries/get-mesocycle-design-context/get-mesocycle-design-context.handler'
 import { GetSessionPlanContextHandler } from './queries/get-session-plan-context/get-session-plan-context.handler'
 import { GetExerciseStatsHandler } from './queries/get-exercise-stats/get-exercise-stats.handler'
 import { GetMesocycleHandler } from './queries/get-mesocycle/get-mesocycle.handler'
@@ -81,6 +82,7 @@ export const WORKOUTS_QUERY_HANDLERS = [
     GetExerciseStatsHandler,
     GetExerciseSessionHistoryHandler,
     GetSessionPlanContextHandler,
+    GetMesocycleDesignContextHandler,
     ListWorkoutSessionsHandler,
     GetTrainingSummaryHandler,
     GetVolumeSeriesHandler,

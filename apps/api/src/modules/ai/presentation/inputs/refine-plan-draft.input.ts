@@ -15,5 +15,3 @@ export const refinePlanDraftSchema = z.object({
     // Long enough for a real instruction, short enough that the prompt stays sane.
     message: z.string().trim().min(1).max(1000),
 })
-
-export const uuidSchema = z.uuid()

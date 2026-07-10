@@ -49,6 +49,12 @@ export interface AnalyticsEventMap {
     ai_plan_refined: EmptyProps
     ai_plan_accepted: EmptyProps
     ai_plan_discarded: EmptyProps
+    // AI-designed training blocks. Faro attributes are strings; both are small
+    // bounded integers (1–52 weeks, 1–7 days), so cardinality stays low.
+    ai_mesocycle_generated: { weeks: string; days: string }
+    ai_mesocycle_refined: EmptyProps
+    ai_mesocycle_accepted: EmptyProps
+    ai_mesocycle_discarded: EmptyProps
     // Emitted only by TrackedButton / TrackedLink (components/ui/tracked.tsx);
     // `id` is the finite set of analyticsId literals used across the app.
     ui_click: { id: string; kind: 'button' | 'link' }

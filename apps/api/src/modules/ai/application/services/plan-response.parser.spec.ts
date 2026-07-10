@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { parsePlanResponse, PlanResponseRejection } from './plan-response.parser'
+import { ModelAnswerRejection } from './model-answer'
+import { parsePlanResponse } from './plan-response.parser'
 
 const EXPECTED = ['entry-1', 'entry-2']
 
@@ -78,11 +79,11 @@ describe('parsePlanResponse', () => {
     })
 
     it('rejects an answer with no JSON at all', () => {
-        expect(() => parsePlanResponse('I cannot help with that.', EXPECTED)).toThrow(PlanResponseRejection)
+        expect(() => parsePlanResponse('I cannot help with that.', EXPECTED)).toThrow(ModelAnswerRejection)
     })
 
     it('rejects malformed JSON', () => {
-        expect(() => parsePlanResponse('{ "rationale": "x", "exercises": [ }', EXPECTED)).toThrow(PlanResponseRejection)
+        expect(() => parsePlanResponse('{ "rationale": "x", "exercises": [ }', EXPECTED)).toThrow(ModelAnswerRejection)
     })
 
     it('rejects a hallucinated entry id — the safety check that matters', () => {
@@ -104,10 +105,10 @@ describe('parsePlanResponse', () => {
     })
 
     it('rejects an exercise with no sets, or an absurd number of them', () => {
-        expect(() => parsePlanResponse(answer(bothExercises([])), EXPECTED)).toThrow(PlanResponseRejection)
+        expect(() => parsePlanResponse(answer(bothExercises([])), EXPECTED)).toThrow(ModelAnswerRejection)
 
         const looping = Array.from({ length: 9 }, () => set())
-        expect(() => parsePlanResponse(answer(bothExercises(looping)), EXPECTED)).toThrow(PlanResponseRejection)
+        expect(() => parsePlanResponse(answer(bothExercises(looping)), EXPECTED)).toThrow(ModelAnswerRejection)
     })
 
     it('rejects a set carrying both an rpe and an rir', () => {
@@ -118,16 +119,16 @@ describe('parsePlanResponse', () => {
 
     it('rejects values outside the ranges a human could lift', () => {
         expect(() => parsePlanResponse(answer(bothExercises([set({ weightKg: 5000 })])), EXPECTED)).toThrow(
-            PlanResponseRejection,
+            ModelAnswerRejection,
         )
         expect(() => parsePlanResponse(answer(bothExercises([set({ rpe: 42 })])), EXPECTED)).toThrow(
-            PlanResponseRejection,
+            ModelAnswerRejection,
         )
     })
 
     it('rejects a missing rationale', () => {
         expect(() => parsePlanResponse(JSON.stringify({ exercises: bothExercises() }), EXPECTED)).toThrow(
-            PlanResponseRejection,
+            ModelAnswerRejection,
         )
     })
 

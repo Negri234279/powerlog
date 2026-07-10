@@ -13,6 +13,8 @@ import {
     InvalidAiPlanResponseError,
     NoDefaultAiProviderError,
 } from '../../domain/errors/ai-plan.errors'
+import { AiConversation } from './ai-conversation.service'
+import { AiProviderResolver } from './ai-provider-resolver.service'
 import { SetPrescriber } from './set-prescriber.service'
 
 const USER_ID = '11111111-1111-4111-8111-111111111111'
@@ -37,7 +39,10 @@ describe('SetPrescriber', () => {
     let openai: StubLlmProviderClient
 
     const buildPrescriber = () =>
-        new SetPrescriber(configs, new FakeSecretCipher(), stubRegistry(openai), silentLogger())
+        new SetPrescriber(
+            new AiProviderResolver(configs),
+            new AiConversation(new FakeSecretCipher(), stubRegistry(openai), silentLogger()),
+        )
 
     const configuredDefault = () =>
         AiProviderConfigMother.openai({ userId: USER_ID, rawKey: RAW_KEY, model: 'gpt-5', isDefault: true })

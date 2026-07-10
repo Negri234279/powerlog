@@ -13,6 +13,8 @@ import {
 import { silentLogger } from '../../../../../../tests/doubles/shared'
 import { AiPlanDraftMother, AiProviderConfigMother, SessionPlanContextMother } from '../../../../../../tests/mothers/ai'
 import { AiPlanDraftNotFoundError, AiPlanDraftNotOpenError } from '../../../domain/errors/ai-plan.errors'
+import { AiConversation } from '../../services/ai-conversation.service'
+import { AiProviderResolver } from '../../services/ai-provider-resolver.service'
 import { SetPrescriber } from '../../services/set-prescriber.service'
 import { RefinePlanDraftCommand } from './refine-plan-draft.command'
 import { RefinePlanDraftHandler } from './refine-plan-draft.handler'
@@ -50,7 +52,10 @@ describe('RefinePlanDraftHandler', () => {
         return new RefinePlanDraftHandler(
             drafts,
             reader,
-            new SetPrescriber(configs, new FakeSecretCipher(), stubRegistry(openai), silentLogger()),
+            new SetPrescriber(
+                new AiProviderResolver(configs),
+                new AiConversation(new FakeSecretCipher(), stubRegistry(openai), silentLogger()),
+            ),
             new FakeClock(),
             new FakeIdGenerator('msg'),
         )

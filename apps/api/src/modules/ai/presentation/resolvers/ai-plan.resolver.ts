@@ -17,7 +17,8 @@ import {
     GenerateSessionPlanDraftInput,
     generateSessionPlanDraftSchema,
 } from '../inputs/generate-session-plan-draft.input'
-import { RefinePlanDraftInput, refinePlanDraftSchema, uuidSchema } from '../inputs/refine-plan-draft.input'
+import { RefinePlanDraftInput, refinePlanDraftSchema } from '../inputs/refine-plan-draft.input'
+import { uuidSchema } from '../inputs/uuid.schema'
 import { AiPlanDraftType } from '../types/ai-plan-draft.type'
 
 /**

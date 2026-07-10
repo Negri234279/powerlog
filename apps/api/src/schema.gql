@@ -90,6 +90,76 @@ type AdminWorkoutStats {
   sets: Int!
 }
 
+type AiMesocycleDraft {
+  createdAt: DateTime!
+
+  """The template week."""
+  days: [AiMesocycleDraftDay!]!
+  goal: String
+  id: ID!
+  messages: [AiMesocycleDraftMessage!]!
+
+  """The model that produced this proposal."""
+  model: String!
+
+  """The name the model proposed for the block."""
+  name: String!
+
+  """"openai" or "anthropic"."""
+  provider: String!
+
+  """"open", "accepted" or "discarded"."""
+  status: String!
+
+  """The 0–6 day offsets the athlete asked to train on."""
+  trainingDays: [Int!]!
+  updatedAt: DateTime!
+
+  """Weeks the template is repeated into."""
+  weeks: Int!
+}
+
+type AiMesocycleDraftDay {
+  """0–6 offset from the week start."""
+  dayOffset: Int!
+  exercises: [AiMesocycleDraftExercise!]!
+  label: String
+}
+
+type AiMesocycleDraftExercise {
+  """The catalog exercise this resolved to."""
+  exerciseId: ID!
+
+  """The exercise’s canonical (English) name."""
+  name: String!
+  notes: String
+  sets: [AiMesocycleDraftSet!]!
+  slug: String!
+}
+
+type AiMesocycleDraftMessage {
+  content: String!
+  createdAt: DateTime!
+  id: ID!
+
+  """"user" or "assistant"."""
+  role: String!
+}
+
+type AiMesocycleDraftSet {
+  """The model’s one-line reason for this set."""
+  notes: String
+
+  """1-based position within the exercise."""
+  order: Int!
+  plannedReps: Int
+
+  """Null where the athlete has no history to anchor a load on."""
+  plannedWeightKg: Float
+  rir: Int
+  rpe: Float
+}
+
 type AiModel {
   displayName: String!
   id: String!
@@ -289,6 +359,24 @@ type ExerciseStats {
 
   """Σ weight·reps (kg) over logged sets."""
   totalVolumeKg: Float!
+}
+
+input GenerateMesocycleDraftInput {
+  """Free-text goal (e.g. hypertrophy, strength, peak)."""
+  goal: String
+
+  """
+  Anything the model should know, e.g. "squat focus, no hack squat machine".
+  """
+  prompt: String
+
+  """Days trained, as 0–6 offsets from the week start. Monday is 0."""
+  trainingDays: [Int!]!
+
+  """
+  How many weeks the block runs for. The template week is repeated in each.
+  """
+  weeks: Int!
 }
 
 input GenerateMesocycleWeekInput {
@@ -494,6 +582,11 @@ type Mutation {
   """Accept a pending invitation (links you to the coach)."""
   acceptInvitation(id: ID!): CoachInvitation!
 
+  """
+  Take the proposal into the builder. Writes nothing — `createMesocycle` still does that.
+  """
+  acceptMesocycleDraft(draftId: ID!): AiMesocycleDraft!
+
   """Write the draft’s targets onto its session."""
   acceptPlanDraft(draftId: ID!): AiPlanDraft!
 
@@ -554,6 +647,9 @@ type Mutation {
   """Delete a template (cascades to its exercises and sets)."""
   deleteWorkoutTemplate(id: ID!): Boolean!
 
+  """Throw away a draft."""
+  discardMesocycleDraft(draftId: ID!): Boolean!
+
   """Throw away a draft without touching the session."""
   discardPlanDraft(draftId: ID!): Boolean!
 
@@ -561,6 +657,11 @@ type Mutation {
   Email a password-reset link (always succeeds, even if the email is unknown).
   """
   forgotPassword(email: String!): Boolean!
+
+  """
+  Ask the default AI provider to design a training block. Supersedes any open draft.
+  """
+  generateMesocycleDraft(input: GenerateMesocycleDraftInput!): AiMesocycleDraft!
 
   """
   Generate one week of a mesocycle into dated planned sessions (one per training day).
@@ -599,6 +700,9 @@ type Mutation {
   Plan a session for one of your athletes (coaches only; status: planned).
   """
   planWorkoutSession(input: PlanWorkoutSessionInput!): WorkoutSession!
+
+  """Ask the model to revise an open draft."""
+  refineMesocycleDraft(input: RefineMesocycleDraftInput!): AiMesocycleDraft!
 
   """Ask the model to revise an open draft."""
   refinePlanDraft(input: RefinePlanDraftInput!): AiPlanDraft!
@@ -802,6 +906,11 @@ type Query {
   mesocycle(id: ID!): Mesocycle!
 
   """
+  The training block awaiting a decision, if any. An athlete holds at most one.
+  """
+  mesocycleDraft: AiMesocycleDraft
+
+  """
   The caller's mesocycles (newest first), with cheap rollups; optional name search.
   """
   mesocycles(search: String): [MesocycleSummary!]!
@@ -869,6 +978,13 @@ type Query {
   The caller's templates (name-ordered), with cheap rollups; optional name search.
   """
   workoutTemplates(search: String): [WorkoutTemplateSummary!]!
+}
+
+input RefineMesocycleDraftInput {
+  draftId: ID!
+
+  """What to change, e.g. "swap the leg press for lunges"."""
+  message: String!
 }
 
 input RefinePlanDraftInput {

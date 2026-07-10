@@ -21,6 +21,8 @@ process.env['GOOGLE_CLIENT_SECRET'] ??= 'test-google-secret'
 process.env['GOOGLE_CALLBACK_URL'] ??= 'http://localhost:4000/auth/google/callback'
 process.env['WEB_ORIGIN'] ??= 'http://localhost:3000'
 process.env['OTEL_SDK_DISABLED'] ??= 'true'
+// 32 zero bytes, base64. Only shape matters: the cipher validates the length.
+process.env['AI_ENCRYPTION_KEY'] ??= Buffer.alloc(32).toString('base64')
 
 // Real RS256 keypair (SPKI/PKCS8 PEMs) so the e2e suite signs/verifies access
 // tokens for real. Sync generation avoids top-level await (this is a CJS module).

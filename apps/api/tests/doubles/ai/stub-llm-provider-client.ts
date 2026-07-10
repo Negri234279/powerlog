@@ -29,6 +29,18 @@ export class StubLlmProviderClient extends LlmProviderClient {
         return this
     }
 
+    /**
+     * Forget the calls recorded so far. An e2e overrides the provider registry
+     * once for the whole suite, so one instance serves every test — without this,
+     * "the provider was never called" is asserted against the previous test's calls.
+     */
+    reset(): this {
+        this.completeCalls.length = 0
+        this.listModelsCalledWith.length = 0
+
+        return this
+    }
+
     async listModels(apiKey: string): Promise<LlmModel[]> {
         this.listModelsCalledWith.push(apiKey)
         if (this.failWith) throw this.failWith

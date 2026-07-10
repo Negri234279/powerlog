@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
+import type { AiMesocycleDraft } from '@/lib/graphql/hooks/use-ai-mesocycle'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import { type ExerciseData, useExercises } from '@/lib/graphql/hooks/use-workouts'
 import {
@@ -22,9 +23,11 @@ import {
 import { kgTo, type Units, unitsOf } from '@/lib/units'
 import { Field, Input } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
-import { ChevronDown, Close, Plus, Trash } from '@/components/ui/icons'
+import { Bolt, ChevronDown, Close, Plus, Trash } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
 import { ExercisePicker } from './exercise-picker'
+import { MesocycleAiPanel } from './mesocycle-ai-panel'
+import { MesocycleWeekAiPanel } from './mesocycle-week-ai'
 
 type IntensityKind = 'none' | 'rpe' | 'rir'
 
@@ -150,6 +153,39 @@ function templateToDraftExercises(template: WorkoutTemplateData, units: Units): 
 }
 
 /**
+ * One AI-designed week as editable draft days, with fresh keys on every call — so
+ * replicating it across weeks never shares React identity between them.
+ */
+function daysFromAiProposal(proposal: AiMesocycleDraft, units: Units): DraftDay[] {
+    return [...proposal.days]
+        .sort((a, b) => a.dayOffset - b.dayOffset)
+        .map((day) => ({
+            key: newKey(),
+            dayOffset: day.dayOffset,
+            label: day.label ?? '',
+            exercises: day.exercises.map((exercise) => ({
+                key: newKey(),
+                exerciseId: exercise.exerciseId,
+                notes: exercise.notes ?? '',
+                sets: exercise.sets.map((set) => setToDraft(set, units)),
+            })),
+        }))
+}
+
+/**
+ * Turn an AI proposal into the editable draft tree. The model designs **one**
+ * template week; it is repeated across the block's weeks here, in the client,
+ * because that is where the athlete then edits each week's progression.
+ */
+function draftFromAiProposal(proposal: AiMesocycleDraft, units: Units): DraftWeek[] {
+    return Array.from({ length: proposal.weeks }, () => ({
+        key: newKey(),
+        label: '',
+        days: daysFromAiProposal(proposal, units),
+    }))
+}
+
+/**
  * Create/edit a mesocycle as a whole tree: name + goal + start date + microcycles
  * (weeks) → days → programmed exercises/sets. Weights are entered in the user's
  * display unit and sent with `unit` so the API stores canonical kg. Progression is
@@ -185,6 +221,9 @@ export function MesocycleBuilder({
     const [notes, setNotes] = useState('')
     const [weeks, setWeeks] = useState<DraftWeek[]>([emptyWeek()])
     const [error, setError] = useState<string | null>(null)
+    // Which week (if any) has its AI fill panel open. One at a time: the server
+    // holds a single open draft per user, so two panels would share one proposal.
+    const [aiWeekKey, setAiWeekKey] = useState<string | null>(null)
 
     // Seed from the loaded mesocycle once (edit mode).
     const [seeded, setSeeded] = useState(false)
@@ -204,6 +243,26 @@ export function MesocycleBuilder({
         for (const exercise of exercises ?? []) map.set(exercise.id, exercise.name)
         return map
     }, [exercises])
+
+    /**
+     * Seed the builder from an AI proposal. It overwrites the tree, but only the
+     * fields the model actually proposed: a name the athlete already typed, or a
+     * start date they picked, is theirs to keep.
+     */
+    function applyAiProposal(proposal: AiMesocycleDraft) {
+        setError(null)
+        if (name.trim() === '') setName(proposal.name)
+        if (goal.trim() === '' && proposal.goal) setGoal(proposal.goal)
+        setWeeks(draftFromAiProposal(proposal, units))
+    }
+
+    /** Replace one week's days with an AI-designed week, keeping the week's label. */
+    function fillWeekWithAi(weekKey: string, proposal: AiMesocycleDraft) {
+        setWeeks((w) =>
+            w.map((week) => (week.key === weekKey ? { ...week, days: daysFromAiProposal(proposal, units) } : week)),
+        )
+        setAiWeekKey(null)
+    }
 
     function patchWeek(key: string, patch: Partial<DraftWeek>) {
         setWeeks((w) => w.map((week) => (week.key === key ? { ...week, ...patch } : week)))
@@ -404,6 +463,9 @@ export function MesocycleBuilder({
                 </div>
             </div>
 
+            {/* Only when creating: an existing mesocycle is edited, not designed. */}
+            {editing ? null : <MesocycleAiPanel units={units} nameById={nameById} onApply={applyAiProposal} />}
+
             <div className="mt-4 space-y-4">
                 {weeks.map((week, index) => (
                     <WeekCard
@@ -414,6 +476,14 @@ export function MesocycleBuilder({
                         locale={locale}
                         exercises={exercises ?? []}
                         nameById={nameById}
+                        goal={goal}
+                        // Per-week AI fill is edit-only: in create mode the block
+                        // panel owns the shared draft query and the two would clash.
+                        aiEnabled={editing}
+                        aiOpen={aiWeekKey === week.key}
+                        onOpenAi={() => setAiWeekKey(week.key)}
+                        onCloseAi={() => setAiWeekKey(null)}
+                        onFillAi={(proposal) => fillWeekWithAi(week.key, proposal)}
                         onLabel={(value) => patchWeek(week.key, { label: value })}
                         onRemove={() => removeWeek(week.key)}
                         onAddDay={() => addDay(week.key)}
@@ -496,6 +566,12 @@ function WeekCard({
     locale,
     exercises,
     nameById,
+    goal,
+    aiEnabled,
+    aiOpen,
+    onOpenAi,
+    onCloseAi,
+    onFillAi,
     onLabel,
     onRemove,
     onAddDay,
@@ -509,6 +585,12 @@ function WeekCard({
     locale: string
     exercises: ExerciseData[]
     nameById: Map<string, string>
+    goal: string
+    aiEnabled: boolean
+    aiOpen: boolean
+    onOpenAi: () => void
+    onCloseAi: () => void
+    onFillAi: (proposal: AiMesocycleDraft) => void
     onLabel: (value: string) => void
     onRemove: () => void
     onAddDay: () => void
@@ -522,6 +604,9 @@ function WeekCard({
     const [activeIndex, setActiveIndex] = useState(0)
     const active = week.days.length === 0 ? -1 : Math.min(activeIndex, week.days.length - 1)
     const activeDay = active >= 0 ? week.days[active] : null
+
+    // Days the week already trains, so a generated week keeps the same shape.
+    const currentDayOffsets = [...new Set(week.days.map((day) => day.dayOffset))].sort((a, b) => a - b)
 
     return (
         <div className="rounded-2xl bg-shell p-1.5 ring-1 ring-hairline">
@@ -606,6 +691,28 @@ function WeekCard({
                 ) : (
                     <p className="mt-4 text-sm text-text-faint">{t('noDaysYet')}</p>
                 )}
+
+                {aiEnabled ? (
+                    aiOpen ? (
+                        <MesocycleWeekAiPanel
+                            units={units}
+                            goal={goal}
+                            currentDayOffsets={currentDayOffsets}
+                            nameById={nameById}
+                            onApply={onFillAi}
+                            onClose={onCloseAi}
+                        />
+                    ) : (
+                        <TrackedButton
+                            analyticsId="mesocycle-week-ai-open"
+                            type="button"
+                            onClick={onOpenAi}
+                            className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                        >
+                            <Bolt className="size-3.5" /> {t('fillWithAi')}
+                        </TrackedButton>
+                    )
+                ) : null}
             </div>
         </div>
     )

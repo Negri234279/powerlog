@@ -46,6 +46,16 @@ const nextConfig: NextConfig = {
     outputFileTracingRoot: join(import.meta.dirname, '../..'),
     reactStrictMode: true,
     skipTrailingSlashRedirect: true,
+    experimental: {
+        // The BFF proxy (the `/api/*` rewrite below) caps upstream requests at 30s
+        // by default and aborts the socket — with no response the client sees a
+        // generic failure. AI mesocycle design legitimately runs longer: the whole
+        // exercise catalog goes into the prompt and a full training week comes back.
+        // The API's own provider call is capped at 120s, so we wait a touch past
+        // that (ms) — a slow-but-valid generation completes, and a real timeout
+        // surfaces as the API's error rather than a dead connection.
+        proxyTimeout: 130_000,
+    },
     env: {
         NEXT_PUBLIC_APP_VERSION: version,
         NEXT_PUBLIC_APP_ENV: appEnv,

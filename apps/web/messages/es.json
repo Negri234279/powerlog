@@ -316,7 +316,8 @@
             "active": "Activo",
             "completed": "Completado",
             "archived": "Archivado"
-        }
+        },
+        "fillWithAi": "Rellenar con IA"
     },
     "taxonomy": {
         "category": {
@@ -678,7 +679,12 @@
         "AI_PLAN_DRAFT_NOT_OPEN": "Ese plan ya se aceptó o se descartó.",
         "CONFLICTING_PLAN_INTENSITY": "Una serie no puede tener RPE y RIR a la vez.",
         "INVALID_AI_PLAN_RESPONSE": "El modelo no ha devuelto un plan usable. Inténtalo otra vez.",
-        "INVALID_PLAN_DRAFT_STATUS": "Ese plan está en un estado desconocido."
+        "INVALID_PLAN_DRAFT_STATUS": "Ese plan está en un estado desconocido.",
+        "AI_MESOCYCLE_DRAFT_NOT_FOUND": "Ese bloque de entrenamiento no existe.",
+        "AI_MESOCYCLE_DRAFT_NOT_OPEN": "Esa propuesta ya se ha resuelto.",
+        "INVALID_AI_MESOCYCLE_RESPONSE": "El modelo no ha devuelto una semana de entrenamiento utilizable. Inténtalo de nuevo.",
+        "INVALID_MESOCYCLE_DRAFT_PROPOSAL": "La semana de entrenamiento propuesta no es utilizable. Inténtalo de nuevo.",
+        "AI_DRAFT_THREAD_EXHAUSTED": "Esta propuesta se ha refinado todas las veces que puede. Genera una nueva."
     },
     "ai": {
         "eyebrow": "Proveedor",
@@ -741,5 +747,36 @@
         "extraInfoHint": "Lo que el modelo deba saber. Manda sobre lo que sugiere tu historial.",
         "extraInfoPlaceholder": "El hombro está tocado, press suave…",
         "orOneExercise": "O programa un solo ejercicio"
+    },
+    "aiMesocycle": {
+        "open": "Diseñarlo con IA",
+        "close": "Cerrar",
+        "eyebrow": "Entrenador",
+        "title": "Diseñar el bloque con IA",
+        "body": "Elige las semanas y los días que entrenas, y deja que tu proveedor de IA diseñe la semana de entrenamiento. Pone kilos en los ejercicios de los que conoce tus marcas.",
+        "draftBody": "Una semana de entrenamiento propuesta. No se guarda nada hasta que la lleves al editor y crees el mesociclo.",
+        "weeks": "Semanas",
+        "goal": "Objetivo (opcional)",
+        "goalPlaceholder": "Hipertrofia, fuerza, pico…",
+        "trainingDays": "Días de entrenamiento",
+        "pickADay": "Elige al menos un día de entrenamiento.",
+        "prompt": "¿Qué quieres? (opcional)",
+        "promptHint": "Preferencias y limitaciones: prioridades, material que no tienes, ejercicios a evitar.",
+        "promptPlaceholder": "Prioridad sentadilla. No tengo máquina de hack squat. Press banca dos veces por semana…",
+        "generate": "Generar con IA",
+        "generating": "Pensando…",
+        "refine": "Enviar",
+        "refining": "Pensando…",
+        "refinePlaceholder": "Cambia la prensa por zancadas…",
+        "refineAria": "Pedir un cambio en la semana de entrenamiento",
+        "refineHint": "Puedes cambiar el entrenamiento, no la estructura: para cambiar las semanas o los días, genera de nuevo.",
+        "weekCount": "{weeks, plural, one {# semana} other {# semanas}}",
+        "apply": "Usar esta semana ×{weeks}",
+        "applying": "Aplicando…",
+        "discard": "Descartar",
+        "weekEyebrow": "IA",
+        "weekBody": "Diseña esta semana con IA, en los días que ya entrena. Reemplaza la semana; luego puedes editarla.",
+        "weekDraftBody": "Una semana propuesta. Úsala para rellenar esta semana y edítala como cualquier otra.",
+        "useWeek": "Usar esta semana"
     }
 }

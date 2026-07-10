@@ -316,7 +316,8 @@
             "active": "Active",
             "completed": "Completed",
             "archived": "Archived"
-        }
+        },
+        "fillWithAi": "Fill with AI"
     },
     "taxonomy": {
         "category": {
@@ -678,7 +679,12 @@
         "AI_PLAN_DRAFT_NOT_OPEN": "That plan has already been accepted or discarded.",
         "CONFLICTING_PLAN_INTENSITY": "A set cannot have both an RPE and an RIR.",
         "INVALID_AI_PLAN_RESPONSE": "The model did not return a usable plan. Try again.",
-        "INVALID_PLAN_DRAFT_STATUS": "That plan is in an unknown state."
+        "INVALID_PLAN_DRAFT_STATUS": "That plan is in an unknown state.",
+        "AI_MESOCYCLE_DRAFT_NOT_FOUND": "That training block does not exist.",
+        "AI_MESOCYCLE_DRAFT_NOT_OPEN": "That proposal has already been resolved.",
+        "INVALID_AI_MESOCYCLE_RESPONSE": "The model did not return a usable training week. Try again.",
+        "INVALID_MESOCYCLE_DRAFT_PROPOSAL": "The proposed training week is not usable. Try again.",
+        "AI_DRAFT_THREAD_EXHAUSTED": "This proposal has been refined as many times as it can be. Generate a new one."
     },
     "ai": {
         "eyebrow": "Provider",
@@ -741,5 +747,36 @@
         "extraInfoHint": "Anything the model should know. It outranks what your history suggests.",
         "extraInfoPlaceholder": "Shoulder is sore, keep pressing light…",
         "orOneExercise": "Or program just one exercise"
+    },
+    "aiMesocycle": {
+        "open": "Design it with AI",
+        "close": "Close",
+        "eyebrow": "Coach",
+        "title": "Design the block with AI",
+        "body": "Pick the weeks and the days you train, and let your AI provider design the training week. It loads the lifts it knows your numbers on.",
+        "draftBody": "A proposed training week. Nothing is saved until you take it into the builder and create the mesocycle.",
+        "weeks": "Weeks",
+        "goal": "Goal (optional)",
+        "goalPlaceholder": "Hypertrophy, strength, peak…",
+        "trainingDays": "Training days",
+        "pickADay": "Pick at least one training day.",
+        "prompt": "What do you want? (optional)",
+        "promptHint": "Preferences and constraints — priorities, equipment you lack, lifts to avoid.",
+        "promptPlaceholder": "Squat focus. No hack squat machine. Keep bench twice a week…",
+        "generate": "Generate with AI",
+        "generating": "Thinking…",
+        "refine": "Send",
+        "refining": "Thinking…",
+        "refinePlaceholder": "Swap the leg press for lunges…",
+        "refineAria": "Ask for a change to the training week",
+        "refineHint": "You can change the training, not the shape: to change the weeks or the days, generate again.",
+        "weekCount": "{weeks, plural, one {# week} other {# weeks}}",
+        "apply": "Use this week ×{weeks}",
+        "applying": "Applying…",
+        "discard": "Discard",
+        "weekEyebrow": "AI",
+        "weekBody": "Design this week with AI, on the days it already trains. It replaces the week; you can edit it after.",
+        "weekDraftBody": "A proposed week. Use it to fill this week, then edit it like any other.",
+        "useWeek": "Use this week"
     }
 }
