@@ -3,6 +3,7 @@
         "nav": {
             "dashboard": "Panel",
             "workouts": "Entrenamientos",
+            "coaching": "Coaching",
             "admin": "Admin"
         },
         "profileAria": "Tu perfil",
@@ -22,6 +23,27 @@
             "coachInvitation": "{coach} quiere ser tu coach",
             "generic": "Tienes una notificación nueva"
         }
+    },
+    "coaching": {
+        "eyebrow": "Coaching",
+        "title": "Coaching",
+        "invitationsTitle": "Invitaciones",
+        "invitationsSubtitle": "Coaches que quieren entrenarte.",
+        "invitedBy": "{coach} quiere ser tu coach",
+        "accept": "Aceptar",
+        "decline": "Rechazar",
+        "athletesTitle": "Mis atletas",
+        "athletesSubtitle": "Atletas a los que entrenas.",
+        "noAthletes": "Aún no tienes atletas. Invita a alguien por su usuario.",
+        "coachesTitle": "Mis coaches",
+        "coachesSubtitle": "Quién te entrena.",
+        "inviteTitle": "Invitar atleta",
+        "inviteUsernamePlaceholder": "usuario del atleta",
+        "invite": "Invitar",
+        "inviteSent": "Invitación enviada a @{athlete}",
+        "becomeTitle": "Conviértete en coach",
+        "becomeBody": "Entrena a otros atletas: crea sus planes, plantillas y mesociclos, y sigue su progreso.",
+        "become": "Hazte coach"
     },
     "auth": {
         "login": {

@@ -16,6 +16,7 @@ import { useLogout, useMe } from '@/lib/graphql/hooks/use-auth'
 const NAV = [
     { id: 'dashboard', href: '/dashboard' },
     { id: 'workouts', href: '/workouts' },
+    { id: 'coaching', href: '/coaching' },
 ] as const
 
 /** Authenticated chrome: top bar with nav + user + logout. The authed layout

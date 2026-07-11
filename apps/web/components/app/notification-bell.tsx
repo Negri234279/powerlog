@@ -1,6 +1,7 @@
 'use client'
 
 import { useLocale, useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/cn'
@@ -13,6 +14,16 @@ import {
     useNotifications,
     useUnreadNotificationsCount,
 } from '@/lib/graphql/hooks/use-notifications'
+
+/** Where a notification takes you when clicked, if anywhere. */
+function hrefFor(type: string): string | null {
+    switch (type) {
+        case 'coach_invitation':
+            return '/coaching'
+        default:
+            return null
+    }
+}
 
 /** Defensive parse of a notification's JSON `data` blob. */
 function parseData(raw: string): Record<string, unknown> {
@@ -47,6 +58,7 @@ function useRelativeTime() {
 /** Notification bell + dropdown inbox. Lives in the authed top bar. */
 export function NotificationBell() {
     const t = useTranslations('notifications')
+    const router = useRouter()
     const [open, setOpen] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
 
@@ -81,6 +93,12 @@ export function NotificationBell() {
 
     function onItemClick(notification: NotificationItem) {
         if (notification.readAt === null) markRead.mutate(notification.id)
+
+        const href = hrefFor(notification.type)
+        if (href) {
+            setOpen(false)
+            router.push(href)
+        }
     }
 
     return (

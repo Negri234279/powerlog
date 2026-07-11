@@ -57,6 +57,13 @@ type Documents = {
     "\n    query MySessions {\n        mySessions {\n            id\n            current\n            userAgent\n            ip\n            lastUsedAt\n        }\n    }\n": typeof types.MySessionsDocument,
     "\n    mutation RevokeSession($id: String!) {\n        revokeSession(id: $id)\n    }\n": typeof types.RevokeSessionDocument,
     "\n    mutation RevokeOtherSessions {\n        revokeOtherSessions\n    }\n": typeof types.RevokeOtherSessionsDocument,
+    "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n        }\n    }\n": typeof types.MyAthletesDocument,
+    "\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n        }\n    }\n": typeof types.MyCoachesDocument,
+    "\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n": typeof types.PendingInvitationsDocument,
+    "\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n": typeof types.BecomeCoachDocument,
+    "\n    mutation InviteAthlete($username: String!) {\n        inviteAthlete(username: $username) {\n            id\n            status\n        }\n    }\n": typeof types.InviteAthleteDocument,
+    "\n    mutation AcceptInvitation($id: ID!) {\n        acceptInvitation(id: $id) {\n            id\n            status\n        }\n    }\n": typeof types.AcceptInvitationDocument,
+    "\n    mutation DeclineInvitation($id: ID!) {\n        declineInvitation(id: $id) {\n            id\n            status\n        }\n    }\n": typeof types.DeclineInvitationDocument,
     "\n    fragment MesocycleFields on Mesocycle {\n        id\n        ownerId\n        name\n        notes\n        goal\n        startDate\n        status\n        createdAt\n        updatedAt\n        generatedWeeks\n        microcycles {\n            id\n            weekIndex\n            label\n            notes\n            days {\n                id\n                order\n                dayOffset\n                label\n                notes\n                exercises {\n                    id\n                    exerciseId\n                    order\n                    notes\n                    sets {\n                        id\n                        order\n                        plannedWeightKg\n                        plannedReps\n                        rpe\n                        rir\n                        notes\n                    }\n                }\n            }\n        }\n    }\n": typeof types.MesocycleFieldsFragmentDoc,
     "\n    query Mesocycles($search: String) {\n        mesocycles(search: $search) {\n            id\n            name\n            notes\n            goal\n            status\n            startDate\n            updatedAt\n            weekCount\n            dayCount\n        }\n    }\n": typeof types.MesocyclesDocument,
     "\n    query Mesocycle($id: ID!) {\n        mesocycle(id: $id) {\n            ...MesocycleFields\n        }\n    }\n": typeof types.MesocycleDocument,
@@ -143,6 +150,13 @@ const documents: Documents = {
     "\n    query MySessions {\n        mySessions {\n            id\n            current\n            userAgent\n            ip\n            lastUsedAt\n        }\n    }\n": types.MySessionsDocument,
     "\n    mutation RevokeSession($id: String!) {\n        revokeSession(id: $id)\n    }\n": types.RevokeSessionDocument,
     "\n    mutation RevokeOtherSessions {\n        revokeOtherSessions\n    }\n": types.RevokeOtherSessionsDocument,
+    "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n        }\n    }\n": types.MyAthletesDocument,
+    "\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n        }\n    }\n": types.MyCoachesDocument,
+    "\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n": types.PendingInvitationsDocument,
+    "\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n": types.BecomeCoachDocument,
+    "\n    mutation InviteAthlete($username: String!) {\n        inviteAthlete(username: $username) {\n            id\n            status\n        }\n    }\n": types.InviteAthleteDocument,
+    "\n    mutation AcceptInvitation($id: ID!) {\n        acceptInvitation(id: $id) {\n            id\n            status\n        }\n    }\n": types.AcceptInvitationDocument,
+    "\n    mutation DeclineInvitation($id: ID!) {\n        declineInvitation(id: $id) {\n            id\n            status\n        }\n    }\n": types.DeclineInvitationDocument,
     "\n    fragment MesocycleFields on Mesocycle {\n        id\n        ownerId\n        name\n        notes\n        goal\n        startDate\n        status\n        createdAt\n        updatedAt\n        generatedWeeks\n        microcycles {\n            id\n            weekIndex\n            label\n            notes\n            days {\n                id\n                order\n                dayOffset\n                label\n                notes\n                exercises {\n                    id\n                    exerciseId\n                    order\n                    notes\n                    sets {\n                        id\n                        order\n                        plannedWeightKg\n                        plannedReps\n                        rpe\n                        rir\n                        notes\n                    }\n                }\n            }\n        }\n    }\n": types.MesocycleFieldsFragmentDoc,
     "\n    query Mesocycles($search: String) {\n        mesocycles(search: $search) {\n            id\n            name\n            notes\n            goal\n            status\n            startDate\n            updatedAt\n            weekCount\n            dayCount\n        }\n    }\n": types.MesocyclesDocument,
     "\n    query Mesocycle($id: ID!) {\n        mesocycle(id: $id) {\n            ...MesocycleFields\n        }\n    }\n": types.MesocycleDocument,
@@ -372,6 +386,34 @@ export function graphql(source: "\n    mutation RevokeSession($id: String!) {\n 
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    mutation RevokeOtherSessions {\n        revokeOtherSessions\n    }\n"): (typeof documents)["\n    mutation RevokeOtherSessions {\n        revokeOtherSessions\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n        }\n    }\n"): (typeof documents)["\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n        }\n    }\n"): (typeof documents)["\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n"): (typeof documents)["\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n"): (typeof documents)["\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation InviteAthlete($username: String!) {\n        inviteAthlete(username: $username) {\n            id\n            status\n        }\n    }\n"): (typeof documents)["\n    mutation InviteAthlete($username: String!) {\n        inviteAthlete(username: $username) {\n            id\n            status\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation AcceptInvitation($id: ID!) {\n        acceptInvitation(id: $id) {\n            id\n            status\n        }\n    }\n"): (typeof documents)["\n    mutation AcceptInvitation($id: ID!) {\n        acceptInvitation(id: $id) {\n            id\n            status\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation DeclineInvitation($id: ID!) {\n        declineInvitation(id: $id) {\n            id\n            status\n        }\n    }\n"): (typeof documents)["\n    mutation DeclineInvitation($id: ID!) {\n        declineInvitation(id: $id) {\n            id\n            status\n        }\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -3,6 +3,7 @@
         "nav": {
             "dashboard": "Dashboard",
             "workouts": "Workouts",
+            "coaching": "Coaching",
             "admin": "Admin"
         },
         "profileAria": "Your profile",
@@ -22,6 +23,27 @@
             "coachInvitation": "{coach} wants to be your coach",
             "generic": "You have a new notification"
         }
+    },
+    "coaching": {
+        "eyebrow": "Coaching",
+        "title": "Coaching",
+        "invitationsTitle": "Invitations",
+        "invitationsSubtitle": "Coaches who want to train you.",
+        "invitedBy": "{coach} wants to be your coach",
+        "accept": "Accept",
+        "decline": "Decline",
+        "athletesTitle": "My athletes",
+        "athletesSubtitle": "Athletes you train.",
+        "noAthletes": "No athletes yet. Invite someone by their username.",
+        "coachesTitle": "My coaches",
+        "coachesSubtitle": "Who trains you.",
+        "inviteTitle": "Invite athlete",
+        "inviteUsernamePlaceholder": "athlete's username",
+        "invite": "Invite",
+        "inviteSent": "Invitation sent to @{athlete}",
+        "becomeTitle": "Become a coach",
+        "becomeBody": "Train other athletes: build their plans, templates and mesocycles, and follow their progress.",
+        "become": "Become a coach"
     },
     "auth": {
         "login": {
