@@ -18,12 +18,16 @@ const schema = z.object({
     // Optional link to the always-on Grafana (RUM + logs + traces + metrics),
     // surfaced on the admin panel. Absent → the link is simply not shown.
     NEXT_PUBLIC_GRAFANA_URL: z.string().url().optional(),
+    // The web release, inlined by next.config's `env` block from package.json.
+    // Surfaced on the admin panel next to the API version.
+    NEXT_PUBLIC_APP_VERSION: z.string().min(1).default('unknown'),
 })
 
 const parsed = schema.safeParse({
     NEXT_PUBLIC_API_URL: process.env['NEXT_PUBLIC_API_URL'],
     NEXT_PUBLIC_GRAPHQL_URL: process.env['NEXT_PUBLIC_GRAPHQL_URL'],
     NEXT_PUBLIC_GRAFANA_URL: process.env['NEXT_PUBLIC_GRAFANA_URL'],
+    NEXT_PUBLIC_APP_VERSION: process.env['NEXT_PUBLIC_APP_VERSION'],
 })
 
 if (!parsed.success) {
@@ -35,4 +39,5 @@ export const env = {
     apiUrl: parsed.data.NEXT_PUBLIC_API_URL,
     graphqlUrl: parsed.data.NEXT_PUBLIC_GRAPHQL_URL,
     grafanaUrl: parsed.data.NEXT_PUBLIC_GRAFANA_URL ?? null,
+    webVersion: parsed.data.NEXT_PUBLIC_APP_VERSION,
 } as const

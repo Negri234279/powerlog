@@ -18,6 +18,7 @@ export default function AdminOverviewPage() {
     const users = data?.adminUserStats
     const coaching = data?.adminCoachingStats
     const workouts = data?.adminWorkoutStats
+    const apiVersion = data?.apiVersion
 
     return (
         <div>
@@ -66,9 +67,26 @@ export default function AdminOverviewPage() {
                     </Section>
 
                     <ExternalDashboards />
+
+                    <SystemVersions apiVersion={apiVersion} />
                 </div>
             )}
         </div>
+    )
+}
+
+function SystemVersions({ apiVersion }: { apiVersion?: string }) {
+    const t = useTranslations('admin')
+
+    return (
+        <section>
+            <h2 className="font-mono text-eyebrow uppercase text-text-dim">{t('sectionSystem')}</h2>
+            <p className="mt-4 font-mono text-sm text-text-faint">
+                <span className="text-text-dim">{t('versionApi')}</span> v{apiVersion ?? '—'}
+                <span className="mx-2 text-hairline">·</span>
+                <span className="text-text-dim">{t('versionWeb')}</span> v{env.webVersion}
+            </p>
+        </section>
     )
 }
 

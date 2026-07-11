@@ -886,6 +886,9 @@ type Query {
   """Models the stored key may call, fetched live from the provider."""
   aiModels(provider: String!): [AiModel!]!
 
+  """The running API release (package version)."""
+  apiVersion: String!
+
   """
   The caller's recent completed sessions logging one exercise, with their performed sets.
   """

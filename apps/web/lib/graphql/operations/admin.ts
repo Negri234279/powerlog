@@ -71,6 +71,7 @@ export const DeleteExerciseDocument = graphql(`
 
 export const AdminStatsDocument = graphql(`
     query AdminStats {
+        apiVersion
         adminUserStats {
             total
             athletes
