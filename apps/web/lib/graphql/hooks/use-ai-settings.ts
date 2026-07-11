@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import type { MyAiSettingsQuery } from '@/lib/graphql/__generated__/graphql'
+import type { MyAiSettingsQuery, MyAiUsageQuery } from '@/lib/graphql/__generated__/graphql'
 import { gqlRequest } from '@/lib/graphql/client'
 import {
     AiModelsDocument,
     DeleteAiProviderKeyDocument,
     MyAiSettingsDocument,
+    MyAiUsageDocument,
     SetAiProviderDefaultDocument,
     SetAiProviderEnabledDocument,
     SetAiProviderKeyDocument,
@@ -19,10 +20,22 @@ export type AiProvider = (typeof AI_PROVIDERS)[number]
 
 export type AiProviderConfig = MyAiSettingsQuery['myAiSettings'][number]
 
+export type AiUsageSummary = MyAiUsageQuery['myAiUsage']
+export type AiUsageRow = AiUsageSummary['rows'][number]
+
 export function useMyAiSettings() {
     return useQuery({
         queryKey: ['myAiSettings'],
         queryFn: async () => (await gqlRequest(MyAiSettingsDocument)).myAiSettings,
+        retry: false,
+    })
+}
+
+/** The user's own spend, rolled up per model. Read-only; refetched on focus. */
+export function useMyAiUsage() {
+    return useQuery({
+        queryKey: ['myAiUsage'],
+        queryFn: async () => (await gqlRequest(MyAiUsageDocument)).myAiUsage,
         retry: false,
     })
 }

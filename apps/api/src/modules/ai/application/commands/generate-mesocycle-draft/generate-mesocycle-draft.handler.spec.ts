@@ -10,7 +10,7 @@ import {
     StubMesocycleDesignContextReader,
     stubRegistry,
 } from '../../../../../../tests/doubles/ai'
-import { silentLogger } from '../../../../../../tests/doubles/shared'
+import { RecordingEventBus, silentLogger } from '../../../../../../tests/doubles/shared'
 import { AiProviderConfigMother, CATALOG_IDS, MesocycleDesignContextMother } from '../../../../../../tests/mothers/ai'
 import type { MesocycleDesignContext } from '../../../../../shared/contracts/mesocycle-design-context'
 import { InvalidAiMesocycleResponseError } from '../../../domain/errors/ai-mesocycle.errors'
@@ -42,7 +42,12 @@ describe('GenerateMesocycleDraftHandler', () => {
     let openai: StubLlmProviderClient
 
     const buildHandler = (context: MesocycleDesignContext = MesocycleDesignContextMother.create()) => {
-        const conversation = new AiConversation(new FakeSecretCipher(), stubRegistry(openai), silentLogger())
+        const conversation = new AiConversation(
+            new FakeSecretCipher(),
+            stubRegistry(openai),
+            silentLogger(),
+            new RecordingEventBus().asEventBus(),
+        )
 
         return new GenerateMesocycleDraftHandler(
             drafts,

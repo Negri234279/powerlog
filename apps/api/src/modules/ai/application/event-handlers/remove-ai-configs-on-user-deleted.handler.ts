@@ -4,12 +4,13 @@ import { UserDeletedIntegrationEvent } from '../../../../shared/integration-even
 import { AiMesocycleDraftRepository } from '../../domain/repositories/ai-mesocycle-draft.repository'
 import { AiPlanDraftRepository } from '../../domain/repositories/ai-plan-draft.repository'
 import { AiProviderConfigRepository } from '../../domain/repositories/ai-provider-config.repository'
+import { AiUsageRepository } from '../../domain/repositories/ai-usage.repository'
 
 /**
  * Erases the user's AI data when they delete their account: the stored provider
- * keys — their own credentials to a third-party service — and both kinds of
- * draft, which carry their training notes and their own words through the
- * conversation thread.
+ * keys — their own credentials to a third-party service — both kinds of draft,
+ * which carry their training notes and their own words through the conversation
+ * thread, and their usage meter, which records their activity over time.
  *
  * Idempotent: re-delivery with nothing left to delete is a no-op.
  */
@@ -19,11 +20,13 @@ export class RemoveAiConfigsOnUserDeleted implements IEventHandler<UserDeletedIn
         private readonly configs: AiProviderConfigRepository,
         private readonly drafts: AiPlanDraftRepository,
         private readonly mesocycleDrafts: AiMesocycleDraftRepository,
+        private readonly usage: AiUsageRepository,
     ) {}
 
     async handle(event: UserDeletedIntegrationEvent): Promise<void> {
         await this.configs.deleteAllByUser(event.userId)
         await this.drafts.deleteAllByUser(event.userId)
         await this.mesocycleDrafts.deleteAllByUser(event.userId)
+        await this.usage.deleteAllByUser(event.userId)
     }
 }

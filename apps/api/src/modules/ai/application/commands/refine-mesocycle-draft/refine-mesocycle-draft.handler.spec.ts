@@ -10,7 +10,7 @@ import {
     StubMesocycleDesignContextReader,
     stubRegistry,
 } from '../../../../../../tests/doubles/ai'
-import { silentLogger } from '../../../../../../tests/doubles/shared'
+import { RecordingEventBus, silentLogger } from '../../../../../../tests/doubles/shared'
 import {
     AiMesocycleDraftMother,
     AiProviderConfigMother,
@@ -56,7 +56,12 @@ describe('RefineMesocycleDraftHandler', () => {
     let openai: StubLlmProviderClient
 
     const buildHandler = () => {
-        const conversation = new AiConversation(new FakeSecretCipher(), stubRegistry(openai), silentLogger())
+        const conversation = new AiConversation(
+            new FakeSecretCipher(),
+            stubRegistry(openai),
+            silentLogger(),
+            new RecordingEventBus().asEventBus(),
+        )
 
         return new RefineMesocycleDraftHandler(
             drafts,

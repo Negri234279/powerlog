@@ -729,7 +729,19 @@
         },
         "statusDefault": "Por defecto",
         "makeDefault": "Usar por defecto",
-        "defaultHint": "El proveedor que powerlog usa cuando tienes los dos conectados."
+        "defaultHint": "El proveedor que powerlog usa cuando tienes los dos conectados.",
+        "viewBilling": "Saldo y facturación",
+        "usageTitle": "Gasto de IA",
+        "usageIntro": "Estimado a partir de los tokens que has consumido vía powerlog y los precios públicos de cada modelo. El saldo en sí solo vive en la consola del proveedor.",
+        "usageEmpty": "Aún no hay consumo de IA — aparecerá aquí tras tu primera consulta.",
+        "usageError": "No pudimos cargar tu consumo.",
+        "usageProvider": "Proveedor",
+        "usageModel": "Modelo",
+        "usagePrice": "Precio · $/1M (in/out)",
+        "usageTokens": "Tokens (in/out)",
+        "usageRequests": "Consultas",
+        "usageCost": "Coste",
+        "usageTotal": "Total"
     },
     "aiPlan": {
         "open": "Programar con IA",

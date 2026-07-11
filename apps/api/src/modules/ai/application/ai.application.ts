@@ -11,9 +11,11 @@ import { SetAiProviderDefaultHandler } from './commands/set-ai-provider-default/
 import { SetAiProviderEnabledHandler } from './commands/set-ai-provider-enabled/set-ai-provider-enabled.handler'
 import { SetAiProviderKeyHandler } from './commands/set-ai-provider-key/set-ai-provider-key.handler'
 import { UpdateAiProviderModelHandler } from './commands/update-ai-provider-model/update-ai-provider-model.handler'
+import { RecordAiUsageHandler } from './event-handlers/record-ai-usage.handler'
 import { RemoveAiConfigsOnUserDeleted } from './event-handlers/remove-ai-configs-on-user-deleted.handler'
 import { GetMesocycleDraftHandler } from './queries/get-mesocycle-draft/get-mesocycle-draft.handler'
 import { GetMyAiSettingsHandler } from './queries/get-my-ai-settings/get-my-ai-settings.handler'
+import { GetMyAiUsageHandler } from './queries/get-my-ai-usage/get-my-ai-usage.handler'
 import { GetSessionPlanDraftHandler } from './queries/get-session-plan-draft/get-session-plan-draft.handler'
 import { ListAiModelsHandler } from './queries/list-ai-models/list-ai-models.handler'
 import { AiConversation } from './services/ai-conversation.service'
@@ -41,13 +43,14 @@ export const AI_COMMAND_HANDLERS = [
 /** CQRS query handlers for the AI module. */
 export const AI_QUERY_HANDLERS = [
     GetMyAiSettingsHandler,
+    GetMyAiUsageHandler,
     ListAiModelsHandler,
     GetSessionPlanDraftHandler,
     GetMesocycleDraftHandler,
 ]
 
-/** Integration-event handlers (react to events published by other modules). */
-export const AI_EVENT_HANDLERS = [RemoveAiConfigsOnUserDeleted]
+/** Event handlers: user-deletion erasure + the async usage meter. */
+export const AI_EVENT_HANDLERS = [RemoveAiConfigsOnUserDeleted, RecordAiUsageHandler]
 
 /** Application-layer services (not CQRS handlers). */
 export const AI_APPLICATION_SERVICES = [AiProviderResolver, AiConversation, SetPrescriber, MesocycleDesigner]

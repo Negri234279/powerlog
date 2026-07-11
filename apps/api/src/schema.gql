@@ -230,6 +230,41 @@ type AiProviderConfig {
   updatedAt: DateTime!
 }
 
+type AiUsageRow {
+  """Current USD per 1M input tokens; null → price unknown."""
+  inputPricePerMTok: Float
+  inputTokens: Float!
+  lastUsedAt: DateTime!
+  model: String!
+
+  """Current USD per 1M output tokens; null → price unknown."""
+  outputPricePerMTok: Float
+  outputTokens: Float!
+
+  """"openai" or "anthropic"."""
+  provider: String!
+  requests: Int!
+
+  """Total cost so far; null → the model has no known price."""
+  totalCost: Float
+}
+
+type AiUsageSummary {
+  """ISO 4217 currency of every cost figure (USD)."""
+  currency: String!
+
+  """One line per (provider, model), most expensive first."""
+  rows: [AiUsageRow!]!
+  totals: AiUsageTotals!
+}
+
+type AiUsageTotals {
+  inputTokens: Float!
+  outputTokens: Float!
+  requests: Int!
+  totalCost: Float
+}
+
 input ChangePasswordInput {
   currentPassword: String
   newPassword: String!
@@ -920,6 +955,11 @@ type Query {
 
   """Providers the authenticated user has configured."""
   myAiSettings: [AiProviderConfig!]!
+
+  """
+  The caller's AI spend per model plus totals, estimated from a static price table.
+  """
+  myAiUsage: AiUsageSummary!
 
   """Athletes linked to the caller."""
   myAthletes: [CoachUser!]!

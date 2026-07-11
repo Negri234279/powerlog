@@ -729,7 +729,19 @@
         },
         "statusDefault": "Default",
         "makeDefault": "Use by default",
-        "defaultHint": "The provider powerlog uses when both are connected."
+        "defaultHint": "The provider powerlog uses when both are connected.",
+        "viewBilling": "Balance & billing",
+        "usageTitle": "AI spend",
+        "usageIntro": "Estimated from the tokens you spent through powerlog and each model’s public prices. The remaining balance lives only in the provider console.",
+        "usageEmpty": "No AI usage yet — it shows up here after your first request.",
+        "usageError": "We could not load your usage.",
+        "usageProvider": "Provider",
+        "usageModel": "Model",
+        "usagePrice": "Price · $/1M (in/out)",
+        "usageTokens": "Tokens (in/out)",
+        "usageRequests": "Requests",
+        "usageCost": "Cost",
+        "usageTotal": "Total"
     },
     "aiPlan": {
         "open": "Program with AI",

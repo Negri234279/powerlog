@@ -34,6 +34,16 @@ const KEY_CONSOLE_URL: Record<AiProvider, string> = {
 }
 
 /**
+ * Where each provider shows the account balance and billing. Neither exposes the
+ * remaining credit over the API, so the console is the only place to see it — the
+ * spend table below is powerlog's own estimate from the tokens it metered.
+ */
+const BILLING_CONSOLE_URL: Record<AiProvider, string> = {
+    openai: 'https://platform.openai.com/settings/organization/billing',
+    anthropic: 'https://platform.claude.com/settings/billing',
+}
+
+/**
  * One provider's BYOK configuration. Two shapes in one card: a "connect" form
  * when nothing is stored, and the live settings once a key is in place.
  *
@@ -130,17 +140,30 @@ export function AiProviderCard({ provider, config }: { provider: AiProvider; con
                         <h2 className="mt-3 font-display text-h3 text-text">{t(`providers.${provider}.name`)}</h2>
                         <p className="mt-3 max-w-lg text-body text-text-dim">{t(`providers.${provider}.body`)}</p>
 
-                        {/* Shown whether or not a key is stored: rotating one sends you here too. */}
-                        <TrackedLink
-                            analyticsId={`ai-${provider}-console`}
-                            href={KEY_CONSOLE_URL[provider]}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-3 inline-flex items-center gap-1 text-sm text-text underline-offset-4 transition-colors duration-300 hover:underline"
-                        >
-                            {t(`providers.${provider}.getKey`)}
-                            <ArrowUpRight className="size-3.5" />
-                        </TrackedLink>
+                        {/* Console links: minting a key, and the balance/billing the API can't return. */}
+                        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1">
+                            <TrackedLink
+                                analyticsId={`ai-${provider}-console`}
+                                href={KEY_CONSOLE_URL[provider]}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-sm text-text underline-offset-4 transition-colors duration-300 hover:underline"
+                            >
+                                {t(`providers.${provider}.getKey`)}
+                                <ArrowUpRight className="size-3.5" />
+                            </TrackedLink>
+
+                            <TrackedLink
+                                analyticsId={`ai-${provider}-billing`}
+                                href={BILLING_CONSOLE_URL[provider]}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-sm text-text-dim underline-offset-4 transition-colors duration-300 hover:text-text hover:underline"
+                            >
+                                {t('viewBilling')}
+                                <ArrowUpRight className="size-3.5" />
+                            </TrackedLink>
+                        </div>
                     </div>
 
                     {config ? (

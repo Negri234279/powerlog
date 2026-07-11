@@ -4,7 +4,9 @@ import {
     InMemoryAiMesocycleDraftRepository,
     InMemoryAiPlanDraftRepository,
     InMemoryAiProviderConfigRepository,
+    InMemoryAiUsageRepository,
 } from '../../../../../tests/doubles/ai'
+import type { AiUsageEntry } from '../../domain/repositories/ai-usage.repository'
 import { AiMesocycleDraftMother, AiPlanDraftMother, AiProviderConfigMother } from '../../../../../tests/mothers/ai'
 import { UserDeletedIntegrationEvent } from '../../../../shared/integration-events/user-deleted.integration-event'
 import { RemoveAiConfigsOnUserDeleted } from './remove-ai-configs-on-user-deleted.handler'
@@ -12,17 +14,34 @@ import { RemoveAiConfigsOnUserDeleted } from './remove-ai-configs-on-user-delete
 const USER_ID = '11111111-1111-4111-8111-111111111111'
 const OTHER_USER_ID = '22222222-2222-4222-8222-222222222222'
 
+const usageEntry = (userId: string): AiUsageEntry => ({
+    userId,
+    provider: 'openai',
+    model: 'gpt-5',
+    inputTokens: 100,
+    outputTokens: 50,
+    inputPricePerMTok: null,
+    outputPricePerMTok: null,
+    inputCost: null,
+    outputCost: null,
+    totalCost: null,
+    currency: 'USD',
+    createdAt: new Date(),
+})
+
 describe('RemoveAiConfigsOnUserDeleted', () => {
     let configs: InMemoryAiProviderConfigRepository
     let drafts: InMemoryAiPlanDraftRepository
     let mesocycleDrafts: InMemoryAiMesocycleDraftRepository
+    let usage: InMemoryAiUsageRepository
 
-    const buildHandler = () => new RemoveAiConfigsOnUserDeleted(configs, drafts, mesocycleDrafts)
+    const buildHandler = () => new RemoveAiConfigsOnUserDeleted(configs, drafts, mesocycleDrafts, usage)
 
     beforeEach(() => {
         configs = new InMemoryAiProviderConfigRepository()
         drafts = new InMemoryAiPlanDraftRepository()
         mesocycleDrafts = new InMemoryAiMesocycleDraftRepository()
+        usage = new InMemoryAiUsageRepository()
     })
 
     it('erases every provider key the deleted user had stored', async () => {
@@ -52,16 +71,26 @@ describe('RemoveAiConfigsOnUserDeleted', () => {
         expect(mesocycleDrafts.all()).toHaveLength(0)
     })
 
+    it('erases their usage meter, which records their activity over time', async () => {
+        usage.seed(usageEntry(USER_ID), usageEntry(USER_ID))
+
+        await buildHandler().handle(new UserDeletedIntegrationEvent(USER_ID))
+
+        expect(usage.all()).toHaveLength(0)
+    })
+
     it('leaves other users’ data alone', async () => {
         configs.seed(AiProviderConfigMother.openai({ userId: OTHER_USER_ID }))
         drafts.seed(AiPlanDraftMother.open({ userId: OTHER_USER_ID }))
         mesocycleDrafts.seed(AiMesocycleDraftMother.open({ userId: OTHER_USER_ID }))
+        usage.seed(usageEntry(OTHER_USER_ID))
 
         await buildHandler().handle(new UserDeletedIntegrationEvent(USER_ID))
 
         expect(configs.all()).toHaveLength(1)
         expect(drafts.all()).toHaveLength(1)
         expect(mesocycleDrafts.all()).toHaveLength(1)
+        expect(usage.all()).toHaveLength(1)
     })
 
     it('is idempotent on re-delivery', async () => {

@@ -6,7 +6,7 @@ import {
     StubLlmProviderClient,
     stubRegistry,
 } from '../../../../../tests/doubles/ai'
-import { silentLogger } from '../../../../../tests/doubles/shared'
+import { RecordingEventBus, silentLogger } from '../../../../../tests/doubles/shared'
 import { AiProviderConfigMother, SessionPlanContextMother } from '../../../../../tests/mothers/ai'
 import {
     AiModelNotSelectedError,
@@ -41,7 +41,12 @@ describe('SetPrescriber', () => {
     const buildPrescriber = () =>
         new SetPrescriber(
             new AiProviderResolver(configs),
-            new AiConversation(new FakeSecretCipher(), stubRegistry(openai), silentLogger()),
+            new AiConversation(
+                new FakeSecretCipher(),
+                stubRegistry(openai),
+                silentLogger(),
+                new RecordingEventBus().asEventBus(),
+            ),
         )
 
     const configuredDefault = () =>

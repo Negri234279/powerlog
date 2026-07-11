@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 
 import { AiProviderCard } from '@/components/profile/ai-provider-card'
+import { AiUsageTable } from '@/components/profile/ai-usage-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AI_PROVIDERS, useMyAiSettings } from '@/lib/graphql/hooks/use-ai-settings'
 
@@ -37,6 +38,10 @@ export default function AiSettingsPage() {
                     ))}
                 </div>
             )}
+
+            <div className="mt-12">
+                <AiUsageTable />
+            </div>
         </div>
     )
 }

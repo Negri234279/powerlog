@@ -28,6 +28,32 @@ export const AiModelsDocument = graphql(`
     }
 `)
 
+/** The user's own AI spend, metered per completion and rolled up per model. */
+export const MyAiUsageDocument = graphql(`
+    query MyAiUsage {
+        myAiUsage {
+            currency
+            rows {
+                provider
+                model
+                inputTokens
+                outputTokens
+                inputPricePerMTok
+                outputPricePerMTok
+                totalCost
+                requests
+                lastUsedAt
+            }
+            totals {
+                inputTokens
+                outputTokens
+                totalCost
+                requests
+            }
+        }
+    }
+`)
+
 export const SetAiProviderKeyDocument = graphql(`
     mutation SetAiProviderKey($input: SetAiProviderKeyInput!) {
         setAiProviderKey(input: $input) {

@@ -14,14 +14,17 @@ import { SetAiProviderEnabledCommand } from '../../application/commands/set-ai-p
 import { SetAiProviderKeyCommand } from '../../application/commands/set-ai-provider-key/set-ai-provider-key.command'
 import { UpdateAiProviderModelCommand } from '../../application/commands/update-ai-provider-model/update-ai-provider-model.command'
 import { GetMyAiSettingsQuery } from '../../application/queries/get-my-ai-settings/get-my-ai-settings.query'
+import { GetMyAiUsageQuery } from '../../application/queries/get-my-ai-usage/get-my-ai-usage.query'
 import { ListAiModelsQuery } from '../../application/queries/list-ai-models/list-ai-models.query'
 import type { AiProviderConfigView } from '../../application/views/ai-provider-config.view'
+import type { AiUsageSummaryView } from '../../application/views/ai-usage.view'
 import { aiProviderSchema } from '../inputs/ai-provider.schema'
 import { SetAiProviderEnabledInput, setAiProviderEnabledSchema } from '../inputs/set-ai-provider-enabled.input'
 import { SetAiProviderKeyInput, setAiProviderKeySchema } from '../inputs/set-ai-provider-key.input'
 import { UpdateAiProviderModelInput, updateAiProviderModelSchema } from '../inputs/update-ai-provider-model.input'
 import { AiModelType } from '../types/ai-model.type'
 import { AiProviderConfigType } from '../types/ai-provider-config.type'
+import { AiUsageSummaryType } from '../types/ai-usage.type'
 
 /**
  * BYOK settings. Everything here is scoped to the authenticated user, and the
@@ -45,6 +48,15 @@ export class AiSettingsResolver {
         const views = await this.queryBus.execute<GetMyAiSettingsQuery, AiProviderConfigView[]>(query)
 
         return views.map(toType)
+    }
+
+    @Query(() => AiUsageSummaryType, {
+        description: "The caller's AI spend per model plus totals, estimated from a static price table.",
+    })
+    async myAiUsage(@CurrentUser() user: AuthUser): Promise<AiUsageSummaryView> {
+        const query = new GetMyAiUsageQuery(user.userId)
+
+        return this.queryBus.execute<GetMyAiUsageQuery, AiUsageSummaryView>(query)
     }
 
     @Query(() => [AiModelType], { description: 'Models the stored key may call, fetched live from the provider.' })

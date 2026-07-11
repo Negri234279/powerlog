@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common'
+import { EventBus } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
 import type { LlmMessage } from '../../../../ai/llm-provider.port'
 import { LlmProviderRegistry } from '../../../../ai/llm-provider.registry'
 import type { AiProviderConfigAggregate } from '../../domain/entities/ai-provider-config.entity'
+import { AiUsageRecordedEvent } from '../events/ai-usage-recorded.event'
 import { SecretCipher } from '../ports/secret-cipher.port'
 import { ModelAnswerRejection } from './model-answer'
 
@@ -46,6 +48,7 @@ export class AiConversation {
         private readonly cipher: SecretCipher,
         private readonly providers: LlmProviderRegistry,
         private readonly logger: PinoLogger,
+        private readonly eventBus: EventBus,
     ) {
         this.logger.setContext(AiConversation.name)
     }
@@ -73,6 +76,20 @@ export class AiConversation {
                 messages,
                 maxTokens: request.maxTokens ?? MAX_TOKENS,
             })
+
+            // Fire-and-forget: the user's key was billed for this call (retries
+            // included) whether or not the answer parses. Recording happens off
+            // the request path — `publish` does not await the handler.
+            this.eventBus.publish(
+                new AiUsageRecordedEvent(
+                    config.userId,
+                    config.provider.value,
+                    completion.model,
+                    completion.usage.inputTokens,
+                    completion.usage.outputTokens,
+                    new Date(),
+                ),
+            )
 
             try {
                 return parse(completion.text)

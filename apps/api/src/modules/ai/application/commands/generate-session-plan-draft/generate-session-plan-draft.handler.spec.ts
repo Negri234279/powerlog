@@ -10,7 +10,7 @@ import {
     StubSessionPlanContextReader,
     stubRegistry,
 } from '../../../../../../tests/doubles/ai'
-import { silentLogger } from '../../../../../../tests/doubles/shared'
+import { RecordingEventBus, silentLogger } from '../../../../../../tests/doubles/shared'
 import { AiPlanDraftMother, AiProviderConfigMother, SessionPlanContextMother } from '../../../../../../tests/mothers/ai'
 import type { SessionPlanContext } from '../../../../../shared/contracts/session-plan-context'
 import { NoDefaultAiProviderError, SessionNotProgrammableError } from '../../../domain/errors/ai-plan.errors'
@@ -51,7 +51,12 @@ describe('GenerateSessionPlanDraftHandler', () => {
             reader,
             new SetPrescriber(
                 new AiProviderResolver(configs),
-                new AiConversation(new FakeSecretCipher(), stubRegistry(openai), silentLogger()),
+                new AiConversation(
+                    new FakeSecretCipher(),
+                    stubRegistry(openai),
+                    silentLogger(),
+                    new RecordingEventBus().asEventBus(),
+                ),
             ),
             new FakeClock(),
             new FakeIdGenerator('draft'),

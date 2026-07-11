@@ -15,15 +15,19 @@ import {
 } from './application/ai.application'
 import { Clock } from './application/ports/clock.port'
 import { IdGenerator } from './application/ports/id-generator.port'
+import { ModelPricing } from './application/ports/model-pricing.port'
 import { SecretCipher } from './application/ports/secret-cipher.port'
 import { AiMesocycleDraftRepository } from './domain/repositories/ai-mesocycle-draft.repository'
 import { AiPlanDraftRepository } from './domain/repositories/ai-plan-draft.repository'
 import { AiProviderConfigRepository } from './domain/repositories/ai-provider-config.repository'
+import { AiUsageRepository } from './domain/repositories/ai-usage.repository'
 import { AesGcmSecretCipher } from './infrastructure/crypto/aes-gcm-secret-cipher'
 import { UuidGenerator } from './infrastructure/id/uuid-generator'
 import { DrizzleAiMesocycleDraftRepository } from './infrastructure/persistence/repositories/drizzle-ai-mesocycle-draft.repository'
 import { DrizzleAiPlanDraftRepository } from './infrastructure/persistence/repositories/drizzle-ai-plan-draft.repository'
 import { DrizzleAiProviderConfigRepository } from './infrastructure/persistence/repositories/drizzle-ai-provider-config.repository'
+import { DrizzleAiUsageRepository } from './infrastructure/persistence/repositories/drizzle-ai-usage.repository'
+import { StaticModelPricing } from './infrastructure/pricing/static-model-pricing'
 import { SystemClock } from './infrastructure/time/system-clock'
 import { AI_RESOLVERS } from './presentation/ai.presentation'
 
@@ -35,6 +39,8 @@ const ADAPTERS: Provider[] = [
     { provide: AiProviderConfigRepository, useClass: DrizzleAiProviderConfigRepository },
     { provide: AiPlanDraftRepository, useClass: DrizzleAiPlanDraftRepository },
     { provide: AiMesocycleDraftRepository, useClass: DrizzleAiMesocycleDraftRepository },
+    { provide: AiUsageRepository, useClass: DrizzleAiUsageRepository },
+    { provide: ModelPricing, useClass: StaticModelPricing },
     // Cross-module contracts, bridged over the CQRS buses and handled by workouts.
     { provide: SessionPlanContextReader, useClass: QueryBusSessionPlanContextReader },
     { provide: SessionPlanApplier, useClass: CommandBusSessionPlanApplier },

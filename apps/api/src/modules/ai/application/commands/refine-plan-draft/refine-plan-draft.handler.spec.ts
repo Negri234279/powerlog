@@ -10,7 +10,7 @@ import {
     StubSessionPlanContextReader,
     stubRegistry,
 } from '../../../../../../tests/doubles/ai'
-import { silentLogger } from '../../../../../../tests/doubles/shared'
+import { RecordingEventBus, silentLogger } from '../../../../../../tests/doubles/shared'
 import { AiPlanDraftMother, AiProviderConfigMother, SessionPlanContextMother } from '../../../../../../tests/mothers/ai'
 import { AiPlanDraftNotFoundError, AiPlanDraftNotOpenError } from '../../../domain/errors/ai-plan.errors'
 import { AiConversation } from '../../services/ai-conversation.service'
@@ -54,7 +54,12 @@ describe('RefinePlanDraftHandler', () => {
             reader,
             new SetPrescriber(
                 new AiProviderResolver(configs),
-                new AiConversation(new FakeSecretCipher(), stubRegistry(openai), silentLogger()),
+                new AiConversation(
+                    new FakeSecretCipher(),
+                    stubRegistry(openai),
+                    silentLogger(),
+                    new RecordingEventBus().asEventBus(),
+                ),
             ),
             new FakeClock(),
             new FakeIdGenerator('msg'),

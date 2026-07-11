@@ -33,3 +33,4 @@ export * from '../modules/coaching/infrastructure/persistence/schema/coach-athle
 export * from '../modules/ai/infrastructure/persistence/schema/ai-provider-configs.schema'
 export * from '../modules/ai/infrastructure/persistence/schema/ai-plan-drafts.schema'
 export * from '../modules/ai/infrastructure/persistence/schema/ai-mesocycle-drafts.schema'
+export * from '../modules/ai/infrastructure/persistence/schema/ai-usage.schema'
