@@ -10,6 +10,7 @@ import { cn } from '@/lib/cn'
 import { hardLogout } from '@/lib/graphql/client'
 import { ArrowUpRight, Close, Mark, Menu } from '@/components/ui/icons'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
+import { NotificationBell } from '@/components/app/notification-bell'
 import { useLogout, useMe } from '@/lib/graphql/hooks/use-auth'
 
 const NAV = [
@@ -121,6 +122,8 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3">
+                        <NotificationBell />
+
                         {/* User cluster → profile. Handle on desktop; avatar always. */}
                         <TrackedLink
                             analyticsId="shell-profile"

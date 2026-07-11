@@ -13,6 +13,16 @@
         "signedInAs": "Sesión iniciada como {user}",
         "language": "Idioma"
     },
+    "notifications": {
+        "title": "Notificaciones",
+        "markAllRead": "Marcar todo leído",
+        "empty": "No tienes notificaciones",
+        "loading": "Cargando…",
+        "items": {
+            "coachInvitation": "{coach} quiere ser tu coach",
+            "generic": "Tienes una notificación nueva"
+        }
+    },
     "auth": {
         "login": {
             "title": "Bienvenido de nuevo",

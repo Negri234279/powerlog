@@ -33,6 +33,13 @@ export const Bolt = (p: SVGProps<SVGSVGElement>) => (
     </Icon>
 )
 
+export const Bell = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <path d="M6 9a6 6 0 0 1 12 0c0 4.5 1.8 5.8 2.2 6.2a.4.4 0 0 1-.3.7H4.1a.4.4 0 0 1-.3-.7C4.2 14.8 6 13.5 6 9" />
+        <path d="M10 20a2 2 0 0 0 4 0" />
+    </Icon>
+)
+
 export const ChartLine = (p: SVGProps<SVGSVGElement>) => (
     <Icon {...p}>
         <path d="M4 4v16h16" />

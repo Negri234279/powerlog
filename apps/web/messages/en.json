@@ -13,6 +13,16 @@
         "signedInAs": "Signed in as {user}",
         "language": "Language"
     },
+    "notifications": {
+        "title": "Notifications",
+        "markAllRead": "Mark all read",
+        "empty": "You're all caught up",
+        "loading": "Loading…",
+        "items": {
+            "coachInvitation": "{coach} wants to be your coach",
+            "generic": "You have a new notification"
+        }
+    },
     "auth": {
         "login": {
             "title": "Welcome back",

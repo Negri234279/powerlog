@@ -65,6 +65,10 @@ type Documents = {
     "\n    mutation DeleteMesocycle($id: ID!) {\n        deleteMesocycle(id: $id)\n    }\n": typeof types.DeleteMesocycleDocument,
     "\n    mutation SetMesocycleStatus($id: ID!, $status: String!) {\n        setMesocycleStatus(id: $id, status: $status) {\n            ...MesocycleFields\n        }\n    }\n": typeof types.SetMesocycleStatusDocument,
     "\n    mutation GenerateMesocycleWeek($input: GenerateMesocycleWeekInput!) {\n        generateMesocycleWeek(input: $input) {\n            ...WorkoutSessionFields\n        }\n    }\n": typeof types.GenerateMesocycleWeekDocument,
+    "\n    query MyNotifications($limit: Int, $cursor: String) {\n        myNotifications(limit: $limit, cursor: $cursor) {\n            items {\n                id\n                type\n                data\n                readAt\n                createdAt\n            }\n            nextCursor\n            hasNextPage\n        }\n    }\n": typeof types.MyNotificationsDocument,
+    "\n    query UnreadNotificationsCount {\n        unreadNotificationsCount\n    }\n": typeof types.UnreadNotificationsCountDocument,
+    "\n    mutation MarkNotificationRead($id: ID!) {\n        markNotificationRead(id: $id)\n    }\n": typeof types.MarkNotificationReadDocument,
+    "\n    mutation MarkAllNotificationsRead {\n        markAllNotificationsRead\n    }\n": typeof types.MarkAllNotificationsReadDocument,
     "\n    query Ping {\n        ping\n    }\n": typeof types.PingDocument,
     "\n    query MyProfile {\n        myProfile {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n            createdAt\n            updatedAt\n        }\n    }\n": typeof types.MyProfileDocument,
     "\n    mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n        }\n    }\n": typeof types.UpdateProfileDocument,
@@ -147,6 +151,10 @@ const documents: Documents = {
     "\n    mutation DeleteMesocycle($id: ID!) {\n        deleteMesocycle(id: $id)\n    }\n": types.DeleteMesocycleDocument,
     "\n    mutation SetMesocycleStatus($id: ID!, $status: String!) {\n        setMesocycleStatus(id: $id, status: $status) {\n            ...MesocycleFields\n        }\n    }\n": types.SetMesocycleStatusDocument,
     "\n    mutation GenerateMesocycleWeek($input: GenerateMesocycleWeekInput!) {\n        generateMesocycleWeek(input: $input) {\n            ...WorkoutSessionFields\n        }\n    }\n": types.GenerateMesocycleWeekDocument,
+    "\n    query MyNotifications($limit: Int, $cursor: String) {\n        myNotifications(limit: $limit, cursor: $cursor) {\n            items {\n                id\n                type\n                data\n                readAt\n                createdAt\n            }\n            nextCursor\n            hasNextPage\n        }\n    }\n": types.MyNotificationsDocument,
+    "\n    query UnreadNotificationsCount {\n        unreadNotificationsCount\n    }\n": types.UnreadNotificationsCountDocument,
+    "\n    mutation MarkNotificationRead($id: ID!) {\n        markNotificationRead(id: $id)\n    }\n": types.MarkNotificationReadDocument,
+    "\n    mutation MarkAllNotificationsRead {\n        markAllNotificationsRead\n    }\n": types.MarkAllNotificationsReadDocument,
     "\n    query Ping {\n        ping\n    }\n": types.PingDocument,
     "\n    query MyProfile {\n        myProfile {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n            createdAt\n            updatedAt\n        }\n    }\n": types.MyProfileDocument,
     "\n    mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n        }\n    }\n": types.UpdateProfileDocument,
@@ -396,6 +404,22 @@ export function graphql(source: "\n    mutation SetMesocycleStatus($id: ID!, $st
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    mutation GenerateMesocycleWeek($input: GenerateMesocycleWeekInput!) {\n        generateMesocycleWeek(input: $input) {\n            ...WorkoutSessionFields\n        }\n    }\n"): (typeof documents)["\n    mutation GenerateMesocycleWeek($input: GenerateMesocycleWeekInput!) {\n        generateMesocycleWeek(input: $input) {\n            ...WorkoutSessionFields\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query MyNotifications($limit: Int, $cursor: String) {\n        myNotifications(limit: $limit, cursor: $cursor) {\n            items {\n                id\n                type\n                data\n                readAt\n                createdAt\n            }\n            nextCursor\n            hasNextPage\n        }\n    }\n"): (typeof documents)["\n    query MyNotifications($limit: Int, $cursor: String) {\n        myNotifications(limit: $limit, cursor: $cursor) {\n            items {\n                id\n                type\n                data\n                readAt\n                createdAt\n            }\n            nextCursor\n            hasNextPage\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query UnreadNotificationsCount {\n        unreadNotificationsCount\n    }\n"): (typeof documents)["\n    query UnreadNotificationsCount {\n        unreadNotificationsCount\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation MarkNotificationRead($id: ID!) {\n        markNotificationRead(id: $id)\n    }\n"): (typeof documents)["\n    mutation MarkNotificationRead($id: ID!) {\n        markNotificationRead(id: $id)\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation MarkAllNotificationsRead {\n        markAllNotificationsRead\n    }\n"): (typeof documents)["\n    mutation MarkAllNotificationsRead {\n        markAllNotificationsRead\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
