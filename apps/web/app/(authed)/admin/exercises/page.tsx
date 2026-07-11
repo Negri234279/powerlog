@@ -236,10 +236,7 @@ export default function AdminExercisesPage() {
                                     </div>
                                     <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                                         <Meta label={t('colCategory')} value={tt(`category.${exercise.category}`)} />
-                                        <Meta
-                                            label={t('colEquipment')}
-                                            value={tt(`equipment.${exercise.equipment}`)}
-                                        />
+                                        <Meta label={t('colEquipment')} value={tt(`equipment.${exercise.equipment}`)} />
                                         <Meta label={t('colMuscle')} value={tt(`muscle.${exercise.primaryMuscle}`)} />
                                     </dl>
                                 </div>

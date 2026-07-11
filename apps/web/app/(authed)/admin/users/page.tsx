@@ -26,6 +26,102 @@ import { TextsReveal } from '@/components/ui/texts-reveal'
 import { Tooltip } from '@/components/ui/tooltip'
 import { TrackedButton } from '@/components/ui/tracked'
 
+/** User identity — username with the email + verification indicator beneath. */
+function UserIdentity({ user }: { user: AdminUser }) {
+    const t = useTranslations('admin')
+
+    return (
+        <div className="min-w-0">
+            <p className="truncate text-text">{user.username ? `@${user.username}` : '—'}</p>
+            <div className="flex min-w-0 items-center gap-1.5">
+                <Tooltip label={user.emailVerified ? t('emailVerified') : t('emailNotVerified')}>
+                    {user.emailVerified ? (
+                        <Check className="size-3.5 shrink-0 text-pr" />
+                    ) : (
+                        <span className="block size-1.5 shrink-0 rounded-full bg-amber" />
+                    )}
+                </Tooltip>
+                <p
+                    className={cn(
+                        'truncate font-mono text-xs',
+                        user.emailVerified ? 'text-text-dim' : 'text-text-faint',
+                    )}
+                >
+                    {user.email}
+                </p>
+            </div>
+        </div>
+    )
+}
+
+/** Athlete/coach role selector. */
+function RoleControl({ user, onChange }: { user: AdminUser; onChange: (role: string) => void }) {
+    const tc = useTranslations('common.role')
+
+    return (
+        <Select
+            value={user.role}
+            disabled={user.status === 'deleted'}
+            onChange={(e) => onChange(e.target.value)}
+            className="py-1.5 text-xs"
+        >
+            <option value="athlete">{tc('athlete')}</option>
+            <option value="coach">{tc('coach')}</option>
+        </Select>
+    )
+}
+
+/** Active/disabled status pill (or a plain label for deleted accounts). */
+function StatusControl({ user, isSelf, onToggle }: { user: AdminUser; isSelf: boolean; onToggle: () => void }) {
+    const t = useTranslations('admin')
+
+    if (user.status === 'deleted') return <span className="text-text-faint">{t('statusDeleted')}</span>
+
+    const label = user.status === 'active' ? t('statusActive') : t('statusDisabled')
+    const button = (
+        <TrackedButton
+            analyticsId="admin-user-status-toggle"
+            type="button"
+            disabled={isSelf}
+            onClick={onToggle}
+            className={cn(
+                'rounded-full px-2.5 py-0.5 text-xs ring-1 transition-colors duration-300 disabled:opacity-40',
+                user.status === 'active'
+                    ? 'bg-pr/10 text-pr ring-pr/30 hover:bg-pr/20'
+                    : 'bg-amber/10 text-amber ring-amber/30 hover:bg-amber/20',
+            )}
+        >
+            {label}
+        </TrackedButton>
+    )
+
+    return isSelf ? <Tooltip label={t('cantDisableSelf')}>{button}</Tooltip> : button
+}
+
+/** Grant/revoke admin toggle. */
+function AdminControl({ user, isSelf, onToggle }: { user: AdminUser; isSelf: boolean; onToggle: () => void }) {
+    const t = useTranslations('admin')
+
+    const button = (
+        <TrackedButton
+            analyticsId="admin-user-admin-toggle"
+            type="button"
+            disabled={isSelf && user.isAdmin}
+            onClick={onToggle}
+            className={cn(
+                'min-w-[7rem] rounded-full px-3 py-1 text-center text-xs ring-1 transition-colors duration-300 disabled:opacity-40',
+                user.isAdmin
+                    ? 'bg-ember/10 text-ember ring-ember/30 hover:bg-ember/20'
+                    : 'text-text-dim ring-hairline hover:bg-white/[0.04] hover:text-text',
+            )}
+        >
+            {user.isAdmin ? t('admin') : t('makeAdmin')}
+        </TrackedButton>
+    )
+
+    return isSelf && user.isAdmin ? <Tooltip label={t('cantRevokeSelf')}>{button}</Tooltip> : button
+}
+
 export default function AdminUsersPage() {
     const t = useTranslations('admin')
     const tc = useTranslations('common.role')
@@ -38,8 +134,6 @@ export default function AdminUsersPage() {
         { value: 'disabled', label: t('statusDisabled') },
         { value: 'deleted', label: t('statusDeleted') },
     ]
-    const statusLabel = (s: string) =>
-        s === 'active' ? t('statusActive') : s === 'disabled' ? t('statusDisabled') : t('statusDeleted')
     const whoOf = (u: AdminUser) => (u.username ? `@${u.username}` : u.email)
     const errorMessage = useErrorMessage()
     const { data: me } = useMe()
@@ -165,165 +259,164 @@ export default function AdminUsersPage() {
 
             <FormError error={error} className="mt-4" />
 
-            {/* Table — a real <table> keeps header/body columns + vertical padding aligned. */}
-            <div className="mt-6 overflow-x-auto rounded-2xl ring-1 ring-hairline">
-                <table className="w-full min-w-[44rem] table-fixed border-collapse text-sm">
-                    <thead>
-                        <tr className="bg-white/[0.02] text-left font-mono text-eyebrow uppercase text-text-faint">
-                            <th className="px-5 py-3 font-normal">{t('colUser')}</th>
-                            <th className="w-40 px-5 py-3 font-normal">{t('colRole')}</th>
-                            <th className="w-36 px-5 py-3 font-normal">{t('colStatus')}</th>
-                            <th className="w-44 px-5 py-3 text-right font-normal">{t('colAdmin')}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {isLoading ? (
-                            <tr>
-                                <td colSpan={4} className="p-3">
-                                    <div className="space-y-2">
-                                        {Array.from({ length: 6 }).map((_, i) => (
-                                            <Skeleton key={i} className="h-12" />
-                                        ))}
+            {/* Table on md+, stacked cards on phones. */}
+            <div className="mt-6 overflow-hidden rounded-2xl ring-1 ring-hairline">
+                {/* Phone: one card per user. */}
+                <div className="md:hidden">
+                    {isLoading ? (
+                        <div className="space-y-2 p-3">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <Skeleton key={i} className="h-24" />
+                            ))}
+                        </div>
+                    ) : rows.length === 0 ? (
+                        <p className="px-5 py-8 text-sm text-text-dim">{t('noUsersMatch')}</p>
+                    ) : (
+                        <div className="divide-y divide-hairline">
+                            {rows.map((user) => {
+                                const isSelf = user.id === me?.id
+                                return (
+                                    <div key={user.id} className="p-4">
+                                        <UserIdentity user={user} />
+                                        <div className="mt-4 grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="font-mono text-eyebrow uppercase text-text-faint">
+                                                    {t('colRole')}
+                                                </p>
+                                                <div className="mt-1.5">
+                                                    <RoleControl
+                                                        user={user}
+                                                        onChange={(role) => changeRole(user, role)}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="font-mono text-eyebrow uppercase text-text-faint">
+                                                    {t('colStatus')}
+                                                </p>
+                                                <div className="mt-1.5">
+                                                    <StatusControl
+                                                        user={user}
+                                                        isSelf={isSelf}
+                                                        onToggle={() =>
+                                                            setStatusTarget({
+                                                                user,
+                                                                disable: user.status === 'active',
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="col-span-2">
+                                                <p className="font-mono text-eyebrow uppercase text-text-faint">
+                                                    {t('colAdmin')}
+                                                </p>
+                                                <div className="mt-1.5">
+                                                    <AdminControl
+                                                        user={user}
+                                                        isSelf={isSelf}
+                                                        onToggle={() => setAdminTarget({ user, next: !user.isAdmin })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </td>
+                                )
+                            })}
+
+                            {isFetchingNextPage ? (
+                                <div className="space-y-2 p-3">
+                                    {Array.from({ length: 3 }).map((_, i) => (
+                                        <Skeleton key={i} className="h-24" />
+                                    ))}
+                                </div>
+                            ) : null}
+                        </div>
+                    )}
+                </div>
+
+                {/* md and up: a real table keeps header/body columns + vertical padding aligned. */}
+                <div className="hidden overflow-x-auto md:block">
+                    <table className="w-full min-w-[44rem] table-fixed border-collapse text-sm">
+                        <thead>
+                            <tr className="bg-white/[0.02] text-left font-mono text-eyebrow uppercase text-text-faint">
+                                <th className="px-5 py-3 font-normal">{t('colUser')}</th>
+                                <th className="w-40 px-5 py-3 font-normal">{t('colRole')}</th>
+                                <th className="w-36 px-5 py-3 font-normal">{t('colStatus')}</th>
+                                <th className="w-44 px-5 py-3 text-right font-normal">{t('colAdmin')}</th>
                             </tr>
-                        ) : rows.length === 0 ? (
-                            <tr>
-                                <td colSpan={4} className="px-5 py-8 text-text-dim">
-                                    {t('noUsersMatch')}
-                                </td>
-                            </tr>
-                        ) : (
-                            <>
-                                {rows.map((user) => {
-                                    const isSelf = user.id === me?.id
-                                    return (
-                                        <tr key={user.id} className="border-t border-hairline">
-                                            <td className="px-5 py-3">
-                                                <div className="min-w-0">
-                                                    <p className="truncate text-text">
-                                                        {user.username ? `@${user.username}` : '—'}
-                                                    </p>
-                                                    <div className="flex min-w-0 items-center gap-1.5">
-                                                        <Tooltip
-                                                            label={
-                                                                user.emailVerified
-                                                                    ? t('emailVerified')
-                                                                    : t('emailNotVerified')
-                                                            }
-                                                        >
-                                                            {user.emailVerified ? (
-                                                                <Check className="size-3.5 shrink-0 text-pr" />
-                                                            ) : (
-                                                                <span className="block size-1.5 shrink-0 rounded-full bg-amber" />
-                                                            )}
-                                                        </Tooltip>
-                                                        <p
-                                                            className={cn(
-                                                                'truncate font-mono text-xs',
-                                                                user.emailVerified
-                                                                    ? 'text-text-dim'
-                                                                    : 'text-text-faint',
-                                                            )}
-                                                        >
-                                                            {user.email}
-                                                        </p>
-                                                    </div>
+                        </thead>
+                        <tbody>
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={4} className="p-3">
+                                        <div className="space-y-2">
+                                            {Array.from({ length: 6 }).map((_, i) => (
+                                                <Skeleton key={i} className="h-12" />
+                                            ))}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : rows.length === 0 ? (
+                                <tr>
+                                    <td colSpan={4} className="px-5 py-8 text-text-dim">
+                                        {t('noUsersMatch')}
+                                    </td>
+                                </tr>
+                            ) : (
+                                <>
+                                    {rows.map((user) => {
+                                        const isSelf = user.id === me?.id
+                                        return (
+                                            <tr key={user.id} className="border-t border-hairline">
+                                                <td className="px-5 py-3">
+                                                    <UserIdentity user={user} />
+                                                </td>
+                                                <td className="px-5 py-3">
+                                                    <RoleControl
+                                                        user={user}
+                                                        onChange={(role) => changeRole(user, role)}
+                                                    />
+                                                </td>
+                                                <td className="px-5 py-3">
+                                                    <StatusControl
+                                                        user={user}
+                                                        isSelf={isSelf}
+                                                        onToggle={() =>
+                                                            setStatusTarget({
+                                                                user,
+                                                                disable: user.status === 'active',
+                                                            })
+                                                        }
+                                                    />
+                                                </td>
+                                                <td className="px-5 py-3 text-right">
+                                                    <AdminControl
+                                                        user={user}
+                                                        isSelf={isSelf}
+                                                        onToggle={() => setAdminTarget({ user, next: !user.isAdmin })}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+
+                                    {isFetchingNextPage ? (
+                                        <tr>
+                                            <td colSpan={4} className="border-t border-hairline p-3">
+                                                <div className="space-y-2">
+                                                    {Array.from({ length: 3 }).map((_, i) => (
+                                                        <Skeleton key={i} className="h-12" />
+                                                    ))}
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-3">
-                                                <Select
-                                                    value={user.role}
-                                                    disabled={user.status === 'deleted'}
-                                                    onChange={(e) => changeRole(user, e.target.value)}
-                                                    className="py-1.5 text-xs"
-                                                >
-                                                    <option value="athlete">{tc('athlete')}</option>
-                                                    <option value="coach">{tc('coach')}</option>
-                                                </Select>
-                                            </td>
-                                            <td className="px-5 py-3">
-                                                {user.status === 'deleted' ? (
-                                                    <span className="text-text-faint">{t('statusDeleted')}</span>
-                                                ) : (
-                                                    (() => {
-                                                        const statusButton = (
-                                                            <TrackedButton
-                                                                analyticsId="admin-user-status-toggle"
-                                                                type="button"
-                                                                disabled={isSelf}
-                                                                onClick={() =>
-                                                                    setStatusTarget({
-                                                                        user,
-                                                                        disable: user.status === 'active',
-                                                                    })
-                                                                }
-                                                                className={cn(
-                                                                    'rounded-full px-2.5 py-0.5 text-xs ring-1 transition-colors duration-300 disabled:opacity-40',
-                                                                    user.status === 'active'
-                                                                        ? 'bg-pr/10 text-pr ring-pr/30 hover:bg-pr/20'
-                                                                        : 'bg-amber/10 text-amber ring-amber/30 hover:bg-amber/20',
-                                                                )}
-                                                            >
-                                                                {statusLabel(user.status)}
-                                                            </TrackedButton>
-                                                        )
-                                                        return isSelf ? (
-                                                            <Tooltip label={t('cantDisableSelf')}>
-                                                                {statusButton}
-                                                            </Tooltip>
-                                                        ) : (
-                                                            statusButton
-                                                        )
-                                                    })()
-                                                )}
-                                            </td>
-                                            <td className="px-5 py-3 text-right">
-                                                {(() => {
-                                                    const adminButton = (
-                                                        <TrackedButton
-                                                            analyticsId="admin-user-admin-toggle"
-                                                            type="button"
-                                                            disabled={isSelf && user.isAdmin}
-                                                            onClick={() =>
-                                                                setAdminTarget({ user, next: !user.isAdmin })
-                                                            }
-                                                            className={cn(
-                                                                'min-w-[7rem] rounded-full px-3 py-1 text-center text-xs ring-1 transition-colors duration-300 disabled:opacity-40',
-                                                                user.isAdmin
-                                                                    ? 'bg-ember/10 text-ember ring-ember/30 hover:bg-ember/20'
-                                                                    : 'text-text-dim ring-hairline hover:bg-white/[0.04] hover:text-text',
-                                                            )}
-                                                        >
-                                                            {user.isAdmin ? t('admin') : t('makeAdmin')}
-                                                        </TrackedButton>
-                                                    )
-                                                    return isSelf && user.isAdmin ? (
-                                                        <Tooltip label={t('cantRevokeSelf')}>{adminButton}</Tooltip>
-                                                    ) : (
-                                                        adminButton
-                                                    )
-                                                })()}
-                                            </td>
                                         </tr>
-                                    )
-                                })}
-
-                                {isFetchingNextPage ? (
-                                    <tr>
-                                        <td colSpan={4} className="border-t border-hairline p-3">
-                                            <div className="space-y-2">
-                                                {Array.from({ length: 3 }).map((_, i) => (
-                                                    <Skeleton key={i} className="h-12" />
-                                                ))}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : null}
-                            </>
-                        )}
-                    </tbody>
-                </table>
+                                    ) : null}
+                                </>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Infinite-scroll trigger. */}

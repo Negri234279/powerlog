@@ -20,8 +20,7 @@ const money = (value: number | null): string => (value === null ? DASH : moneyFo
 const price = (input: number | null, output: number | null): string =>
     input === null || output === null ? DASH : `$${input} / $${output}`
 
-const tokens = (input: number, output: number): string =>
-    `${tokenFormat.format(input)} / ${tokenFormat.format(output)}`
+const tokens = (input: number, output: number): string => `${tokenFormat.format(input)} / ${tokenFormat.format(output)}`
 
 /** A single labelled figure inside a mobile usage card. */
 function Stat({
