@@ -729,6 +729,8 @@
         "defaultHint": "El proveedor que powerlog usa cuando tienes los dos conectados."
     },
     "aiPlan": {
+        "open": "Programar con IA",
+        "close": "Cerrar",
         "eyebrow": "Entrenador",
         "title": "Programar con IA",
         "body": "Deja que tu proveedor de IA fije el peso y las repeticiones de cada serie, a partir de tus últimas sesiones y de las notas que escribiste.",

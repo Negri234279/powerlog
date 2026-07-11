@@ -68,6 +68,7 @@ export function AiPlanPanel({
 
     const [error, setError] = useState<string | null>(null)
     const [extraInfo, setExtraInfo] = useState('')
+    const [open, setOpen] = useState(false)
 
     /** Every exercise of the session, for the per-exercise generate buttons. */
     const programmable = useMemo(
@@ -150,6 +151,21 @@ export function AiPlanPanel({
     if (!hasEntries || isLoading) return null
 
     const busy = generate.isPending || refine.isPending || accept.isPending || discard.isPending
+
+    // Collapsed by default: the panel only needs to be a nudge until the athlete
+    // wants it. A live draft always expands — there's a proposal to review.
+    if (!open && !draft) {
+        return (
+            <TrackedButton
+                analyticsId="ai-plan-open"
+                type="button"
+                onClick={() => setOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
+            >
+                <Bolt className="size-4" /> {t('open')}
+            </TrackedButton>
+        )
+    }
 
     return (
         <div className="rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
@@ -284,6 +300,15 @@ export function AiPlanPanel({
                             >
                                 <Bolt className="size-4" />
                                 {generate.isPending ? t('generating') : t('generate')}
+                            </TrackedButton>
+                            <TrackedButton
+                                analyticsId="ai-plan-close"
+                                type="button"
+                                onClick={() => setOpen(false)}
+                                disabled={busy}
+                                className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-50"
+                            >
+                                {t('close')}
                             </TrackedButton>
                         </div>
 

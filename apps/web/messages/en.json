@@ -729,6 +729,8 @@
         "defaultHint": "The provider powerlog uses when both are connected."
     },
     "aiPlan": {
+        "open": "Program with AI",
+        "close": "Close",
         "eyebrow": "Coach",
         "title": "Program with AI",
         "body": "Let your AI provider set the weight and reps for every set, from your recent sessions and the notes you wrote.",
