@@ -127,7 +127,11 @@ services:
       context: ../..
       dockerfile: infra/docker/Dockerfile.web
       target: development
-    command: ["pnpm", "--filter", "@powerlog/web", "dev"]
+    # Next 16 runs `next dev` on Turbopack by default, whose file watcher has no
+    # polling fallback and never sees changes across the Windows→WSL2 bind mount
+    # (inotify events don't cross it) — so HMR silently dies and you'd restart to
+    # pick changes up. Force webpack so WATCHPACK_POLLING (below) actually applies.
+    command: ["pnpm", "--filter", "@powerlog/web", "exec", "next", "dev", "-p", "4115", "--webpack"]
     env_file:
       - path: ../../apps/web/.env
         required: false
@@ -148,8 +152,11 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment.name=dev
       OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
-      # Win11 + WSL2: force watchpack polling so HMR fires across the bind mount.
+      # Win11 + WSL2: inotify doesn't cross the bind mount, so force watchpack
+      # polling for HMR. Only takes effect under webpack — see `--webpack` in the
+      # command above (Turbopack, Next 16's default, ignores this var).
       WATCHPACK_POLLING: "true"
+      HOST: 0.0.0.0
     depends_on:
       powerlog-api:
         condition: service_healthy
