@@ -134,50 +134,53 @@ export function AiProviderCard({ provider, config }: { provider: AiProvider; con
     return (
         <div className="rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
             <div className="inset-hi rounded-[calc(2rem-0.375rem)] bg-surface p-6 md:p-8">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <p className="font-mono text-eyebrow uppercase text-text-faint">{t('eyebrow')}</p>
-                        <h2 className="mt-3 font-display text-h3 text-text">{t(`providers.${provider}.name`)}</h2>
-                        <p className="mt-3 max-w-lg text-body text-text-dim">{t(`providers.${provider}.body`)}</p>
-
-                        {/* Console links: minting a key, and the balance/billing the API can't return. */}
-                        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1">
-                            <TrackedLink
-                                analyticsId={`ai-${provider}-console`}
-                                href={KEY_CONSOLE_URL[provider]}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-sm text-text underline-offset-4 transition-colors duration-300 hover:underline"
-                            >
-                                {t(`providers.${provider}.getKey`)}
-                                <ArrowUpRight className="size-3.5" />
-                            </TrackedLink>
-
-                            <TrackedLink
-                                analyticsId={`ai-${provider}-billing`}
-                                href={BILLING_CONSOLE_URL[provider]}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-sm text-text-dim underline-offset-4 transition-colors duration-300 hover:text-text hover:underline"
-                            >
-                                {t('viewBilling')}
-                                <ArrowUpRight className="size-3.5" />
-                            </TrackedLink>
+                <div>
+                    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+                        <div>
+                            <p className="font-mono text-eyebrow uppercase text-text-faint">{t('eyebrow')}</p>
+                            <h2 className="mt-3 font-display text-h3 text-text">{t(`providers.${provider}.name`)}</h2>
                         </div>
+
+                        {config ? (
+                            <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                                {config.isDefault ? (
+                                    <span className="whitespace-nowrap rounded-full bg-pr/10 px-3 py-1 font-mono text-eyebrow uppercase text-pr">
+                                        {t('statusDefault')}
+                                    </span>
+                                ) : null}
+                                <span className="whitespace-nowrap rounded-full bg-white/[0.06] px-3 py-1 font-mono text-eyebrow uppercase text-text-dim">
+                                    {config.enabled ? t('statusActive') : t('statusPaused')}
+                                </span>
+                            </div>
+                        ) : null}
                     </div>
 
-                    {config ? (
-                        <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                            {config.isDefault ? (
-                                <span className="whitespace-nowrap rounded-full bg-pr/10 px-3 py-1 font-mono text-eyebrow uppercase text-pr">
-                                    {t('statusDefault')}
-                                </span>
-                            ) : null}
-                            <span className="whitespace-nowrap rounded-full bg-white/[0.06] px-3 py-1 font-mono text-eyebrow uppercase text-text-dim">
-                                {config.enabled ? t('statusActive') : t('statusPaused')}
-                            </span>
-                        </div>
-                    ) : null}
+                    <p className="mt-3 max-w-lg text-body text-text-dim">{t(`providers.${provider}.body`)}</p>
+
+                    {/* Console links: minting a key, and the balance/billing the API can't return. */}
+                    <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1">
+                        <TrackedLink
+                            analyticsId={`ai-${provider}-console`}
+                            href={KEY_CONSOLE_URL[provider]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-text underline-offset-4 transition-colors duration-300 hover:underline"
+                        >
+                            {t(`providers.${provider}.getKey`)}
+                            <ArrowUpRight className="size-3.5" />
+                        </TrackedLink>
+
+                        <TrackedLink
+                            analyticsId={`ai-${provider}-billing`}
+                            href={BILLING_CONSOLE_URL[provider]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-text-dim underline-offset-4 transition-colors duration-300 hover:text-text hover:underline"
+                        >
+                            {t('viewBilling')}
+                            <ArrowUpRight className="size-3.5" />
+                        </TrackedLink>
+                    </div>
                 </div>
 
                 {config ? (
