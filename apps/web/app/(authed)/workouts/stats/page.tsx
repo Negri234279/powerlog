@@ -101,6 +101,16 @@ function DeltaArrow({ delta, units }: { delta: number; units: ReturnType<typeof 
     )
 }
 
+/** A labelled figure inside a mobile per-exercise card. */
+function Cell({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+    return (
+        <div className={className}>
+            <dt className="font-mono text-[10px] uppercase tracking-widest text-text-faint">{label}</dt>
+            <dd className="mt-0.5 font-mono tabular-nums">{children}</dd>
+        </div>
+    )
+}
+
 // ── page ─────────────────────────────────────────────────────
 
 export default function ExerciseStatsPage() {
@@ -383,41 +393,32 @@ export default function ExerciseStatsPage() {
                         ) : sortedStats.length === 0 ? (
                             <p className="text-sm text-text-dim">{t('noLogged')}</p>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full min-w-[44rem] text-sm">
-                                    <thead>
-                                        <tr className="border-b border-hairline font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                                            <th className="py-3 pr-4 text-left font-normal">{t('colExercise')}</th>
-                                            <th className="px-4 py-3 text-right font-normal">{t('colVolume')}</th>
-                                            <th className="px-4 py-3 text-right font-normal">{t('colBestE1rm')}</th>
-                                            {prev ? <th className="px-4 py-3 text-right font-normal">Δ</th> : null}
-                                            <th className="px-4 py-3 text-right font-normal">{t('colHeaviest')}</th>
-                                            <th className="px-4 py-3 text-right font-normal">{t('colSets')}</th>
-                                            <th className="py-3 pl-4 text-right font-normal">{t('colReps')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-hairline">
-                                        {sortedStats.map((row) => {
-                                            const before = prevBest.get(row.exerciseId)
-                                            return (
-                                                <tr
-                                                    key={row.exerciseId}
-                                                    className="transition-colors duration-300 hover:bg-white/[0.02]"
-                                                >
-                                                    <td className="py-3 pr-4">
-                                                        <span className="text-text">{row.name}</span>
-                                                        <span className="ml-2 font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                                                            {tt(`category.${row.category}`)}
+                            <>
+                                {/* Phone: one card per exercise. */}
+                                <ul className="divide-y divide-hairline md:hidden">
+                                    {sortedStats.map((row) => {
+                                        const before = prevBest.get(row.exerciseId)
+                                        return (
+                                            <li key={row.exerciseId} className="py-4 first:pt-0 last:pb-0">
+                                                <div className="flex items-baseline justify-between gap-3">
+                                                    <span className="min-w-0 truncate text-text">{row.name}</span>
+                                                    <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-text-faint">
+                                                        {tt(`category.${row.category}`)}
+                                                    </span>
+                                                </div>
+                                                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                                                    <Cell label={t('colVolume')}>
+                                                        <span className="text-text">
+                                                            {formatWeight(row.totalVolumeKg, units)}
                                                         </span>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right font-mono tabular-nums text-text">
-                                                        {formatWeight(row.totalVolumeKg, units)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right font-mono tabular-nums text-pr">
-                                                        {formatWeight(row.bestE1rmKg, units)}
-                                                    </td>
+                                                    </Cell>
+                                                    <Cell label={t('colBestE1rm')}>
+                                                        <span className="text-pr">
+                                                            {formatWeight(row.bestE1rmKg, units)}
+                                                        </span>
+                                                    </Cell>
                                                     {prev ? (
-                                                        <td className="px-4 py-3 text-right font-mono text-xs">
+                                                        <Cell label="Δ">
                                                             {row.bestE1rmKg !== null && before !== undefined ? (
                                                                 <DeltaArrow
                                                                     delta={row.bestE1rmKg - before}
@@ -426,23 +427,87 @@ export default function ExerciseStatsPage() {
                                                             ) : (
                                                                 <span className="text-text-faint">—</span>
                                                             )}
-                                                        </td>
+                                                        </Cell>
                                                     ) : null}
-                                                    <td className="px-4 py-3 text-right font-mono tabular-nums text-text-dim">
-                                                        {formatWeight(row.heaviestWeightKg, units)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right font-mono tabular-nums text-text-dim">
-                                                        {row.totalSets}
-                                                    </td>
-                                                    <td className="py-3 pl-4 text-right font-mono tabular-nums text-text-dim">
-                                                        {row.totalReps}
-                                                    </td>
-                                                </tr>
-                                            )
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                    <Cell label={t('colHeaviest')}>
+                                                        <span className="text-text-dim">
+                                                            {formatWeight(row.heaviestWeightKg, units)}
+                                                        </span>
+                                                    </Cell>
+                                                    <Cell label={t('colSets')}>
+                                                        <span className="text-text-dim">{row.totalSets}</span>
+                                                    </Cell>
+                                                    <Cell label={t('colReps')}>
+                                                        <span className="text-text-dim">{row.totalReps}</span>
+                                                    </Cell>
+                                                </dl>
+                                            </li>
+                                        )
+                                    })}
+                                </ul>
+
+                                {/* md and up: full table. */}
+                                <div className="hidden overflow-x-auto md:block">
+                                    <table className="w-full min-w-[44rem] text-sm">
+                                        <thead>
+                                            <tr className="border-b border-hairline font-mono text-[10px] uppercase tracking-widest text-text-faint">
+                                                <th className="py-3 pr-4 text-left font-normal">{t('colExercise')}</th>
+                                                <th className="px-4 py-3 text-right font-normal">{t('colVolume')}</th>
+                                                <th className="px-4 py-3 text-right font-normal">{t('colBestE1rm')}</th>
+                                                {prev ? <th className="px-4 py-3 text-right font-normal">Δ</th> : null}
+                                                <th className="px-4 py-3 text-right font-normal">{t('colHeaviest')}</th>
+                                                <th className="px-4 py-3 text-right font-normal">{t('colSets')}</th>
+                                                <th className="py-3 pl-4 text-right font-normal">{t('colReps')}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-hairline">
+                                            {sortedStats.map((row) => {
+                                                const before = prevBest.get(row.exerciseId)
+                                                return (
+                                                    <tr
+                                                        key={row.exerciseId}
+                                                        className="transition-colors duration-300 hover:bg-white/[0.02]"
+                                                    >
+                                                        <td className="py-3 pr-4">
+                                                            <span className="text-text">{row.name}</span>
+                                                            <span className="ml-2 font-mono text-[10px] uppercase tracking-widest text-text-faint">
+                                                                {tt(`category.${row.category}`)}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right font-mono tabular-nums text-text">
+                                                            {formatWeight(row.totalVolumeKg, units)}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right font-mono tabular-nums text-pr">
+                                                            {formatWeight(row.bestE1rmKg, units)}
+                                                        </td>
+                                                        {prev ? (
+                                                            <td className="px-4 py-3 text-right font-mono text-xs">
+                                                                {row.bestE1rmKg !== null && before !== undefined ? (
+                                                                    <DeltaArrow
+                                                                        delta={row.bestE1rmKg - before}
+                                                                        units={units}
+                                                                    />
+                                                                ) : (
+                                                                    <span className="text-text-faint">—</span>
+                                                                )}
+                                                            </td>
+                                                        ) : null}
+                                                        <td className="px-4 py-3 text-right font-mono tabular-nums text-text-dim">
+                                                            {formatWeight(row.heaviestWeightKg, units)}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right font-mono tabular-nums text-text-dim">
+                                                            {row.totalSets}
+                                                        </td>
+                                                        <td className="py-3 pl-4 text-right font-mono tabular-nums text-text-dim">
+                                                            {row.totalReps}
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
                         )}
                     </SectionCard>
                 </div>
