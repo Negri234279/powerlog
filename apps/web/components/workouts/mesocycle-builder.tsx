@@ -767,7 +767,7 @@ function DayCard({
                     <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
                         {t('day', { n: index + 1 })}
                     </span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-1">
                         {[0, 1, 2, 3, 4, 5, 6].map((offset) => (
                             <TrackedButton
                                 key={offset}
@@ -789,7 +789,7 @@ function DayCard({
                         value={day.label}
                         onChange={(e) => onPatch({ label: e.target.value })}
                         placeholder={t('dayLabelPlaceholder')}
-                        className="w-40"
+                        className="w-full sm:w-40"
                     />
                 </div>
                 <TrackedButton
