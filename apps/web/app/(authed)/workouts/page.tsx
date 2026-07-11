@@ -488,7 +488,7 @@ export default function WorkoutsPage() {
                     <p className="font-mono text-eyebrow uppercase text-text-faint">{t('training')}</p>
                     <h1 className="mt-3 font-display text-display">{t('title')}</h1>
                 </TextsReveal>
-                <div className="flex items-center gap-2">
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                     <TrackedLink
                         analyticsId="workouts-templates-link"
                         href="/workouts/templates"

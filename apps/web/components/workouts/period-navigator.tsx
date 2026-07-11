@@ -95,7 +95,7 @@ export function PeriodNavigator({
                         ) : null}
                     </div>
 
-                    <div className="inline-flex self-start rounded-full bg-bg/60 p-1 ring-1 ring-hairline sm:self-auto">
+                    <div className="flex w-full flex-wrap justify-center gap-1 rounded-2xl bg-bg/60 p-1 ring-1 ring-hairline sm:inline-flex sm:w-auto sm:flex-nowrap sm:justify-start sm:gap-0 sm:rounded-full sm:self-auto">
                         {PERIOD_MODES.map((key) =>
                             // A hairline before `custom` marks it as the manual escape hatch.
                             key === 'custom' ? (
