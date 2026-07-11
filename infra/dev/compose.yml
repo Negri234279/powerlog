@@ -120,6 +120,55 @@ services:
     networks: [powerlog-net]
     restart: unless-stopped
 
+  powerlog-web:
+    image: powerlog/web:dev
+    container_name: powerlog-web
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.web
+      target: development
+    command: ["pnpm", "--filter", "@powerlog/web", "dev"]
+    env_file:
+      - path: ../../apps/web/.env
+        required: false
+    environment:
+      NODE_ENV: development
+      APP_ENV: dev
+      # `next dev` re-evaluates next.config rewrites per request, so these are read
+      # at RUNTIME (unlike the prod build, which bakes them in). Reach the API and
+      # Alloy's faro.receiver by service DNS on powerlog-net.
+      API_INTERNAL_URL: http://powerlog-api:4000
+      FARO_INTERNAL_URL: http://powerlog-alloy:12347
+      # Faro no-ops in dev unless this is set; the dev stack ships Loki/Alloy/Grafana,
+      # so enable browser RUM here to populate the "Web RUM (Faro)" dashboard.
+      NEXT_PUBLIC_FARO_DEV: "true"
+      # Server-side traces (@vercel/otel in instrumentation.ts) → this stack's Tempo.
+      OTEL_SERVICE_NAME: powerlog-web
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://powerlog-tempo:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment.name=dev
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+      # Win11 + WSL2: force watchpack polling so HMR fires across the bind mount.
+      WATCHPACK_POLLING: "true"
+    depends_on:
+      powerlog-api:
+        condition: service_healthy
+      powerlog-alloy:
+        condition: service_started
+    ports:
+      - "${WEB_PORT:-4115}:4115"
+    volumes:
+      - ../../apps/web:/app/apps/web
+      - ../../packages:/app/packages
+      - web_root_node_modules:/app/node_modules
+      - web_node_modules:/app/apps/web/node_modules
+      # Turbopack's persistent cache uses file locking (flock), which FAILS with
+      # "os error 5 (EIO)" over the Windows bind mount. Keep .next on a named
+      # volume (ext4 in the VM) so the lockfile lives on a lock-capable FS.
+      - web_next:/app/apps/web/.next
+    networks: [powerlog-net]
+    restart: unless-stopped
+
   # One-shot Drizzle migration runner. Enable with: --profile tools
   powerlog-migrate:
     image: powerlog/api:dev-migrate
@@ -207,8 +256,9 @@ services:
       - alloy_dev:/var/lib/alloy/data
     ports:
       - "${ALLOY_PORT:-12345}:12345"
-      # faro.receiver — the web app (running on the HOST in dev) proxies browser
-      # RUM here via the Next /faro rewrite (FARO_INTERNAL_URL=localhost:12347).
+      # faro.receiver — the powerlog-web container proxies browser RUM here via the
+      # Next /faro rewrite (FARO_INTERNAL_URL=http://powerlog-alloy:12347, by DNS).
+      # Host port kept so the web app can also be run on the HOST (localhost:12347).
       - "${FARO_PORT:-12347}:12347"
     depends_on:
       - powerlog-loki
@@ -270,6 +320,9 @@ volumes:
   pgdata_dev:
   api_root_node_modules:
   api_node_modules:
+  web_root_node_modules:
+  web_node_modules:
+  web_next:
   prometheus_dev:
   loki_dev:
   tempo_dev:
