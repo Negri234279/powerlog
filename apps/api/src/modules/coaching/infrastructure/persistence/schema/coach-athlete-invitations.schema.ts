@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
 import { INVITATION_STATUSES } from '../../../domain/invitation-status'
 
@@ -7,15 +7,22 @@ export const invitationStatusEnum = pgEnum('coach_invitation_status', INVITATION
 
 /**
  * `coach_athlete_invitations` — coach→athlete invitations. `coach_id`/`athlete_id`
- * are SOFT references to the auth `users` (no cross-module FK). A new pending
- * invitation per pair is guarded in the application layer (terminal ones stay
- * for history), so no DB uniqueness here.
+ * are SOFT references to the auth `users` (no cross-module FK). `athlete_id` is
+ * null while the invitee has no account yet (invited by `email`); it is filled in
+ * and the invitation auto-accepted when they register with that email. A new
+ * pending invitation per (coach, email) is guarded in the application layer
+ * (terminal ones stay for history), so no DB uniqueness here.
  */
-export const coachAthleteInvitations = pgTable('coach_athlete_invitations', {
-    id: uuid('id').primaryKey().defaultRandom(),
-    coachId: uuid('coach_id').notNull(),
-    athleteId: uuid('athlete_id').notNull(),
-    status: invitationStatusEnum('status').notNull().default('pending'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-})
+export const coachAthleteInvitations = pgTable(
+    'coach_athlete_invitations',
+    {
+        id: uuid('id').primaryKey().defaultRandom(),
+        coachId: uuid('coach_id').notNull(),
+        athleteId: uuid('athlete_id'),
+        email: text('email').notNull(),
+        status: invitationStatusEnum('status').notNull().default('pending'),
+        createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+        updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    },
+    (table) => [index('coach_invitations_email_idx').on(table.email)],
+)

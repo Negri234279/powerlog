@@ -15,6 +15,9 @@ export abstract class UserDirectory {
     /** Resolve a username (any case) to its user id, or null if unknown. */
     abstract findUserIdByUsername(username: string): Promise<string | null>
 
+    /** Resolve an email (any case) to its user id, or null if no account has it. */
+    abstract findUserIdByEmail(email: string): Promise<string | null>
+
     /** Fetch a user's contact details by id, or null if the user is gone. */
     abstract getContact(userId: string): Promise<UserContact | null>
 }

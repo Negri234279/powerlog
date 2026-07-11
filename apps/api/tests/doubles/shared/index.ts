@@ -1,4 +1,5 @@
 export { FakeCoachLinks } from './fake-coach-links'
+export { FakeEntitlements } from './fake-entitlements'
 export { fakeEventPublisher } from './fake-event-publisher'
 export { FakeMailer } from './fake-mailer'
 export { FakeProfiles } from './fake-profiles'

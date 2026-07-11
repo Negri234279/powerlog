@@ -21,6 +21,8 @@
         "loading": "Loading…",
         "items": {
             "coachInvitation": "{coach} wants to be your coach",
+            "coachLinked": "{coach} is now coaching you",
+            "athleteLinked": "{athlete} is now your athlete",
             "generic": "You have a new notification"
         }
     },
@@ -34,13 +36,14 @@
         "decline": "Decline",
         "athletesTitle": "My athletes",
         "athletesSubtitle": "Athletes you train.",
-        "noAthletes": "No athletes yet. Invite someone by their username.",
+        "noAthletes": "No athletes yet. Invite someone by their email.",
         "coachesTitle": "My coaches",
         "coachesSubtitle": "Who trains you.",
         "inviteTitle": "Invite athlete",
-        "inviteUsernamePlaceholder": "athlete's username",
+        "inviteHint": "Invite by email. If they already use powerlog they get a notification; otherwise they get an email to sign up and you'll be linked automatically.",
+        "inviteEmailPlaceholder": "athlete's email",
         "invite": "Invite",
-        "inviteSent": "Invitation sent to @{athlete}",
+        "inviteSent": "Invitation sent to {athlete}",
         "becomeTitle": "Become a coach",
         "becomeBody": "Train other athletes: build their plans, templates and mesocycles, and follow their progress.",
         "become": "Become a coach"

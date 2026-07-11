@@ -65,7 +65,7 @@ export function useInviteAthlete() {
     const qc = useQueryClient()
 
     return useMutation({
-        mutationFn: (username: string) => gqlRequest(InviteAthleteDocument, { username }),
+        mutationFn: (email: string) => gqlRequest(InviteAthleteDocument, { email }),
         onSuccess: () => {
             void qc.invalidateQueries({ queryKey: ATHLETES_KEY })
         },

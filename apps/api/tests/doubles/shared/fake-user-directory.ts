@@ -19,6 +19,14 @@ export class FakeUserDirectory extends UserDirectory {
         return null
     }
 
+    async findUserIdByEmail(email: string): Promise<string | null> {
+        const wanted = email.toLowerCase()
+        for (const [id, contact] of this.byId) {
+            if (contact.email.toLowerCase() === wanted) return id
+        }
+        return null
+    }
+
     async getContact(userId: string): Promise<UserContact | null> {
         return this.byId.get(userId) ?? null
     }

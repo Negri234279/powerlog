@@ -21,6 +21,8 @@
         "loading": "Cargando…",
         "items": {
             "coachInvitation": "{coach} quiere ser tu coach",
+            "coachLinked": "Ahora te entrena {coach}",
+            "athleteLinked": "{athlete} ahora es tu atleta",
             "generic": "Tienes una notificación nueva"
         }
     },
@@ -34,13 +36,14 @@
         "decline": "Rechazar",
         "athletesTitle": "Mis atletas",
         "athletesSubtitle": "Atletas a los que entrenas.",
-        "noAthletes": "Aún no tienes atletas. Invita a alguien por su usuario.",
+        "noAthletes": "Aún no tienes atletas. Invita a alguien por su email.",
         "coachesTitle": "Mis coaches",
         "coachesSubtitle": "Quién te entrena.",
         "inviteTitle": "Invitar atleta",
-        "inviteUsernamePlaceholder": "usuario del atleta",
+        "inviteHint": "Invita por email. Si ya usa powerlog le llega una notificación; si no, recibe un correo para registrarse y quedaréis vinculados.",
+        "inviteEmailPlaceholder": "email del atleta",
         "invite": "Invitar",
-        "inviteSent": "Invitación enviada a @{athlete}",
+        "inviteSent": "Invitación enviada a {athlete}",
         "becomeTitle": "Conviértete en coach",
         "becomeBody": "Entrena a otros atletas: crea sus planes, plantillas y mesociclos, y sigue su progreso.",
         "become": "Hazte coach"

@@ -271,9 +271,13 @@ input ChangePasswordInput {
 }
 
 type CoachInvitation {
-  athleteId: ID!
+  """Null while the invited email has no account yet."""
+  athleteId: ID
   coachId: ID!
   createdAt: DateTime!
+
+  """The email the invitation was addressed to."""
+  email: String!
   id: ID!
 
   """pending | accepted | declined | cancelled"""
@@ -708,8 +712,10 @@ type Mutation {
   """
   generateSessionPlanDraft(input: GenerateSessionPlanDraftInput!): AiPlanDraft!
 
-  """Invite an athlete by username (coaches only)."""
-  inviteAthlete(username: String!): CoachInvitation!
+  """
+  Invite an athlete by email (coaches only). Works whether or not they have an account yet.
+  """
+  inviteAthlete(email: String!): CoachInvitation!
 
   """Append a set to an exercise entry."""
   logSet(input: LogSetInput!): WorkoutSession!

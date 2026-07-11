@@ -43,8 +43,8 @@ export const BecomeCoachDocument = graphql(`
 `)
 
 export const InviteAthleteDocument = graphql(`
-    mutation InviteAthlete($username: String!) {
-        inviteAthlete(username: $username) {
+    mutation InviteAthlete($email: String!) {
+        inviteAthlete(email: $email) {
             id
             status
         }

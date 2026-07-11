@@ -1,5 +1,7 @@
+import { ConfigService } from '@nestjs/config'
 import { describe, expect, it } from 'vitest'
 
+import type { Env } from '../../../../config/env'
 import { FakeClock, FakeIdGenerator, InMemoryNotificationRepository } from '../../../../../tests/doubles/notifications'
 import { FakeMailer, FakeUserDirectory } from '../../../../../tests/doubles/shared'
 import { counterValue, testCounter } from '../../../../../tests/doubles/shared/test-counter'
@@ -7,16 +9,25 @@ import { CoachInvitationCreatedIntegrationEvent } from '../../../../shared/integ
 import { NotificationService } from '../services/notification.service'
 import { NotifyOnCoachInvitationCreated } from './notify-on-coach-invitation-created.handler'
 
+const config = new ConfigService({ WEB_ORIGIN: 'https://app.test' }) as unknown as ConfigService<Env, true>
+
 function setup(directory: FakeUserDirectory) {
     const repo = new InMemoryNotificationRepository()
     const mailer = new FakeMailer()
     const counter = testCounter(['type'])
     const service = new NotificationService(repo, new FakeIdGenerator(['n-1']), new FakeClock(), mailer, counter)
-    const handler = new NotifyOnCoachInvitationCreated(service, directory)
+    const handler = new NotifyOnCoachInvitationCreated(service, directory, mailer, config)
     return { handler, repo, mailer, counter }
 }
 
-const EVENT = new CoachInvitationCreatedIntegrationEvent('inv-1', 'coach-1', 'athlete-1', 'coachy')
+// Registered athlete → athleteId is set.
+const EVENT = new CoachInvitationCreatedIntegrationEvent(
+    'inv-1',
+    'coach-1',
+    'athlete-1',
+    'athlete@example.com',
+    'coachy',
+)
 
 describe('NotifyOnCoachInvitationCreated', () => {
     it('creates a coach_invitation bell entry and emails the athlete', async () => {
@@ -47,5 +58,17 @@ describe('NotifyOnCoachInvitationCreated', () => {
 
         expect(await repo.countUnread('athlete-1')).toBe(1)
         expect(mailer.sent).toHaveLength(0)
+    })
+
+    it('emails a signup link (no bell) when the invitee has no account yet', async () => {
+        const { handler, repo, mailer } = setup(new FakeUserDirectory())
+
+        await handler.handle(
+            new CoachInvitationCreatedIntegrationEvent('inv-2', 'coach-1', null, 'stranger@example.com', 'coachy'),
+        )
+
+        expect(repo.all()).toHaveLength(0)
+        expect(mailer.last()?.to).toBe('stranger@example.com')
+        expect(mailer.last()?.text).toContain('https://app.test/register?invite=inv-2')
     })
 })

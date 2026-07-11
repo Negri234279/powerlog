@@ -246,6 +246,13 @@
       "when": 1783780135997,
       "tag": "0034_aromatic_carlie_cooper",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1783813115899,
+      "tag": "0035_stormy_jubilee",
+      "breakpoints": true
     }
   ]
 }

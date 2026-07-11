@@ -21,11 +21,17 @@ export class InMemoryCoachInvitationRepository extends CoachInvitationRepository
         return this.byId.get(id) ?? null
     }
 
-    async findPending(coachId: string, athleteId: string): Promise<CoachInvitationEntity | null> {
+    async findPendingByEmail(coachId: string, email: string): Promise<CoachInvitationEntity | null> {
         for (const inv of this.byId.values()) {
-            if (inv.coachId === coachId && inv.athleteId === athleteId && inv.status === 'pending') return inv
+            if (inv.coachId === coachId && inv.email === email && inv.status === 'pending') return inv
         }
         return null
+    }
+
+    async listPendingByEmail(email: string): Promise<CoachInvitationEntity[]> {
+        return [...this.byId.values()]
+            .filter((inv) => inv.email === email && inv.status === 'pending')
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     }
 
     async listPendingForAthlete(athleteId: string): Promise<CoachInvitationEntity[]> {

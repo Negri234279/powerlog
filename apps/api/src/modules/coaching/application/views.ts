@@ -5,7 +5,9 @@ import type { InvitationStatus } from '../domain/invitation-status'
 export interface InvitationView {
     id: string
     coachId: string
-    athleteId: string
+    /** null while the invited email has no account yet. */
+    athleteId: string | null
+    email: string
     status: InvitationStatus
     createdAt: Date
 }
@@ -29,6 +31,7 @@ export function toInvitationView(invitation: CoachInvitationEntity): InvitationV
         id: invitation.id,
         coachId: invitation.coachId,
         athleteId: invitation.athleteId,
+        email: invitation.email,
         status: invitation.status,
         createdAt: invitation.createdAt,
     }

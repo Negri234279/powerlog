@@ -10,7 +10,8 @@ const DEFAULT_NOW = new Date('2026-01-01T00:00:00.000Z')
 export class CoachInvitationMother {
     private id = '88888888-8888-4888-8888-888888888888'
     private coachId = 'coach-1'
-    private athleteId = 'athlete-1'
+    private athleteId: string | null = 'athlete-1'
+    private email = 'athlete-1@example.com'
     private status: InvitationStatus = 'pending'
     private createdAt = DEFAULT_NOW
 
@@ -28,8 +29,13 @@ export class CoachInvitationMother {
         return this
     }
 
-    forAthlete(athleteId: string): this {
+    forAthlete(athleteId: string | null): this {
         this.athleteId = athleteId
+        return this
+    }
+
+    withEmail(email: string): this {
+        this.email = email
         return this
     }
 
@@ -48,6 +54,7 @@ export class CoachInvitationMother {
             id: this.id,
             coachId: this.coachId,
             athleteId: this.athleteId,
+            email: this.email,
             status: this.status,
             createdAt: this.createdAt,
             updatedAt: this.createdAt,

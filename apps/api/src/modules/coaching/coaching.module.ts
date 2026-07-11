@@ -4,7 +4,11 @@ import { AdminGuard } from '../../auth/admin.guard'
 import { RolesGuard } from '../../auth/roles.guard'
 import { CoachLinks } from '../../shared/contracts/coach-links'
 import { AuthModule } from '../auth/auth.module'
-import { COACHING_COMMAND_HANDLERS, COACHING_QUERY_HANDLERS } from './application/coaching.application'
+import {
+    COACHING_COMMAND_HANDLERS,
+    COACHING_EVENT_HANDLERS,
+    COACHING_QUERY_HANDLERS,
+} from './application/coaching.application'
 import { AdminCoachingStatsReadModel } from './application/ports/admin-coaching-stats.read-model'
 import { DrizzleAdminCoachingStatsReadModel } from './infrastructure/persistence/read-models/drizzle-admin-coaching-stats.read-model'
 import { Clock } from './application/ports/clock.port'
@@ -39,6 +43,7 @@ const ADAPTERS: Provider[] = [
         AdminGuard,
         ...COACHING_COMMAND_HANDLERS,
         ...COACHING_QUERY_HANDLERS,
+        ...COACHING_EVENT_HANDLERS,
         ...COACHING_RESOLVERS,
     ],
     exports: [CoachLinks],

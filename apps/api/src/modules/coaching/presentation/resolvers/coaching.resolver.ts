@@ -19,7 +19,7 @@ import { PendingInvitationsQuery } from '../../application/queries/pending-invit
 import type { CoachUserView, InvitationView, PendingInvitationView } from '../../application/views'
 import { CoachInvitationType, CoachUserType, PendingInvitationType } from '../types/coaching.types'
 
-const usernameArg = z.string().trim().min(3).max(30)
+const emailArg = z.string().trim().email()
 const uuidArg = z.string().uuid()
 
 @Resolver(() => CoachInvitationType)
@@ -30,14 +30,16 @@ export class CoachingResolver {
         private readonly queryBus: QueryBus,
     ) {}
 
-    @Mutation(() => CoachInvitationType, { description: 'Invite an athlete by username (coaches only).' })
+    @Mutation(() => CoachInvitationType, {
+        description: 'Invite an athlete by email (coaches only). Works whether or not they have an account yet.',
+    })
     @UseGuards(RolesGuard)
     @Roles('coach')
     async inviteAthlete(
         @CurrentUser() user: AuthUser,
-        @Args('username', new ZodValidationPipe(usernameArg)) username: string,
+        @Args('email', new ZodValidationPipe(emailArg)) email: string,
     ): Promise<InvitationView> {
-        const command = new InviteAthleteCommand(user.userId, username)
+        const command = new InviteAthleteCommand(user.userId, email)
         return this.commandBus.execute(command)
     }
 

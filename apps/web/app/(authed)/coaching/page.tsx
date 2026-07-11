@@ -116,21 +116,21 @@ function InviteForm() {
     const t = useTranslations('coaching')
     const errorMessage = useErrorMessage()
     const invite = useInviteAthlete()
-    const [username, setUsername] = useState('')
+    const [email, setEmail] = useState('')
     const [error, setError] = useState<string | null>(null)
     const [sent, setSent] = useState<string | null>(null)
 
     function onSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
-        const handle = username.trim().replace(/^@/, '')
-        if (handle === '') return
+        const value = email.trim()
+        if (value === '') return
 
         setError(null)
         setSent(null)
-        invite.mutate(handle, {
+        invite.mutate(value, {
             onSuccess: () => {
-                setSent(handle)
-                setUsername('')
+                setSent(value)
+                setEmail('')
             },
             onError: (err) => setError(errorMessage(err)),
         })
@@ -138,18 +138,20 @@ function InviteForm() {
 
     return (
         <form onSubmit={onSubmit} className="mb-6">
+            <p className="mb-2 text-sm text-text-dim">{t('inviteHint')}</p>
             <div className="flex flex-col gap-2 sm:flex-row">
                 <input
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder={t('inviteUsernamePlaceholder')}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t('inviteEmailPlaceholder')}
                     aria-label={t('inviteTitle')}
                     className="w-full rounded-full bg-bg/60 px-4 py-2.5 text-sm text-text ring-1 ring-hairline outline-none transition-colors duration-300 placeholder:text-text-faint focus:ring-ember/50 sm:max-w-xs"
                 />
                 <TrackedButton
                     analyticsId="coaching-invite-submit"
                     type="submit"
-                    disabled={invite.isPending || username.trim() === ''}
+                    disabled={invite.isPending || email.trim() === ''}
                     className="rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-50"
                 >
                     {t('invite')}

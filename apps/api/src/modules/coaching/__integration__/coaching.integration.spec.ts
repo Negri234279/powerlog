@@ -40,22 +40,24 @@ describe('Coaching invitations (integration)', () => {
     it('persists an invitation, finds it pending, and applies a status transition', async () => {
         const coachId = randomUUID()
         const athleteId = randomUUID()
+        const email = 'athlete@example.com'
         const invitation = CoachInvitationEntity.create({
             id: randomUUID(),
             coachId,
+            email,
             athleteId,
             now: new Date('2026-03-01T00:00:00Z'),
         })
         await invitations.save(invitation)
 
-        expect((await invitations.findPending(coachId, athleteId))?.id).toBe(invitation.id)
+        expect((await invitations.findPendingByEmail(coachId, email))?.id).toBe(invitation.id)
         expect((await invitations.listPendingForAthlete(athleteId)).map((i) => i.id)).toEqual([invitation.id])
 
         invitation.accept(new Date('2026-03-02T00:00:00Z'))
         await invitations.save(invitation)
 
         expect((await invitations.findById(invitation.id))?.status).toBe('accepted')
-        expect(await invitations.findPending(coachId, athleteId)).toBeNull()
+        expect(await invitations.findPendingByEmail(coachId, email)).toBeNull()
     })
 })
 

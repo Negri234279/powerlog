@@ -1,11 +1,11 @@
 import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { UserDirectory } from '../../../../../shared/contracts/user-directory'
 import { CoachInvitationCreatedIntegrationEvent } from '../../../../../shared/integration-events/coach-invitation-created.integration-event'
 import { CoachInvitationEntity } from '../../../domain/entities/coach-invitation.entity'
 import {
     AlreadyLinkedError,
-    AthleteNotFoundError,
     CannotInviteSelfError,
     InvitationAlreadyPendingError,
 } from '../../../domain/errors/coaching.errors'
@@ -22,41 +22,51 @@ export class InviteAthleteHandler implements ICommandHandler<InviteAthleteComman
         private readonly invitations: CoachInvitationRepository,
         private readonly links: CoachLinkRepository,
         private readonly users: UserDirectory,
+        private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly eventBus: EventBus,
     ) {}
 
     async execute(command: InviteAthleteCommand): Promise<InvitationView> {
-        const athleteId = await this.users.findUserIdByUsername(command.athleteUsername)
-        if (!athleteId) {
-            throw new AthleteNotFoundError()
-        }
-        if (athleteId === command.coachId) {
+        const email = command.email.trim().toLowerCase()
+
+        // The invitee may or may not have an account yet.
+        const athleteId = await this.users.findUserIdByEmail(email)
+
+        const coach = await this.users.getContact(command.coachId)
+        // Guard self-invites both by id (registered) and by email (pre-registration).
+        if (athleteId === command.coachId || (coach && coach.email.toLowerCase() === email)) {
             throw new CannotInviteSelfError()
         }
-        if (await this.links.areLinked(command.coachId, athleteId)) {
+        if (athleteId && (await this.links.areLinked(command.coachId, athleteId))) {
             throw new AlreadyLinkedError()
         }
-        if (await this.invitations.findPending(command.coachId, athleteId)) {
+        if (await this.invitations.findPendingByEmail(command.coachId, email)) {
             throw new InvitationAlreadyPendingError()
         }
+
+        // Plan limit on how many athletes a coach may take on (unlimited for now).
+        const currentAthletes = await this.links.athleteIdsOf(command.coachId)
+        await this.entitlements.assertCanAddAthlete(command.coachId, currentAthletes.length)
 
         const invitation = CoachInvitationEntity.create({
             id: this.ids.uuid(),
             coachId: command.coachId,
+            email,
             athleteId,
             now: this.clock.now(),
         })
         await this.invitations.save(invitation)
 
-        // Lets the notifications module bell + email the athlete.
-        const coach = await this.users.getContact(command.coachId)
+        // Lets the notifications module bell + email the athlete, or email-only a
+        // signup invite when the address has no account yet.
         this.eventBus.publish(
             new CoachInvitationCreatedIntegrationEvent(
                 invitation.id,
                 command.coachId,
                 athleteId,
+                email,
                 coach?.username ?? '',
             ),
         )

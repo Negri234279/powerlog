@@ -20,7 +20,7 @@ export class DrizzleCoachInvitationRepository extends CoachInvitationRepository 
             .values(row)
             .onConflictDoUpdate({
                 target: coachAthleteInvitations.id,
-                set: { status: row.status, updatedAt: row.updatedAt },
+                set: { athleteId: row.athleteId, status: row.status, updatedAt: row.updatedAt },
             })
     }
 
@@ -33,19 +33,28 @@ export class DrizzleCoachInvitationRepository extends CoachInvitationRepository 
         return row ? CoachInvitationMapper.toDomain(row) : null
     }
 
-    async findPending(coachId: string, athleteId: string): Promise<CoachInvitationEntity | null> {
+    async findPendingByEmail(coachId: string, email: string): Promise<CoachInvitationEntity | null> {
         const [row] = await this.db
             .select()
             .from(coachAthleteInvitations)
             .where(
                 and(
                     eq(coachAthleteInvitations.coachId, coachId),
-                    eq(coachAthleteInvitations.athleteId, athleteId),
+                    eq(coachAthleteInvitations.email, email),
                     eq(coachAthleteInvitations.status, 'pending'),
                 ),
             )
             .limit(1)
         return row ? CoachInvitationMapper.toDomain(row) : null
+    }
+
+    async listPendingByEmail(email: string): Promise<CoachInvitationEntity[]> {
+        const rows = await this.db
+            .select()
+            .from(coachAthleteInvitations)
+            .where(and(eq(coachAthleteInvitations.email, email), eq(coachAthleteInvitations.status, 'pending')))
+            .orderBy(desc(coachAthleteInvitations.createdAt), desc(coachAthleteInvitations.id))
+        return rows.map(CoachInvitationMapper.toDomain)
     }
 
     async listPendingForAthlete(athleteId: string): Promise<CoachInvitationEntity[]> {

@@ -98,7 +98,9 @@ describe('Notifications via GraphQL', () => {
     it('delivers a coach invitation to the athlete bell + email, then marks it read', async () => {
         const { access, userId } = await registerAthlete('athlete@example.com')
 
-        events.publish(new CoachInvitationCreatedIntegrationEvent('inv-1', 'coach-1', userId, 'coachy'))
+        events.publish(
+            new CoachInvitationCreatedIntegrationEvent('inv-1', 'coach-1', userId, 'athlete@example.com', 'coachy'),
+        )
 
         const page = await eventually(
             async () =>

@@ -7,7 +7,13 @@ const NOW = new Date('2026-03-01T10:00:00.000Z')
 const LATER = new Date('2026-03-02T10:00:00.000Z')
 
 function pending(): CoachInvitationEntity {
-    return CoachInvitationEntity.create({ id: 'i-1', coachId: 'c-1', athleteId: 'a-1', now: NOW })
+    return CoachInvitationEntity.create({
+        id: 'i-1',
+        coachId: 'c-1',
+        email: 'a-1@example.com',
+        athleteId: 'a-1',
+        now: NOW,
+    })
 }
 
 describe('CoachInvitationEntity', () => {
@@ -39,5 +45,17 @@ describe('CoachInvitationEntity', () => {
         expect(() => inv.decline(LATER)).toThrow(InvalidInvitationStateError)
         expect(() => inv.accept(LATER)).toThrow(InvalidInvitationStateError)
         expect(() => inv.cancel(LATER)).toThrow(InvalidInvitationStateError)
+    })
+
+    it('links a registering athlete only while unresolved', () => {
+        const inv = CoachInvitationEntity.create({ id: 'i-2', coachId: 'c-1', email: 'a@example.com', now: NOW })
+        expect(inv.athleteId).toBeNull()
+
+        inv.linkAthlete('a-9', LATER)
+        expect(inv.athleteId).toBe('a-9')
+
+        // Idempotent: a second link never overwrites the bound athlete.
+        inv.linkAthlete('a-other', LATER)
+        expect(inv.athleteId).toBe('a-9')
     })
 })

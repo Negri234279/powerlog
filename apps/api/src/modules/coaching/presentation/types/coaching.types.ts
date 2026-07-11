@@ -9,8 +9,11 @@ export class CoachInvitationType {
     @Field(() => ID)
     coachId!: string
 
-    @Field(() => ID)
-    athleteId!: string
+    @Field(() => ID, { nullable: true, description: 'Null while the invited email has no account yet.' })
+    athleteId!: string | null
+
+    @Field(() => String, { description: 'The email the invitation was addressed to.' })
+    email!: string
 
     @Field(() => String, { description: 'pending | accepted | declined | cancelled' })
     status!: string

@@ -13,6 +13,7 @@ import { AiModule } from './ai/ai.module'
 import { AppResolver } from './app.resolver'
 import { isProd, isStaging, isTest, validateEnv } from './config/env'
 import { DatabaseModule } from './database/database.module'
+import { EntitlementsModule } from './entitlements/entitlements.module'
 import { GraphqlModule } from './graphql/graphql.module'
 import { HealthModule } from './health/health.module'
 import { MailModule } from './mail/mail.module'
@@ -105,6 +106,7 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
             skipIf: () => isTest,
         }),
         DatabaseModule,
+        EntitlementsModule,
         GraphqlModule,
         ObservabilityModule,
         HealthModule,

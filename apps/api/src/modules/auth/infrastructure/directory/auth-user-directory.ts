@@ -5,6 +5,7 @@ import { FindUserIdByHandleQuery } from '../../../../shared/contracts/find-user-
 import { GetProfileSnapshotQuery } from '../../../../shared/contracts/get-profile-snapshot.query'
 import type { ProfileSnapshot } from '../../../../shared/contracts/profile-snapshot-reader'
 import { UserContact, UserDirectory } from '../../../../shared/contracts/user-directory'
+import { EmailVO } from '../../domain/value-objects/email.vo'
 import { UserRepository } from '../../domain/repositories/user.repository'
 
 /**
@@ -24,6 +25,19 @@ export class AuthUserDirectory extends UserDirectory {
 
     async findUserIdByUsername(username: string): Promise<string | null> {
         return this.queryBus.execute<FindUserIdByHandleQuery, string | null>(new FindUserIdByHandleQuery(username))
+    }
+
+    async findUserIdByEmail(email: string): Promise<string | null> {
+        let vo: EmailVO
+        try {
+            vo = EmailVO.create(email)
+        } catch {
+            // A syntactically invalid email can't belong to any account.
+            return null
+        }
+
+        const user = await this.users.findByEmail(vo)
+        return user ? user.id : null
     }
 
     async getContact(userId: string): Promise<UserContact | null> {

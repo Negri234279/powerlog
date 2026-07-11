@@ -19,6 +19,8 @@ import {
 function hrefFor(type: string): string | null {
     switch (type) {
         case 'coach_invitation':
+        case 'coach_linked':
+        case 'athlete_linked':
             return '/coaching'
         default:
             return null
@@ -197,14 +199,16 @@ function describe(
 ): { icon: ReactNode; message: string } {
     const data = parseData(notification.data)
 
+    const coach = typeof data['coachUsername'] === 'string' ? data['coachUsername'] : '—'
+    const athlete = typeof data['athleteUsername'] === 'string' ? data['athleteUsername'] : '—'
+
     switch (notification.type) {
         case 'coach_invitation':
-            return {
-                icon: <Users className="size-4" />,
-                message: t('items.coachInvitation', {
-                    coach: typeof data['coachUsername'] === 'string' ? data['coachUsername'] : '—',
-                }),
-            }
+            return { icon: <Users className="size-4" />, message: t('items.coachInvitation', { coach }) }
+        case 'coach_linked':
+            return { icon: <Users className="size-4" />, message: t('items.coachLinked', { coach }) }
+        case 'athlete_linked':
+            return { icon: <Users className="size-4" />, message: t('items.athleteLinked', { athlete }) }
         default:
             return { icon: <Bell className="size-4" />, message: t('items.generic') }
     }
