@@ -38,6 +38,52 @@ function useTaxonomyOptions() {
     )
 }
 
+/** Edit / delete controls for one exercise — shared by the mobile cards and the desktop grid. */
+function ExerciseActions({
+    exercise,
+    onEdit,
+    onDelete,
+}: {
+    exercise: AdminExercise
+    onEdit: () => void
+    onDelete: () => void
+}) {
+    const t = useTranslations('admin')
+
+    return (
+        <div className="flex shrink-0 items-center justify-end gap-1">
+            <TrackedButton
+                analyticsId="admin-exercise-edit"
+                type="button"
+                onClick={onEdit}
+                aria-label={t('editAria', { name: exercise.name })}
+                className="grid size-8 place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-white/[0.05] hover:text-text"
+            >
+                <Pencil className="size-4" />
+            </TrackedButton>
+            <TrackedButton
+                analyticsId="admin-exercise-delete-open"
+                type="button"
+                onClick={onDelete}
+                aria-label={t('deleteAria', { name: exercise.name })}
+                className="grid size-8 place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
+            >
+                <Trash className="size-4" />
+            </TrackedButton>
+        </div>
+    )
+}
+
+/** A labelled taxonomy value inside a mobile exercise card. */
+function Meta({ label, value }: { label: string; value: string }) {
+    return (
+        <div>
+            <dt className="font-mono text-eyebrow uppercase text-text-faint">{label}</dt>
+            <dd className="mt-0.5 text-text-dim">{value}</dd>
+        </div>
+    )
+}
+
 export default function AdminExercisesPage() {
     const t = useTranslations('admin')
     const tt = useTranslations('taxonomy')
@@ -153,7 +199,7 @@ export default function AdminExercisesPage() {
 
             {/* List */}
             <div className="mt-6 overflow-hidden rounded-2xl ring-1 ring-hairline">
-                <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr_auto] gap-3 bg-white/[0.02] px-5 py-3 font-mono text-eyebrow uppercase text-text-faint">
+                <div className="hidden grid-cols-[1.6fr_1fr_1fr_1fr_auto] gap-3 bg-white/[0.02] px-5 py-3 font-mono text-eyebrow uppercase text-text-faint md:grid">
                     <span>{t('colName')}</span>
                     <span>{t('colCategory')}</span>
                     <span>{t('colEquipment')}</span>
@@ -171,40 +217,57 @@ export default function AdminExercisesPage() {
                     <p className="px-5 py-8 text-sm text-text-dim">{t('noExercisesMatch')}</p>
                 ) : (
                     <>
-                        {exercises.map((exercise) => (
-                            <div
-                                key={exercise.id}
-                                className="grid grid-cols-[1.6fr_1fr_1fr_1fr_auto] items-center gap-3 border-t border-hairline px-5 py-3.5 text-sm"
-                            >
-                                <div className="min-w-0">
-                                    <p className="truncate text-text">{exercise.name}</p>
-                                    <p className="truncate font-mono text-xs text-text-faint">{exercise.slug}</p>
+                        {/* Phone: one card per exercise. */}
+                        <div className="divide-y divide-hairline md:hidden">
+                            {exercises.map((exercise) => (
+                                <div key={exercise.id} className="p-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-text">{exercise.name}</p>
+                                            <p className="truncate font-mono text-xs text-text-faint">
+                                                {exercise.slug}
+                                            </p>
+                                        </div>
+                                        <ExerciseActions
+                                            exercise={exercise}
+                                            onEdit={() => setEditing(exercise)}
+                                            onDelete={() => setDeleting(exercise)}
+                                        />
+                                    </div>
+                                    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                                        <Meta label={t('colCategory')} value={tt(`category.${exercise.category}`)} />
+                                        <Meta
+                                            label={t('colEquipment')}
+                                            value={tt(`equipment.${exercise.equipment}`)}
+                                        />
+                                        <Meta label={t('colMuscle')} value={tt(`muscle.${exercise.primaryMuscle}`)} />
+                                    </dl>
                                 </div>
-                                <span className="text-text-dim">{tt(`category.${exercise.category}`)}</span>
-                                <span className="text-text-dim">{tt(`equipment.${exercise.equipment}`)}</span>
-                                <span className="text-text-dim">{tt(`muscle.${exercise.primaryMuscle}`)}</span>
-                                <div className="flex items-center justify-end gap-1">
-                                    <TrackedButton
-                                        analyticsId="admin-exercise-edit"
-                                        type="button"
-                                        onClick={() => setEditing(exercise)}
-                                        aria-label={t('editAria', { name: exercise.name })}
-                                        className="grid size-8 place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-white/[0.05] hover:text-text"
-                                    >
-                                        <Pencil className="size-4" />
-                                    </TrackedButton>
-                                    <TrackedButton
-                                        analyticsId="admin-exercise-delete-open"
-                                        type="button"
-                                        onClick={() => setDeleting(exercise)}
-                                        aria-label={t('deleteAria', { name: exercise.name })}
-                                        className="grid size-8 place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
-                                    >
-                                        <Trash className="size-4" />
-                                    </TrackedButton>
+                            ))}
+                        </div>
+
+                        {/* md and up: aligned grid rows. */}
+                        <div className="hidden md:block">
+                            {exercises.map((exercise) => (
+                                <div
+                                    key={exercise.id}
+                                    className="grid grid-cols-[1.6fr_1fr_1fr_1fr_auto] items-center gap-3 border-t border-hairline px-5 py-3.5 text-sm"
+                                >
+                                    <div className="min-w-0">
+                                        <p className="truncate text-text">{exercise.name}</p>
+                                        <p className="truncate font-mono text-xs text-text-faint">{exercise.slug}</p>
+                                    </div>
+                                    <span className="text-text-dim">{tt(`category.${exercise.category}`)}</span>
+                                    <span className="text-text-dim">{tt(`equipment.${exercise.equipment}`)}</span>
+                                    <span className="text-text-dim">{tt(`muscle.${exercise.primaryMuscle}`)}</span>
+                                    <ExerciseActions
+                                        exercise={exercise}
+                                        onEdit={() => setEditing(exercise)}
+                                        onDelete={() => setDeleting(exercise)}
+                                    />
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
 
                         {isFetchingNextPage ? (
                             <div className="space-y-2 border-t border-hairline p-3">
