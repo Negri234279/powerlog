@@ -1,7 +1,7 @@
 'use client'
 
 import { useLocale, useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
@@ -21,6 +21,7 @@ import {
     useWorkoutTemplate,
     useWorkoutTemplates,
 } from '@/lib/graphql/hooks/use-workout-templates'
+import { useEnterExit } from '@/lib/hooks/use-enter-exit'
 import { kgTo, type Units, unitsOf } from '@/lib/units'
 import { Field, Input } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
@@ -506,15 +507,12 @@ export function MesocycleBuilder({
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
-                <TrackedButton
-                    analyticsId="mesocycle-add-week"
-                    type="button"
-                    onClick={addWeek}
-                    className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
-                >
-                    <Plus className="size-4" /> {t('addWeek')}
-                </TrackedButton>
-                <DuplicateWeekControl units={units} onDuplicate={duplicateLastWeek} />
+                <AddWeekControl
+                    units={units}
+                    canDuplicate={weeks.length > 0}
+                    onAddEmpty={addWeek}
+                    onDuplicate={duplicateLastWeek}
+                />
             </div>
 
             <FormError error={error} className="mt-5" />
@@ -542,30 +540,138 @@ export function MesocycleBuilder({
     )
 }
 
-/** "Duplicate last week" with an optional weight increment (display units). */
-function DuplicateWeekControl({ units, onDuplicate }: { units: Units; onDuplicate: (increment: number) => void }) {
+/**
+ * Adding a week: an empty one straight from the button, or — behind the caret —
+ * a copy of the last week to use as the reference to progress from, with an
+ * optional weight increment (in display units).
+ *
+ * One control instead of two: adding a week is a single decision with two
+ * answers, and the copy is the one that needs a number typed into it.
+ */
+function AddWeekControl({
+    units,
+    canDuplicate,
+    onAddEmpty,
+    onDuplicate,
+}: {
+    units: Units
+    /** There is no last week to copy in a brand-new block. */
+    canDuplicate: boolean
+    onAddEmpty: () => void
+    onDuplicate: (increment: number) => void
+}) {
     const t = useTranslations('mesocycles')
+    const [open, setOpen] = useState(false)
     const [increment, setIncrement] = useState('')
+    const containerRef = useRef<HTMLDivElement>(null)
+    const { mounted, className: stateClass } = useEnterExit(open)
+
+    // Close on outside click or Escape, like the other dropdowns.
+    useEffect(() => {
+        if (!open) return
+
+        const onPointerDown = (event: PointerEvent) => {
+            if (!containerRef.current?.contains(event.target as Node)) setOpen(false)
+        }
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setOpen(false)
+        }
+
+        document.addEventListener('pointerdown', onPointerDown)
+        document.addEventListener('keydown', onKey)
+
+        return () => {
+            document.removeEventListener('pointerdown', onPointerDown)
+            document.removeEventListener('keydown', onKey)
+        }
+    }, [open])
+
+    function duplicate() {
+        setOpen(false)
+        onDuplicate(numberOrNull(increment) ?? 0)
+    }
+
     return (
-        <div className="inline-flex items-center gap-2 rounded-full bg-bg/60 py-1 pl-4 pr-1 ring-1 ring-hairline">
-            <span className="text-sm text-text-dim">{t('progressBy', { units })}</span>
-            <input
-                type="number"
-                inputMode="decimal"
-                step="any"
-                value={increment}
-                onChange={(e) => setIncrement(e.target.value)}
-                placeholder="0"
-                className="w-16 rounded-lg bg-transparent px-2 py-1 text-sm text-text outline-none"
-            />
-            <TrackedButton
-                analyticsId="mesocycle-duplicate-week"
-                type="button"
-                onClick={() => onDuplicate(numberOrNull(increment) ?? 0)}
-                className="rounded-full bg-white/[0.06] px-4 py-2 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
-            >
-                {t('duplicateWeek')}
-            </TrackedButton>
+        <div ref={containerRef} className="relative inline-flex">
+            <div className="inline-flex items-stretch overflow-hidden rounded-full bg-white/[0.06] ring-1 ring-hairline">
+                <TrackedButton
+                    analyticsId="mesocycle-add-week"
+                    type="button"
+                    onClick={onAddEmpty}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-text transition-colors duration-300 hover:bg-white/[0.06]"
+                >
+                    <Plus className="size-4" /> {t('addWeek')}
+                </TrackedButton>
+                <span className="w-px bg-hairline" aria-hidden />
+                <TrackedButton
+                    analyticsId="mesocycle-week-options"
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-expanded={open}
+                    aria-label={t('weekOptions')}
+                    onClick={() => setOpen((value) => !value)}
+                    className="grid place-items-center px-3 text-text-dim transition-colors duration-300 hover:bg-white/[0.06] hover:text-text"
+                >
+                    <ChevronDown className={cn('size-4 transition-transform duration-300', open && 'rotate-180')} />
+                </TrackedButton>
+            </div>
+
+            {mounted ? (
+                <div
+                    role="menu"
+                    data-origin="top-left"
+                    className={cn(
+                        't-dropdown absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl bg-shell p-1 shadow-xl ring-1 ring-hairline',
+                        stateClass,
+                    )}
+                >
+                    <TrackedButton
+                        analyticsId="mesocycle-add-empty-week"
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                            setOpen(false)
+                            onAddEmpty()
+                        }}
+                        className="block w-full rounded-xl px-3 py-2 text-left text-sm text-text-dim transition-colors duration-200 hover:bg-white/[0.05] hover:text-text"
+                    >
+                        {t('emptyWeek')}
+                    </TrackedButton>
+
+                    <div className="my-1 border-t border-hairline" />
+
+                    <div className="px-3 py-2">
+                        <p className="text-sm text-text">{t('duplicateLastWeek')}</p>
+                        <p className="mt-0.5 text-xs text-text-faint">{t('duplicateWeekHint')}</p>
+
+                        <div className="mt-2.5 flex items-center gap-2">
+                            <label className="text-xs text-text-dim" htmlFor="week-progress">
+                                {t('progressBy', { units })}
+                            </label>
+                            <input
+                                id="week-progress"
+                                type="number"
+                                inputMode="decimal"
+                                step="any"
+                                value={increment}
+                                onChange={(event) => setIncrement(event.target.value)}
+                                placeholder="0"
+                                className="w-16 rounded-lg bg-bg/60 px-2 py-1 text-sm text-text ring-1 ring-hairline outline-none focus:ring-ember/50"
+                            />
+                            <TrackedButton
+                                analyticsId="mesocycle-duplicate-week"
+                                type="button"
+                                role="menuitem"
+                                disabled={!canDuplicate}
+                                onClick={duplicate}
+                                className="ml-auto rounded-full bg-white/[0.06] px-4 py-1.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-50"
+                            >
+                                {t('duplicateWeek')}
+                            </TrackedButton>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </div>
     )
 }
