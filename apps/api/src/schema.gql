@@ -91,6 +91,8 @@ type AdminWorkoutStats {
 }
 
 type AiMesocycleDraft {
+  """The athlete it was designed for; null → your own block."""
+  athleteId: ID
   createdAt: DateTime!
 
   """The template week."""
@@ -425,6 +427,11 @@ type ExerciseStats {
 }
 
 input GenerateMesocycleDraftInput {
+  """
+  Design for one of your athletes (coaches only): the loads are anchored on THEIR strength, not yours.
+  """
+  athleteId: ID
+
   """Free-text goal (e.g. hypertrophy, strength, peak)."""
   goal: String
 
@@ -746,7 +753,7 @@ type Mutation {
   forgotPassword(email: String!): Boolean!
 
   """
-  Ask the default AI provider to design a training block. Supersedes any open draft.
+  Ask the default AI provider to design a training block. Supersedes any open draft for the same trainee.
   """
   generateMesocycleDraft(input: GenerateMesocycleDraftInput!): AiMesocycleDraft!
 
@@ -1067,9 +1074,9 @@ type Query {
   mesocycle(id: ID!): Mesocycle!
 
   """
-  The training block awaiting a decision, if any. An athlete holds at most one.
+  The training block awaiting a decision, if any. One per trainee: omit athleteId for your own, pass it for the one you are designing for that athlete.
   """
-  mesocycleDraft: AiMesocycleDraft
+  mesocycleDraft(athleteId: ID): AiMesocycleDraft
 
   """
   The caller's mesocycles (newest first), with cheap rollups; optional name search.

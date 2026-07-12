@@ -37,6 +37,8 @@ export interface AiMesocycleDraftMessageView {
  */
 export interface AiMesocycleDraftView {
     id: string
+    /** The athlete it was designed for, or null when it is the caller's own block. */
+    athleteId: string | null
     provider: string
     model: string
     status: string
@@ -54,6 +56,7 @@ export interface AiMesocycleDraftView {
 export function toAiMesocycleDraftView(draft: AiMesocycleDraftAggregate): AiMesocycleDraftView {
     return {
         id: draft.id,
+        athleteId: draft.athleteId,
         provider: draft.provider.value,
         model: draft.model,
         status: draft.status.value,

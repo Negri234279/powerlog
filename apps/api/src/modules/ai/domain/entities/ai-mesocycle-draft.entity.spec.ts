@@ -159,6 +159,7 @@ describe('AiMesocycleDraftAggregate', () => {
         const corrupted = {
             id: stored.id,
             userId: stored.userId,
+            athleteId: stored.athleteId,
             provider: stored.provider,
             model: stored.model,
             status: stored.status,

@@ -35,21 +35,25 @@ export function MesocycleAiPanel({
     units,
     nameById,
     onApply,
+    athleteId,
 }: {
     units: Units
     /** Localized catalog names. The draft carries the canonical English one. */
     nameById: Map<string, string>
     onApply: (draft: AiMesocycleDraft) => void
+    /** Set when a coach designs for one of their athletes: the model is then given
+     *  the ATHLETE's strength, and the draft is filed (and cached) under them. */
+    athleteId?: string
 }) {
     const t = useTranslations('aiMesocycle')
     const locale = useLocale()
     const errorMessage = useErrorMessage()
 
-    const { data: draft, isLoading } = useMesocycleDraft(true)
+    const { data: draft, isLoading } = useMesocycleDraft(true, athleteId)
     const generate = useGenerateMesocycleDraft()
-    const refine = useRefineMesocycleDraft()
-    const accept = useAcceptMesocycleDraft()
-    const discard = useDiscardMesocycleDraft()
+    const refine = useRefineMesocycleDraft(athleteId)
+    const accept = useAcceptMesocycleDraft(athleteId)
+    const discard = useDiscardMesocycleDraft(athleteId)
 
     const [weeks, setWeeks] = useState(4)
     const [trainingDays, setTrainingDays] = useState<number[]>([0, 2, 4])
@@ -89,6 +93,7 @@ export function MesocycleAiPanel({
                     trainingDays,
                     goal: goal.trim() || null,
                     prompt: prompt.trim() || null,
+                    athleteId,
                 }),
             () => track('ai_mesocycle_generated', { weeks: String(weeks), days: String(trainingDays.length) }),
         )

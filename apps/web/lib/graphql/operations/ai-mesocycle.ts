@@ -5,8 +5,8 @@ import { graphql } from '@/lib/graphql/__generated__'
  * written until the athlete takes it into the builder and saves a mesocycle.
  */
 export const MesocycleDraftDocument = graphql(`
-    query MesocycleDraft {
-        mesocycleDraft {
+    query MesocycleDraft($athleteId: ID) {
+        mesocycleDraft(athleteId: $athleteId) {
             ...AiMesocycleDraftFields
         }
     }
@@ -15,6 +15,7 @@ export const MesocycleDraftDocument = graphql(`
 export const AiMesocycleDraftFieldsFragment = graphql(`
     fragment AiMesocycleDraftFields on AiMesocycleDraft {
         id
+        athleteId
         provider
         model
         status

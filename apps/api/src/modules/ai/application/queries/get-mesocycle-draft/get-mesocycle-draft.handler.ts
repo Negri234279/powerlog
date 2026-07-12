@@ -9,7 +9,7 @@ export class GetMesocycleDraftHandler implements IQueryHandler<GetMesocycleDraft
     constructor(private readonly drafts: AiMesocycleDraftRepository) {}
 
     async execute(query: GetMesocycleDraftQuery): Promise<AiMesocycleDraftView | null> {
-        const draft = await this.drafts.findOpenByUser(query.userId)
+        const draft = await this.drafts.findOpenByUser(query.userId, query.athleteId)
 
         return draft ? toAiMesocycleDraftView(draft) : null
     }

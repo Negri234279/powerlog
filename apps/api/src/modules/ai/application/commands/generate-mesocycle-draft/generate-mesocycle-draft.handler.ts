@@ -31,7 +31,9 @@ export class GenerateMesocycleDraftHandler implements ICommandHandler<
         // athlete waits for anything.
         const config = await this.designer.resolveConfig(command.userId)
 
-        const context = await this.context.read(command.userId)
+        // The strength that anchors the loads is the TRAINEE's — the athlete when a
+        // coach is designing for them. Workouts rejects the read if they aren't linked.
+        const context = await this.context.read(command.userId, command.athleteId)
         const request = {
             weeks: command.weeks,
             trainingDays: command.trainingDays,
@@ -42,8 +44,9 @@ export class GenerateMesocycleDraftHandler implements ICommandHandler<
         const designed = await this.designer.design(config, context, request)
         const now = this.clock.now()
 
-        // An athlete holds one proposal at a time; the old one is superseded.
-        const previous = await this.drafts.findOpenByUser(command.userId)
+        // One proposal at a time per (owner, trainee): a coach designing for Ana
+        // does not wipe the draft they have open for Luis.
+        const previous = await this.drafts.findOpenByUser(command.userId, command.athleteId)
         if (previous) {
             previous.discard(now)
             await this.drafts.save(previous)
@@ -52,6 +55,7 @@ export class GenerateMesocycleDraftHandler implements ICommandHandler<
         const draft = AiMesocycleDraftAggregate.create({
             id: this.ids.uuid(),
             userId: command.userId,
+            athleteId: command.athleteId,
             provider: config.provider,
             model: config.model as string,
             weeks: command.weeks,

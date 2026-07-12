@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import { GetMesocycleDesignContextQuery } from '../../../../../shared/contracts/get-mesocycle-design-context.query'
 import { ExerciseEntity } from '../../../domain/entities/exercise.entity'
+import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
 import { ExerciseRepository } from '../../../domain/repositories/exercise.repository'
 import { type AthleteStrengthRow, AthleteStrengthReadModel } from '../../ports/athlete-strength.read-model'
 import { GetMesocycleDesignContextHandler } from './get-mesocycle-design-context.handler'
 
 const USER_ID = '11111111-1111-4111-8111-111111111111'
+const ATHLETE_ID = '33333333-3333-4333-8333-333333333333'
 
 const squat = ExerciseEntity.create({
     id: '22222222-2222-4222-8222-222222222222',
@@ -57,8 +60,8 @@ class StubAthleteStrengthReadModel extends AthleteStrengthReadModel {
     }
 }
 
-const buildHandler = (strength = new StubAthleteStrengthReadModel()) =>
-    new GetMesocycleDesignContextHandler(new StubExerciseRepository(), strength)
+const buildHandler = (strength = new StubAthleteStrengthReadModel(), coachLinks = new FakeCoachLinks()) =>
+    new GetMesocycleDesignContextHandler(new StubExerciseRepository(), strength, coachLinks)
 
 describe('GetMesocycleDesignContextHandler', () => {
     it('serves the catalog the model must choose from, keyed by slug', async () => {
@@ -98,5 +101,27 @@ describe('GetMesocycleDesignContextHandler', () => {
         )
 
         expect(context.strength).toEqual([lift])
+    })
+
+    it('anchors a coach’s design on the ATHLETE’s strength, not the coach’s', async () => {
+        const strength = new StubAthleteStrengthReadModel()
+        const coachLinks = new FakeCoachLinks().link(USER_ID, ATHLETE_ID)
+
+        await buildHandler(strength, coachLinks).execute(new GetMesocycleDesignContextQuery(USER_ID, 30, ATHLETE_ID))
+
+        // The whole point: the loads must come from the lifts of whoever will train
+        // the block. A block built off the coach's e1RMs would prescribe someone
+        // else's kilos, and nothing downstream would catch it.
+        expect(strength.calls).toEqual([{ userId: ATHLETE_ID, limit: 30 }])
+    })
+
+    it('refuses to read the strength of someone the caller does not coach', async () => {
+        const strength = new StubAthleteStrengthReadModel()
+
+        await expect(
+            buildHandler(strength).execute(new GetMesocycleDesignContextQuery(USER_ID, 30, ATHLETE_ID)),
+        ).rejects.toThrow(NotLinkedToAthleteError)
+
+        expect(strength.calls).toEqual([])
     })
 })

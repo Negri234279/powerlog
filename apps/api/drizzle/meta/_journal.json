@@ -281,6 +281,13 @@
       "when": 1783854887408,
       "tag": "0039_noisy_tempest",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1783894124435,
+      "tag": "0040_orange_kid_colt",
+      "breakpoints": true
     }
   ]
 }

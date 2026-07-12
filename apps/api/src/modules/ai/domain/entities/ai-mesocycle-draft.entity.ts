@@ -62,6 +62,12 @@ export interface MesocycleDraftProposal {
 export interface AiMesocycleDraftProps {
     id: string
     userId: string
+    /**
+     * Who will train the block. Null → the owner designed it for themselves; set →
+     * a coach designed it for that athlete, off THEIR strength. Kept on the draft
+     * so a proposal built for one athlete can never be seeded into another's block.
+     */
+    athleteId: string | null
     provider: AiProviderVO
     model: string
     status: PlanDraftStatusVO
@@ -96,6 +102,8 @@ export class AiMesocycleDraftAggregate {
     static create(input: {
         id: string
         userId: string
+        /** Set when a coach designs for one of their athletes. */
+        athleteId?: string | null
         provider: AiProviderVO
         model: string
         weeks: number
@@ -126,6 +134,7 @@ export class AiMesocycleDraftAggregate {
         return new AiMesocycleDraftAggregate({
             id: input.id,
             userId: input.userId,
+            athleteId: input.athleteId ?? null,
             provider: input.provider,
             model: input.model,
             status: PlanDraftStatusVO.open(),
@@ -225,6 +234,11 @@ export class AiMesocycleDraftAggregate {
     }
     get userId(): string {
         return this.props.userId
+    }
+
+    /** The athlete the block was designed for, or null when it is the owner's own. */
+    get athleteId(): string | null {
+        return this.props.athleteId
     }
     get provider(): AiProviderVO {
         return this.props.provider

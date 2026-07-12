@@ -82,6 +82,15 @@ export const CreateMesocycleDocument = graphql(`
     }
 `)
 
+/** Coaches only: the athlete owns the block, the coach is stamped as its planner. */
+export const CreateAthleteMesocycleDocument = graphql(`
+    mutation CreateAthleteMesocycle($athleteId: ID!, $input: MesocycleInput!) {
+        createAthleteMesocycle(athleteId: $athleteId, input: $input) {
+            ...MesocycleFields
+        }
+    }
+`)
+
 export const UpdateMesocycleDocument = graphql(`
     mutation UpdateMesocycle($id: ID!, $input: MesocycleInput!) {
         updateMesocycle(id: $id, input: $input) {

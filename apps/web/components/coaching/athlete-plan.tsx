@@ -128,6 +128,27 @@ function PlanSessionCard({ athleteId }: { athleteId: string }) {
     )
 }
 
+/**
+ * Build a block the athlete owns, from scratch or with the AI. Distinct from
+ * assigning: this one is designed *for them* — the AI anchors the loads on the
+ * athlete's own lifts, not the coach's.
+ */
+function BuildBlockCard({ athleteId }: { athleteId: string }) {
+    const t = useTranslations('coaching')
+
+    return (
+        <Card title={t('buildBlockTitle')} subtitle={t('buildBlockSubtitle')}>
+            <TrackedLink
+                analyticsId="athlete-build-block"
+                href={`/coaching/athletes/${athleteId}/mesocycles/new`}
+                className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
+            >
+                <Dumbbell className="size-4" /> {t('buildBlockFor')}
+            </TrackedLink>
+        </Card>
+    )
+}
+
 /** Copy one of the coach's own blocks into the athlete's library. */
 function AssignBlockCard({ athleteId }: { athleteId: string }) {
     const t = useTranslations('coaching')
@@ -262,6 +283,7 @@ export function AthletePlan({ athleteId }: { athleteId: string }) {
     return (
         <div className="space-y-4">
             <PlanSessionCard athleteId={athleteId} />
+            <BuildBlockCard athleteId={athleteId} />
             <AssignBlockCard athleteId={athleteId} />
             <AthleteBlocks athleteId={athleteId} />
         </div>

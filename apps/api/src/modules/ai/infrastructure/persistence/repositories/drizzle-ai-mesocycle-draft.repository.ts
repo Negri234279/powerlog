@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, isNull } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import type { AiMesocycleDraftAggregate } from '../../../domain/entities/ai-mesocycle-draft.entity'
@@ -19,11 +19,20 @@ export class DrizzleAiMesocycleDraftRepository extends AiMesocycleDraftRepositor
         return draft ? this.hydrate(draft) : null
     }
 
-    async findOpenByUser(userId: string): Promise<AiMesocycleDraftAggregate | null> {
+    async findOpenByUser(userId: string, athleteId: string | null): Promise<AiMesocycleDraftAggregate | null> {
         const [draft] = await this.db
             .select()
             .from(aiMesocycleDrafts)
-            .where(and(eq(aiMesocycleDrafts.userId, userId), eq(aiMesocycleDrafts.status, 'open')))
+            .where(
+                and(
+                    eq(aiMesocycleDrafts.userId, userId),
+                    // `eq(col, null)` would render `= NULL`, which matches nothing.
+                    athleteId === null
+                        ? isNull(aiMesocycleDrafts.athleteId)
+                        : eq(aiMesocycleDrafts.athleteId, athleteId),
+                    eq(aiMesocycleDrafts.status, 'open'),
+                ),
+            )
             .limit(1)
 
         return draft ? this.hydrate(draft) : null

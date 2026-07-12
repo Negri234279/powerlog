@@ -17,8 +17,12 @@ export class InMemoryAiMesocycleDraftRepository extends AiMesocycleDraftReposito
         return this.rows.get(id) ?? null
     }
 
-    async findOpenByUser(userId: string): Promise<AiMesocycleDraftAggregate | null> {
-        return this.all().find((draft) => draft.userId === userId && draft.status.isOpen) ?? null
+    async findOpenByUser(userId: string, athleteId: string | null): Promise<AiMesocycleDraftAggregate | null> {
+        return (
+            this.all().find(
+                (draft) => draft.userId === userId && draft.athleteId === athleteId && draft.status.isOpen,
+            ) ?? null
+        )
     }
 
     async save(draft: AiMesocycleDraftAggregate): Promise<void> {

@@ -46,7 +46,7 @@ describe('AI mesocycle drafts (integration)', () => {
         })
         await drafts.save(AiMesocycleDraftMother.persistable({ userId, trainingDays: [0, 3], proposal, weeks: 6 }))
 
-        const stored = await drafts.findOpenByUser(userId)
+        const stored = await drafts.findOpenByUser(userId, null)
 
         expect(stored?.weeks).toBe(6)
         expect(stored?.trainingDays).toEqual([0, 3])
@@ -98,7 +98,7 @@ describe('AI mesocycle drafts (integration)', () => {
         const second = AiMesocycleDraftMother.persistable({ userId })
 
         await expect(drafts.save(second)).resolves.toBeUndefined()
-        expect(await drafts.findOpenByUser(userId)).toMatchObject({ id: second.id })
+        expect(await drafts.findOpenByUser(userId, null)).toMatchObject({ id: second.id })
     })
 
     it('erases a user’s drafts and their messages on account deletion', async () => {
@@ -107,7 +107,7 @@ describe('AI mesocycle drafts (integration)', () => {
 
         await drafts.deleteAllByUser(userId)
 
-        expect(await drafts.findOpenByUser(userId)).toBeNull()
+        expect(await drafts.findOpenByUser(userId, null)).toBeNull()
         expect(await db.select().from(schema.aiMesocycleDraftMessages)).toHaveLength(0)
     })
 
@@ -123,7 +123,34 @@ describe('AI mesocycle drafts (integration)', () => {
     it('does not leak another athlete’s open draft', async () => {
         await drafts.save(AiMesocycleDraftMother.persistable({ userId: randomUUID() }))
 
-        expect(await drafts.findOpenByUser(randomUUID())).toBeNull()
+        expect(await drafts.findOpenByUser(randomUUID(), null)).toBeNull()
+    })
+
+    it('lets a coach hold one open draft per athlete, plus one of their own', async () => {
+        const coachId = randomUUID()
+        const ana = randomUUID()
+        const luis = randomUUID()
+
+        const own = AiMesocycleDraftMother.persistable({ userId: coachId })
+        const forAna = AiMesocycleDraftMother.persistable({ userId: coachId, athleteId: ana })
+        const forLuis = AiMesocycleDraftMother.persistable({ userId: coachId, athleteId: luis })
+        await drafts.save(own)
+        await drafts.save(forAna)
+        await drafts.save(forLuis)
+
+        // Three open drafts coexist because the unique index is keyed on the pair…
+        expect(await drafts.findOpenByUser(coachId, null)).toMatchObject({ id: own.id })
+        expect(await drafts.findOpenByUser(coachId, ana)).toMatchObject({ id: forAna.id })
+        expect(await drafts.findOpenByUser(coachId, luis)).toMatchObject({ id: forLuis.id })
+    })
+
+    it('still allows only one open draft per (coach, athlete) pair', async () => {
+        const coachId = randomUUID()
+        const athleteId = randomUUID()
+        await drafts.save(AiMesocycleDraftMother.persistable({ userId: coachId, athleteId }))
+
+        // A second open draft for the same athlete is what the partial index forbids.
+        await expect(drafts.save(AiMesocycleDraftMother.persistable({ userId: coachId, athleteId }))).rejects.toThrow()
     })
 
     it('stores the training days as a real integer array', async () => {

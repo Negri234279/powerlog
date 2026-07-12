@@ -66,9 +66,12 @@ afterAll(async () => {
 })
 
 beforeEach(async () => {
-    await pool.query('TRUNCATE TABLE users RESTART IDENTITY CASCADE')
-    await pool.query('TRUNCATE TABLE ai_mesocycle_drafts RESTART IDENTITY CASCADE')
-    await pool.query('TRUNCATE TABLE ai_provider_configs RESTART IDENTITY CASCADE')
+    // profiles is listed explicitly: it references users by a *soft* id (no FK, to
+    // keep the modules apart), so CASCADE doesn't reach it — and a leftover profile
+    // keeps its handle taken, failing the next test's register.
+    await pool.query(
+        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, workout_sessions, mesocycles, notifications, ai_mesocycle_drafts, ai_provider_configs RESTART IDENTITY CASCADE',
+    )
     openai.reset().willAnswer(VALID_WEEK)
 })
 
@@ -120,6 +123,69 @@ function generate(access: string, prompt = 'Squat focus.'): Promise<request.Resp
         }) { ${DRAFT_FIELDS} } }`,
         access,
     )
+}
+
+/** The same, aimed at one of the caller's athletes. */
+function generateFor(access: string, athleteId: string): Promise<request.Response> {
+    return gql(
+        `mutation { generateMesocycleDraft(input: {
+            athleteId: "${athleteId}", weeks: 4, trainingDays: [0, 3], goal: "strength"
+        }) { id athleteId } }`,
+        access,
+    )
+}
+
+/** Every "e1RM <kg> kg" the prompt carried — whose numbers reached the model. */
+function e1rmsIn(prompt: string): number[] {
+    return [...prompt.matchAll(/e1RM ([\d.]+) kg/g)].map((match) => Number(match[1]))
+}
+
+async function userIdOf(access: string): Promise<string> {
+    const res = await gql(`query { me { id } }`, access)
+    return res.body.data.me.id
+}
+
+async function anExerciseId(access: string): Promise<string> {
+    const res = await gql(`query { exercises { id } }`, access)
+    return res.body.data.exercises[0].id
+}
+
+/** A completed session of one exercise at one weight — what builds an e1RM. */
+async function aCompletedSessionOf(access: string, exerciseId: string, weight: number): Promise<void> {
+    const created = await gql(`mutation { createWorkoutSession { id } }`, access)
+    const sessionId: string = created.body.data.createWorkoutSession.id
+
+    const entry = await gql(
+        `mutation { addExerciseEntry(input: { sessionId: "${sessionId}", exerciseId: "${exerciseId}" }) { entries { id } } }`,
+        access,
+    )
+    const entryId: string = entry.body.data.addExerciseEntry.entries[0].id
+    await gql(
+        `mutation { logSet(input: { sessionId: "${sessionId}", entryId: "${entryId}", weight: ${weight}, reps: 5 }) { id } }`,
+        access,
+    )
+    await gql(`mutation { completeWorkoutSession(id: "${sessionId}") { status } }`, access)
+}
+
+/** A coach with AI configured (their own key), linked to two athletes. */
+async function linkedPairWithAi(): Promise<{
+    coachAccess: string
+    athlete: { access: string; userId: string }
+    second: { access: string; userId: string }
+}> {
+    const coach = await anAthleteWithAi('coach@example.com')
+    const promoted = await gql(`mutation { becomeCoach { role } }`, coach)
+    const coachAccess = cookiePair(setCookies(promoted), COOKIE.access)!
+
+    const link = async (email: string): Promise<{ access: string; userId: string }> => {
+        const access = await registerUser(email)
+        const invited = await gql(`mutation { inviteAthlete(email: "${email}") { id } }`, coachAccess)
+        await gql(`mutation { acceptInvitation(id: "${invited.body.data.inviteAthlete.id}") { status } }`, access)
+
+        return { access, userId: await userIdOf(access) }
+    }
+
+    return { coachAccess, athlete: await link('athlete@example.com'), second: await link('second@example.com') }
 }
 
 describe('AI mesocycle drafts via GraphQL', () => {
@@ -249,5 +315,65 @@ describe('AI mesocycle drafts via GraphQL', () => {
         const res = await gql(`mutation { discardMesocycleDraft(draftId: "${draftId}") }`, stranger)
 
         expect(res.body.errors[0].extensions.code).toBe('AI_MESOCYCLE_DRAFT_NOT_FOUND')
+    })
+})
+
+describe('AI mesocycle — a coach designing for an athlete', () => {
+    it("anchors the block on the ATHLETE's lifts, never the coach's, and hands it to them", async () => {
+        const { coachAccess, athlete } = await linkedPairWithAi()
+
+        // Both squat; the coach is far stronger, so the e1RM in the prompt says
+        // whose strength the model was actually given.
+        const exerciseId = await anExerciseId(coachAccess)
+        await aCompletedSessionOf(athlete.access, exerciseId, 100)
+        await aCompletedSessionOf(coachAccess, exerciseId, 200)
+
+        const res = await generateFor(coachAccess, athlete.userId)
+        expect(res.body.errors).toBeUndefined()
+        expect(res.body.data.generateMesocycleDraft.athleteId).toBe(athlete.userId)
+
+        // The prompt lists "<slug> | e1RM <kg> kg" per known lift. The athlete's 100×5
+        // is ~117 kg; the coach's 200×5 would be ~233. Comparing against a threshold
+        // rather than an exact number keeps this honest about e1RM rounding.
+        const e1rms = e1rmsIn(JSON.stringify(openai.completeCalls.at(-1)))
+        expect(e1rms.length).toBeGreaterThan(0)
+        expect(Math.max(...e1rms)).toBeLessThan(150)
+
+        // The block itself is created for the athlete: they own it, the coach plans it.
+        const created = await gql(
+            `mutation { createAthleteMesocycle(athleteId: "${athlete.userId}", input: {
+                name: "Block", microcycles: [{ label: "W1", days: [] }]
+            }) { id ownerId plannedByUserId } }`,
+            coachAccess,
+        )
+        expect(created.body.errors).toBeUndefined()
+        expect(created.body.data.createAthleteMesocycle.ownerId).toBe(athlete.userId)
+    })
+
+    it('refuses to design for someone the coach does not coach', async () => {
+        const { coachAccess } = await linkedPairWithAi()
+        const stranger = await registerUser('stranger2@example.com')
+        const strangerId = await userIdOf(stranger)
+
+        const res = await generateFor(coachAccess, strangerId)
+
+        expect(res.body.errors[0].extensions.code).toBe('NOT_LINKED_TO_ATHLETE')
+        // The provider was never called: no key burned, no quota spent.
+        expect(openai.completeCalls).toHaveLength(0)
+    })
+
+    it('keeps one open draft per athlete — designing for one does not wipe the other', async () => {
+        const { coachAccess, athlete, second } = await linkedPairWithAi()
+
+        const first = await generateFor(coachAccess, athlete.userId)
+        const other = await generateFor(coachAccess, second.userId)
+
+        const forFirst = await gql(`query { mesocycleDraft(athleteId: "${athlete.userId}") { id } }`, coachAccess)
+        const forSecond = await gql(`query { mesocycleDraft(athleteId: "${second.userId}") { id } }`, coachAccess)
+
+        expect(forFirst.body.data.mesocycleDraft.id).toBe(first.body.data.generateMesocycleDraft.id)
+        expect(forSecond.body.data.mesocycleDraft.id).toBe(other.body.data.generateMesocycleDraft.id)
+        // And the coach's own slot is still free.
+        expect((await gql(`query { mesocycleDraft { id } }`, coachAccess)).body.data.mesocycleDraft).toBeNull()
     })
 })

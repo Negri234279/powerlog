@@ -1,4 +1,4 @@
-import { Field, InputType, Int } from '@nestjs/graphql'
+import { Field, ID, InputType, Int } from '@nestjs/graphql'
 import { z } from 'zod'
 
 import { MESOCYCLE_DRAFT_LIMITS } from '../../domain/entities/ai-mesocycle-draft.entity'
@@ -7,6 +7,13 @@ const { weeks, daysPerWeek } = MESOCYCLE_DRAFT_LIMITS
 
 @InputType()
 export class GenerateMesocycleDraftInput {
+    @Field(() => ID, {
+        nullable: true,
+        description:
+            'Design for one of your athletes (coaches only): the loads are anchored on THEIR strength, not yours.',
+    })
+    athleteId?: string | null
+
     @Field(() => Int, { description: 'How many weeks the block runs for. The template week is repeated in each.' })
     weeks!: number
 
@@ -31,6 +38,7 @@ export class GenerateMesocycleDraftInput {
  * one, or from adding training days the athlete never asked for.
  */
 export const generateMesocycleDraftSchema = z.object({
+    athleteId: z.string().uuid().nullable().optional(),
     weeks: z.number().int().min(weeks.min).max(weeks.max),
     trainingDays: z
         .array(z.number().int().min(0).max(6))

@@ -79,6 +79,12 @@ export class AiMesocycleDraftType {
     @Field(() => ID)
     id!: string
 
+    @Field(() => ID, {
+        nullable: true,
+        description: 'The athlete it was designed for; null → your own block.',
+    })
+    athleteId!: string | null
+
     @Field(() => String, { description: '"openai" or "anthropic".' })
     provider!: string
 

@@ -8,6 +8,7 @@ import type {
 } from '@/lib/graphql/__generated__/graphql'
 import { gqlRequest } from '@/lib/graphql/client'
 import {
+    CreateAthleteMesocycleDocument,
     CreateMesocycleDocument,
     DeleteMesocycleDocument,
     GenerateMesocycleWeekDocument,
@@ -56,6 +57,19 @@ export function useCreateMesocycle() {
         onSuccess: (r) => {
             qc.setQueryData(['mesocycle', r.createMesocycle.id], r.createMesocycle)
             invalidateMesocycles(qc)
+        },
+    })
+}
+
+/** Coaches only: the athlete owns the block, the coach plans (and edits) it. */
+export function useCreateAthleteMesocycle(athleteId: string) {
+    const qc = useQueryClient()
+    return useMutation({
+        mutationFn: (input: MesocycleInput) => gqlRequest(CreateAthleteMesocycleDocument, { athleteId, input }),
+        onSuccess: (r) => {
+            qc.setQueryData(['mesocycle', r.createAthleteMesocycle.id], r.createAthleteMesocycle)
+            // The block lands in the athlete's library, not the coach's.
+            void qc.invalidateQueries({ queryKey: ['athlete', athleteId] })
         },
     })
 }

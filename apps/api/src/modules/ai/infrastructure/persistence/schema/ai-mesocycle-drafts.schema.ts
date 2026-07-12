@@ -26,6 +26,10 @@ export const aiMesocycleDrafts = pgTable(
     {
         id: uuid('id').primaryKey(),
         userId: uuid('user_id').notNull(),
+        // Set when a coach designed the block for one of their athletes: the loads
+        // came from THAT athlete's strength, so the draft may only ever be seeded
+        // into that athlete's block. Soft reference, like user_id.
+        athleteId: uuid('athlete_id'),
         provider: aiProviderEnum('provider').notNull(),
         // The model that produced it — the same block re-proposed by another model
         // is a different draft, and the history should say which was which.
@@ -41,10 +45,15 @@ export const aiMesocycleDrafts = pgTable(
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },
     (table) => [
-        // An athlete has at most one proposal on the table at a time. Accepted and
+        // One open proposal per (owner, trainee): the athlete has one of their own,
+        // and a coach has one per athlete they are designing for. Accepted and
         // discarded drafts fall out of the index, so the history stays.
+        //
+        // Keyed on `coalesce(athlete_id, user_id)` rather than on `athlete_id`:
+        // Postgres treats NULLs as distinct in a unique index, so indexing the raw
+        // column would let a user pile up open drafts of their own.
         uniqueIndex('ai_mesocycle_drafts_one_open_per_user')
-            .on(table.userId)
+            .on(table.userId, sql`coalesce(${table.athleteId}, ${table.userId})`)
             .where(sql`${table.status} = 'open'`),
     ],
 )

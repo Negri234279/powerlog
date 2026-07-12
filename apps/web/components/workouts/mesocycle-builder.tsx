@@ -11,6 +11,7 @@ import { useMe } from '@/lib/graphql/hooks/use-auth'
 import { type ExerciseData, useExercises } from '@/lib/graphql/hooks/use-workouts'
 import {
     type MesocycleData,
+    useCreateAthleteMesocycle,
     useCreateMesocycle,
     useMesocycle,
     useUpdateMesocycle,
@@ -195,10 +196,14 @@ export function MesocycleBuilder({
     mesocycleId,
     onClose,
     onSaved,
+    athleteId,
 }: {
     mesocycleId: string | null
     onClose: () => void
     onSaved: () => void
+    /** Set when a coach builds the block FOR one of their athletes: the athlete
+     *  owns it, the coach plans it, and the AI designs off the athlete's strength. */
+    athleteId?: string
 }) {
     const { data: me } = useMe()
     const units = unitsOf(me?.units)
@@ -207,8 +212,9 @@ export function MesocycleBuilder({
     const { data: loaded, isLoading: loadingMesocycle } = useMesocycle(mesocycleId)
 
     const create = useCreateMesocycle()
+    const createForAthlete = useCreateAthleteMesocycle(athleteId ?? '')
     const update = useUpdateMesocycle()
-    const pending = create.isPending || update.isPending
+    const pending = create.isPending || createForAthlete.isPending || update.isPending
 
     const t = useTranslations('mesocycles')
     const tw = useTranslations('workouts')
@@ -393,6 +399,9 @@ export function MesocycleBuilder({
             if (editing) {
                 await update.mutateAsync({ id: mesocycleId, input })
                 track('mesocycle_updated', {})
+            } else if (athleteId) {
+                await createForAthlete.mutateAsync(input)
+                track('mesocycle_created', {})
             } else {
                 await create.mutateAsync(input)
                 track('mesocycle_created', {})
@@ -464,7 +473,9 @@ export function MesocycleBuilder({
             </div>
 
             {/* Only when creating: an existing mesocycle is edited, not designed. */}
-            {editing ? null : <MesocycleAiPanel units={units} nameById={nameById} onApply={applyAiProposal} />}
+            {editing ? null : (
+                <MesocycleAiPanel units={units} nameById={nameById} onApply={applyAiProposal} athleteId={athleteId} />
+            )}
 
             <div className="mt-4 space-y-4">
                 {weeks.map((week, index) => (

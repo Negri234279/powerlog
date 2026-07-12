@@ -1,7 +1,9 @@
 import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 
+import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import { GetMesocycleDesignContextQuery } from '../../../../../shared/contracts/get-mesocycle-design-context.query'
 import type { MesocycleDesignContext } from '../../../../../shared/contracts/mesocycle-design-context'
+import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
 import { ExerciseRepository } from '../../../domain/repositories/exercise.repository'
 import { AthleteStrengthReadModel } from '../../ports/athlete-strength.read-model'
 
@@ -15,6 +17,12 @@ import { AthleteStrengthReadModel } from '../../ports/athlete-strength.read-mode
  * unlocalized: they are what the model was trained on, and the athlete never sees
  * them — the client renders each exercise from its own localized catalog once the
  * slug has been resolved to an id.
+ *
+ * Whose strength goes in is the question that matters: **the person who will train
+ * the block**. When a coach designs for an athlete (`athleteId` set, link checked
+ * here) the loads are anchored on the athlete's lifts — a block built off the
+ * coach's own e1RMs would prescribe someone else's kilos, and nothing downstream
+ * would catch it.
  */
 @QueryHandler(GetMesocycleDesignContextQuery)
 export class GetMesocycleDesignContextHandler implements IQueryHandler<
@@ -24,12 +32,15 @@ export class GetMesocycleDesignContextHandler implements IQueryHandler<
     constructor(
         private readonly exercises: ExerciseRepository,
         private readonly strength: AthleteStrengthReadModel,
+        private readonly coachLinks: CoachLinks,
     ) {}
 
     async execute(query: GetMesocycleDesignContextQuery): Promise<MesocycleDesignContext> {
+        const trainee = await this.resolveTrainee(query)
+
         const [catalog, strength] = await Promise.all([
             this.exercises.findAll(),
-            this.strength.forUser(query.userId, query.strengthLimit),
+            this.strength.forUser(trainee, query.strengthLimit),
         ])
 
         return {
@@ -43,5 +54,15 @@ export class GetMesocycleDesignContextHandler implements IQueryHandler<
             })),
             strength: strength.map((lift) => ({ ...lift })),
         }
+    }
+
+    /** Whose lifts anchor the loads: the caller, or the athlete they coach. */
+    private async resolveTrainee(query: GetMesocycleDesignContextQuery): Promise<string> {
+        const { athleteId, userId } = query
+        if (athleteId === null || athleteId === userId) return userId
+
+        if (!(await this.coachLinks.areLinked(userId, athleteId))) throw new NotLinkedToAthleteError()
+
+        return athleteId
     }
 }

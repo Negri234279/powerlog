@@ -38,7 +38,9 @@ export class RefineMesocycleDraftHandler implements ICommandHandler<RefineMesocy
         draft.requireRefinable()
 
         const config = await this.designer.resolveConfig(command.userId)
-        const context = await this.context.read(command.userId)
+        // The same trainee the draft was designed for — a refinement must not
+        // silently re-anchor the block on the coach's own numbers.
+        const context = await this.context.read(command.userId, draft.athleteId)
 
         const thread: LlmMessage[] = [
             ...draft.messages.map((message) => ({ role: message.role, content: message.content })),

@@ -24,8 +24,8 @@ export class QueryBusMesocycleDesignContextReader extends MesocycleDesignContext
         super()
     }
 
-    async read(userId: string): Promise<MesocycleDesignContext> {
-        const query = new GetMesocycleDesignContextQuery(userId, STRENGTH_LIMIT)
+    async read(userId: string, athleteId: string | null = null): Promise<MesocycleDesignContext> {
+        const query = new GetMesocycleDesignContextQuery(userId, STRENGTH_LIMIT, athleteId)
 
         return this.queryBus.execute<GetMesocycleDesignContextQuery, MesocycleDesignContext>(query)
     }

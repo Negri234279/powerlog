@@ -15,7 +15,7 @@ import { GetMesocycleDraftQuery } from '../../application/queries/get-mesocycle-
 import type { AiMesocycleDraftView } from '../../application/views/ai-mesocycle-draft.view'
 import { GenerateMesocycleDraftInput, generateMesocycleDraftSchema } from '../inputs/generate-mesocycle-draft.input'
 import { RefineMesocycleDraftInput, refineMesocycleDraftSchema } from '../inputs/refine-mesocycle-draft.input'
-import { uuidSchema } from '../inputs/uuid.schema'
+import { optionalUuidSchema, uuidSchema } from '../inputs/uuid.schema'
 import { AiMesocycleDraftType } from '../types/ai-mesocycle-draft.type'
 
 /**
@@ -34,17 +34,23 @@ export class AiMesocycleResolver {
 
     @Query(() => AiMesocycleDraftType, {
         nullable: true,
-        description: 'The training block awaiting a decision, if any. An athlete holds at most one.',
+        description:
+            'The training block awaiting a decision, if any. One per trainee: omit athleteId for your own, pass it for the one you are designing for that athlete.',
     })
-    async mesocycleDraft(@CurrentUser() user: AuthUser): Promise<AiMesocycleDraftType | null> {
-        const query = new GetMesocycleDraftQuery(user.userId)
+    async mesocycleDraft(
+        @CurrentUser() user: AuthUser,
+        @Args('athleteId', { type: () => ID, nullable: true }, new ZodValidationPipe(optionalUuidSchema))
+        athleteId?: string,
+    ): Promise<AiMesocycleDraftType | null> {
+        const query = new GetMesocycleDraftQuery(user.userId, athleteId ?? null)
         const view = await this.queryBus.execute<GetMesocycleDraftQuery, AiMesocycleDraftView | null>(query)
 
         return view ? toType(view) : null
     }
 
     @Mutation(() => AiMesocycleDraftType, {
-        description: 'Ask the default AI provider to design a training block. Supersedes any open draft.',
+        description:
+            'Ask the default AI provider to design a training block. Supersedes any open draft for the same trainee.',
     })
     @Throttle({ default: { limit: 5, ttl: 60_000 } })
     async generateMesocycleDraft(
@@ -57,6 +63,7 @@ export class AiMesocycleResolver {
             input.trainingDays,
             input.goal ?? null,
             input.prompt ?? null,
+            input.athleteId ?? null,
         )
 
         return toType(await this.commandBus.execute<GenerateMesocycleDraftCommand, AiMesocycleDraftView>(command))

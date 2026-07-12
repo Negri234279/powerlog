@@ -13,21 +13,27 @@ import {
 export type AiMesocycleDraft = NonNullable<MesocycleDraftQuery['mesocycleDraft']>
 export type AiMesocycleDraftDay = AiMesocycleDraft['days'][number]
 
-/** An athlete holds at most one open draft, so the key needs no id. */
-const draftKey = ['mesocycleDraft']
+/**
+ * One open draft per trainee: your own (`null`) and one per athlete a coach is
+ * designing for. Keying the cache by trainee is what keeps a block designed off
+ * Ana's numbers from being seeded into Luis's builder.
+ */
+const draftKey = (athleteId?: string) => ['mesocycleDraft', athleteId ?? null] as const
 
 export interface GenerateMesocycleVariables {
     weeks: number
     trainingDays: number[]
     goal?: string | null
     prompt?: string | null
+    /** Set when a coach designs for one of their athletes. */
+    athleteId?: string
 }
 
-/** The block awaiting a decision, or null. */
-export function useMesocycleDraft(enabled: boolean) {
+/** The block awaiting a decision for this trainee, or null. */
+export function useMesocycleDraft(enabled: boolean, athleteId?: string) {
     return useQuery({
-        queryKey: draftKey,
-        queryFn: async () => (await gqlRequest(MesocycleDraftDocument)).mesocycleDraft,
+        queryKey: draftKey(athleteId),
+        queryFn: async () => (await gqlRequest(MesocycleDraftDocument, { athleteId })).mesocycleDraft,
         enabled,
         retry: false,
     })
@@ -44,17 +50,17 @@ export function useGenerateMesocycleDraft() {
     return useMutation({
         mutationFn: async (input: GenerateMesocycleVariables) =>
             (await gqlRequest(GenerateMesocycleDraftDocument, { input })).generateMesocycleDraft,
-        onSuccess: (draft) => qc.setQueryData(draftKey, draft),
+        onSuccess: (draft, input) => qc.setQueryData(draftKey(input.athleteId), draft),
     })
 }
 
-export function useRefineMesocycleDraft() {
+export function useRefineMesocycleDraft(athleteId?: string) {
     const qc = useQueryClient()
 
     return useMutation({
         mutationFn: async (input: { draftId: string; message: string }) =>
             (await gqlRequest(RefineMesocycleDraftDocument, { input })).refineMesocycleDraft,
-        onSuccess: (draft) => qc.setQueryData(draftKey, draft),
+        onSuccess: (draft) => qc.setQueryData(draftKey(athleteId), draft),
     })
 }
 
@@ -63,20 +69,20 @@ export function useRefineMesocycleDraft() {
  * slot. The proposal itself is already in hand — the builder is seeded from it —
  * so the cache is simply cleared.
  */
-export function useAcceptMesocycleDraft() {
+export function useAcceptMesocycleDraft(athleteId?: string) {
     const qc = useQueryClient()
 
     return useMutation({
         mutationFn: (draftId: string) => gqlRequest(AcceptMesocycleDraftDocument, { draftId }),
-        onSuccess: () => qc.setQueryData(draftKey, null),
+        onSuccess: () => qc.setQueryData(draftKey(athleteId), null),
     })
 }
 
-export function useDiscardMesocycleDraft() {
+export function useDiscardMesocycleDraft(athleteId?: string) {
     const qc = useQueryClient()
 
     return useMutation({
         mutationFn: (draftId: string) => gqlRequest(DiscardMesocycleDraftDocument, { draftId }),
-        onSuccess: () => qc.setQueryData(draftKey, null),
+        onSuccess: () => qc.setQueryData(draftKey(athleteId), null),
     })
 }

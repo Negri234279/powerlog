@@ -17,6 +17,7 @@ export const AiMesocycleDraftMapper = {
         return AiMesocycleDraftAggregate.rehydrate({
             id: draft.id,
             userId: draft.userId,
+            athleteId: draft.athleteId,
             provider: AiProviderVO.create(draft.provider),
             model: draft.model,
             status: PlanDraftStatusVO.create(draft.status),
@@ -41,6 +42,7 @@ export const AiMesocycleDraftMapper = {
         return {
             id: draft.id,
             userId: draft.userId,
+            athleteId: draft.athleteId,
             provider: draft.provider.value,
             model: draft.model,
             status: draft.status.value,

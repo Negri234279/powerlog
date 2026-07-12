@@ -9,5 +9,9 @@ export class GenerateMesocycleDraftCommand {
         public readonly goal: string | null = null,
         /** The athlete's own words. Untrusted input, framed as data for the model. */
         public readonly prompt: string | null = null,
+        /** Set when a coach designs the block for one of their athletes: the loads
+         *  are anchored on the ATHLETE's strength, and the draft is filed under
+         *  that pair. Null → the caller is designing for themselves. */
+        public readonly athleteId: string | null = null,
     ) {}
 }

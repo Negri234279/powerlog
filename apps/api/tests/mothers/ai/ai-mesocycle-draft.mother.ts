@@ -48,6 +48,8 @@ export const mesocycleDraftProposal = (overrides: Partial<MesocycleDraftProposal
 interface DraftOverrides {
     id?: string
     userId?: string
+    /** Set when the draft was designed by a coach for one of their athletes. */
+    athleteId?: string | null
     provider?: AiProvider
     model?: string
     weeks?: number
@@ -65,6 +67,7 @@ export const AiMesocycleDraftMother = {
         return AiMesocycleDraftAggregate.create({
             id: overrides.id ?? 'draft-1',
             userId: overrides.userId ?? DEFAULT_USER_ID,
+            athleteId: overrides.athleteId ?? null,
             provider: AiProviderVO.create(overrides.provider ?? 'openai'),
             model: overrides.model ?? 'gpt-5',
             weeks: overrides.weeks ?? 4,

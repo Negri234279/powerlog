@@ -1,4 +1,11 @@
-/** The athlete's proposal awaiting a decision, if there is one. At most one exists. */
+/**
+ * The proposal awaiting a decision for one (owner, trainee) pair, if there is one.
+ * `athleteId` null → the caller's own block; set → the one they are designing for
+ * that athlete. At most one exists per pair.
+ */
 export class GetMesocycleDraftQuery {
-    constructor(public readonly userId: string) {}
+    constructor(
+        public readonly userId: string,
+        public readonly athleteId: string | null = null,
+    ) {}
 }

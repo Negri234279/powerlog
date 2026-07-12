@@ -50,7 +50,13 @@ export interface MesocycleDesignContext {
 }
 
 export abstract class MesocycleDesignContextReader {
-    /** Gathers the catalog plus the athlete's known strength. Never null: an
-     *  athlete with no training history simply has an empty `strength`. */
-    abstract read(userId: string): Promise<MesocycleDesignContext>
+    /**
+     * Gathers the catalog plus the known strength of whoever will train the block.
+     * Never null: someone with no training history simply has an empty `strength`.
+     *
+     * `athleteId` is set when a coach designs for one of their athletes — the loads
+     * must then be anchored on the ATHLETE's lifts, not the coach's. Workouts
+     * rejects the read if the two are not linked.
+     */
+    abstract read(userId: string, athleteId?: string | null): Promise<MesocycleDesignContext>
 }

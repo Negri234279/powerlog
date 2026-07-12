@@ -22,6 +22,8 @@ import { GenerateMesocycleDraftCommand } from './generate-mesocycle-draft.comman
 import { GenerateMesocycleDraftHandler } from './generate-mesocycle-draft.handler'
 
 const USER_ID = '11111111-1111-4111-8111-111111111111'
+const ATHLETE_ID = '33333333-3333-4333-8333-333333333333'
+const OTHER_ATHLETE_ID = '44444444-4444-4444-8444-444444444444'
 const TRAINING_DAYS = [0, 3]
 
 const answerDay = (dayOffset: number, slug: string) => ({
@@ -40,6 +42,7 @@ describe('GenerateMesocycleDraftHandler', () => {
     let drafts: InMemoryAiMesocycleDraftRepository
     let configs: InMemoryAiProviderConfigRepository
     let openai: StubLlmProviderClient
+    let reader: StubMesocycleDesignContextReader
 
     const buildHandler = (context: MesocycleDesignContext = MesocycleDesignContextMother.create()) => {
         const conversation = new AiConversation(
@@ -48,10 +51,11 @@ describe('GenerateMesocycleDraftHandler', () => {
             silentLogger(),
             new RecordingEventBus().asEventBus(),
         )
+        reader = new StubMesocycleDesignContextReader(context)
 
         return new GenerateMesocycleDraftHandler(
             drafts,
-            new StubMesocycleDesignContextReader(context),
+            reader,
             new MesocycleDesigner(new AiProviderResolver(configs), conversation),
             new FakeClock(),
             new FakeIdGenerator('draft'),
@@ -59,8 +63,8 @@ describe('GenerateMesocycleDraftHandler', () => {
         )
     }
 
-    const command = (prompt: string | null = 'Squat focus.') =>
-        new GenerateMesocycleDraftCommand(USER_ID, 4, TRAINING_DAYS, 'strength', prompt)
+    const command = (prompt: string | null = 'Squat focus.', athleteId: string | null = null) =>
+        new GenerateMesocycleDraftCommand(USER_ID, 4, TRAINING_DAYS, 'strength', prompt, athleteId)
 
     beforeEach(() => {
         drafts = new InMemoryAiMesocycleDraftRepository()
@@ -100,7 +104,29 @@ describe('GenerateMesocycleDraftHandler', () => {
 
         const superseded = await drafts.findById(first.id)
         expect(superseded?.status.value).toBe('discarded')
-        expect(await drafts.findOpenByUser(USER_ID)).toMatchObject({ id: second.id })
+        expect(await drafts.findOpenByUser(USER_ID, null)).toMatchObject({ id: second.id })
+    })
+
+    it('designs off the ATHLETE’s strength and files the draft under them', async () => {
+        const handler = buildHandler()
+
+        const view = await handler.execute(command('Squat focus.', ATHLETE_ID))
+
+        // The context was gathered for the athlete, not the coach — anything else
+        // would prescribe the coach's kilos to someone else.
+        expect(reader.readTrainees).toEqual([ATHLETE_ID])
+        expect(view.athleteId).toBe(ATHLETE_ID)
+    })
+
+    it('keeps one open draft per athlete — designing for Ana does not wipe Luis’s', async () => {
+        const handler = buildHandler()
+
+        const forAna = await handler.execute(command('Squat focus.', ATHLETE_ID))
+        const forLuis = await handler.execute(command('Bench focus.', OTHER_ATHLETE_ID))
+
+        expect((await drafts.findById(forAna.id))?.status.value).toBe('open')
+        expect(await drafts.findOpenByUser(USER_ID, ATHLETE_ID)).toMatchObject({ id: forAna.id })
+        expect(await drafts.findOpenByUser(USER_ID, OTHER_ATHLETE_ID)).toMatchObject({ id: forLuis.id })
     })
 
     it('fails before calling the provider when no default is configured', async () => {
