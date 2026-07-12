@@ -51,6 +51,23 @@ export const InviteAthleteDocument = graphql(`
     }
 `)
 
+// ── Athlete note (coach's private note) ──────────────────────
+
+export const AthleteNoteDocument = graphql(`
+    query AthleteNote($athleteId: ID!) {
+        athleteNote(athleteId: $athleteId) {
+            body
+            updatedAt
+        }
+    }
+`)
+
+export const SetAthleteNoteDocument = graphql(`
+    mutation SetAthleteNote($athleteId: ID!, $body: String!) {
+        setAthleteNote(athleteId: $athleteId, body: $body)
+    }
+`)
+
 export const AcceptInvitationDocument = graphql(`
     mutation AcceptInvitation($id: ID!) {
         acceptInvitation(id: $id) {

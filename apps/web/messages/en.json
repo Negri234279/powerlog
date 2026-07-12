@@ -46,7 +46,16 @@
         "inviteSent": "Invitation sent to {athlete}",
         "becomeTitle": "Become a coach",
         "becomeBody": "Train other athletes: build their plans, templates and mesocycles, and follow their progress.",
-        "become": "Become a coach"
+        "become": "Become a coach",
+        "athlete": "Athlete",
+        "backToCoaching": "Back to coaching",
+        "coachesOnly": "Only available to coaches.",
+        "noteTitle": "Private note",
+        "noteSubtitle": "Only you can see this note about the athlete.",
+        "notePlaceholder": "Observations, goals, injuries, preferences…",
+        "noteSave": "Save note",
+        "noteSaving": "Saving…",
+        "noteSaved": "Saved"
     },
     "auth": {
         "login": {

@@ -4,12 +4,14 @@ import type { MyAthletesQuery, PendingInvitationsQuery } from '@/lib/graphql/__g
 import { gqlRequest } from '@/lib/graphql/client'
 import {
     AcceptInvitationDocument,
+    AthleteNoteDocument,
     BecomeCoachDocument,
     DeclineInvitationDocument,
     InviteAthleteDocument,
     MyAthletesDocument,
     MyCoachesDocument,
     PendingInvitationsDocument,
+    SetAthleteNoteDocument,
 } from '@/lib/graphql/operations/coaching'
 
 export type CoachUser = MyAthletesQuery['myAthletes'][number]
@@ -57,6 +59,29 @@ export function useBecomeCoach() {
         onSuccess: () => {
             void qc.invalidateQueries({ queryKey: ['me'] })
             void qc.invalidateQueries({ queryKey: ATHLETES_KEY })
+        },
+    })
+}
+
+const noteKey = (athleteId: string) => ['coaching', 'note', athleteId] as const
+
+/** The coach's private note on one athlete (coaches only). */
+export function useAthleteNote(athleteId: string, enabled = true) {
+    return useQuery({
+        queryKey: noteKey(athleteId),
+        queryFn: async () => (await gqlRequest(AthleteNoteDocument, { athleteId })).athleteNote,
+        enabled,
+        retry: false,
+    })
+}
+
+export function useSetAthleteNote(athleteId: string) {
+    const qc = useQueryClient()
+
+    return useMutation({
+        mutationFn: (body: string) => gqlRequest(SetAthleteNoteDocument, { athleteId, body }),
+        onSuccess: () => {
+            void qc.invalidateQueries({ queryKey: noteKey(athleteId) })
         },
     })
 }

@@ -47,3 +47,10 @@ export class InvalidInvitationStateError extends CoachingError {
         super('This invitation is no longer pending.')
     }
 }
+
+export class NotYourAthleteError extends CoachingError {
+    readonly code = 'NOT_YOUR_ATHLETE'
+    constructor() {
+        super('This athlete is not linked to you.')
+    }
+}

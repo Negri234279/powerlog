@@ -253,6 +253,13 @@
       "when": 1783813115899,
       "tag": "0035_stormy_jubilee",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1783814319195,
+      "tag": "0036_early_serpent_society",
+      "breakpoints": true
     }
   ]
 }

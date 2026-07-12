@@ -30,6 +30,7 @@ export * from '../modules/workouts/infrastructure/persistence/schema/mesocycle-d
 export * from '../modules/notifications/infrastructure/persistence/schema/notifications.schema'
 export * from '../modules/coaching/infrastructure/persistence/schema/coach-athlete-invitations.schema'
 export * from '../modules/coaching/infrastructure/persistence/schema/coach-athlete.schema'
+export * from '../modules/coaching/infrastructure/persistence/schema/coach-athlete-notes.schema'
 export * from '../modules/ai/infrastructure/persistence/schema/ai-provider-configs.schema'
 export * from '../modules/ai/infrastructure/persistence/schema/ai-plan-drafts.schema'
 export * from '../modules/ai/infrastructure/persistence/schema/ai-mesocycle-drafts.schema'

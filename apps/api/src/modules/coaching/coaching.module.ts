@@ -15,10 +15,12 @@ import { Clock } from './application/ports/clock.port'
 import { IdGenerator } from './application/ports/id-generator.port'
 import { CoachInvitationRepository } from './domain/repositories/coach-invitation.repository'
 import { CoachLinkRepository } from './domain/repositories/coach-link.repository'
+import { CoachNoteRepository } from './domain/repositories/coach-note.repository'
 import { CoachingCoachLinks } from './infrastructure/coach-links/coaching-coach-links'
 import { UuidGenerator } from './infrastructure/id/uuid-generator'
 import { DrizzleCoachInvitationRepository } from './infrastructure/persistence/repositories/drizzle-coach-invitation.repository'
 import { DrizzleCoachLinkRepository } from './infrastructure/persistence/repositories/drizzle-coach-link.repository'
+import { DrizzleCoachNoteRepository } from './infrastructure/persistence/repositories/drizzle-coach-note.repository'
 import { SystemClock } from './infrastructure/time/system-clock'
 import { COACHING_RESOLVERS } from './presentation/coaching.presentation'
 
@@ -26,6 +28,7 @@ import { COACHING_RESOLVERS } from './presentation/coaching.presentation'
 const ADAPTERS: Provider[] = [
     { provide: CoachInvitationRepository, useClass: DrizzleCoachInvitationRepository },
     { provide: CoachLinkRepository, useClass: DrizzleCoachLinkRepository },
+    { provide: CoachNoteRepository, useClass: DrizzleCoachNoteRepository },
     { provide: Clock, useClass: SystemClock },
     { provide: IdGenerator, useClass: UuidGenerator },
     // Cross-module port consumed by workouts (Bloque 5.9) to authorize planning.

@@ -47,3 +47,13 @@ export class CoachUserType {
     @Field(() => String)
     username!: string
 }
+
+/** A coach's private note on one athlete. */
+@ObjectType('CoachAthleteNote')
+export class CoachAthleteNoteType {
+    @Field(() => String)
+    body!: string
+
+    @Field()
+    updatedAt!: Date
+}

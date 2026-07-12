@@ -13,14 +13,23 @@ import { AcceptInvitationCommand } from '../../application/commands/accept-invit
 import { CancelInvitationCommand } from '../../application/commands/cancel-invitation/cancel-invitation.command'
 import { DeclineInvitationCommand } from '../../application/commands/decline-invitation/decline-invitation.command'
 import { InviteAthleteCommand } from '../../application/commands/invite-athlete/invite-athlete.command'
+import { SetAthleteNoteCommand } from '../../application/commands/set-athlete-note/set-athlete-note.command'
+import { GetAthleteNoteQuery } from '../../application/queries/get-athlete-note/get-athlete-note.query'
 import { MyAthletesQuery } from '../../application/queries/my-athletes/my-athletes.query'
 import { MyCoachesQuery } from '../../application/queries/my-coaches/my-coaches.query'
 import { PendingInvitationsQuery } from '../../application/queries/pending-invitations/pending-invitations.query'
+import type { CoachNoteView } from '../../domain/repositories/coach-note.repository'
 import type { CoachUserView, InvitationView, PendingInvitationView } from '../../application/views'
-import { CoachInvitationType, CoachUserType, PendingInvitationType } from '../types/coaching.types'
+import {
+    CoachAthleteNoteType,
+    CoachInvitationType,
+    CoachUserType,
+    PendingInvitationType,
+} from '../types/coaching.types'
 
 const emailArg = z.string().trim().email()
 const uuidArg = z.string().uuid()
+const noteBodyArg = z.string().max(5000)
 
 @Resolver(() => CoachInvitationType)
 @UseGuards(JwtCookieGuard)
@@ -88,5 +97,34 @@ export class CoachingResolver {
     async pendingInvitations(@CurrentUser() user: AuthUser): Promise<PendingInvitationView[]> {
         const query = new PendingInvitationsQuery(user.userId)
         return this.queryBus.execute(query)
+    }
+
+    @Query(() => CoachAthleteNoteType, {
+        nullable: true,
+        description: 'Your private note on one of your athletes (coaches only).',
+    })
+    @UseGuards(RolesGuard)
+    @Roles('coach')
+    async athleteNote(
+        @CurrentUser() user: AuthUser,
+        @Args('athleteId', { type: () => ID }, new ZodValidationPipe(uuidArg)) athleteId: string,
+    ): Promise<CoachNoteView | null> {
+        const query = new GetAthleteNoteQuery(user.userId, athleteId)
+        return this.queryBus.execute(query)
+    }
+
+    @Mutation(() => Boolean, {
+        description: 'Set (or clear, when the body is empty) your private note on an athlete (coaches only).',
+    })
+    @UseGuards(RolesGuard)
+    @Roles('coach')
+    async setAthleteNote(
+        @CurrentUser() user: AuthUser,
+        @Args('athleteId', { type: () => ID }, new ZodValidationPipe(uuidArg)) athleteId: string,
+        @Args('body', new ZodValidationPipe(noteBodyArg)) body: string,
+    ): Promise<boolean> {
+        const command = new SetAthleteNoteCommand(user.userId, athleteId, body)
+        await this.commandBus.execute(command)
+        return true
     }
 }

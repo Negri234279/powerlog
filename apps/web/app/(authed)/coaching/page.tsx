@@ -16,11 +16,12 @@ import {
     useMyCoaches,
     usePendingInvitations,
 } from '@/lib/graphql/hooks/use-coaching'
+import { cn } from '@/lib/cn'
 import { FormError } from '@/components/ui/form-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
 import { Users } from '@/components/ui/icons'
-import { TrackedButton } from '@/components/ui/tracked'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 /** Round initials chip from a handle. */
 function Avatar({ username }: { username: string }) {
@@ -103,12 +104,25 @@ function InvitationCard({ invitation }: { invitation: PendingInvitation }) {
     )
 }
 
-function UserRow({ user }: { user: CoachUser }) {
-    return (
-        <div className="flex items-center gap-3 rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
+function UserRow({ user, href }: { user: CoachUser; href?: string }) {
+    const base = 'flex items-center gap-3 rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline'
+    const content = (
+        <>
             <Avatar username={user.username} />
             <p className="truncate font-mono text-sm text-text">@{user.username}</p>
-        </div>
+        </>
+    )
+
+    return href ? (
+        <TrackedLink
+            analyticsId="coaching-athlete-open"
+            href={href}
+            className={cn(base, 'transition-all duration-300 hover:ring-text/20')}
+        >
+            {content}
+        </TrackedLink>
+    ) : (
+        <div className={base}>{content}</div>
     )
 }
 
@@ -245,7 +259,11 @@ export default function CoachingPage() {
                     ) : (
                         <div className="grid gap-3 sm:grid-cols-2">
                             {athleteList.map((athlete) => (
-                                <UserRow key={athlete.userId} user={athlete} />
+                                <UserRow
+                                    key={athlete.userId}
+                                    user={athlete}
+                                    href={`/coaching/athletes/${athlete.userId}`}
+                                />
                             ))}
                         </div>
                     )}

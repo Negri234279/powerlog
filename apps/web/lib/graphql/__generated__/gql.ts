@@ -62,6 +62,8 @@ type Documents = {
     "\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n": typeof types.PendingInvitationsDocument,
     "\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n": typeof types.BecomeCoachDocument,
     "\n    mutation InviteAthlete($email: String!) {\n        inviteAthlete(email: $email) {\n            id\n            status\n        }\n    }\n": typeof types.InviteAthleteDocument,
+    "\n    query AthleteNote($athleteId: ID!) {\n        athleteNote(athleteId: $athleteId) {\n            body\n            updatedAt\n        }\n    }\n": typeof types.AthleteNoteDocument,
+    "\n    mutation SetAthleteNote($athleteId: ID!, $body: String!) {\n        setAthleteNote(athleteId: $athleteId, body: $body)\n    }\n": typeof types.SetAthleteNoteDocument,
     "\n    mutation AcceptInvitation($id: ID!) {\n        acceptInvitation(id: $id) {\n            id\n            status\n        }\n    }\n": typeof types.AcceptInvitationDocument,
     "\n    mutation DeclineInvitation($id: ID!) {\n        declineInvitation(id: $id) {\n            id\n            status\n        }\n    }\n": typeof types.DeclineInvitationDocument,
     "\n    fragment MesocycleFields on Mesocycle {\n        id\n        ownerId\n        name\n        notes\n        goal\n        startDate\n        status\n        createdAt\n        updatedAt\n        generatedWeeks\n        microcycles {\n            id\n            weekIndex\n            label\n            notes\n            days {\n                id\n                order\n                dayOffset\n                label\n                notes\n                exercises {\n                    id\n                    exerciseId\n                    order\n                    notes\n                    sets {\n                        id\n                        order\n                        plannedWeightKg\n                        plannedReps\n                        rpe\n                        rir\n                        notes\n                    }\n                }\n            }\n        }\n    }\n": typeof types.MesocycleFieldsFragmentDoc,
@@ -155,6 +157,8 @@ const documents: Documents = {
     "\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n": types.PendingInvitationsDocument,
     "\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n": types.BecomeCoachDocument,
     "\n    mutation InviteAthlete($email: String!) {\n        inviteAthlete(email: $email) {\n            id\n            status\n        }\n    }\n": types.InviteAthleteDocument,
+    "\n    query AthleteNote($athleteId: ID!) {\n        athleteNote(athleteId: $athleteId) {\n            body\n            updatedAt\n        }\n    }\n": types.AthleteNoteDocument,
+    "\n    mutation SetAthleteNote($athleteId: ID!, $body: String!) {\n        setAthleteNote(athleteId: $athleteId, body: $body)\n    }\n": types.SetAthleteNoteDocument,
     "\n    mutation AcceptInvitation($id: ID!) {\n        acceptInvitation(id: $id) {\n            id\n            status\n        }\n    }\n": types.AcceptInvitationDocument,
     "\n    mutation DeclineInvitation($id: ID!) {\n        declineInvitation(id: $id) {\n            id\n            status\n        }\n    }\n": types.DeclineInvitationDocument,
     "\n    fragment MesocycleFields on Mesocycle {\n        id\n        ownerId\n        name\n        notes\n        goal\n        startDate\n        status\n        createdAt\n        updatedAt\n        generatedWeeks\n        microcycles {\n            id\n            weekIndex\n            label\n            notes\n            days {\n                id\n                order\n                dayOffset\n                label\n                notes\n                exercises {\n                    id\n                    exerciseId\n                    order\n                    notes\n                    sets {\n                        id\n                        order\n                        plannedWeightKg\n                        plannedReps\n                        rpe\n                        rir\n                        notes\n                    }\n                }\n            }\n        }\n    }\n": types.MesocycleFieldsFragmentDoc,
@@ -406,6 +410,14 @@ export function graphql(source: "\n    mutation BecomeCoach {\n        becomeCoa
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    mutation InviteAthlete($email: String!) {\n        inviteAthlete(email: $email) {\n            id\n            status\n        }\n    }\n"): (typeof documents)["\n    mutation InviteAthlete($email: String!) {\n        inviteAthlete(email: $email) {\n            id\n            status\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query AthleteNote($athleteId: ID!) {\n        athleteNote(athleteId: $athleteId) {\n            body\n            updatedAt\n        }\n    }\n"): (typeof documents)["\n    query AthleteNote($athleteId: ID!) {\n        athleteNote(athleteId: $athleteId) {\n            body\n            updatedAt\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation SetAthleteNote($athleteId: ID!, $body: String!) {\n        setAthleteNote(athleteId: $athleteId, body: $body)\n    }\n"): (typeof documents)["\n    mutation SetAthleteNote($athleteId: ID!, $body: String!) {\n        setAthleteNote(athleteId: $athleteId, body: $body)\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
