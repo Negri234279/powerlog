@@ -9,9 +9,11 @@ import {
     CoachInvitationPreviewDocument,
     DeclineInvitationDocument,
     InviteAthleteDocument,
+    LeaveCoachDocument,
     MyAthletesDocument,
     MyCoachesDocument,
     PendingInvitationsDocument,
+    RemoveAthleteDocument,
     SetAthleteNoteDocument,
 } from '@/lib/graphql/operations/coaching'
 
@@ -130,6 +132,31 @@ export function useDeclineInvitation() {
         onSuccess: () => {
             void qc.invalidateQueries({ queryKey: PENDING_KEY })
             void qc.invalidateQueries({ queryKey: ['notifications'] })
+        },
+    })
+}
+
+/** Stop coaching an athlete. They keep what was planned; the coach loses access. */
+export function useRemoveAthlete() {
+    const qc = useQueryClient()
+
+    return useMutation({
+        mutationFn: (athleteId: string) => gqlRequest(RemoveAthleteDocument, { athleteId }),
+        onSuccess: (_data, athleteId) => {
+            void qc.invalidateQueries({ queryKey: ATHLETES_KEY })
+            void qc.invalidateQueries({ queryKey: ['athlete', athleteId] })
+        },
+    })
+}
+
+/** Leave one of your coaches. You keep everything they planned for you. */
+export function useLeaveCoach() {
+    const qc = useQueryClient()
+
+    return useMutation({
+        mutationFn: (coachId: string) => gqlRequest(LeaveCoachDocument, { coachId }),
+        onSuccess: () => {
+            void qc.invalidateQueries({ queryKey: COACHES_KEY })
         },
     })
 }

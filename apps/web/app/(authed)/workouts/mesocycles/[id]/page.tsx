@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
+import { useMe } from '@/lib/graphql/hooks/use-auth'
 import {
     type MicrocycleData,
     useGenerateMesocycleWeek,
@@ -34,6 +35,7 @@ export default function MesocycleOverviewPage() {
     const errorMessage = useErrorMessage()
 
     const [mode, setMode] = useState<'overview' | 'edit'>('overview')
+    const { data: me } = useMe()
     const { data: mesocycle, isLoading, isError } = useMesocycle(id)
     const setStatus = useSetMesocycleStatus()
     const generate = useGenerateMesocycleWeek()
@@ -68,6 +70,10 @@ export default function MesocycleOverviewPage() {
 
     const generated = new Set(mesocycle.generatedWeeks)
     const hasStartDate = mesocycle.startDate !== null
+    // A coach-planned block belongs to the athlete but is the coach's to edit.
+    const coachId = mesocycle.plannedByUserId
+    const canManage = coachId !== null ? coachId === me?.id : mesocycle.ownerId === me?.id
+    const isAthletesBlock = coachId !== null && mesocycle.ownerId !== me?.id
 
     function onGenerate(week: number, replace: boolean) {
         setGenerateError(null)
@@ -107,18 +113,31 @@ export default function MesocycleOverviewPage() {
                             : t('noStartDate')}
                     </p>
                 </div>
-                <TrackedButton
-                    analyticsId="mesocycle-edit-open"
-                    type="button"
-                    onClick={() => setMode('edit')}
-                    className="rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
-                >
-                    {t('editPlan')}
-                </TrackedButton>
+                {canManage ? (
+                    <TrackedButton
+                        analyticsId="mesocycle-edit-open"
+                        type="button"
+                        onClick={() => setMode('edit')}
+                        className="rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                    >
+                        {t('editPlan')}
+                    </TrackedButton>
+                ) : null}
             </div>
 
+            {!canManage ? (
+                <p className="mt-4 rounded-2xl bg-bg/40 px-4 py-3 text-sm text-text-dim ring-1 ring-hairline">
+                    {t('coachManaged')}
+                </p>
+            ) : null}
+            {isAthletesBlock ? (
+                <p className="mt-4 rounded-2xl bg-bg/40 px-4 py-3 text-sm text-text-dim ring-1 ring-hairline">
+                    {t('planningForAthlete')}
+                </p>
+            ) : null}
+
             {/* Status control */}
-            <div className="mt-5 flex flex-wrap items-center gap-3">
+            <div className={cn('mt-5 flex flex-wrap items-center gap-3', !canManage && 'hidden')}>
                 <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
                     {t('statusLabel')}
                 </span>
@@ -160,6 +179,7 @@ export default function MesocycleOverviewPage() {
                         isGenerated={generated.has(week.weekIndex)}
                         canGenerate={hasStartDate}
                         busy={generate.isPending && generatingWeek === week.weekIndex}
+                        canManage={canManage}
                         onGenerate={(replace) => onGenerate(week.weekIndex, replace)}
                     />
                 ))}
@@ -180,12 +200,14 @@ function WeekRow({
     week,
     isGenerated,
     canGenerate,
+    canManage,
     busy,
     onGenerate,
 }: {
     week: MicrocycleData
     isGenerated: boolean
     canGenerate: boolean
+    canManage: boolean
     busy: boolean
     onGenerate: (replace: boolean) => void
 }) {
@@ -208,7 +230,7 @@ function WeekRow({
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className={cn('flex items-center gap-2', !canManage && 'hidden')}>
                     {isGenerated ? (
                         <TrackedButton
                             analyticsId="mesocycle-regenerate-week"

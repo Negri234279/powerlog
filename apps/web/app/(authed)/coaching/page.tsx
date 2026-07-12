@@ -12,11 +12,13 @@ import {
     useBecomeCoach,
     useDeclineInvitation,
     useInviteAthlete,
+    useLeaveCoach,
     useMyAthletes,
     useMyCoaches,
     usePendingInvitations,
 } from '@/lib/graphql/hooks/use-coaching'
 import { cn } from '@/lib/cn'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { FormError } from '@/components/ui/form-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
@@ -128,6 +130,52 @@ function UserRow({ user, href }: { user: CoachUser; href?: string }) {
         </TrackedLink>
     ) : (
         <div className={base}>{content}</div>
+    )
+}
+
+/** One of the athlete's coaches, with the option to end the relationship. */
+function CoachRow({ coach }: { coach: CoachUser }) {
+    const t = useTranslations('coaching')
+    const errorMessage = useErrorMessage()
+    const leave = useLeaveCoach()
+    const [confirming, setConfirming] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+
+    function onLeave() {
+        setError(null)
+        leave.mutate(coach.userId, {
+            onSuccess: () => setConfirming(false),
+            onError: (err) => setError(errorMessage(err)),
+        })
+    }
+
+    return (
+        <div className="flex items-center gap-3 rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
+            <Avatar username={coach.username} src={coach.avatarUrl} />
+            <p className="min-w-0 flex-1 truncate font-mono text-sm text-text">@{coach.username}</p>
+            <TrackedButton
+                analyticsId="coaching-leave-coach"
+                type="button"
+                onClick={() => setConfirming(true)}
+                className="shrink-0 rounded-full px-3.5 py-1.5 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
+            >
+                {t('leaveCoach')}
+            </TrackedButton>
+
+            <ConfirmModal
+                open={confirming}
+                onClose={() => setConfirming(false)}
+                onConfirm={onLeave}
+                title={t('leaveCoachTitle')}
+                description={t('leaveCoachBody', { coach: coach.username })}
+                confirmLabel={t('leaveCoach')}
+                cancelLabel={t('cancel')}
+                destructive
+                pending={leave.isPending}
+                error={error}
+                analyticsId="coaching-leave-coach"
+            />
+        </div>
     )
 }
 
@@ -280,7 +328,7 @@ export default function CoachingPage() {
                     <SectionHeader title={t('coachesTitle')} subtitle={t('coachesSubtitle')} />
                     <div className="grid gap-3 sm:grid-cols-2">
                         {coachList.map((coach) => (
-                            <UserRow key={coach.userId} user={coach} />
+                            <CoachRow key={coach.userId} coach={coach} />
                         ))}
                     </div>
                 </SectionShell>

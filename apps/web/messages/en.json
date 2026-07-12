@@ -55,7 +55,52 @@
         "notePlaceholder": "Observations, goals, injuries, preferences…",
         "noteSave": "Save note",
         "noteSaving": "Saving…",
-        "noteSaved": "Saved"
+        "noteSaved": "Saved",
+        "tab": {
+            "training": "Training",
+            "stats": "Stats",
+            "plan": "Plan",
+            "note": "Note"
+        },
+        "filter": {
+            "all": "All",
+            "planned": "Planned",
+            "completed": "Completed"
+        },
+        "loading": "Loading…",
+        "loadMore": "Load more",
+        "noSessions": "No sessions yet.",
+        "noStats": "Nothing logged in this range.",
+        "editPlan": "Edit plan",
+        "planSessionTitle": "Plan a session",
+        "planSessionSubtitle": "Put a session on their calendar. You build the plan, they log the real sets.",
+        "planDate": "Date",
+        "planTemplate": "From a template (optional)",
+        "planNotes": "Notes",
+        "planNotesPlaceholder": "Focus, cues, anything they should know…",
+        "planBlank": "Plan session",
+        "planFromTemplate": "Plan from template",
+        "planning": "Planning…",
+        "assignBlockTitle": "Assign a block",
+        "assignBlockSubtitle": "Copy one of your mesocycles to them. Yours stays in your library.",
+        "assignBlock": "Block",
+        "assignBlockPlaceholder": "Pick a mesocycle",
+        "assignStartDate": "Starts on",
+        "assign": "Assign block",
+        "assigning": "Assigning…",
+        "assigned": "{name} assigned",
+        "noBlocksYet": "You have no mesocycles yet. Build one and you can hand it to any athlete.",
+        "buildBlock": "Build a mesocycle",
+        "athleteBlocksTitle": "Their blocks",
+        "athleteBlocksSubtitle": "Mesocycles this athlete is training.",
+        "openBlock": "Open",
+        "removeAthlete": "Stop coaching",
+        "removeAthleteTitle": "Stop coaching this athlete?",
+        "removeAthleteBody": "You will lose access to @{athlete}’s training and to everything you planned for them. They keep it all.",
+        "leaveCoach": "Leave",
+        "leaveCoachTitle": "Leave this coach?",
+        "leaveCoachBody": "@{coach} will no longer see your training or plan for you. You keep everything they planned.",
+        "cancel": "Cancel"
     },
     "auth": {
         "login": {
@@ -362,7 +407,9 @@
             "completed": "Completed",
             "archived": "Archived"
         },
-        "fillWithAi": "Fill with AI"
+        "fillWithAi": "Fill with AI",
+        "coachManaged": "Your coach manages this block. You train what it generates.",
+        "planningForAthlete": "You are planning this block for your athlete."
     },
     "taxonomy": {
         "category": {

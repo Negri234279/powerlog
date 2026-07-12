@@ -34,3 +34,25 @@ export async function requireManageableMesocycle(
 
     return mesocycle
 }
+
+/**
+ * Loads a mesocycle the caller may *read*: its owner, or the coach who plans it
+ * for them while the link lasts. Coaches open their athletes' blocks on the same
+ * screen as their own — editing is what `requireManageableMesocycle` gates.
+ */
+export async function requireReadableMesocycle(
+    mesocycles: MesocycleRepository,
+    coachLinks: CoachLinks,
+    mesocycleId: string,
+    userId: string,
+): Promise<MesocycleAggregate> {
+    const mesocycle = await mesocycles.findById(mesocycleId)
+    if (!mesocycle) throw new MesocycleNotFoundError()
+
+    if (mesocycle.ownerId === userId) return mesocycle
+
+    const coachId = mesocycle.plannedByUserId
+    if (coachId === userId && (await coachLinks.areLinked(coachId, mesocycle.ownerId))) return mesocycle
+
+    throw new MesocycleNotFoundError()
+}

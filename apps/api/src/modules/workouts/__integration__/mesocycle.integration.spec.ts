@@ -177,7 +177,7 @@ describe('Mesocycle generation (integration)', () => {
         expect(persisted!.mesocycleWeek).toBe(1)
         expect(persisted!.entries[0]!.sets[0]!.plannedWeight?.value).toBe(100)
 
-        const detail = await new GetMesocycleHandler(mesocycles, sessions).execute(
+        const detail = await new GetMesocycleHandler(mesocycles, sessions, new FakeCoachLinks()).execute(
             new GetMesocycleQuery(ownerId, mesocycle.id),
         )
         expect(detail.generatedWeeks).toEqual([1])

@@ -1,0 +1,132 @@
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+
+import type {
+    AthleteExerciseStatsQuery,
+    AthleteMesocyclesQuery,
+    AthleteTrainingSummaryQuery,
+    AthleteWorkoutHistoryQuery,
+} from '@/lib/graphql/__generated__/graphql'
+import { gqlRequest } from '@/lib/graphql/client'
+import {
+    AssignMesocycleToAthleteDocument,
+    AthleteExerciseStatsDocument,
+    AthleteMesocyclesDocument,
+    AthleteTrainingSummaryDocument,
+    AthleteWorkoutHistoryDocument,
+    AthleteWorkoutSessionDocument,
+    PlanSessionFromTemplateDocument,
+    PlanWorkoutSessionDocument,
+} from '@/lib/graphql/operations/athlete'
+
+export type AthleteHistoryItem = AthleteWorkoutHistoryQuery['athleteWorkoutHistory']['items'][number]
+export type AthleteStatsRow = AthleteExerciseStatsQuery['athleteExerciseStats'][number]
+export type AthleteSummary = AthleteTrainingSummaryQuery['athleteTrainingSummary']
+export type AthleteMesocycle = AthleteMesocyclesQuery['athleteMesocycles'][number]
+
+/** Everything the coach reads about one athlete lives under this key. */
+const athleteKey = (athleteId: string) => ['athlete', athleteId] as const
+
+const HISTORY_PAGE_SIZE = 20
+
+// ── Reads ────────────────────────────────────────────────────
+
+export function useAthleteHistory(athleteId: string, status?: string, enabled = true) {
+    return useInfiniteQuery({
+        queryKey: [...athleteKey(athleteId), 'history', status ?? 'all'],
+        queryFn: ({ pageParam }) =>
+            gqlRequest(AthleteWorkoutHistoryDocument, {
+                athleteId,
+                limit: HISTORY_PAGE_SIZE,
+                status,
+                // The API's zod arg takes string | undefined, never an explicit null.
+                cursor: pageParam ?? undefined,
+            }).then((r) => r.athleteWorkoutHistory),
+        initialPageParam: null as string | null,
+        getNextPageParam: (last) => (last.hasNextPage ? last.nextCursor : undefined),
+        enabled,
+        retry: false,
+    })
+}
+
+/** One of the athlete's sessions, read-only. Lazy: only fetched when expanded. */
+export function useAthleteSession(athleteId: string, sessionId: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'session', sessionId],
+        queryFn: async () =>
+            (await gqlRequest(AthleteWorkoutSessionDocument, { athleteId, id: sessionId })).athleteWorkoutSession,
+        enabled,
+        retry: false,
+    })
+}
+
+export function useAthleteSummary(athleteId: string, from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'summary', from ?? 'all'],
+        queryFn: async () =>
+            (await gqlRequest(AthleteTrainingSummaryDocument, { athleteId, from })).athleteTrainingSummary,
+        enabled,
+        retry: false,
+    })
+}
+
+export function useAthleteExerciseStats(athleteId: string, from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'exerciseStats', from ?? 'all'],
+        queryFn: async () => (await gqlRequest(AthleteExerciseStatsDocument, { athleteId, from })).athleteExerciseStats,
+        enabled,
+        retry: false,
+    })
+}
+
+export function useAthleteMesocycles(athleteId: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'mesocycles'],
+        queryFn: async () => (await gqlRequest(AthleteMesocyclesDocument, { athleteId })).athleteMesocycles,
+        enabled,
+        retry: false,
+    })
+}
+
+// ── Planning ─────────────────────────────────────────────────
+
+interface PlanSessionVars {
+    athleteId: string
+    performedAt?: string
+    notes?: string
+}
+
+/** Plan an empty session for the athlete. Returns it so the caller can open the editor. */
+export function usePlanWorkoutSession() {
+    const qc = useQueryClient()
+
+    return useMutation({
+        mutationFn: (input: PlanSessionVars) => gqlRequest(PlanWorkoutSessionDocument, { input }),
+        onSuccess: (_data, vars) => {
+            void qc.invalidateQueries({ queryKey: athleteKey(vars.athleteId) })
+        },
+    })
+}
+
+export function usePlanSessionFromTemplate() {
+    const qc = useQueryClient()
+
+    return useMutation({
+        mutationFn: (input: PlanSessionVars & { templateId: string }) =>
+            gqlRequest(PlanSessionFromTemplateDocument, { input }),
+        onSuccess: (_data, vars) => {
+            void qc.invalidateQueries({ queryKey: athleteKey(vars.athleteId) })
+        },
+    })
+}
+
+export function useAssignMesocycle() {
+    const qc = useQueryClient()
+
+    return useMutation({
+        mutationFn: (vars: { athleteId: string; mesocycleId: string; startDate?: string }) =>
+            gqlRequest(AssignMesocycleToAthleteDocument, vars),
+        onSuccess: (_data, vars) => {
+            void qc.invalidateQueries({ queryKey: athleteKey(vars.athleteId) })
+        },
+    })
+}

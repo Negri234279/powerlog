@@ -44,6 +44,18 @@ export const BecomeCoachDocument = graphql(`
     }
 `)
 
+export const RemoveAthleteDocument = graphql(`
+    mutation RemoveAthlete($athleteId: ID!) {
+        removeAthlete(athleteId: $athleteId)
+    }
+`)
+
+export const LeaveCoachDocument = graphql(`
+    mutation LeaveCoach($coachId: ID!) {
+        leaveCoach(coachId: $coachId)
+    }
+`)
+
 export const InviteAthleteDocument = graphql(`
     mutation InviteAthlete($email: String!) {
         inviteAthlete(email: $email) {

@@ -5,6 +5,7 @@ export const MesocycleFieldsFragment = graphql(`
     fragment MesocycleFields on Mesocycle {
         id
         ownerId
+        plannedByUserId
         name
         notes
         goal
@@ -50,6 +51,7 @@ export const MesocyclesDocument = graphql(`
     query Mesocycles($search: String) {
         mesocycles(search: $search) {
             id
+            plannedByUserId
             name
             notes
             goal

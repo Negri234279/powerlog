@@ -1,10 +1,11 @@
 import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 
+import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import type { MesocycleAggregate } from '../../../domain/entities/mesocycle.entity'
 import type { MesocycleStatus } from '../../../domain/mesocycle-status'
 import { MesocycleRepository } from '../../../domain/repositories/mesocycle.repository'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
-import { requireOwnedMesocycle } from '../../require-owned-mesocycle'
+import { requireReadableMesocycle } from '../../require-manageable-mesocycle'
 import { GetMesocycleQuery } from './get-mesocycle.query'
 
 /** Read models (decoupled from the aggregate). Weights are kg. */
@@ -109,10 +110,16 @@ export class GetMesocycleHandler implements IQueryHandler<GetMesocycleQuery, Mes
     constructor(
         private readonly mesocycles: MesocycleRepository,
         private readonly sessions: WorkoutSessionRepository,
+        private readonly coachLinks: CoachLinks,
     ) {}
 
     async execute(query: GetMesocycleQuery): Promise<MesocycleView> {
-        const mesocycle = await requireOwnedMesocycle(this.mesocycles, query.mesocycleId, query.ownerId)
+        const mesocycle = await requireReadableMesocycle(
+            this.mesocycles,
+            this.coachLinks,
+            query.mesocycleId,
+            query.ownerId,
+        )
         const generatedWeeks = await this.sessions.generatedWeeks(mesocycle.id)
         return toMesocycleView(mesocycle, generatedWeeks)
     }

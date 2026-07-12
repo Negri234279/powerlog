@@ -55,7 +55,52 @@
         "notePlaceholder": "Observaciones, objetivos, lesiones, preferencias…",
         "noteSave": "Guardar nota",
         "noteSaving": "Guardando…",
-        "noteSaved": "Guardado"
+        "noteSaved": "Guardado",
+        "tab": {
+            "training": "Entrenamiento",
+            "stats": "Estadísticas",
+            "plan": "Planificar",
+            "note": "Nota"
+        },
+        "filter": {
+            "all": "Todas",
+            "planned": "Planificadas",
+            "completed": "Completadas"
+        },
+        "loading": "Cargando…",
+        "loadMore": "Cargar más",
+        "noSessions": "Todavía no hay sesiones.",
+        "noStats": "No hay nada registrado en este rango.",
+        "editPlan": "Editar plan",
+        "planSessionTitle": "Planificar una sesión",
+        "planSessionSubtitle": "Ponle una sesión en el calendario. Tú montas el plan, él registra las series reales.",
+        "planDate": "Fecha",
+        "planTemplate": "Desde una plantilla (opcional)",
+        "planNotes": "Notas",
+        "planNotesPlaceholder": "Foco, indicaciones, lo que deba saber…",
+        "planBlank": "Planificar sesión",
+        "planFromTemplate": "Planificar desde plantilla",
+        "planning": "Planificando…",
+        "assignBlockTitle": "Asignar un bloque",
+        "assignBlockSubtitle": "Cópiale uno de tus mesociclos. El tuyo se queda en tu biblioteca.",
+        "assignBlock": "Bloque",
+        "assignBlockPlaceholder": "Elige un mesociclo",
+        "assignStartDate": "Empieza el",
+        "assign": "Asignar bloque",
+        "assigning": "Asignando…",
+        "assigned": "{name} asignado",
+        "noBlocksYet": "Aún no tienes mesociclos. Crea uno y podrás asignárselo a cualquier atleta.",
+        "buildBlock": "Crear un mesociclo",
+        "athleteBlocksTitle": "Sus bloques",
+        "athleteBlocksSubtitle": "Mesociclos que este atleta está entrenando.",
+        "openBlock": "Abrir",
+        "removeAthlete": "Dejar de entrenarle",
+        "removeAthleteTitle": "¿Dejar de entrenar a este atleta?",
+        "removeAthleteBody": "Perderás el acceso al entrenamiento de @{athlete} y a todo lo que le planificaste. Él lo conserva todo.",
+        "leaveCoach": "Dejar",
+        "leaveCoachTitle": "¿Dejar a este coach?",
+        "leaveCoachBody": "@{coach} dejará de ver tu entrenamiento y de planificarte. Conservas todo lo que te planificó.",
+        "cancel": "Cancelar"
     },
     "auth": {
         "login": {
@@ -362,7 +407,9 @@
             "completed": "Completado",
             "archived": "Archivado"
         },
-        "fillWithAi": "Rellenar con IA"
+        "fillWithAi": "Rellenar con IA",
+        "coachManaged": "Este bloque lo gestiona tu coach. Tú entrenas lo que genere.",
+        "planningForAthlete": "Estás planificando este bloque para tu atleta."
     },
     "taxonomy": {
         "category": {
