@@ -39,6 +39,7 @@ import { DrizzleWorkoutSessionRepository } from './infrastructure/persistence/re
 import { DrizzleWorkoutTemplateRepository } from './infrastructure/persistence/repositories/drizzle-workout-template.repository'
 import { PrometheusMesocycleMetrics } from './infrastructure/metrics/prometheus-mesocycle-metrics'
 import { SystemClock } from './infrastructure/time/system-clock'
+import { LinkedAthleteGuard } from './presentation/guards/linked-athlete.guard'
 import { WORKOUTS_RESOLVERS } from './presentation/workouts.presentation'
 
 /** Binds workouts ports to their infrastructure adapters. */
@@ -69,6 +70,7 @@ const ADAPTERS: Provider[] = [
         ...ADAPTERS,
         RolesGuard,
         AdminGuard,
+        LinkedAthleteGuard,
         ...WORKOUTS_COMMAND_HANDLERS,
         ...WORKOUTS_QUERY_HANDLERS,
         ...WORKOUTS_EVENT_HANDLERS,

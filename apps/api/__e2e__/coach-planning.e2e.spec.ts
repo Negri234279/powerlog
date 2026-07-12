@@ -46,8 +46,10 @@ afterAll(async () => {
 })
 
 beforeEach(async () => {
+    // `profiles` holds the handle (soft ref to users), so it must be cleared too
+    // or a re-registered email collides on username.
     await pool.query(
-        'TRUNCATE TABLE users, coach_athlete_invitations, coach_athlete, workout_sessions, notifications RESTART IDENTITY CASCADE',
+        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, workout_sessions, notifications RESTART IDENTITY CASCADE',
     )
 })
 
@@ -178,6 +180,97 @@ describe('Coach planning via GraphQL', () => {
 
         const res = await gql(
             `mutation { planWorkoutSession(input: { athleteId: "${other.userId}" }) { id } }`,
+            athlete.access,
+        )
+        expect(res.body.errors[0].extensions.code).toBe('FORBIDDEN')
+    })
+})
+
+describe("Coach reading an athlete's training", () => {
+    /** The athlete trains on their own: one completed session with a logged set. */
+    async function aCompletedSession(athleteAccess: string): Promise<string> {
+        const created = await gql(`mutation { createWorkoutSession { id } }`, athleteAccess)
+        const sessionId: string = created.body.data.createWorkoutSession.id
+
+        const exerciseId = await anExerciseId(athleteAccess)
+        const entry = await gql(
+            `mutation { addExerciseEntry(input: { sessionId: "${sessionId}", exerciseId: "${exerciseId}" }) { entries { id } } }`,
+            athleteAccess,
+        )
+        const entryId: string = entry.body.data.addExerciseEntry.entries[0].id
+        await gql(
+            `mutation { logSet(input: { sessionId: "${sessionId}", entryId: "${entryId}", weight: 100, reps: 5, rpe: 8 }) { id } }`,
+            athleteAccess,
+        )
+        await gql(`mutation { completeWorkoutSession(id: "${sessionId}") { status } }`, athleteAccess)
+
+        return sessionId
+    }
+
+    it("lets a linked coach read the athlete's history, session detail and KPIs", async () => {
+        const { coachAccess, athlete } = await linkedCoachAndAthlete()
+        const sessionId = await aCompletedSession(athlete.access)
+
+        const history = await gql(
+            `query { athleteWorkoutHistory(athleteId: "${athlete.userId}") { items { id status } } }`,
+            coachAccess,
+        )
+        expect(history.body.errors).toBeUndefined()
+        expect(history.body.data.athleteWorkoutHistory.items).toMatchObject([{ id: sessionId, status: 'completed' }])
+
+        const detail = await gql(
+            `query { athleteWorkoutSession(athleteId: "${athlete.userId}", id: "${sessionId}") { userId entries { sets { weightKg reps } } } }`,
+            coachAccess,
+        )
+        expect(detail.body.data.athleteWorkoutSession.userId).toBe(athlete.userId)
+        expect(detail.body.data.athleteWorkoutSession.entries[0].sets[0]).toMatchObject({ weightKg: 100, reps: 5 })
+
+        const summary = await gql(
+            `query { athleteTrainingSummary(athleteId: "${athlete.userId}") { sessions totalSets totalVolumeKg } }`,
+            coachAccess,
+        )
+        expect(summary.body.data.athleteTrainingSummary).toMatchObject({
+            sessions: 1,
+            totalSets: 1,
+            totalVolumeKg: 500,
+        })
+
+        const stats = await gql(
+            `query { athleteExerciseStats(athleteId: "${athlete.userId}") { exerciseId totalVolumeKg } }`,
+            coachAccess,
+        )
+        expect(stats.body.data.athleteExerciseStats).toHaveLength(1)
+    })
+
+    it('rejects a coach reading an athlete they are not linked to', async () => {
+        const { coachAccess } = await linkedCoachAndAthlete()
+        const stranger = await register('stranger@example.com')
+
+        const res = await gql(
+            `query { athleteWorkoutHistory(athleteId: "${stranger.userId}") { items { id } } }`,
+            coachAccess,
+        )
+        expect(res.body.errors[0].extensions.code).toBe('NOT_LINKED_TO_ATHLETE')
+    })
+
+    it("does not expose a stranger's session through a linked athlete's id", async () => {
+        const { coachAccess, athlete } = await linkedCoachAndAthlete()
+        const stranger = await register('stranger@example.com')
+        const strangerSessionId = await aCompletedSession(stranger.access)
+
+        const res = await gql(
+            `query { athleteWorkoutSession(athleteId: "${athlete.userId}", id: "${strangerSessionId}") { id } }`,
+            coachAccess,
+        )
+        expect(res.body.errors[0].extensions.code).toBe('WORKOUT_SESSION_NOT_FOUND')
+    })
+
+    it('forbids a non-coach from reading another user’s training', async () => {
+        const athlete = await register('plainathlete@example.com')
+        const other = await register('other@example.com')
+
+        const res = await gql(
+            `query { athleteWorkoutHistory(athleteId: "${other.userId}") { items { id } } }`,
             athlete.access,
         )
         expect(res.body.errors[0].extensions.code).toBe('FORBIDDEN')
