@@ -452,3 +452,50 @@ describe('Ending the coaching relationship', () => {
         expect(left.body.errors[0].extensions.code).toBe('NOT_YOUR_COACH')
     })
 })
+
+describe('Coaching notifications', () => {
+    /** Event handlers run async off the bus, so poll the bell for the kind we expect. */
+    async function bellFor(access: string, type: string): Promise<Record<string, unknown>> {
+        for (let i = 0; i < 40; i++) {
+            const res = await gql(`query { myNotifications(limit: 10) { items { type data } } }`, access)
+            const items: Array<{ type: string; data: string }> = res.body.data.myNotifications.items
+            const found = items.find((n) => n.type === type)
+            if (found) return JSON.parse(found.data)
+            await new Promise((r) => setTimeout(r, 25))
+        }
+        throw new Error(`no ${type} notification arrived in time`)
+    }
+
+    it('bells the athlete when their coach plans a session for them', async () => {
+        const { coachAccess, coachId, athlete } = await linkedCoachAndAthlete()
+
+        const planned = await gql(
+            `mutation { planWorkoutSession(input: { athleteId: "${athlete.userId}" }) { id } }`,
+            coachAccess,
+        )
+        const sessionId: string = planned.body.data.planWorkoutSession.id
+
+        const note = await bellFor(athlete.access, 'session_planned')
+        expect(note).toMatchObject({ sessionId, coachId, coachUsername: 'coach' })
+    })
+
+    it('bells the athlete when their coach hands them a block, and the coach when the athlete leaves', async () => {
+        const { coachAccess, coachId, athlete } = await linkedCoachAndAthlete()
+        const exerciseId = await anExerciseId(coachAccess)
+
+        const created = await gql(
+            `mutation { createAthleteMesocycle(athleteId: "${athlete.userId}", input: { name: "Peaking Block", microcycles: [{ days: [{ dayOffset: 0, exercises: [{ exerciseId: "${exerciseId}", sets: [{ plannedReps: 3 }] }] }] }] }) { id } }`,
+            coachAccess,
+        )
+        const mesocycleId: string = created.body.data.createAthleteMesocycle.id
+
+        const assigned = await bellFor(athlete.access, 'mesocycle_assigned')
+        expect(assigned).toMatchObject({ mesocycleId, name: 'Peaking Block', coachId })
+
+        // The athlete walks away: the coach is the one who gets told.
+        await gql(`mutation { leaveCoach(coachId: "${coachId}") }`, athlete.access)
+
+        const unlinked = await bellFor(coachAccess, 'athlete_unlinked')
+        expect(unlinked).toMatchObject({ athleteId: athlete.userId, athleteUsername: 'athlete' })
+    })
+})

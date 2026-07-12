@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { FakeClock, FakeIdGenerator, InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
-import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
+import { FakeCoachLinks, RecordingEventBus } from '../../../../../../tests/doubles/shared'
+import { WorkoutSessionPlannedIntegrationEvent } from '../../../../../shared/integration-events/workout-session-planned.integration-event'
 import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
 import { PlanWorkoutSessionCommand } from './plan-workout-session.command'
 import { PlanWorkoutSessionHandler } from './plan-workout-session.handler'
@@ -12,11 +13,30 @@ const ATHLETE = 'athlete-1'
 
 function setup(links = new FakeCoachLinks()) {
     const sessions = new InMemoryWorkoutSessionRepository()
-    const handler = new PlanWorkoutSessionHandler(sessions, links, new FakeClock(NOW), new FakeIdGenerator(['s-1']))
-    return { sessions, handler }
+    const events = new RecordingEventBus()
+    const handler = new PlanWorkoutSessionHandler(
+        sessions,
+        links,
+        new FakeClock(NOW),
+        new FakeIdGenerator(['s-1']),
+        events.asEventBus(),
+    )
+    return { sessions, events, handler }
 }
 
 describe('PlanWorkoutSessionHandler', () => {
+    it('tells the athlete their coach planned a session for them', async () => {
+        const { events, handler } = setup(new FakeCoachLinks().link(COACH, ATHLETE))
+
+        const view = await handler.execute(new PlanWorkoutSessionCommand(COACH, ATHLETE, null, null))
+
+        expect(events.firstOf(WorkoutSessionPlannedIntegrationEvent)).toMatchObject({
+            coachId: COACH,
+            athleteId: ATHLETE,
+            sessionId: view.id,
+        })
+    })
+
     it('creates a planned session owned by the athlete and stamped with the coach', async () => {
         const { sessions, handler } = setup(new FakeCoachLinks().link(COACH, ATHLETE))
 

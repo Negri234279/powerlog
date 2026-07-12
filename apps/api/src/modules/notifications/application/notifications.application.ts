@@ -2,6 +2,9 @@ import { MarkAllNotificationsReadHandler } from './commands/mark-all-notificatio
 import { MarkNotificationReadHandler } from './commands/mark-notification-read/mark-notification-read.handler'
 import { NotifyOnCoachInvitationCreated } from './event-handlers/notify-on-coach-invitation-created.handler'
 import { NotifyOnCoachLinkEstablished } from './event-handlers/notify-on-coach-link-established.handler'
+import { NotifyOnCoachLinkRemoved } from './event-handlers/notify-on-coach-link-removed.handler'
+import { NotifyOnMesocycleAssigned } from './event-handlers/notify-on-mesocycle-assigned.handler'
+import { NotifyOnSessionPlanned } from './event-handlers/notify-on-session-planned.handler'
 import { CountUnreadNotificationsHandler } from './queries/count-unread-notifications/count-unread-notifications.handler'
 import { ListNotificationsHandler } from './queries/list-notifications/list-notifications.handler'
 import { NotificationService } from './services/notification.service'
@@ -13,7 +16,13 @@ export const NOTIFICATIONS_COMMAND_HANDLERS = [MarkNotificationReadHandler, Mark
 export const NOTIFICATIONS_QUERY_HANDLERS = [ListNotificationsHandler, CountUnreadNotificationsHandler]
 
 /** Integration-event handlers (react to events on the bus). */
-export const NOTIFICATIONS_EVENT_HANDLERS = [NotifyOnCoachInvitationCreated, NotifyOnCoachLinkEstablished]
+export const NOTIFICATIONS_EVENT_HANDLERS = [
+    NotifyOnCoachInvitationCreated,
+    NotifyOnCoachLinkEstablished,
+    NotifyOnCoachLinkRemoved,
+    NotifyOnSessionPlanned,
+    NotifyOnMesocycleAssigned,
+]
 
 /** Application-layer services (not CQRS handlers). */
 export const NOTIFICATIONS_APPLICATION_SERVICES = [NotificationService]

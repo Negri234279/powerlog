@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
+import { FakeCoachLinks, RecordingEventBus } from '../../../../../../tests/doubles/shared'
+import { MesocycleAssignedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-assigned.integration-event'
 import { FakeClock, FakeIdGenerator, InMemoryMesocycleRepository } from '../../../../../../tests/doubles/workouts'
 import { MesocycleMother } from '../../../../../../tests/mothers/workouts'
 import { MesocycleNotFoundError, NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
@@ -18,14 +19,16 @@ function setup(linked = true) {
     const coachLinks = new FakeCoachLinks()
     if (linked) coachLinks.link(COACH, ATHLETE)
 
+    const events = new RecordingEventBus()
     const handler = new AssignMesocycleToAthleteHandler(
         mesocycles,
         coachLinks,
         new FakeClock(NOW),
         new FakeIdGenerator(),
+        events.asEventBus(),
     )
 
-    return { source, mesocycles, handler }
+    return { source, mesocycles, events, handler }
 }
 
 describe('AssignMesocycleToAthleteHandler', () => {
@@ -46,6 +49,19 @@ describe('AssignMesocycleToAthleteHandler', () => {
 
         const copy = await mesocycles.findById(view.id)
         expect(copy?.ownerId).toBe(ATHLETE)
+    })
+
+    it('tells the athlete their coach handed them a block', async () => {
+        const { events, handler } = setup()
+
+        const view = await handler.execute(new AssignMesocycleToAthleteCommand(COACH, 'm-1', ATHLETE))
+
+        expect(events.firstOf(MesocycleAssignedIntegrationEvent)).toMatchObject({
+            coachId: COACH,
+            athleteId: ATHLETE,
+            mesocycleId: view.id,
+            name: 'Hypertrophy Block',
+        })
     })
 
     it('leaves the source in the coach’s library so it can be assigned again', async () => {

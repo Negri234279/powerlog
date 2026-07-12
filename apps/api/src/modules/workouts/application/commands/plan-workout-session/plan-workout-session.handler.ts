@@ -1,6 +1,7 @@
-import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { WorkoutSessionPlannedIntegrationEvent } from '../../../../../shared/integration-events/workout-session-planned.integration-event'
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
@@ -19,6 +20,7 @@ export class PlanWorkoutSessionHandler implements ICommandHandler<PlanWorkoutSes
         private readonly coachLinks: CoachLinks,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
+        private readonly eventBus: EventBus,
     ) {}
 
     async execute(command: PlanWorkoutSessionCommand): Promise<WorkoutSessionView> {
@@ -39,6 +41,16 @@ export class PlanWorkoutSessionHandler implements ICommandHandler<PlanWorkoutSes
         })
 
         await this.sessions.save(session)
+
+        // Tell the athlete their coach put a session on their calendar.
+        this.eventBus.publish(
+            new WorkoutSessionPlannedIntegrationEvent(
+                command.coachId,
+                command.athleteId,
+                session.id,
+                session.performedAt,
+            ),
+        )
 
         return toWorkoutSessionView(session)
     }

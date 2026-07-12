@@ -1,7 +1,8 @@
-import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { MesocycleAssignedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-assigned.integration-event'
 import { MesocycleAggregate } from '../../../domain/entities/mesocycle.entity'
 import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
 import { MesocycleRepository } from '../../../domain/repositories/mesocycle.repository'
@@ -28,6 +29,7 @@ export class AssignMesocycleToAthleteHandler implements ICommandHandler<
         private readonly coachLinks: CoachLinks,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
+        private readonly eventBus: EventBus,
         private readonly logger?: PinoLogger,
     ) {
         this.logger?.setContext(AssignMesocycleToAthleteHandler.name)
@@ -51,6 +53,10 @@ export class AssignMesocycleToAthleteHandler implements ICommandHandler<
         })
 
         await this.mesocycles.save(copy)
+
+        this.eventBus.publish(
+            new MesocycleAssignedIntegrationEvent(command.coachId, command.athleteId, copy.id, copy.name.value),
+        )
 
         this.logger?.info(
             { mesocycleId: copy.id, sourceMesocycleId: source.id, weeks: copy.microcycles.length },

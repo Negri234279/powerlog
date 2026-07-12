@@ -1,6 +1,7 @@
-import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { MesocycleAssignedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-assigned.integration-event'
 import { MesocycleAggregate } from '../../../domain/entities/mesocycle.entity'
 import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
 import { ExerciseRepository } from '../../../domain/repositories/exercise.repository'
@@ -19,6 +20,7 @@ export class CreateMesocycleHandler implements ICommandHandler<CreateMesocycleCo
         private readonly coachLinks: CoachLinks,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
+        private readonly eventBus: EventBus,
     ) {}
 
     async execute(command: CreateMesocycleCommand): Promise<MesocycleView> {
@@ -39,6 +41,12 @@ export class CreateMesocycleHandler implements ICommandHandler<CreateMesocycleCo
         })
 
         await this.mesocycles.save(mesocycle)
+
+        if (athleteId !== undefined) {
+            this.eventBus.publish(
+                new MesocycleAssignedIntegrationEvent(command.userId, athleteId, mesocycle.id, mesocycle.name.value),
+            )
+        }
 
         // A freshly created mesocycle has no generated weeks yet.
         return toMesocycleView(mesocycle, [])

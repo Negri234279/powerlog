@@ -1,6 +1,7 @@
-import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { WorkoutSessionPlannedIntegrationEvent } from '../../../../../shared/integration-events/workout-session-planned.integration-event'
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
@@ -26,6 +27,7 @@ export class PlanSessionFromTemplateHandler implements ICommandHandler<
         private readonly coachLinks: CoachLinks,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
+        private readonly eventBus: EventBus,
     ) {}
 
     async execute(command: PlanSessionFromTemplateCommand): Promise<WorkoutSessionView> {
@@ -51,6 +53,15 @@ export class PlanSessionFromTemplateHandler implements ICommandHandler<
         materializeTemplateInto(session, template, this.ids, now)
 
         await this.sessions.save(session)
+
+        this.eventBus.publish(
+            new WorkoutSessionPlannedIntegrationEvent(
+                command.coachId,
+                command.athleteId,
+                session.id,
+                session.performedAt,
+            ),
+        )
 
         return toWorkoutSessionView(session)
     }

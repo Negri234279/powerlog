@@ -3,6 +3,14 @@
  * pgEnum and any input validation. Extend as new notification-producing features
  * land (each addition needs a migration that `ALTER TYPE ... ADD VALUE`s it).
  */
-export const NOTIFICATION_TYPES = ['coach_invitation', 'coach_linked', 'athlete_linked'] as const
+export const NOTIFICATION_TYPES = [
+    'coach_invitation',
+    'coach_linked',
+    'athlete_linked',
+    'session_planned',
+    'mesocycle_assigned',
+    'coach_unlinked',
+    'athlete_unlinked',
+] as const
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]

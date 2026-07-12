@@ -7,7 +7,7 @@ import {
     InMemoryWorkoutSessionRepository,
     InMemoryWorkoutTemplateRepository,
 } from '../../../../../../tests/doubles/workouts'
-import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
+import { FakeCoachLinks, RecordingEventBus } from '../../../../../../tests/doubles/shared'
 import { NotLinkedToAthleteError, WorkoutTemplateNotFoundError } from '../../../domain/errors/workouts.errors'
 import { PlanSessionFromTemplateCommand } from './plan-session-from-template.command'
 import { PlanSessionFromTemplateHandler } from './plan-session-from-template.handler'
@@ -21,12 +21,14 @@ function setup({ links = new FakeCoachLinks(), templateOwner = COACH } = {}) {
     const template = WorkoutTemplateMother.withTree(EXERCISE, { id: 't-1', ownerId: templateOwner })
     const templates = new InMemoryWorkoutTemplateRepository([template])
     const sessions = new InMemoryWorkoutSessionRepository()
+    const events = new RecordingEventBus()
     const handler = new PlanSessionFromTemplateHandler(
         sessions,
         templates,
         links,
         new FakeClock(NOW),
         new FakeIdGenerator(),
+        events.asEventBus(),
     )
     return { sessions, handler }
 }

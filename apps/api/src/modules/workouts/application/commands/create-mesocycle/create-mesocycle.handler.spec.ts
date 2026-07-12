@@ -7,7 +7,7 @@ import {
     InMemoryExerciseRepository,
     InMemoryMesocycleRepository,
 } from '../../../../../../tests/doubles/workouts'
-import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
+import { FakeCoachLinks, RecordingEventBus } from '../../../../../../tests/doubles/shared'
 import {
     ConflictingIntensityError,
     ExerciseNotFoundError,
@@ -33,6 +33,7 @@ function setup(coachLinks = new FakeCoachLinks()) {
         coachLinks,
         new FakeClock(NOW),
         new FakeIdGenerator(),
+        new RecordingEventBus().asEventBus(),
     )
     return { mesocycles, handler }
 }
