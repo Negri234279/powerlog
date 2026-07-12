@@ -18,12 +18,21 @@ export class MyCoachesHandler implements IQueryHandler<MyCoachesQuery, CoachUser
     }
 }
 
-/** Resolves user ids to {userId, username}, dropping any that no longer exist. */
+/** Resolves user ids to their public card (handle, name, avatar), dropping any
+ *  that no longer exist. */
 export async function resolveUsers(ids: string[], users: UserDirectory): Promise<CoachUserView[]> {
     const resolved = await Promise.all(
         ids.map(async (userId) => {
             const contact = await users.getContact(userId)
-            return contact ? { userId, username: contact.username, avatarUrl: contact.avatarUrl ?? null } : null
+            if (!contact) return null
+
+            return {
+                userId,
+                username: contact.username,
+                firstName: contact.firstName ?? null,
+                lastName: contact.lastName ?? null,
+                avatarUrl: contact.avatarUrl ?? null,
+            }
         }),
     )
     return resolved.filter((u): u is CoachUserView => u !== null)

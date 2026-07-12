@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { ApplySessionPlanCommand } from '../../../../../shared/contracts/apply-session-plan.command'
 import type { PrescribedSet } from '../../../../../shared/contracts/session-plan-applier'
 import { FakeClock, FakeIdGenerator, InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import { WorkoutSessionMother } from '../../../../../../tests/mothers/workouts'
 import type { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { ExerciseEntryNotFoundError, WorkoutSessionNotFoundError } from '../../../domain/errors/workouts.errors'
@@ -15,8 +16,12 @@ const EXERCISE_ID = randomUUID()
 const NOW = new Date('2026-01-01T00:00:00.000Z')
 
 /** A planned session with one exercise and two empty sets, ready to program. */
-function plannedSession(overrides: { userId?: string } = {}): WorkoutSessionAggregate {
-    const session = WorkoutSessionMother.empty({ userId: overrides.userId ?? USER_ID, status: 'planned' })
+function plannedSession(overrides: { userId?: string; plannedByUserId?: string } = {}): WorkoutSessionAggregate {
+    const session = WorkoutSessionMother.empty({
+        userId: overrides.userId ?? USER_ID,
+        plannedByUserId: overrides.plannedByUserId ?? null,
+        status: 'planned',
+    })
     const entry = session.addEntry({ id: randomUUID(), exerciseId: EXERCISE_ID }, NOW)
     session.addSet(entry.id, { id: randomUUID() }, NOW)
     session.addSet(entry.id, { id: randomUUID(), notes: 'athlete wrote this' }, NOW)
@@ -40,11 +45,13 @@ const prescribe = (entryId: string, order: number, overrides: Partial<Prescribed
 
 describe('ApplySessionPlanHandler', () => {
     let sessions: InMemoryWorkoutSessionRepository
+    let coachLinks: FakeCoachLinks
 
-    const buildHandler = () => new ApplySessionPlanHandler(sessions, new FakeClock(), new FakeIdGenerator())
+    const buildHandler = () => new ApplySessionPlanHandler(sessions, new FakeClock(), new FakeIdGenerator(), coachLinks)
 
     beforeEach(() => {
         sessions = new InMemoryWorkoutSessionRepository()
+        coachLinks = new FakeCoachLinks()
     })
 
     it('fills the existing sets positionally', async () => {
@@ -173,6 +180,30 @@ describe('ApplySessionPlanHandler', () => {
     it('refuses to program another user’s session', async () => {
         const session = plannedSession({ userId: randomUUID() })
         await sessions.save(session)
+        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(entryOf(session).id, 1)])
+
+        await expect(buildHandler().execute(command)).rejects.toThrow(WorkoutSessionNotFoundError)
+    })
+
+    it('lets the coach who planned it write the plan onto the athlete’s session', async () => {
+        const athleteId = randomUUID()
+        const session = plannedSession({ userId: athleteId, plannedByUserId: USER_ID })
+        await sessions.save(session)
+        coachLinks.link(USER_ID, athleteId)
+        const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(entryOf(session).id, 1)])
+
+        await buildHandler().execute(command)
+
+        const saved = await sessions.findById(session.id)
+        expect(setsOf(saved!)[0]!.plannedWeight?.value).toBe(100)
+        expect(setsOf(saved!)[0]!.plannedReps?.value).toBe(5)
+    })
+
+    it('refuses a coach who no longer coaches the athlete', async () => {
+        const athleteId = randomUUID()
+        const session = plannedSession({ userId: athleteId, plannedByUserId: USER_ID })
+        await sessions.save(session)
+        // The link is gone; a draft generated while it existed must not still land.
         const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(entryOf(session).id, 1)])
 
         await expect(buildHandler().execute(command)).rejects.toThrow(WorkoutSessionNotFoundError)

@@ -130,11 +130,15 @@ export function ExerciseEntry({
     entry,
     exerciseName,
     units,
+    athleteId,
 }: {
     sessionId: string
     entry: ExerciseEntryData
     exerciseName: string
     units: Units
+    /** Set only when a coach is editing an athlete's session — the previous marks
+     *  shown must then be the athlete's, not the coach's. */
+    athleteId?: string
 }) {
     const t = useTranslations('workouts')
     const log = useLogSet()
@@ -219,7 +223,12 @@ export function ExerciseEntry({
                     )}
                 </div>
 
-                <ExerciseHistory exerciseId={entry.exerciseId} sessionId={sessionId} units={units} />
+                <ExerciseHistory
+                    exerciseId={entry.exerciseId}
+                    sessionId={sessionId}
+                    units={units}
+                    athleteId={athleteId}
+                />
             </div>
         </div>
     )

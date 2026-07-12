@@ -6,20 +6,30 @@ import type {
     ExercisePlanContext,
     SessionPlanContext,
 } from '../../../../../shared/contracts/session-plan-context'
+import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import type { ExerciseEntryEntity } from '../../../domain/entities/exercise-entry.entity'
+import type { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { ExerciseRepository } from '../../../domain/repositories/exercise.repository'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
 import { ExerciseSessionHistoryReadModel } from '../../ports/exercise-session-history.read-model'
+import { requireManageableSession } from '../../require-manageable-session'
 
 /**
  * Assembles what the AI module needs to program a planned session. Workouts owns
  * this data, so it builds the snapshot itself; the AI module never reaches into
  * the schema.
  *
- * Returns null — rather than throwing — when the session is missing, belongs to
- * someone else, or is no longer `planned`. From the caller's side those are the
- * same thing: there is nothing here to program, and a "not found" that doesn't
- * distinguish the three leaks nothing about other users' sessions.
+ * Who may ask is `requireManageableSession`'s call — the athlete, or the coach who
+ * planned the session and still coaches them — the same rule every write on a
+ * session already uses. Whose *numbers* go in is a different question: the history
+ * is always the session OWNER's, because that is who will lift it. A coach asking
+ * the model to program for an athlete off the coach's own marks would be worse
+ * than useless.
+ *
+ * Returns null — rather than throwing — when the session is missing, isn't the
+ * caller's to manage, or is no longer `planned`. From the caller's side those are
+ * the same thing: there is nothing here to program, and a "not found" that doesn't
+ * distinguish them leaks nothing about other users' sessions.
  */
 @QueryHandler(GetSessionPlanContextQuery)
 export class GetSessionPlanContextHandler implements IQueryHandler<
@@ -30,11 +40,12 @@ export class GetSessionPlanContextHandler implements IQueryHandler<
         private readonly sessions: WorkoutSessionRepository,
         private readonly exercises: ExerciseRepository,
         private readonly history: ExerciseSessionHistoryReadModel,
+        private readonly coachLinks: CoachLinks,
     ) {}
 
     async execute(query: GetSessionPlanContextQuery): Promise<SessionPlanContext | null> {
-        const session = await this.sessions.findById(query.sessionId)
-        if (!session || session.userId !== query.userId || session.status !== 'planned') return null
+        const session = await this.manageableSession(query)
+        if (!session || session.status !== 'planned') return null
 
         // Narrowing to one entry keeps the history lookups to the exercise that
         // was actually asked about.
@@ -42,7 +53,7 @@ export class GetSessionPlanContextHandler implements IQueryHandler<
 
         const exercises: ExercisePlanContext[] = []
         for (const entry of entries) {
-            exercises.push(await this.contextFor(entry, query))
+            exercises.push(await this.contextFor(entry, session.userId, query))
         }
 
         return {
@@ -53,14 +64,25 @@ export class GetSessionPlanContextHandler implements IQueryHandler<
         }
     }
 
+    /** The shared rule, adapted to this query's null contract. */
+    private async manageableSession(query: GetSessionPlanContextQuery): Promise<WorkoutSessionAggregate | null> {
+        try {
+            return await requireManageableSession(this.sessions, this.coachLinks, query.sessionId, query.userId)
+        } catch {
+            return null
+        }
+    }
+
     private async contextFor(
         entry: ExerciseEntryEntity,
+        ownerId: string,
         query: GetSessionPlanContextQuery,
     ): Promise<ExercisePlanContext> {
         const exercise = await this.exercises.findById(entry.exerciseId)
 
         const rows = await this.history.forExercise({
-            userId: query.userId,
+            // The owner's history, not the caller's — see the class comment.
+            userId: ownerId,
             exerciseId: entry.exerciseId,
             // The session being programmed has nothing logged yet, but excluding it
             // keeps the history strictly "what happened before".

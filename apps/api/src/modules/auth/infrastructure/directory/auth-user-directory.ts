@@ -49,6 +49,12 @@ export class AuthUserDirectory extends UserDirectory {
         )
         if (!snapshot) return null
 
-        return { email: user.email.value, username: snapshot.username, avatarUrl: snapshot.avatarUrl }
+        return {
+            email: user.email.value,
+            username: snapshot.username,
+            firstName: snapshot.firstName,
+            lastName: snapshot.lastName,
+            avatarUrl: snapshot.avatarUrl,
+        }
     }
 }

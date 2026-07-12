@@ -10,9 +10,11 @@ import { Roles } from '../../../../auth/roles.decorator'
 import { RolesGuard } from '../../../../auth/roles.guard'
 import { toSupportedLocale } from '../../../../shared/i18n/locale'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
+import type { ExerciseSessionHistoryRow } from '../../application/ports/exercise-session-history.read-model'
 import type { ExerciseStatsRow } from '../../application/ports/exercise-stats.read-model'
 import type { MesocycleSummaryRow } from '../../application/ports/mesocycle-list.read-model'
 import type { TrainingDistribution, VolumeBucketRow } from '../../application/ports/training-dashboard.read-model'
+import { GetExerciseSessionHistoryQuery } from '../../application/queries/get-exercise-session-history/get-exercise-session-history.query'
 import { GetExerciseStatsQuery } from '../../application/queries/get-exercise-stats/get-exercise-stats.query'
 import type { MesocycleView } from '../../application/queries/get-mesocycle/get-mesocycle.handler'
 import { GetMesocycleQuery } from '../../application/queries/get-mesocycle/get-mesocycle.query'
@@ -29,6 +31,7 @@ import type { WorkoutHistoryPage } from '../../application/queries/list-workout-
 import { ListWorkoutSessionsQuery } from '../../application/queries/list-workout-sessions/list-workout-sessions.query'
 import { WORKOUT_STATUSES, type WorkoutStatus } from '../../domain/workout-status'
 import { LinkedAthleteGuard } from '../guards/linked-athlete.guard'
+import { ExerciseSessionHistoryType } from '../types/exercise-session-history.type'
 import { ExerciseStatsType } from '../types/exercise-stats.type'
 import { MesocycleSummaryType, MesocycleType } from '../types/mesocycle.type'
 import {
@@ -169,6 +172,24 @@ export class AthleteViewResolver {
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
     ): Promise<TrainingDistribution> {
         const query = new GetTrainingDistributionQuery(athleteId, from, to)
+        return this.queryBus.execute(query)
+    }
+
+    @Query(() => [ExerciseSessionHistoryType], {
+        description:
+            "An athlete's recent completed sessions logging one exercise, with their performed sets (coaches only).",
+    })
+    async athleteExerciseSessionHistory(
+        @Args('athleteId', { type: () => ID }, new ZodValidationPipe(uuidArg)) athleteId: string,
+        @Args('exerciseId', { type: () => ID }, new ZodValidationPipe(uuidArg)) exerciseId: string,
+        @Args('excludeSessionId', { type: () => ID, nullable: true }, new ZodValidationPipe(optionalUuid))
+        excludeSessionId?: string,
+        @Args('limit', { type: () => Int, nullable: true }, new ZodValidationPipe(limitArg)) limit?: number,
+    ): Promise<ExerciseSessionHistoryRow[]> {
+        // The previous marks a coach needs while programming are the ATHLETE's, not
+        // their own — same read model, run with userId = athleteId.
+        const query = new GetExerciseSessionHistoryQuery(athleteId, exerciseId, excludeSessionId, limit)
+
         return this.queryBus.execute(query)
     }
 

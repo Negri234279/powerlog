@@ -47,6 +47,12 @@ export class CoachUserType {
     @Field(() => String)
     username!: string
 
+    @Field(() => String, { nullable: true, description: 'Given name, if set — only visible to linked users.' })
+    firstName!: string | null
+
+    @Field(() => String, { nullable: true, description: 'Family name, if set — only visible to linked users.' })
+    lastName!: string | null
+
     @Field(() => String, { nullable: true, description: 'Resolved avatar URL; null → show initials.' })
     avatarUrl!: string | null
 }

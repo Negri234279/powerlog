@@ -303,6 +303,12 @@ type CoachInvitationPreview {
 type CoachUser {
   """Resolved avatar URL; null → show initials."""
   avatarUrl: String
+
+  """Given name, if set — only visible to linked users."""
+  firstName: String
+
+  """Family name, if set — only visible to linked users."""
+  lastName: String
   userId: ID!
   username: String!
 }
@@ -986,6 +992,11 @@ type Query {
 
   """The running API release (package version)."""
   apiVersion: String!
+
+  """
+  An athlete's recent completed sessions logging one exercise, with their performed sets (coaches only).
+  """
+  athleteExerciseSessionHistory(athleteId: ID!, excludeSessionId: ID, exerciseId: ID!, limit: Int): [ExerciseSessionHistory!]!
 
   """
   An athlete's per-exercise volume and PRs, optionally within a date range (coaches only).

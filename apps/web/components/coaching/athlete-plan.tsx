@@ -64,7 +64,9 @@ function PlanSessionCard({ athleteId }: { athleteId: string }) {
             notes: notes.trim() === '' ? undefined : notes.trim(),
         }
         // Straight into the session editor: that is where the coach builds the plan.
-        const onSuccess = (id: string) => router.push(`/workouts/${id}`)
+        // Under the athlete's route, not /workouts/<id> — that one belongs to the
+        // coach's own log, and its "back" would strand them there.
+        const onSuccess = (id: string) => router.push(`/coaching/athletes/${athleteId}/workouts/${id}`)
         const onError = (err: unknown) => setError(errorMessage(err))
 
         if (template) {
@@ -243,7 +245,7 @@ function AthleteBlocks({ athleteId }: { athleteId: string }) {
                         </div>
                         <TrackedLink
                             analyticsId="athlete-block-open"
-                            href={`/workouts/mesocycles/${block.id}`}
+                            href={`/coaching/athletes/${athleteId}/mesocycles/${block.id}`}
                             className="shrink-0 rounded-full px-4 py-1.5 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                         >
                             {t('openBlock')}

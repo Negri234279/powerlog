@@ -163,7 +163,7 @@ function SessionRow({
                         {canEdit ? (
                             <TrackedLink
                                 analyticsId="athlete-session-edit-plan"
-                                href={`/workouts/${session.id}`}
+                                href={`/coaching/athletes/${athleteId}/workouts/${session.id}`}
                                 className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                             >
                                 <Pencil className="size-3" /> {t('editPlan')}

@@ -15,7 +15,10 @@ describe('MyCoachesHandler', () => {
 
         const result = await handler.execute(new MyCoachesQuery('athlete-1'))
 
-        // coach-gone has no contact → dropped; coach-1 resolved (no avatar seeded).
-        expect(result).toEqual([{ userId: 'coach-1', username: 'coachone', avatarUrl: null }])
+        // coach-gone has no contact → dropped; coach-1 resolved (nothing but the
+        // handle seeded, so name and avatar come back null).
+        expect(result).toEqual([
+            { userId: 'coach-1', username: 'coachone', firstName: null, lastName: null, avatarUrl: null },
+        ])
     })
 })

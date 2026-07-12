@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 
 import { ApplySessionPlanCommand } from '../../../../../shared/contracts/apply-session-plan.command'
+import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import type { PrescribedSet } from '../../../../../shared/contracts/session-plan-applier'
 import type { WorkoutSetFields } from '../../../domain/entities/workout-set.entity'
 import { ExerciseEntryNotFoundError, WorkoutSessionNotFoundError } from '../../../domain/errors/workouts.errors'
@@ -11,12 +12,15 @@ import { RpeVO } from '../../../domain/value-objects/rpe.vo'
 import { WeightVO } from '../../../domain/value-objects/weight.vo'
 import { Clock } from '../../ports/clock.port'
 import { IdGenerator } from '../../ports/id-generator.port'
+import { requireManageableSession } from '../../require-manageable-session'
 
 /**
  * Writes an AI-accepted plan onto a planned session. Workouts is the authority
- * here and revalidates everything: the caller owns the session, the session is
- * still `planned`, and every entry id belongs to it — all checked before a
- * single set is touched, so a stale plan leaves the session exactly as it was.
+ * here and revalidates everything: the caller may manage the session (its owner,
+ * or the coach who planned it and still coaches them — `requireManageableSession`,
+ * the same rule as every other write), the session is still `planned`, and every
+ * entry id belongs to it — all checked before a single set is touched, so a stale
+ * plan leaves the session exactly as it was.
  *
  * Prescriptions are positional within their entry: position `n` fills the nth
  * existing set's targets, positions past the end append new planned sets. The
@@ -29,11 +33,16 @@ export class ApplySessionPlanHandler implements ICommandHandler<ApplySessionPlan
         private readonly sessions: WorkoutSessionRepository,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
+        private readonly coachLinks: CoachLinks,
     ) {}
 
     async execute(command: ApplySessionPlanCommand): Promise<void> {
-        const session = await this.sessions.findById(command.sessionId)
-        if (!session || session.userId !== command.userId) throw new WorkoutSessionNotFoundError()
+        const session = await requireManageableSession(
+            this.sessions,
+            this.coachLinks,
+            command.sessionId,
+            command.userId,
+        )
         // A session already trained is history; a plan cannot rewrite it.
         if (session.status !== 'planned') throw new WorkoutSessionNotFoundError()
 

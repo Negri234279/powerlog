@@ -9,6 +9,7 @@ import type {
 import { gqlRequest } from '@/lib/graphql/client'
 import {
     AssignMesocycleToAthleteDocument,
+    AthleteExerciseSessionHistoryDocument,
     AthleteExerciseStatsDocument,
     AthleteMesocyclesDocument,
     AthleteTrainingSummaryDocument,
@@ -55,6 +56,41 @@ export function useAthleteSession(athleteId: string, sessionId: string, enabled 
         queryFn: async () =>
             (await gqlRequest(AthleteWorkoutSessionDocument, { athleteId, id: sessionId })).athleteWorkoutSession,
         enabled,
+        retry: false,
+    })
+}
+
+/**
+ * The athlete's previous marks for one exercise — what a coach needs while
+ * programming. Same shape as the athlete's own `useExerciseSessionHistory`; the
+ * difference is whose history it reads (the API gates it on the coach link).
+ */
+export function useAthleteExerciseSessionHistory(
+    athleteId: string,
+    exerciseId: string,
+    excludeSessionId?: string,
+    options: { enabled?: boolean; limit?: number } = {},
+) {
+    const { enabled = true, limit } = options
+
+    return useQuery({
+        queryKey: [
+            ...athleteKey(athleteId),
+            'exerciseSessionHistory',
+            exerciseId,
+            excludeSessionId ?? null,
+            limit ?? null,
+        ],
+        queryFn: async () =>
+            (
+                await gqlRequest(AthleteExerciseSessionHistoryDocument, {
+                    athleteId,
+                    exerciseId,
+                    excludeSessionId,
+                    limit,
+                })
+            ).athleteExerciseSessionHistory,
+        enabled: enabled && Boolean(athleteId) && Boolean(exerciseId),
         retry: false,
     })
 }

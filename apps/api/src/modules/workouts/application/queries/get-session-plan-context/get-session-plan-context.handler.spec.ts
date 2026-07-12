@@ -8,6 +8,7 @@ import {
     InMemoryWorkoutSessionRepository,
     StubExerciseSessionHistoryReadModel,
 } from '../../../../../../tests/doubles/workouts'
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import { ExerciseMother, WorkoutSessionMother } from '../../../../../../tests/mothers/workouts'
 import type { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import type { ExerciseSessionHistoryRow } from '../../ports/exercise-session-history.read-model'
@@ -17,9 +18,10 @@ const USER_ID = randomUUID()
 const EXERCISE_ID = randomUUID()
 const NOW = new Date('2026-01-01T00:00:00.000Z')
 
-function plannedSession(overrides: { userId?: string } = {}): WorkoutSessionAggregate {
+function plannedSession(overrides: { userId?: string; plannedByUserId?: string } = {}): WorkoutSessionAggregate {
     const session = WorkoutSessionMother.empty({
         userId: overrides.userId ?? USER_ID,
+        plannedByUserId: overrides.plannedByUserId ?? null,
         status: 'planned',
         notes: 'heavy day',
     })
@@ -53,13 +55,15 @@ describe('GetSessionPlanContextHandler', () => {
     let sessions: InMemoryWorkoutSessionRepository
     let exercises: InMemoryExerciseRepository
     let history: StubExerciseSessionHistoryReadModel
+    let coachLinks: FakeCoachLinks
 
-    const buildHandler = () => new GetSessionPlanContextHandler(sessions, exercises, history)
+    const buildHandler = () => new GetSessionPlanContextHandler(sessions, exercises, history, coachLinks)
 
     beforeEach(() => {
         sessions = new InMemoryWorkoutSessionRepository()
         exercises = new InMemoryExerciseRepository([ExerciseMother.create({ id: EXERCISE_ID, name: 'Back Squat' })])
         history = new StubExerciseSessionHistoryReadModel([historyRow()])
+        coachLinks = new FakeCoachLinks()
     })
 
     it('names the lift and carries the session’s own notes', async () => {
@@ -148,6 +152,42 @@ describe('GetSessionPlanContextHandler', () => {
         await sessions.save(session)
         const query = new GetSessionPlanContextQuery(USER_ID, session.id, 6)
 
+        await expect(buildHandler().execute(query)).resolves.toBeNull()
+    })
+
+    it('lets the coach who planned it program an athlete’s session, off the ATHLETE’s history', async () => {
+        const athleteId = randomUUID()
+        const session = plannedSession({ userId: athleteId, plannedByUserId: USER_ID })
+        await sessions.save(session)
+        coachLinks.link(USER_ID, athleteId)
+        const query = new GetSessionPlanContextQuery(USER_ID, session.id, 6)
+
+        const context = await buildHandler().execute(query)
+
+        expect(context?.sessionId).toBe(session.id)
+        // The numbers handed to the model are the ones the ATHLETE will lift, never
+        // the coach's own — that is the whole point of the context.
+        expect(history.lastFilter?.userId).toBe(athleteId)
+    })
+
+    it('returns null for a coach who no longer coaches the athlete', async () => {
+        const athleteId = randomUUID()
+        const session = plannedSession({ userId: athleteId, plannedByUserId: USER_ID })
+        await sessions.save(session)
+        // No link seeded: the relationship ended after the session was planned.
+        const query = new GetSessionPlanContextQuery(USER_ID, session.id, 6)
+
+        await expect(buildHandler().execute(query)).resolves.toBeNull()
+    })
+
+    it('returns null for a linked coach on a session they did not plan', async () => {
+        const athleteId = randomUUID()
+        const session = plannedSession({ userId: athleteId })
+        await sessions.save(session)
+        coachLinks.link(USER_ID, athleteId)
+        const query = new GetSessionPlanContextQuery(USER_ID, session.id, 6)
+
+        // Coaching someone does not hand you the sessions they planned themselves.
         await expect(buildHandler().execute(query)).resolves.toBeNull()
     })
 

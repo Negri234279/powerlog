@@ -9,6 +9,10 @@
 export interface UserContact {
     email: string
     username: string
+    /** Real name, when the user filled it in. Shown to people they are linked to
+     *  (a coach and their athlete), never to strangers. */
+    firstName?: string | null
+    lastName?: string | null
     /** Resolved avatar URL; null/absent → client shows initials/default. */
     avatarUrl?: string | null
 }

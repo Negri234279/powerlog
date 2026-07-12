@@ -75,6 +75,7 @@
         "noSessions": "No sessions yet.",
         "noStats": "Nothing logged in this range.",
         "editPlan": "Edit plan",
+        "backToAthlete": "← Athlete",
         "planSessionTitle": "Plan a session",
         "planSessionSubtitle": "Put a session on their calendar. You build the plan, they log the real sets.",
         "planDate": "Date",

@@ -20,9 +20,11 @@ export class FakeProfiles extends ProfileProvisioner implements ProfileSnapshotR
         return this
     }
 
-    /** Seed a snapshot for a user that exists without going through provisioning. */
-    set(userId: string, snapshot: ProfileSnapshot): this {
-        this.byUser.set(userId, snapshot)
+    /** Seed a snapshot for a user that exists without going through provisioning.
+     *  Only the handle is required; the rest defaults to "not set", as it does for
+     *  a freshly provisioned profile. */
+    set(userId: string, snapshot: Partial<ProfileSnapshot> & Pick<ProfileSnapshot, 'username'>): this {
+        this.byUser.set(userId, emptyProfile(snapshot))
         return this
     }
 
@@ -31,10 +33,20 @@ export class FakeProfiles extends ProfileProvisioner implements ProfileSnapshotR
         if (this.error) throw this.error
         // Mirror profile's handle rule: chosen handle, else derived from the email.
         const handle = (input.username ?? input.email.split('@')[0] ?? input.email).toLowerCase()
-        this.byUser.set(input.userId, { username: handle, avatarUrl: null, locale: null })
+        this.byUser.set(input.userId, emptyProfile({ username: handle }))
     }
 
     async read(userId: string): Promise<ProfileSnapshot | null> {
         return this.byUser.get(userId) ?? null
+    }
+}
+
+function emptyProfile(snapshot: Partial<ProfileSnapshot> & Pick<ProfileSnapshot, 'username'>): ProfileSnapshot {
+    return {
+        firstName: null,
+        lastName: null,
+        avatarUrl: null,
+        locale: null,
+        ...snapshot,
     }
 }

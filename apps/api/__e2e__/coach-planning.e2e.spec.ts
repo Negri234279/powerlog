@@ -207,6 +207,23 @@ describe("Coach reading an athlete's training", () => {
         return sessionId
     }
 
+    /** A completed session of one given exercise at one given weight. */
+    async function aCompletedSessionOf(access: string, exerciseId: string, weight: number): Promise<void> {
+        const created = await gql(`mutation { createWorkoutSession { id } }`, access)
+        const sessionId: string = created.body.data.createWorkoutSession.id
+
+        const entry = await gql(
+            `mutation { addExerciseEntry(input: { sessionId: "${sessionId}", exerciseId: "${exerciseId}" }) { entries { id } } }`,
+            access,
+        )
+        const entryId: string = entry.body.data.addExerciseEntry.entries[0].id
+        await gql(
+            `mutation { logSet(input: { sessionId: "${sessionId}", entryId: "${entryId}", weight: ${weight}, reps: 5 }) { id } }`,
+            access,
+        )
+        await gql(`mutation { completeWorkoutSession(id: "${sessionId}") { status } }`, access)
+    }
+
     it("lets a linked coach read the athlete's history, session detail and KPIs", async () => {
         const { coachAccess, athlete } = await linkedCoachAndAthlete()
         const sessionId = await aCompletedSession(athlete.access)
@@ -240,6 +257,44 @@ describe("Coach reading an athlete's training", () => {
             coachAccess,
         )
         expect(stats.body.data.athleteExerciseStats).toHaveLength(1)
+    })
+
+    it("shows the coach the ATHLETE's previous marks for an exercise, never their own", async () => {
+        const { coachAccess, athlete } = await linkedCoachAndAthlete()
+
+        // The same exercise, trained by both — the coach is far stronger, so the
+        // weights alone say whose history came back.
+        const exerciseId = await anExerciseId(coachAccess)
+        await aCompletedSessionOf(athlete.access, exerciseId, 100)
+        await aCompletedSessionOf(coachAccess, exerciseId, 200)
+
+        const marks = await gql(
+            `query { athleteExerciseSessionHistory(athleteId: "${athlete.userId}", exerciseId: "${exerciseId}") { sets { weightKg } } }`,
+            coachAccess,
+        )
+        expect(marks.body.errors).toBeUndefined()
+        expect(marks.body.data.athleteExerciseSessionHistory).toHaveLength(1)
+        expect(marks.body.data.athleteExerciseSessionHistory[0].sets[0].weightKg).toBe(100)
+
+        // The coach's own query still answers with the coach's own numbers — the
+        // panel picks the right one, the API doesn't guess.
+        const own = await gql(
+            `query { exerciseSessionHistory(exerciseId: "${exerciseId}") { sets { weightKg } } }`,
+            coachAccess,
+        )
+        expect(own.body.data.exerciseSessionHistory[0].sets[0].weightKg).toBe(200)
+    })
+
+    it('rejects a coach reading the marks of an athlete they are not linked to', async () => {
+        const { coachAccess } = await linkedCoachAndAthlete()
+        const stranger = await register('stranger@example.com')
+        const exerciseId = await anExerciseId(coachAccess)
+
+        const res = await gql(
+            `query { athleteExerciseSessionHistory(athleteId: "${stranger.userId}", exerciseId: "${exerciseId}") { sessionId } }`,
+            coachAccess,
+        )
+        expect(res.body.errors[0].extensions.code).toBe('NOT_LINKED_TO_ATHLETE')
     })
 
     it('rejects a coach reading an athlete they are not linked to', async () => {

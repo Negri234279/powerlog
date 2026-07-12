@@ -66,6 +66,30 @@ export const AthleteExerciseStatsDocument = graphql(`
     }
 `)
 
+export const AthleteExerciseSessionHistoryDocument = graphql(`
+    query AthleteExerciseSessionHistory($athleteId: ID!, $exerciseId: ID!, $excludeSessionId: ID, $limit: Int) {
+        athleteExerciseSessionHistory(
+            athleteId: $athleteId
+            exerciseId: $exerciseId
+            excludeSessionId: $excludeSessionId
+            limit: $limit
+        ) {
+            sessionId
+            performedAt
+            status
+            sets {
+                plannedWeightKg
+                plannedReps
+                weightKg
+                reps
+                rpe
+                rir
+                e1rmKg
+            }
+        }
+    }
+`)
+
 export const AthleteMesocyclesDocument = graphql(`
     query AthleteMesocycles($athleteId: ID!) {
         athleteMesocycles(athleteId: $athleteId) {

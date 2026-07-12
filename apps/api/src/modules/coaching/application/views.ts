@@ -24,6 +24,10 @@ export interface PendingInvitationView {
 export interface CoachUserView {
     userId: string
     username: string
+    /** Real name, when they filled it in — only ever shown to the person they are
+     *  linked to. Null when unset. */
+    firstName: string | null
+    lastName: string | null
     avatarUrl: string | null
 }
 

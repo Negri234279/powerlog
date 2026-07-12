@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
+import { useAthleteExerciseSessionHistory } from '@/lib/graphql/hooks/use-athlete'
 import { type ExerciseSessionHistorySet, useExerciseSessionHistory } from '@/lib/graphql/hooks/use-workouts'
 import { kgTo, type Units } from '@/lib/units'
 import { ChevronDown } from '@/components/ui/icons'
@@ -38,23 +39,36 @@ function formatPlanned(set: ExerciseSessionHistorySet, units: Units): string {
 
 /**
  * Collapsible "previous marks" panel for one exercise inside a session. Lazily
- * fetches the caller's recent completed sessions of this exercise (excluding the
- * one being viewed) and lists each session's performed sets, so the athlete can
- * see what they hit last time. Uses the accordion transition (grid-rows 0fr↔1fr).
+ * fetches the recent completed sessions of this exercise (excluding the one being
+ * viewed) and lists each session's performed sets, so you can see what was hit
+ * last time. Uses the accordion transition (grid-rows 0fr↔1fr).
+ *
+ * The marks always belong to **whoever owns the session**: a coach programming for
+ * an athlete needs the athlete's numbers, not their own. `athleteId` is set only
+ * in that case, and swaps the query for the coach-scoped one (gated on the link).
  */
 export function ExerciseHistory({
     exerciseId,
     sessionId,
     units,
+    athleteId,
 }: {
     exerciseId: string
     sessionId: string
     units: Units
+    athleteId?: string
 }) {
     const t = useTranslations('workouts')
     const locale = useLocale()
     const [open, setOpen] = useState(false)
-    const { data, isLoading, isError } = useExerciseSessionHistory(exerciseId, sessionId, { enabled: open })
+
+    // Both hooks are declared (rules of hooks); only the relevant one is enabled.
+    const own = useExerciseSessionHistory(exerciseId, sessionId, { enabled: open && athleteId === undefined })
+    const theirs = useAthleteExerciseSessionHistory(athleteId ?? '', exerciseId, sessionId, {
+        enabled: open && athleteId !== undefined,
+    })
+
+    const { data, isLoading, isError } = athleteId === undefined ? own : theirs
 
     const count = data?.length ?? 0
 

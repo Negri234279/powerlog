@@ -9,6 +9,10 @@
 export interface ProfileSnapshot {
     /** The user's public handle (the profile display name). */
     username: string
+    /** Given name, if they filled it in; null otherwise. */
+    firstName: string | null
+    /** Family name, if they filled it in; null otherwise. */
+    lastName: string | null
     /** Resolved avatar URL; null → client shows the default. */
     avatarUrl: string | null
     /** The user's preferred locale (BCP-47, e.g. "es-ES"); null → not set. */

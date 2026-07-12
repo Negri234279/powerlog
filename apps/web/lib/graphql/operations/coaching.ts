@@ -7,6 +7,8 @@ export const MyAthletesDocument = graphql(`
         myAthletes {
             userId
             username
+            firstName
+            lastName
             avatarUrl
         }
     }
@@ -17,6 +19,8 @@ export const MyCoachesDocument = graphql(`
         myCoaches {
             userId
             username
+            firstName
+            lastName
             avatarUrl
         }
     }

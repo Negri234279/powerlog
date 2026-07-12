@@ -111,12 +111,31 @@ function InvitationCard({ invitation }: { invitation: PendingInvitation }) {
     )
 }
 
+/** "Ana Ruiz" from whichever halves the user filled in; null when neither. */
+function fullName(user: CoachUser): string | null {
+    const name = [user.firstName, user.lastName].filter(Boolean).join(' ')
+
+    return name === '' ? null : name
+}
+
+/** Handle + real name (when they set one) under the avatar. */
+function UserIdentity({ user }: { user: CoachUser }) {
+    const name = fullName(user)
+
+    return (
+        <span className="min-w-0 flex-1">
+            <span className="block truncate font-mono text-sm text-text">@{user.username}</span>
+            {name ? <span className="block truncate text-xs text-text-dim">{name}</span> : null}
+        </span>
+    )
+}
+
 function UserRow({ user, href }: { user: CoachUser; href?: string }) {
     const base = 'flex items-center gap-3 rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline'
     const content = (
         <>
             <Avatar username={user.username} src={user.avatarUrl} />
-            <p className="truncate font-mono text-sm text-text">@{user.username}</p>
+            <UserIdentity user={user} />
         </>
     )
 
@@ -152,7 +171,7 @@ function CoachRow({ coach }: { coach: CoachUser }) {
     return (
         <div className="flex items-center gap-3 rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
             <Avatar username={coach.username} src={coach.avatarUrl} />
-            <p className="min-w-0 flex-1 truncate font-mono text-sm text-text">@{coach.username}</p>
+            <UserIdentity user={coach} />
             <TrackedButton
                 analyticsId="coaching-leave-coach"
                 type="button"
