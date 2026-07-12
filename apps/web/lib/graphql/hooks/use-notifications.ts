@@ -16,12 +16,14 @@ export type NotificationItem = MyNotificationsQuery['myNotifications']['items'][
 const NOTIFICATIONS_KEY = ['notifications'] as const
 const UNREAD_KEY = ['notifications', 'unread'] as const
 
-/** The bell badge. Polls so a notification arriving elsewhere still shows up. */
+/** The bell badge. The realtime stream (`useRealtime`) invalidates this the moment
+ *  a notification is created; the slow poll is just the fallback for when the
+ *  stream is down (proxy hiccup, API restart, a browser without EventSource). */
 export function useUnreadNotificationsCount() {
     return useQuery({
         queryKey: UNREAD_KEY,
         queryFn: async () => (await gqlRequest(UnreadNotificationsCountDocument)).unreadNotificationsCount,
-        refetchInterval: 60_000,
+        refetchInterval: 5 * 60_000,
         retry: false,
     })
 }

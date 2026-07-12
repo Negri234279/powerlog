@@ -12,6 +12,7 @@ import { ArrowUpRight, Close, Mark, Menu } from '@/components/ui/icons'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import { NotificationBell } from '@/components/app/notification-bell'
 import { useLogout, useMe } from '@/lib/graphql/hooks/use-auth'
+import { useRealtime } from '@/lib/realtime/use-realtime'
 
 const NAV = [
     { id: 'dashboard', href: '/dashboard' },
@@ -30,6 +31,10 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
     const router = useRouter()
     const pathname = usePathname()
     const [menuOpen, setMenuOpen] = useState(false)
+
+    // One live-update stream for the whole authed app: what the coach (or athlete)
+    // is looking at refreshes itself when the other side acts.
+    useRealtime()
 
     // Prefer the live profile once loaded; fall back to the token's username so
     // the chrome never flashes empty on first paint.

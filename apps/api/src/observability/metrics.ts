@@ -29,6 +29,8 @@ export const METRIC = {
     authRegistrations: 'powerlog_auth_registrations_total',
     pgPoolConnections: 'powerlog_pg_pool_connections',
     pgPoolMax: 'powerlog_pg_pool_max',
+    realtimeConnections: 'powerlog_realtime_connections',
+    realtimeEvents: 'powerlog_realtime_events_total',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -219,5 +221,18 @@ export const metricsProviders = [
     makeGaugeProvider({
         name: METRIC.pgPoolMax,
         help: 'Configured maximum size of the pg connection pool.',
+    }),
+    // Live-update stream (set by RealtimeHub). One connection per open tab of a
+    // signed-in user, so this doubles as a rough "users with the app open" signal.
+    makeGaugeProvider({
+        name: METRIC.realtimeConnections,
+        help: 'Currently open realtime (SSE) connections.',
+    }),
+    // Counts recipients, not publishes: an event fanned out to a coach and an
+    // athlete increments by 2. Type is a bounded enum (no userId).
+    makeCounterProvider({
+        name: METRIC.realtimeEvents,
+        help: 'Count of realtime events pushed to connected clients, by type.',
+        labelNames: ['type'],
     }),
 ]

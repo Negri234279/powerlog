@@ -25,6 +25,7 @@ import { ProfileModule } from './modules/profile/profile.module'
 import { WorkoutsModule } from './modules/workouts/workouts.module'
 import { logContextMixin } from './observability/log-context.mixin'
 import { ObservabilityModule } from './observability/observability.module'
+import { RealtimeModule } from './realtime/realtime.module'
 import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
 
 @Module({
@@ -112,6 +113,7 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
         HealthModule,
         MailModule,
         AiModule,
+        RealtimeModule,
         // Feature modules (added per milestone):
         AuthModule,
         ProfileModule,
