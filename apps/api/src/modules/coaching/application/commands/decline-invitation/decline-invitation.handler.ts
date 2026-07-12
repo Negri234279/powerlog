@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 import { InvitationNotFoundError } from '../../../domain/errors/coaching.errors'
 import { CoachInvitationRepository } from '../../../domain/repositories/coach-invitation.repository'
 import { Clock } from '../../ports/clock.port'
+import { CoachingMetrics } from '../../ports/coaching-metrics.port'
 import { type InvitationView, toInvitationView } from '../../views'
 import { DeclineInvitationCommand } from './decline-invitation.command'
 
@@ -11,6 +12,7 @@ export class DeclineInvitationHandler implements ICommandHandler<DeclineInvitati
     constructor(
         private readonly invitations: CoachInvitationRepository,
         private readonly clock: Clock,
+        private readonly metrics: CoachingMetrics,
     ) {}
 
     async execute(command: DeclineInvitationCommand): Promise<InvitationView> {
@@ -21,6 +23,8 @@ export class DeclineInvitationHandler implements ICommandHandler<DeclineInvitati
 
         invitation.decline(this.clock.now())
         await this.invitations.save(invitation)
+        // Only a registered athlete can decline (they need an account to answer).
+        this.metrics.recordInvitation('declined', 'existing')
 
         return toInvitationView(invitation)
     }

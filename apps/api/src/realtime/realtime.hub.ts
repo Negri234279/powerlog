@@ -4,32 +4,27 @@ import type { Counter, Gauge } from 'prom-client'
 import { defer, filter, finalize, interval, map, merge, Observable, Subject, takeUntil } from 'rxjs'
 
 import { METRIC } from '../observability/metrics'
+import { RealtimeBus } from './realtime.bus'
 import { HEARTBEAT, type RealtimeEvent } from './realtime-event'
 
 /** Idle-connection reapers (proxies, load balancers) usually sit at 30–60s. */
 const HEARTBEAT_MS = 25_000
 
-interface Addressed {
-    userId: string
-    event: RealtimeEvent
-}
-
 /**
- * In-memory fan-out from the domain to the connected browsers: integration-event
+ * The bridge between the domain and the connected browsers: integration-event
  * handlers `publish()`, the SSE controller hands each request a `streamFor()`.
  *
- * In memory means single-instance: an event published on one API process only
- * reaches the clients connected to *that* process. That holds today (one API
- * container); a second replica would need a Redis pub/sub in front of this
- * Subject. The blast radius is small — a missed push just means the client sees
- * the change on its next refetch instead of instantly.
+ * How a published event reaches the other API processes is the `RealtimeBus`'s
+ * problem (in-process, or Redis pub/sub when `REDIS_URL` is set) — the hub only
+ * owns the per-connection concerns: filtering by user, heartbeats, metrics, and
+ * ending the streams cleanly on shutdown.
  */
 @Injectable()
 export class RealtimeHub implements OnApplicationShutdown {
-    private readonly events = new Subject<Addressed>()
     private readonly shutdown = new Subject<void>()
 
     constructor(
+        private readonly bus: RealtimeBus,
         @InjectMetric(METRIC.realtimeConnections) private readonly connections: Gauge<string>,
         @InjectMetric(METRIC.realtimeEvents) private readonly published: Counter<string>,
     ) {}
@@ -38,7 +33,7 @@ export class RealtimeHub implements OnApplicationShutdown {
      *  (the common case — nobody is required to be online) simply drop it. */
     publish(userIds: readonly string[], event: RealtimeEvent): void {
         for (const userId of userIds) {
-            this.events.next({ userId, event })
+            this.bus.publish({ userId, event })
         }
 
         this.published.inc({ type: event.type }, userIds.length)
@@ -49,9 +44,9 @@ export class RealtimeHub implements OnApplicationShutdown {
         return defer(() => {
             this.connections.inc()
 
-            const mine = this.events.pipe(
-                filter((addressed) => addressed.userId === userId),
-                map((addressed) => addressed.event),
+            const mine = this.bus.messages$.pipe(
+                filter((message) => message.userId === userId),
+                map((message) => message.event),
             )
             const heartbeats = interval(HEARTBEAT_MS).pipe(map(() => HEARTBEAT))
 
@@ -72,6 +67,5 @@ export class RealtimeHub implements OnApplicationShutdown {
     onApplicationShutdown(): void {
         this.shutdown.next()
         this.shutdown.complete()
-        this.events.complete()
     }
 }

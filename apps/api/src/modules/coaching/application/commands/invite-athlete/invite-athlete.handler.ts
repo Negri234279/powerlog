@@ -12,6 +12,7 @@ import {
 import { CoachInvitationRepository } from '../../../domain/repositories/coach-invitation.repository'
 import { CoachLinkRepository } from '../../../domain/repositories/coach-link.repository'
 import { Clock } from '../../ports/clock.port'
+import { CoachingMetrics } from '../../ports/coaching-metrics.port'
 import { IdGenerator } from '../../ports/id-generator.port'
 import { InviteTokenGenerator } from '../../ports/invite-token-generator.port'
 import { type InvitationView, toInvitationView } from '../../views'
@@ -27,6 +28,7 @@ export class InviteAthleteHandler implements ICommandHandler<InviteAthleteComman
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly tokens: InviteTokenGenerator,
+        private readonly metrics: CoachingMetrics,
         private readonly eventBus: EventBus,
     ) {}
 
@@ -63,6 +65,7 @@ export class InviteAthleteHandler implements ICommandHandler<InviteAthleteComman
             now: this.clock.now(),
         })
         await this.invitations.save(invitation)
+        this.metrics.recordInvitation('sent', athleteId ? 'existing' : 'new')
 
         // Lets the notifications module bell + email the athlete, or email-only a
         // signup invite (with the token link) when the address has no account yet.

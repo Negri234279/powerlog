@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
     FakeClock,
+    FakeCoachingMetrics,
     InMemoryCoachInvitationRepository,
     InMemoryCoachLinkRepository,
 } from '../../../../../tests/doubles/coaching'
@@ -23,14 +24,16 @@ function setup(seed: CoachInvitationEntity[]) {
         .seed(COACH, { email: 'coach@example.com', username: 'coachy' })
         .seed(NEW_USER, { email: EMAIL, username: 'newbie' })
     const events = new RecordingEventBus()
+    const metrics = new FakeCoachingMetrics()
     const handler = new LinkInvitationsOnUserRegistered(
         invitations,
         links,
         directory,
         new FakeClock(),
+        metrics,
         events.asEventBus(),
     )
-    return { handler, invitations, links, events }
+    return { handler, invitations, links, events, metrics }
 }
 
 const REGISTERED = new UserRegisteredIntegrationEvent(NEW_USER, EMAIL, 'password')
@@ -58,6 +61,9 @@ describe('LinkInvitationsOnUserRegistered', () => {
             athleteId: NEW_USER,
             athleteUsername: 'newbie',
         })
+        // The invite brought a new user in — the only place this is counted, since
+        // no command runs on this path.
+        expect(ctx.metrics.invitations).toEqual([{ outcome: 'accepted', invitee: 'new' }])
     })
 
     it('leaves invitations already bound to a registered user untouched', async () => {

@@ -1,4 +1,5 @@
 export * from './fake-clock'
+export * from './fake-coaching-metrics'
 export * from './fake-id-generator'
 export * from './fake-invite-token-generator'
 export * from './in-memory-coach-invitation.repository'

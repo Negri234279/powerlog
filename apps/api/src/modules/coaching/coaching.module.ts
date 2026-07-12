@@ -11,8 +11,11 @@ import {
 } from './application/coaching.application'
 import { AdminCoachingStatsReadModel } from './application/ports/admin-coaching-stats.read-model'
 import { CoachUnlinker } from './application/services/coach-unlinker.service'
+import { CoachingStateMetrics } from './infrastructure/metrics/coaching-state-metrics'
+import { PrometheusCoachingMetrics } from './infrastructure/metrics/prometheus-coaching-metrics'
 import { DrizzleAdminCoachingStatsReadModel } from './infrastructure/persistence/read-models/drizzle-admin-coaching-stats.read-model'
 import { Clock } from './application/ports/clock.port'
+import { CoachingMetrics } from './application/ports/coaching-metrics.port'
 import { IdGenerator } from './application/ports/id-generator.port'
 import { InviteTokenGenerator } from './application/ports/invite-token-generator.port'
 import { CoachInvitationRepository } from './domain/repositories/coach-invitation.repository'
@@ -38,6 +41,7 @@ const ADAPTERS: Provider[] = [
     // Cross-module port consumed by workouts (Bloque 5.9) to authorize planning.
     { provide: CoachLinks, useClass: CoachingCoachLinks },
     { provide: AdminCoachingStatsReadModel, useClass: DrizzleAdminCoachingStatsReadModel },
+    { provide: CoachingMetrics, useClass: PrometheusCoachingMetrics },
 ]
 
 @Module({
@@ -49,6 +53,9 @@ const ADAPTERS: Provider[] = [
         RolesGuard,
         AdminGuard,
         CoachUnlinker,
+        // Instantiated for its side effect: it attaches the scrape-time `collect`
+        // to the coaching state gauges.
+        CoachingStateMetrics,
         ...COACHING_COMMAND_HANDLERS,
         ...COACHING_QUERY_HANDLERS,
         ...COACHING_EVENT_HANDLERS,

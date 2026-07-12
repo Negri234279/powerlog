@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { InMemoryCoachLinkRepository } from '../../../../../../tests/doubles/coaching'
+import { FakeCoachingMetrics, InMemoryCoachLinkRepository } from '../../../../../../tests/doubles/coaching'
 import { FakeUserDirectory, RecordingEventBus } from '../../../../../../tests/doubles/shared'
 import { CoachLinkRemovedIntegrationEvent } from '../../../../../shared/integration-events/coach-link-removed.integration-event'
 import { NotYourAthleteError } from '../../../domain/errors/coaching.errors'
@@ -20,14 +20,15 @@ function setup(linked = true) {
         .seed(COACH, { username: 'thecoach', email: 'coach@powerlog.dev' })
         .seed(ATHLETE, { username: 'theathlete', email: 'athlete@powerlog.dev' })
     const events = new RecordingEventBus()
-    const handler = new RemoveAthleteHandler(new CoachUnlinker(links, users, events.asEventBus()))
+    const metrics = new FakeCoachingMetrics()
+    const handler = new RemoveAthleteHandler(new CoachUnlinker(links, users, metrics, events.asEventBus()))
 
-    return { links, events, handler }
+    return { links, events, handler, metrics }
 }
 
 describe('RemoveAthleteHandler', () => {
     it('breaks the link and announces who ended it', async () => {
-        const { links, events, handler } = setup()
+        const { links, events, handler, metrics } = setup()
 
         const result = await handler.execute(new RemoveAthleteCommand(COACH, ATHLETE))
 
@@ -40,6 +41,7 @@ describe('RemoveAthleteHandler', () => {
             athleteUsername: 'theathlete',
             unlinkedBy: 'coach',
         })
+        expect(metrics.linksRemoved).toEqual(['coach'])
     })
 
     it('rejects removing someone who is not their athlete', async () => {

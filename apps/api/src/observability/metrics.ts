@@ -31,6 +31,13 @@ export const METRIC = {
     pgPoolMax: 'powerlog_pg_pool_max',
     realtimeConnections: 'powerlog_realtime_connections',
     realtimeEvents: 'powerlog_realtime_events_total',
+    redisUp: 'powerlog_redis_up',
+    coachInvitations: 'powerlog_coach_invitations_total',
+    coachLinksRemoved: 'powerlog_coach_links_removed_total',
+    coachingLinks: 'powerlog_coaching_links',
+    coachingCoaches: 'powerlog_coaching_coaches',
+    coachingAthletes: 'powerlog_coaching_athletes',
+    coachingPendingInvitations: 'powerlog_coaching_pending_invitations',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -234,5 +241,44 @@ export const metricsProviders = [
         name: METRIC.realtimeEvents,
         help: 'Count of realtime events pushed to connected clients, by type.',
         labelNames: ['type'],
+    }),
+    // Redis connectivity, driven by the client's own connection events (set by
+    // RedisModule). 0 also means "not configured" — Redis is optional, and the
+    // features that use it fall back in-process.
+    makeGaugeProvider({
+        name: METRIC.redisUp,
+        help: 'Redis reachability: 1 = connected, 0 = down or not configured.',
+    }),
+    // Coaching (set by PrometheusCoachingMetrics). The per-command CQRS histograms
+    // already give the rate/failures of every coaching command, so these carry only
+    // what those can't: the `invitee` dimension (coaching as an acquisition channel)
+    // and the sign-up auto-link, which runs in an event handler, not a command.
+    makeCounterProvider({
+        name: METRIC.coachInvitations,
+        help: 'Coach invitations, by outcome and whether the invitee already had an account.',
+        labelNames: ['status', 'invitee'],
+    }),
+    makeCounterProvider({
+        name: METRIC.coachLinksRemoved,
+        help: 'Coach↔athlete links broken, by who ended the relationship.',
+        labelNames: ['by'],
+    }),
+    // Current coaching state, sampled at scrape time from the read model already
+    // backing the admin dashboard (set by CoachingStateMetrics).
+    makeGaugeProvider({
+        name: METRIC.coachingLinks,
+        help: 'Active coach↔athlete links.',
+    }),
+    makeGaugeProvider({
+        name: METRIC.coachingCoaches,
+        help: 'Coaches with at least one athlete.',
+    }),
+    makeGaugeProvider({
+        name: METRIC.coachingAthletes,
+        help: 'Athletes with at least one coach.',
+    }),
+    makeGaugeProvider({
+        name: METRIC.coachingPendingInvitations,
+        help: 'Invitations still awaiting a response (the backlog).',
     }),
 ]

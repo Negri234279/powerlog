@@ -3,10 +3,15 @@ import { sql } from 'drizzle-orm'
 import { PinoLogger } from 'nestjs-pino'
 
 import { DRIZZLE, type Database } from '../database/database.module'
+import { REDIS, type RedisClient } from '../redis/redis.module'
+
+/** Redis is optional and every feature that uses it degrades gracefully, so its
+ *  state is reported but never fails the check — see below. */
+type RedisStatus = 'up' | 'down' | 'not_configured'
 
 type HealthStatus = {
     status: 'ok'
-    info: { database: 'up' }
+    info: { database: 'up'; redis: RedisStatus }
     uptime: number
 }
 
@@ -18,6 +23,7 @@ type HealthStatus = {
 export class HealthController {
     constructor(
         @Inject(DRIZZLE) private readonly db: Database,
+        @Inject(REDIS) private readonly redis: RedisClient,
         private readonly logger: PinoLogger,
     ) {
         this.logger.setContext(HealthController.name)
@@ -41,8 +47,20 @@ export class HealthController {
 
         return {
             status: 'ok',
-            info: { database: 'up' },
+            info: { database: 'up', redis: this.redisStatus() },
             uptime: process.uptime(),
         }
+    }
+
+    /**
+     * Deliberately does NOT fail the check: the API serves every request fine
+     * without Redis (realtime fan-out just stays local to this instance), and
+     * pulling the container out of rotation over it would turn a degradation into
+     * an outage. The `powerlog_redis_up` gauge is what alerts on it.
+     */
+    private redisStatus(): RedisStatus {
+        if (!this.redis) return 'not_configured'
+
+        return this.redis.status === 'ready' ? 'up' : 'down'
     }
 }

@@ -110,6 +110,13 @@ export const envSchema = z.object({
     // Rotating it makes every stored key undecryptable; users must re-enter them.
     AI_ENCRYPTION_KEY: z.string().default(''),
 
+    // ── Redis ──────────────────────────────────────────────────────
+    // Optional on purpose: unset → every Redis-backed feature falls back to its
+    // in-process implementation (realtime fan-out stays local to this instance),
+    // so `pnpm dev` without Docker and the test suites need no Redis at all.
+    // Set it in every deployed env. Format: redis://[user:pass@]host:port[/db].
+    REDIS_URL: z.url({ protocol: /^rediss?$/ }).optional(),
+
     // ── Observability (OpenTelemetry → Tempo) ──────────────────────
     OTEL_SERVICE_NAME: z.string().default('powerlog-api'),
     // OTLP/HTTP base endpoint. Empty (or OTEL_SDK_DISABLED) disables exporting.

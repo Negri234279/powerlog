@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
     FakeClock,
+    FakeCoachingMetrics,
     FakeIdGenerator,
     FakeInviteTokenGenerator,
     InMemoryCoachInvitationRepository,
@@ -30,6 +31,7 @@ function setup() {
         .seed(ATHLETE, { email: ATHLETE_EMAIL, username: 'athletey' })
     const entitlements = new FakeEntitlements()
     const events = new RecordingEventBus()
+    const metrics = new FakeCoachingMetrics()
     const handler = new InviteAthleteHandler(
         invitations,
         links,
@@ -38,9 +40,10 @@ function setup() {
         new FakeClock(),
         new FakeIdGenerator(['inv-1']),
         new FakeInviteTokenGenerator(),
+        metrics,
         events.asEventBus(),
     )
-    return { handler, invitations, links, entitlements, events }
+    return { handler, invitations, links, entitlements, events, metrics }
 }
 
 describe('InviteAthleteHandler', () => {
@@ -65,12 +68,15 @@ describe('InviteAthleteHandler', () => {
         })
         // Only the token's hash is persisted, never the raw token.
         expect(ctx.invitations.all()[0]?.tokenHash).toBe('hash(raw-1)')
+        expect(ctx.metrics.invitations).toEqual([{ outcome: 'sent', invitee: 'existing' }])
     })
 
     it('invites a not-yet-registered email with a null athleteId', async () => {
         const view = await ctx.handler.execute(new InviteAthleteCommand(COACH, 'stranger@example.com'))
 
         expect(view).toMatchObject({ athleteId: null, email: 'stranger@example.com', status: 'pending' })
+        // The acquisition path — counted apart from invites to existing users.
+        expect(ctx.metrics.invitations).toEqual([{ outcome: 'sent', invitee: 'new' }])
         const event = ctx.events.firstOf(CoachInvitationCreatedIntegrationEvent)
         expect(event).toMatchObject({ athleteId: null, email: 'stranger@example.com' })
     })

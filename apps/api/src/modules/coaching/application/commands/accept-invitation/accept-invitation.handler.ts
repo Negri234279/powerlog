@@ -6,6 +6,7 @@ import { InvitationNotFoundError } from '../../../domain/errors/coaching.errors'
 import { CoachInvitationRepository } from '../../../domain/repositories/coach-invitation.repository'
 import { CoachLinkRepository } from '../../../domain/repositories/coach-link.repository'
 import { Clock } from '../../ports/clock.port'
+import { CoachingMetrics } from '../../ports/coaching-metrics.port'
 import { type InvitationView, toInvitationView } from '../../views'
 import { AcceptInvitationCommand } from './accept-invitation.command'
 
@@ -16,6 +17,7 @@ export class AcceptInvitationHandler implements ICommandHandler<AcceptInvitation
         private readonly links: CoachLinkRepository,
         private readonly users: UserDirectory,
         private readonly clock: Clock,
+        private readonly metrics: CoachingMetrics,
         private readonly eventBus: EventBus,
     ) {}
 
@@ -31,12 +33,16 @@ export class AcceptInvitationHandler implements ICommandHandler<AcceptInvitation
         invitation.accept(now)
         await this.invitations.save(invitation)
         await this.links.link(invitation.coachId, athleteId, now)
+        // Reaching this command means the athlete had an account when invited; the
+        // "new" path never gets here (LinkInvitationsOnUserRegistered auto-links it).
+        this.metrics.recordInvitation('accepted', 'existing')
 
         // Notify the coach (+ athlete) that they're now linked.
         const [coach, athlete] = await Promise.all([
             this.users.getContact(invitation.coachId),
             this.users.getContact(athleteId),
         ])
+        
         this.eventBus.publish(
             new CoachLinkEstablishedIntegrationEvent(
                 invitation.coachId,

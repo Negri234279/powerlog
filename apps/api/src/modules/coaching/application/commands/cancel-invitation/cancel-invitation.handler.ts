@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 import { InvitationNotFoundError } from '../../../domain/errors/coaching.errors'
 import { CoachInvitationRepository } from '../../../domain/repositories/coach-invitation.repository'
 import { Clock } from '../../ports/clock.port'
+import { CoachingMetrics } from '../../ports/coaching-metrics.port'
 import { type InvitationView, toInvitationView } from '../../views'
 import { CancelInvitationCommand } from './cancel-invitation.command'
 
@@ -11,6 +12,7 @@ export class CancelInvitationHandler implements ICommandHandler<CancelInvitation
     constructor(
         private readonly invitations: CoachInvitationRepository,
         private readonly clock: Clock,
+        private readonly metrics: CoachingMetrics,
     ) {}
 
     async execute(command: CancelInvitationCommand): Promise<InvitationView> {
@@ -22,6 +24,9 @@ export class CancelInvitationHandler implements ICommandHandler<CancelInvitation
 
         invitation.cancel(this.clock.now())
         await this.invitations.save(invitation)
+        // A coach can pull back an invite to an address with no account yet, so the
+        // invitee dimension is whatever the invitation was addressed to.
+        this.metrics.recordInvitation('cancelled', invitation.athleteId ? 'existing' : 'new')
 
         return toInvitationView(invitation)
     }

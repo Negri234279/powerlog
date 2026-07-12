@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
     FakeClock,
+    FakeCoachingMetrics,
     InMemoryCoachInvitationRepository,
     InMemoryCoachLinkRepository,
 } from '../../../../../../tests/doubles/coaching'
@@ -24,8 +25,16 @@ function setup() {
         .seed(COACH, { email: 'coach@example.com', username: 'coachy' })
         .seed(ATHLETE, { email: 'athlete@example.com', username: 'athletey' })
     const events = new RecordingEventBus()
-    const handler = new AcceptInvitationHandler(invitations, links, directory, new FakeClock(), events.asEventBus())
-    return { handler, invitations, links, events }
+    const metrics = new FakeCoachingMetrics()
+    const handler = new AcceptInvitationHandler(
+        invitations,
+        links,
+        directory,
+        new FakeClock(),
+        metrics,
+        events.asEventBus(),
+    )
+    return { handler, invitations, links, events, metrics }
 }
 
 describe('AcceptInvitationHandler', () => {
@@ -47,6 +56,9 @@ describe('AcceptInvitationHandler', () => {
             coachUsername: 'coachy',
             athleteUsername: 'athletey',
         })
+
+        // An accept command can only come from someone who already had an account.
+        expect(ctx.metrics.invitations).toEqual([{ outcome: 'accepted', invitee: 'existing' }])
     })
 
     it('hides invitations addressed to a different athlete behind not-found', async () => {

@@ -2,13 +2,14 @@ import type { MessageEvent } from '@nestjs/common'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { counterValue, gaugeValue, testCounter, testGauge } from '../../tests/doubles/shared'
+import { InMemoryRealtimeBus } from './bus/in-memory-realtime.bus'
 import { RealtimeHub } from './realtime.hub'
 
 function setup() {
     const connections = testGauge()
     const published = testCounter(['type'])
 
-    return { hub: new RealtimeHub(connections, published), connections, published }
+    return { hub: new RealtimeHub(new InMemoryRealtimeBus(), connections, published), connections, published }
 }
 
 /** Collects what a user's stream delivers, and lets the test close it. */

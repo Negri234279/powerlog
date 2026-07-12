@@ -2,6 +2,7 @@ import type { MessageEvent } from '@nestjs/common'
 import { describe, expect, it } from 'vitest'
 
 import { testCounter, testGauge } from '../../../tests/doubles/shared'
+import { InMemoryRealtimeBus } from '../bus/in-memory-realtime.bus'
 import { CoachInvitationCreatedIntegrationEvent } from '../../shared/integration-events/coach-invitation-created.integration-event'
 import { CoachLinkEstablishedIntegrationEvent } from '../../shared/integration-events/coach-link-established.integration-event'
 import { CoachLinkRemovedIntegrationEvent } from '../../shared/integration-events/coach-link-removed.integration-event'
@@ -17,7 +18,7 @@ import { PushOnSessionPlanned } from './push-on-session-planned.handler'
 /** A real hub with both parties connected, so each test asserts what actually
  *  reaches each stream rather than that `publish` was called. */
 function setup() {
-    const hub = new RealtimeHub(testGauge(), testCounter(['type']))
+    const hub = new RealtimeHub(new InMemoryRealtimeBus(), testGauge(), testCounter(['type']))
 
     const connect = (userId: string): MessageEvent['data'][] => {
         const received: MessageEvent['data'][] = []

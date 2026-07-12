@@ -6,6 +6,7 @@ import { UserRegisteredIntegrationEvent } from '../../../../shared/integration-e
 import { CoachInvitationRepository } from '../../domain/repositories/coach-invitation.repository'
 import { CoachLinkRepository } from '../../domain/repositories/coach-link.repository'
 import { Clock } from '../ports/clock.port'
+import { CoachingMetrics } from '../ports/coaching-metrics.port'
 
 /**
  * Auto-links a brand-new user to any coach who invited that email before they had
@@ -21,6 +22,7 @@ export class LinkInvitationsOnUserRegistered implements IEventHandler<UserRegist
         private readonly links: CoachLinkRepository,
         private readonly users: UserDirectory,
         private readonly clock: Clock,
+        private readonly metrics: CoachingMetrics,
         private readonly eventBus: EventBus,
     ) {}
 
@@ -41,6 +43,9 @@ export class LinkInvitationsOnUserRegistered implements IEventHandler<UserRegist
             invitation.accept(now)
             await this.invitations.save(invitation)
             await this.links.link(invitation.coachId, event.userId, now)
+            // The acquisition path: an invite to a stranger turned into a signup.
+            // No command runs here, so this is the only place it can be counted.
+            this.metrics.recordInvitation('accepted', 'new')
 
             const coach = await this.users.getContact(invitation.coachId)
             this.eventBus.publish(
