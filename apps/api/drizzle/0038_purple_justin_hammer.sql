@@ -1,0 +1,1 @@
+ALTER TABLE "mesocycles" ADD COLUMN "planned_by_user_id" uuid;

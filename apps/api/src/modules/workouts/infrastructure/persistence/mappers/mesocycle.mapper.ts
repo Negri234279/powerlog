@@ -84,6 +84,7 @@ export const MesocycleMapper = {
             mesocycle: {
                 id: mesocycle.id,
                 ownerId: mesocycle.ownerId,
+                plannedByUserId: mesocycle.plannedByUserId,
                 name: mesocycle.name.value,
                 notes: mesocycle.notes,
                 goal: mesocycle.goal,
@@ -154,6 +155,7 @@ export const MesocycleMapper = {
         return MesocycleAggregate.rehydrate({
             id: mesocycleRow.id,
             ownerId: mesocycleRow.ownerId,
+            plannedByUserId: mesocycleRow.plannedByUserId,
             name: MesocycleNameVO.create(mesocycleRow.name),
             notes: mesocycleRow.notes,
             goal: mesocycleRow.goal,

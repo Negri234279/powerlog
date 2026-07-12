@@ -31,6 +31,7 @@ export class DrizzleMesocycleListReadModel extends MesocycleListReadModel {
         const rows = await this.db
             .select({
                 id: mesocycles.id,
+                plannedByUserId: mesocycles.plannedByUserId,
                 name: mesocycles.name,
                 notes: mesocycles.notes,
                 goal: mesocycles.goal,
@@ -49,6 +50,7 @@ export class DrizzleMesocycleListReadModel extends MesocycleListReadModel {
 
         return rows.map((row) => ({
             id: row.id,
+            plannedByUserId: row.plannedByUserId,
             name: row.name,
             notes: row.notes,
             goal: row.goal,

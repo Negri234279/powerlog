@@ -41,6 +41,12 @@ export interface MesocycleProps {
     id: string
     /** Owner; soft reference to the auth user (no DB FK across modules). */
     ownerId: string
+    /**
+     * Coach who planned this block for the owner, if any (soft ref). When set,
+     * the coach is the one who edits it and the owner just trains what it
+     * generates — see `requireManageableMesocycle`.
+     */
+    plannedByUserId: string | null
     name: MesocycleNameVO
     notes: string | null
     goal: string | null
@@ -67,12 +73,14 @@ export class MesocycleAggregate {
         id: string
         ownerId: string
         content: MesocycleContentInput
+        plannedByUserId?: string | null
         idFactory: () => string
         now: Date
     }): MesocycleAggregate {
         return new MesocycleAggregate({
             id: input.id,
             ownerId: input.ownerId,
+            plannedByUserId: input.plannedByUserId ?? null,
             name: input.content.name,
             notes: input.content.notes ?? null,
             goal: input.content.goal ?? null,
@@ -113,6 +121,9 @@ export class MesocycleAggregate {
     }
     get ownerId(): string {
         return this.props.ownerId
+    }
+    get plannedByUserId(): string | null {
+        return this.props.plannedByUserId
     }
     get name(): MesocycleNameVO {
         return this.props.name

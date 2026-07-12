@@ -529,6 +529,11 @@ type Mesocycle {
   notes: String
   ownerId: ID!
 
+  """
+  Coach who plans this block for the owner (null = self-made). Only they can edit it.
+  """
+  plannedByUserId: ID
+
   """Anchor date of week 1 (unscheduled if null)."""
   startDate: DateTime
 
@@ -593,6 +598,9 @@ type MesocycleSummary {
   id: ID!
   name: String!
   notes: String
+
+  """Coach who plans this block for the owner (null = self-made)."""
+  plannedByUserId: ID
   startDate: DateTime
 
   """draft | active | completed | archived"""
@@ -651,6 +659,11 @@ type Mutation {
   addExerciseEntry(input: AddExerciseEntryInput!): WorkoutSession!
 
   """
+  Copy one of your own mesocycles to an athlete (they own the copy, you plan it; coaches only). The source stays in your library.
+  """
+  assignMesocycleToAthlete(athleteId: ID!, mesocycleId: ID!, startDate: String): Mesocycle!
+
+  """
   Promote the current user to coach (re-issues the session with the new role).
   """
   becomeCoach: Me!
@@ -663,6 +676,11 @@ type Mutation {
 
   """Mark a session as completed."""
   completeWorkoutSession(id: ID!): WorkoutSession!
+
+  """
+  Build a mesocycle for one of your athletes: they own it, you plan it (coaches only).
+  """
+  createAthleteMesocycle(athleteId: ID!, input: MesocycleInput!): Mesocycle!
 
   """Create a catalog exercise."""
   createExercise(input: CreateExerciseInput!): Exercise!

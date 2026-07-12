@@ -1,17 +1,19 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
+import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import { MesocycleRepository } from '../../../domain/repositories/mesocycle.repository'
 import { Clock } from '../../ports/clock.port'
 import { MesocycleMetrics } from '../../ports/mesocycle-metrics.port'
 import { type MesocycleView, toMesocycleView } from '../../queries/get-mesocycle/get-mesocycle.handler'
-import { requireOwnedMesocycle } from '../../require-owned-mesocycle'
+import { requireManageableMesocycle } from '../../require-manageable-mesocycle'
 import { SetMesocycleStatusCommand } from './set-mesocycle-status.command'
 
 @CommandHandler(SetMesocycleStatusCommand)
 export class SetMesocycleStatusHandler implements ICommandHandler<SetMesocycleStatusCommand, MesocycleView> {
     constructor(
         private readonly mesocycles: MesocycleRepository,
+        private readonly coachLinks: CoachLinks,
         private readonly clock: Clock,
         private readonly metrics: MesocycleMetrics,
         private readonly logger?: PinoLogger,
@@ -20,7 +22,12 @@ export class SetMesocycleStatusHandler implements ICommandHandler<SetMesocycleSt
     }
 
     async execute(command: SetMesocycleStatusCommand): Promise<MesocycleView> {
-        const mesocycle = await requireOwnedMesocycle(this.mesocycles, command.mesocycleId, command.ownerId)
+        const mesocycle = await requireManageableMesocycle(
+            this.mesocycles,
+            this.coachLinks,
+            command.mesocycleId,
+            command.ownerId,
+        )
 
         const from = mesocycle.status
         mesocycle.setStatus(command.status, this.clock.now())

@@ -122,6 +122,15 @@ export class NotLinkedToAthleteError extends WorkoutsError {
     }
 }
 
+/** The owner tried to edit a block their coach plans for them (read-only to them). */
+export class MesocycleManagedByCoachError extends WorkoutsError {
+    readonly code = 'MESOCYCLE_MANAGED_BY_COACH'
+
+    constructor() {
+        super('This mesocycle is managed by your coach.')
+    }
+}
+
 export class InvalidTemplateNameError extends WorkoutsError {
     readonly code = 'INVALID_TEMPLATE_NAME'
 

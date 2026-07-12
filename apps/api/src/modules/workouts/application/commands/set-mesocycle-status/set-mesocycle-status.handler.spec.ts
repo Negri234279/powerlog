@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { MesocycleMother } from '../../../../../../tests/mothers/workouts'
 import { FakeClock, FakeMesocycleMetrics, InMemoryMesocycleRepository } from '../../../../../../tests/doubles/workouts'
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import { MesocycleNotFoundError } from '../../../domain/errors/workouts.errors'
 import { SetMesocycleStatusCommand } from './set-mesocycle-status.command'
 import { SetMesocycleStatusHandler } from './set-mesocycle-status.handler'
@@ -12,7 +13,7 @@ const OWNER = 'u-1'
 function setup() {
     const mesocycles = new InMemoryMesocycleRepository()
     const metrics = new FakeMesocycleMetrics()
-    const handler = new SetMesocycleStatusHandler(mesocycles, new FakeClock(NOW), metrics)
+    const handler = new SetMesocycleStatusHandler(mesocycles, new FakeCoachLinks(), new FakeClock(NOW), metrics)
     return { mesocycles, metrics, handler }
 }
 

@@ -49,7 +49,7 @@ beforeEach(async () => {
     // `profiles` holds the handle (soft ref to users), so it must be cleared too
     // or a re-registered email collides on username.
     await pool.query(
-        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, workout_sessions, notifications RESTART IDENTITY CASCADE',
+        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, workout_sessions, mesocycles, notifications RESTART IDENTITY CASCADE',
     )
 })
 
@@ -274,5 +274,120 @@ describe("Coach reading an athlete's training", () => {
             athlete.access,
         )
         expect(res.body.errors[0].extensions.code).toBe('FORBIDDEN')
+    })
+})
+
+describe('Coach mesocycles for an athlete', () => {
+    /** A one-week block with a single training day, as the coach would compose it. */
+    function blockInput(exerciseId: string): string {
+        return `{
+            name: "Coached Block"
+            goal: "strength"
+            startDate: "2026-03-02"
+            microcycles: [
+                {
+                    label: "Week 1"
+                    days: [
+                        {
+                            dayOffset: 0
+                            label: "Squat day"
+                            exercises: [
+                                { exerciseId: "${exerciseId}", sets: [{ plannedWeight: 100, plannedReps: 5, rpe: 8 }] }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }`
+    }
+
+    it('lets the coach build a block the athlete owns, generate its week, and keeps it read-only for them', async () => {
+        const { coachAccess, coachId, athlete } = await linkedCoachAndAthlete()
+        const exerciseId = await anExerciseId(coachAccess)
+
+        const created = await gql(
+            `mutation { createAthleteMesocycle(athleteId: "${athlete.userId}", input: ${blockInput(exerciseId)}) { id ownerId plannedByUserId status } }`,
+            coachAccess,
+        )
+        expect(created.body.errors).toBeUndefined()
+        expect(created.body.data.createAthleteMesocycle).toMatchObject({
+            ownerId: athlete.userId,
+            plannedByUserId: coachId,
+            status: 'draft',
+        })
+        const mesocycleId: string = created.body.data.createAthleteMesocycle.id
+
+        // The athlete sees the block in their own library, flagged as coached.
+        const theirs = await gql(`query { mesocycles { id plannedByUserId } }`, athlete.access)
+        expect(theirs.body.data.mesocycles).toMatchObject([{ id: mesocycleId, plannedByUserId: coachId }])
+
+        // ...but cannot edit it: their coach owns the plan.
+        const edit = await gql(
+            `mutation { updateMesocycle(id: "${mesocycleId}", input: ${blockInput(exerciseId)}) { id } }`,
+            athlete.access,
+        )
+        expect(edit.body.errors[0].extensions.code).toBe('MESOCYCLE_MANAGED_BY_COACH')
+
+        // The coach generates week 1 into the athlete's calendar.
+        const generated = await gql(
+            `mutation { generateMesocycleWeek(input: { mesocycleId: "${mesocycleId}", week: 1 }) { id userId plannedByUserId status entries { sets { plannedWeightKg plannedReps } } } }`,
+            coachAccess,
+        )
+        expect(generated.body.errors).toBeUndefined()
+        expect(generated.body.data.generateMesocycleWeek).toHaveLength(1)
+        const session = generated.body.data.generateMesocycleWeek[0]
+        expect(session).toMatchObject({ userId: athlete.userId, plannedByUserId: coachId, status: 'planned' })
+        expect(session.entries[0].sets[0]).toMatchObject({ plannedWeightKg: 100, plannedReps: 5 })
+
+        // It lands in the athlete's own history, ready to train.
+        const history = await gql(`query { workoutHistory { items { id } } }`, athlete.access)
+        expect(history.body.data.workoutHistory.items.map((s: { id: string }) => s.id)).toContain(session.id)
+    })
+
+    it('copies one of the coach’s own blocks to the athlete, leaving the source in their library', async () => {
+        const { coachAccess, coachId, athlete } = await linkedCoachAndAthlete()
+        const exerciseId = await anExerciseId(coachAccess)
+
+        const own = await gql(
+            `mutation { createMesocycle(input: ${blockInput(exerciseId)}) { id ownerId plannedByUserId } }`,
+            coachAccess,
+        )
+        const sourceId: string = own.body.data.createMesocycle.id
+        expect(own.body.data.createMesocycle).toMatchObject({ ownerId: coachId, plannedByUserId: null })
+
+        const assigned = await gql(
+            `mutation { assignMesocycleToAthlete(athleteId: "${athlete.userId}", mesocycleId: "${sourceId}", startDate: "2026-04-06") { id ownerId plannedByUserId startDate microcycles { days { exercises { sets { plannedWeightKg } } } } } }`,
+            coachAccess,
+        )
+        expect(assigned.body.errors).toBeUndefined()
+        const copy = assigned.body.data.assignMesocycleToAthlete
+        expect(copy).toMatchObject({ ownerId: athlete.userId, plannedByUserId: coachId })
+        expect(copy.id).not.toBe(sourceId)
+        expect(copy.microcycles[0].days[0].exercises[0].sets[0].plannedWeightKg).toBe(100)
+
+        // The coach still owns the original; the athlete only has the copy.
+        const coachLibrary = await gql(`query { mesocycles { id } }`, coachAccess)
+        expect(coachLibrary.body.data.mesocycles.map((m: { id: string }) => m.id)).toEqual([sourceId])
+
+        const coachView = await gql(
+            `query { athleteMesocycles(athleteId: "${athlete.userId}") { id plannedByUserId } }`,
+            coachAccess,
+        )
+        expect(coachView.body.data.athleteMesocycles).toMatchObject([{ id: copy.id, plannedByUserId: coachId }])
+    })
+
+    it('rejects assigning a block to an athlete the coach does not coach', async () => {
+        const { coachAccess } = await linkedCoachAndAthlete()
+        const stranger = await register('stranger@example.com')
+        const exerciseId = await anExerciseId(coachAccess)
+
+        const own = await gql(`mutation { createMesocycle(input: ${blockInput(exerciseId)}) { id } }`, coachAccess)
+        const sourceId: string = own.body.data.createMesocycle.id
+
+        const res = await gql(
+            `mutation { assignMesocycleToAthlete(athleteId: "${stranger.userId}", mesocycleId: "${sourceId}") { id } }`,
+            coachAccess,
+        )
+        expect(res.body.errors[0].extensions.code).toBe('NOT_LINKED_TO_ATHLETE')
     })
 })

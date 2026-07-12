@@ -8,6 +8,7 @@ import {
     InMemoryMesocycleRepository,
     InMemoryWorkoutSessionRepository,
 } from '../../../../../../tests/doubles/workouts'
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import type { MesocycleContentInput } from '../../../domain/entities/mesocycle.entity'
 import {
     MesocycleNotFoundError,
@@ -22,15 +23,20 @@ import { GenerateMesocycleWeekHandler } from './generate-mesocycle-week.handler'
 
 const NOW = new Date('2026-03-01T10:00:00.000Z')
 const OWNER = 'u-1'
+const COACH = 'coach-1'
 const EXERCISE = 'ex-1'
 
-function setup(seed = MesocycleMother.withTree(EXERCISE, { id: 'm-1', ownerId: OWNER })) {
+function setup(
+    seed = MesocycleMother.withTree(EXERCISE, { id: 'm-1', ownerId: OWNER }),
+    coachLinks = new FakeCoachLinks(),
+) {
     const mesocycles = new InMemoryMesocycleRepository([seed])
     const sessions = new InMemoryWorkoutSessionRepository()
     const metrics = new FakeMesocycleMetrics()
     const handler = new GenerateMesocycleWeekHandler(
         mesocycles,
         sessions,
+        coachLinks,
         new FakeClock(NOW),
         new FakeIdGenerator(),
         metrics,
@@ -52,6 +58,16 @@ describe('GenerateMesocycleWeekHandler', () => {
         expect(session.entries[0]!.sets.map((s) => s.plannedWeightKg)).toEqual([100, 90])
         expect(session.entries[0]!.sets.every((s) => s.weightKg === null)).toBe(true)
         expect(await sessions.generatedWeeks('m-1')).toEqual([1])
+    })
+
+    it('generates the athlete’s sessions when the coach runs a block they plan for them', async () => {
+        const coached = MesocycleMother.withTree(EXERCISE, { id: 'm-1', ownerId: OWNER, plannedByUserId: COACH })
+        const { handler } = setup(coached, new FakeCoachLinks().link(COACH, OWNER))
+
+        const [session] = await handler.execute(new GenerateMesocycleWeekCommand(COACH, 'm-1', 1))
+
+        // Owned by the athlete, stamped with the coach who planned it.
+        expect(session).toMatchObject({ userId: OWNER, plannedByUserId: COACH, status: 'planned' })
     })
 
     it('counts generated sessions as fresh on first generation and replace on regeneration', async () => {

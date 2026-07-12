@@ -14,6 +14,8 @@ const NOW = new Date('2026-01-01T00:00:00.000Z')
 interface MesocycleOverrides {
     id?: string
     ownerId?: string
+    /** Coach who plans the block for the owner (null/absent = self-made). */
+    plannedByUserId?: string | null
     content?: MesocycleContentInput
     now?: Date
 }
@@ -81,6 +83,7 @@ export const MesocycleMother = {
         return MesocycleAggregate.create({
             id: overrides.id ?? randomUUID(),
             ownerId: overrides.ownerId ?? randomUUID(),
+            plannedByUserId: overrides.plannedByUserId ?? null,
             content,
             idFactory: () => randomUUID(),
             now: overrides.now ?? NOW,

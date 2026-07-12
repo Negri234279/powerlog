@@ -6,7 +6,10 @@ import { z } from 'zod'
 import type { AuthUser } from '../../../../auth/auth-user'
 import { CurrentUser } from '../../../../auth/current-user.decorator'
 import { JwtCookieGuard } from '../../../../auth/jwt-cookie.guard'
+import { Roles } from '../../../../auth/roles.decorator'
+import { RolesGuard } from '../../../../auth/roles.guard'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
+import { AssignMesocycleToAthleteCommand } from '../../application/commands/assign-mesocycle-to-athlete/assign-mesocycle-to-athlete.command'
 import { CreateMesocycleCommand } from '../../application/commands/create-mesocycle/create-mesocycle.command'
 import { DeleteMesocycleCommand } from '../../application/commands/delete-mesocycle/delete-mesocycle.command'
 import { GenerateMesocycleWeekCommand } from '../../application/commands/generate-mesocycle-week/generate-mesocycle-week.command'
@@ -25,11 +28,13 @@ import {
     mesocycleSchema,
     mesocycleStatusSchema,
 } from '../inputs/mesocycle.inputs'
+import { LinkedAthleteGuard } from '../guards/linked-athlete.guard'
 import { MesocycleSummaryType, MesocycleType } from '../types/mesocycle.type'
 import { WorkoutSessionType } from '../types/workout-session.type'
 
 const uuidArg = z.string().uuid()
 const searchArg = z.string().trim().min(1).max(100).optional()
+const dateArg = z.string().date().optional()
 
 @Resolver(() => MesocycleType)
 @UseGuards(JwtCookieGuard)
@@ -65,6 +70,37 @@ export class MesocycleResolver {
         @Args('input', new ZodValidationPipe(mesocycleSchema)) input: MesocycleInput,
     ): Promise<MesocycleView> {
         const command = new CreateMesocycleCommand(user.userId, input)
+        return this.commandBus.execute(command)
+    }
+
+    @Mutation(() => MesocycleType, {
+        description: 'Build a mesocycle for one of your athletes: they own it, you plan it (coaches only).',
+    })
+    @UseGuards(RolesGuard, LinkedAthleteGuard)
+    @Roles('coach')
+    async createAthleteMesocycle(
+        @CurrentUser() user: AuthUser,
+        @Args('athleteId', { type: () => ID }, new ZodValidationPipe(uuidArg)) athleteId: string,
+        @Args('input', new ZodValidationPipe(mesocycleSchema)) input: MesocycleInput,
+    ): Promise<MesocycleView> {
+        const command = new CreateMesocycleCommand(user.userId, input, athleteId)
+        return this.commandBus.execute(command)
+    }
+
+    @Mutation(() => MesocycleType, {
+        description:
+            'Copy one of your own mesocycles to an athlete (they own the copy, you plan it; coaches only). The source stays in your library.',
+    })
+    @UseGuards(RolesGuard, LinkedAthleteGuard)
+    @Roles('coach')
+    async assignMesocycleToAthlete(
+        @CurrentUser() user: AuthUser,
+        @Args('athleteId', { type: () => ID }, new ZodValidationPipe(uuidArg)) athleteId: string,
+        @Args('mesocycleId', { type: () => ID }, new ZodValidationPipe(uuidArg)) mesocycleId: string,
+        @Args('startDate', { type: () => String, nullable: true }, new ZodValidationPipe(dateArg))
+        startDate?: string,
+    ): Promise<MesocycleView> {
+        const command = new AssignMesocycleToAthleteCommand(user.userId, mesocycleId, athleteId, startDate)
         return this.commandBus.execute(command)
     }
 

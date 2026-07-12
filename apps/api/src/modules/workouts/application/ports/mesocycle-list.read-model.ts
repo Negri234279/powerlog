@@ -10,6 +10,8 @@ export interface MesocycleListFilter {
 /** One row of the mesocycle list: header + cheap rollups. */
 export interface MesocycleSummaryRow {
     id: string
+    /** Coach who plans this block for the owner (null = self-made). */
+    plannedByUserId: string | null
     name: string
     notes: string | null
     goal: string | null

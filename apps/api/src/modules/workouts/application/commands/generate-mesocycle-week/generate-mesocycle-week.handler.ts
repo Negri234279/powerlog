@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
+import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import {
     MesocycleStartDateRequiredError,
@@ -17,7 +18,7 @@ import {
     type WorkoutSessionView,
     toWorkoutSessionView,
 } from '../../queries/get-workout-session/get-workout-session.handler'
-import { requireOwnedMesocycle } from '../../require-owned-mesocycle'
+import { requireManageableMesocycle } from '../../require-manageable-mesocycle'
 import { GenerateMesocycleWeekCommand } from './generate-mesocycle-week.command'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -30,6 +31,7 @@ export class GenerateMesocycleWeekHandler implements ICommandHandler<
     constructor(
         private readonly mesocycles: MesocycleRepository,
         private readonly sessions: WorkoutSessionRepository,
+        private readonly coachLinks: CoachLinks,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly metrics: MesocycleMetrics,
@@ -39,7 +41,12 @@ export class GenerateMesocycleWeekHandler implements ICommandHandler<
     }
 
     async execute(command: GenerateMesocycleWeekCommand): Promise<WorkoutSessionView[]> {
-        const mesocycle = await requireOwnedMesocycle(this.mesocycles, command.mesocycleId, command.userId)
+        const mesocycle = await requireManageableMesocycle(
+            this.mesocycles,
+            this.coachLinks,
+            command.mesocycleId,
+            command.userId,
+        )
 
         const microcycle = mesocycle.microcycleForWeek(command.week)
         if (!microcycle) throw new MesocycleWeekNotFoundError()
@@ -65,7 +72,9 @@ export class GenerateMesocycleWeekHandler implements ICommandHandler<
 
             const session = WorkoutSessionAggregate.create({
                 id: this.ids.uuid(),
-                userId: command.userId,
+                // The block's owner trains it; a coach-planned block stamps the coach.
+                userId: mesocycle.ownerId,
+                plannedByUserId: mesocycle.plannedByUserId,
                 status: 'planned',
                 performedAt,
                 notes: day.notes ?? day.label ?? null,

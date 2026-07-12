@@ -1,4 +1,4 @@
-import type { MesocycleContentInput } from '../domain/entities/mesocycle.entity'
+import type { MesocycleAggregate, MesocycleContentInput } from '../domain/entities/mesocycle.entity'
 import { ExerciseNotFoundError } from '../domain/errors/workouts.errors'
 import { ExerciseRepository } from '../domain/repositories/exercise.repository'
 import { MesocycleNameVO } from '../domain/value-objects/mesocycle-name.vo'
@@ -99,6 +99,40 @@ export async function buildMesocycleContent(
                             notes: set.notes ?? null,
                         }
                     }),
+                })),
+            })),
+        })),
+    }
+}
+
+/**
+ * The content of an existing mesocycle, ready to build a copy of it (the VOs are
+ * immutable, so they are shared rather than rebuilt). `MesocycleAggregate.create`
+ * mints fresh ids for the whole tree, so the copy is independent of the source.
+ */
+export function contentOf(mesocycle: MesocycleAggregate, startDate?: Date | null): MesocycleContentInput {
+    return {
+        name: mesocycle.name,
+        notes: mesocycle.notes,
+        goal: mesocycle.goal,
+        startDate: startDate === undefined ? mesocycle.startDate : startDate,
+        microcycles: mesocycle.microcycles.map((microcycle) => ({
+            label: microcycle.label,
+            notes: microcycle.notes,
+            days: microcycle.days.map((day) => ({
+                dayOffset: day.dayOffset,
+                label: day.label,
+                notes: day.notes,
+                exercises: day.exercises.map((exercise) => ({
+                    exerciseId: exercise.exerciseId,
+                    notes: exercise.notes,
+                    sets: exercise.sets.map((set) => ({
+                        plannedWeight: set.plannedWeight,
+                        plannedReps: set.plannedReps,
+                        rpe: set.rpe,
+                        rir: set.rir,
+                        notes: set.notes,
+                    })),
                 })),
             })),
         })),

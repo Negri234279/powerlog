@@ -90,6 +90,12 @@ export class MesocycleType {
     @Field(() => ID)
     ownerId!: string
 
+    @Field(() => ID, {
+        nullable: true,
+        description: 'Coach who plans this block for the owner (null = self-made). Only they can edit it.',
+    })
+    plannedByUserId?: string | null
+
     @Field()
     name!: string
 
@@ -123,6 +129,9 @@ export class MesocycleType {
 export class MesocycleSummaryType {
     @Field(() => ID)
     id!: string
+
+    @Field(() => ID, { nullable: true, description: 'Coach who plans this block for the owner (null = self-made).' })
+    plannedByUserId?: string | null
 
     @Field()
     name!: string

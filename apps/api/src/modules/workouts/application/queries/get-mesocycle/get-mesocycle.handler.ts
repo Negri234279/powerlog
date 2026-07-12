@@ -46,6 +46,8 @@ export interface MicrocycleView {
 export interface MesocycleView {
     id: string
     ownerId: string
+    /** Coach who plans this block for the owner (null = self-made). */
+    plannedByUserId: string | null
     name: string
     notes: string | null
     goal: string | null
@@ -62,6 +64,7 @@ export function toMesocycleView(mesocycle: MesocycleAggregate, generatedWeeks: n
     return {
         id: mesocycle.id,
         ownerId: mesocycle.ownerId,
+        plannedByUserId: mesocycle.plannedByUserId,
         name: mesocycle.name.value,
         notes: mesocycle.notes,
         goal: mesocycle.goal,

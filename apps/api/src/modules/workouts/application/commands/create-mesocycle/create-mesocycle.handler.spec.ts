@@ -7,20 +7,33 @@ import {
     InMemoryExerciseRepository,
     InMemoryMesocycleRepository,
 } from '../../../../../../tests/doubles/workouts'
-import { ConflictingIntensityError, ExerciseNotFoundError } from '../../../domain/errors/workouts.errors'
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
+import {
+    ConflictingIntensityError,
+    ExerciseNotFoundError,
+    NotLinkedToAthleteError,
+} from '../../../domain/errors/workouts.errors'
 import type { MesocycleContentRaw } from '../../mesocycle-content'
 import { CreateMesocycleCommand } from './create-mesocycle.command'
 import { CreateMesocycleHandler } from './create-mesocycle.handler'
 
 const NOW = new Date('2026-03-01T10:00:00.000Z')
 const OWNER = 'u-1'
+const COACH = 'coach-1'
+const ATHLETE = 'athlete-1'
 
 const SQUAT = ExerciseMother.create({ id: 'ex-squat', slug: 'back-squat', name: 'Back Squat' })
 
-function setup() {
+function setup(coachLinks = new FakeCoachLinks()) {
     const mesocycles = new InMemoryMesocycleRepository()
     const exercises = new InMemoryExerciseRepository([SQUAT])
-    const handler = new CreateMesocycleHandler(mesocycles, exercises, new FakeClock(NOW), new FakeIdGenerator())
+    const handler = new CreateMesocycleHandler(
+        mesocycles,
+        exercises,
+        coachLinks,
+        new FakeClock(NOW),
+        new FakeIdGenerator(),
+    )
     return { mesocycles, handler }
 }
 
@@ -77,6 +90,23 @@ describe('CreateMesocycleHandler', () => {
         expect(day1.exercises[0]!.sets[0]).toMatchObject({ plannedWeightKg: 100, plannedReps: 5, rpe: 8 })
         expect(view.createdAt).toEqual(NOW)
         expect(await mesocycles.findById(view.id)).not.toBeNull()
+    })
+
+    it('creates a block for an athlete: they own it, the coach is stamped as its planner', async () => {
+        const { handler } = setup(new FakeCoachLinks().link(COACH, ATHLETE))
+
+        const view = await handler.execute(new CreateMesocycleCommand(COACH, content(), ATHLETE))
+
+        expect(view).toMatchObject({ ownerId: ATHLETE, plannedByUserId: COACH, status: 'draft' })
+    })
+
+    it('rejects building a block for an athlete the coach does not coach', async () => {
+        const { mesocycles, handler } = setup()
+
+        await expect(handler.execute(new CreateMesocycleCommand(COACH, content(), ATHLETE))).rejects.toBeInstanceOf(
+            NotLinkedToAthleteError,
+        )
+        expect(mesocycles.size).toBe(0)
     })
 
     it('converts pound inputs to canonical kilograms', async () => {
