@@ -27,6 +27,14 @@ export class InMemoryCoachLinkRepository extends CoachLinkRepository {
         this.links.push({ coachId, athleteId, createdAt: now })
     }
 
+    async unlink(coachId: string, athleteId: string): Promise<boolean> {
+        const index = this.links.findIndex((l) => l.coachId === coachId && l.athleteId === athleteId)
+        if (index === -1) return false
+
+        this.links.splice(index, 1)
+        return true
+    }
+
     async coachIdsOf(athleteId: string): Promise<string[]> {
         return this.links
             .filter((l) => l.athleteId === athleteId)

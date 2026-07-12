@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 
+import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import type { WorkoutSetFields } from '../../../domain/entities/workout-set.entity'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
 import { RepsVO } from '../../../domain/value-objects/reps.vo'
@@ -19,12 +20,18 @@ import { LogSetCommand } from './log-set.command'
 export class LogSetHandler implements ICommandHandler<LogSetCommand, WorkoutSessionView> {
     constructor(
         private readonly sessions: WorkoutSessionRepository,
+        private readonly coachLinks: CoachLinks,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
     ) {}
 
     async execute(command: LogSetCommand): Promise<WorkoutSessionView> {
-        const session = await requireManageableSession(this.sessions, command.sessionId, command.userId)
+        const session = await requireManageableSession(
+            this.sessions,
+            this.coachLinks,
+            command.sessionId,
+            command.userId,
+        )
         const raw = command.set
         const unit = (raw.unit ?? 'kg') as WeightUnit
         const fields: WorkoutSetFields = {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { FakeClock, InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import { WorkoutSessionMother } from '../../../../../../tests/mothers/workouts'
 import { RepsVO } from '../../../domain/value-objects/reps.vo'
 import { WeightVO } from '../../../domain/value-objects/weight.vo'
@@ -14,7 +15,7 @@ function setup() {
     session.addEntry({ id: 'e-1', exerciseId: 'x-1' }, NOW)
     session.addSet('e-1', { id: 'set-1', weight: WeightVO.create(100), reps: RepsVO.create(5) }, NOW)
     const sessions = new InMemoryWorkoutSessionRepository([session])
-    const handler = new UpdateSetHandler(sessions, new FakeClock(NOW))
+    const handler = new UpdateSetHandler(sessions, new FakeCoachLinks(), new FakeClock(NOW))
     return { handler }
 }
 

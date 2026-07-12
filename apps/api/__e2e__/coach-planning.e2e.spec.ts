@@ -391,3 +391,64 @@ describe('Coach mesocycles for an athlete', () => {
         expect(res.body.errors[0].extensions.code).toBe('NOT_LINKED_TO_ATHLETE')
     })
 })
+
+describe('Ending the coaching relationship', () => {
+    it('cuts the ex-coach off from the athlete, who keeps everything that was planned', async () => {
+        const { coachAccess, athlete } = await linkedCoachAndAthlete()
+
+        const planned = await gql(
+            `mutation { planWorkoutSession(input: { athleteId: "${athlete.userId}" }) { id } }`,
+            coachAccess,
+        )
+        const sessionId: string = planned.body.data.planWorkoutSession.id
+
+        const removed = await gql(`mutation { removeAthlete(athleteId: "${athlete.userId}") }`, coachAccess)
+        expect(removed.body.errors).toBeUndefined()
+        expect(removed.body.data.removeAthlete).toBe(true)
+
+        // Both sides see the relationship gone.
+        const athletes = await gql(`query { myAthletes { userId } }`, coachAccess)
+        expect(athletes.body.data.myAthletes).toEqual([])
+        const coaches = await gql(`query { myCoaches { userId } }`, athlete.access)
+        expect(coaches.body.data.myCoaches).toEqual([])
+
+        // The ex-coach can no longer read the athlete...
+        const history = await gql(
+            `query { athleteWorkoutHistory(athleteId: "${athlete.userId}") { items { id } } }`,
+            coachAccess,
+        )
+        expect(history.body.errors[0].extensions.code).toBe('NOT_LINKED_TO_ATHLETE')
+
+        // ...nor touch the session they planned (it is the athlete's now).
+        const edit = await gql(
+            `mutation { updateWorkoutSession(input: { sessionId: "${sessionId}", notes: "sneaky" }) { id } }`,
+            coachAccess,
+        )
+        expect(edit.body.errors[0].extensions.code).toBe('WORKOUT_SESSION_NOT_FOUND')
+
+        // The athlete still owns it and can train it.
+        const mine = await gql(`query { workoutSession(id: "${sessionId}") { id } }`, athlete.access)
+        expect(mine.body.data.workoutSession.id).toBe(sessionId)
+    })
+
+    it('lets the athlete leave their coach', async () => {
+        const { coachAccess, coachId, athlete } = await linkedCoachAndAthlete()
+
+        const left = await gql(`mutation { leaveCoach(coachId: "${coachId}") }`, athlete.access)
+        expect(left.body.errors).toBeUndefined()
+
+        const athletes = await gql(`query { myAthletes { userId } }`, coachAccess)
+        expect(athletes.body.data.myAthletes).toEqual([])
+    })
+
+    it('rejects removing a user who is not your athlete, and leaving a user who is not your coach', async () => {
+        const { coachAccess, athlete } = await linkedCoachAndAthlete()
+        const stranger = await register('stranger@example.com')
+
+        const removed = await gql(`mutation { removeAthlete(athleteId: "${stranger.userId}") }`, coachAccess)
+        expect(removed.body.errors[0].extensions.code).toBe('NOT_YOUR_ATHLETE')
+
+        const left = await gql(`mutation { leaveCoach(coachId: "${stranger.userId}") }`, athlete.access)
+        expect(left.body.errors[0].extensions.code).toBe('NOT_YOUR_COACH')
+    })
+})

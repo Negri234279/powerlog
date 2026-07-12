@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { FakeClock, InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import { WorkoutSessionMother } from '../../../../../../tests/mothers/workouts'
 import { RepsVO } from '../../../domain/value-objects/reps.vo'
 import { WeightVO } from '../../../domain/value-objects/weight.vo'
@@ -16,7 +17,7 @@ describe('RemoveSetHandler', () => {
         session.addSet('e-1', { id: 'set-1', weight: WeightVO.create(100), reps: RepsVO.create(5) }, NOW)
         session.addSet('e-1', { id: 'set-2', weight: WeightVO.create(90), reps: RepsVO.create(8) }, NOW)
         const sessions = new InMemoryWorkoutSessionRepository([session])
-        const handler = new RemoveSetHandler(sessions, new FakeClock(NOW))
+        const handler = new RemoveSetHandler(sessions, new FakeCoachLinks(), new FakeClock(NOW))
 
         const view = await handler.execute(new RemoveSetCommand('u-1', 's-1', 'e-1', 'set-1'))
 

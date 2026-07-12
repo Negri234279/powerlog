@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 
+import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
 import { Clock } from '../../ports/clock.port'
 import {
@@ -13,11 +14,17 @@ import { RemoveSetCommand } from './remove-set.command'
 export class RemoveSetHandler implements ICommandHandler<RemoveSetCommand, WorkoutSessionView> {
     constructor(
         private readonly sessions: WorkoutSessionRepository,
+        private readonly coachLinks: CoachLinks,
         private readonly clock: Clock,
     ) {}
 
     async execute(command: RemoveSetCommand): Promise<WorkoutSessionView> {
-        const session = await requireManageableSession(this.sessions, command.sessionId, command.userId)
+        const session = await requireManageableSession(
+            this.sessions,
+            this.coachLinks,
+            command.sessionId,
+            command.userId,
+        )
         session.removeSet(command.entryId, command.setId, this.clock.now())
 
         await this.sessions.save(session)

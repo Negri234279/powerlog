@@ -2,6 +2,8 @@ import { AcceptInvitationHandler } from './commands/accept-invitation/accept-inv
 import { CancelInvitationHandler } from './commands/cancel-invitation/cancel-invitation.handler'
 import { DeclineInvitationHandler } from './commands/decline-invitation/decline-invitation.handler'
 import { InviteAthleteHandler } from './commands/invite-athlete/invite-athlete.handler'
+import { LeaveCoachHandler } from './commands/leave-coach/leave-coach.handler'
+import { RemoveAthleteHandler } from './commands/remove-athlete/remove-athlete.handler'
 import { SetAthleteNoteHandler } from './commands/set-athlete-note/set-athlete-note.handler'
 import { LinkInvitationsOnUserRegistered } from './event-handlers/link-invitations-on-user-registered.handler'
 import { AdminCoachingStatsHandler } from './queries/admin-coaching-stats/admin-coaching-stats.handler'
@@ -17,6 +19,8 @@ export const COACHING_COMMAND_HANDLERS = [
     AcceptInvitationHandler,
     DeclineInvitationHandler,
     CancelInvitationHandler,
+    RemoveAthleteHandler,
+    LeaveCoachHandler,
     SetAthleteNoteHandler,
 ]
 

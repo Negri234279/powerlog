@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import { WorkoutSessionMother } from '../../../../../../tests/mothers/workouts'
 import { WorkoutSessionNotFoundError } from '../../../domain/errors/workouts.errors'
 import { GetWorkoutSessionHandler } from './get-workout-session.handler'
@@ -9,7 +10,7 @@ import { GetWorkoutSessionQuery } from './get-workout-session.query'
 function setup() {
     const session = WorkoutSessionMother.withTree('x-1', { id: 's-1', userId: 'u-1' })
     const sessions = new InMemoryWorkoutSessionRepository([session])
-    return { handler: new GetWorkoutSessionHandler(sessions) }
+    return { handler: new GetWorkoutSessionHandler(sessions, new FakeCoachLinks()) }
 }
 
 describe('GetWorkoutSessionHandler', () => {

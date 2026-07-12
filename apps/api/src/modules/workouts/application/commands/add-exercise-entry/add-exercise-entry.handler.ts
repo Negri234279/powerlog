@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 
+import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import { ExerciseNotFoundError } from '../../../domain/errors/workouts.errors'
 import { ExerciseRepository } from '../../../domain/repositories/exercise.repository'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
@@ -16,6 +17,7 @@ import { AddExerciseEntryCommand } from './add-exercise-entry.command'
 export class AddExerciseEntryHandler implements ICommandHandler<AddExerciseEntryCommand, WorkoutSessionView> {
     constructor(
         private readonly sessions: WorkoutSessionRepository,
+        private readonly coachLinks: CoachLinks,
         private readonly exercises: ExerciseRepository,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
@@ -27,7 +29,12 @@ export class AddExerciseEntryHandler implements ICommandHandler<AddExerciseEntry
             throw new ExerciseNotFoundError()
         }
 
-        const session = await requireManageableSession(this.sessions, command.sessionId, command.userId)
+        const session = await requireManageableSession(
+            this.sessions,
+            this.coachLinks,
+            command.sessionId,
+            command.userId,
+        )
         session.addEntry(
             { id: this.ids.uuid(), exerciseId: command.exerciseId, notes: command.notes ?? null },
             this.clock.now(),

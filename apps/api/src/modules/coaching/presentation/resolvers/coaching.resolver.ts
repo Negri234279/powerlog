@@ -13,6 +13,8 @@ import { AcceptInvitationCommand } from '../../application/commands/accept-invit
 import { CancelInvitationCommand } from '../../application/commands/cancel-invitation/cancel-invitation.command'
 import { DeclineInvitationCommand } from '../../application/commands/decline-invitation/decline-invitation.command'
 import { InviteAthleteCommand } from '../../application/commands/invite-athlete/invite-athlete.command'
+import { LeaveCoachCommand } from '../../application/commands/leave-coach/leave-coach.command'
+import { RemoveAthleteCommand } from '../../application/commands/remove-athlete/remove-athlete.command'
 import { SetAthleteNoteCommand } from '../../application/commands/set-athlete-note/set-athlete-note.command'
 import { GetAthleteNoteQuery } from '../../application/queries/get-athlete-note/get-athlete-note.query'
 import { MyAthletesQuery } from '../../application/queries/my-athletes/my-athletes.query'
@@ -78,6 +80,31 @@ export class CoachingResolver {
         @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
     ): Promise<InvitationView> {
         const command = new CancelInvitationCommand(user.userId, id)
+        return this.commandBus.execute(command)
+    }
+
+    @Mutation(() => Boolean, {
+        description:
+            'Stop coaching an athlete (coaches only). They keep everything you planned for them; you lose access to it.',
+    })
+    @UseGuards(RolesGuard)
+    @Roles('coach')
+    async removeAthlete(
+        @CurrentUser() user: AuthUser,
+        @Args('athleteId', { type: () => ID }, new ZodValidationPipe(uuidArg)) athleteId: string,
+    ): Promise<boolean> {
+        const command = new RemoveAthleteCommand(user.userId, athleteId)
+        return this.commandBus.execute(command)
+    }
+
+    @Mutation(() => Boolean, {
+        description: 'Leave one of your coaches. You keep everything they planned for you; they lose access to it.',
+    })
+    async leaveCoach(
+        @CurrentUser() user: AuthUser,
+        @Args('coachId', { type: () => ID }, new ZodValidationPipe(uuidArg)) coachId: string,
+    ): Promise<boolean> {
+        const command = new LeaveCoachCommand(user.userId, coachId)
         return this.commandBus.execute(command)
     }
 

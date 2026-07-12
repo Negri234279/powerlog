@@ -753,6 +753,11 @@ type Mutation {
   """
   inviteAthlete(email: String!): CoachInvitation!
 
+  """
+  Leave one of your coaches. You keep everything they planned for you; they lose access to it.
+  """
+  leaveCoach(coachId: ID!): Boolean!
+
   """Append a set to an exercise entry."""
   logSet(input: LogSetInput!): WorkoutSession!
 
@@ -789,6 +794,11 @@ type Mutation {
 
   """Register with email + password."""
   register(input: RegisterInput!): Me!
+
+  """
+  Stop coaching an athlete (coaches only). They keep everything you planned for them; you lose access to it.
+  """
+  removeAthlete(athleteId: ID!): Boolean!
 
   """Remove an exercise (and its sets) from a session."""
   removeExerciseEntry(entryId: ID!, sessionId: ID!): WorkoutSession!

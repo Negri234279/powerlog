@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { FakeClock, InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import { WorkoutSessionMother } from '../../../../../../tests/mothers/workouts'
 import { WorkoutSessionNotFoundError } from '../../../domain/errors/workouts.errors'
 import { UpdateWorkoutSessionCommand } from './update-workout-session.command'
@@ -10,7 +11,7 @@ function setup() {
     const sessions = new InMemoryWorkoutSessionRepository([
         WorkoutSessionMother.empty({ id: 's-1', userId: 'u-1', notes: 'original' }),
     ])
-    return { handler: new UpdateWorkoutSessionHandler(sessions, new FakeClock()) }
+    return { handler: new UpdateWorkoutSessionHandler(sessions, new FakeCoachLinks(), new FakeClock()) }
 }
 
 describe('UpdateWorkoutSessionHandler', () => {

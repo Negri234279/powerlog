@@ -1,5 +1,6 @@
 import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 
+import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import type { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
 import type { WorkoutStatus } from '../../../domain/workout-status'
@@ -77,10 +78,13 @@ export function toWorkoutSessionView(session: WorkoutSessionAggregate): WorkoutS
 
 @QueryHandler(GetWorkoutSessionQuery)
 export class GetWorkoutSessionHandler implements IQueryHandler<GetWorkoutSessionQuery, WorkoutSessionView> {
-    constructor(private readonly sessions: WorkoutSessionRepository) {}
+    constructor(
+        private readonly sessions: WorkoutSessionRepository,
+        private readonly coachLinks: CoachLinks,
+    ) {}
 
     async execute(query: GetWorkoutSessionQuery): Promise<WorkoutSessionView> {
-        const session = await requireManageableSession(this.sessions, query.sessionId, query.userId)
+        const session = await requireManageableSession(this.sessions, this.coachLinks, query.sessionId, query.userId)
         return toWorkoutSessionView(session)
     }
 }

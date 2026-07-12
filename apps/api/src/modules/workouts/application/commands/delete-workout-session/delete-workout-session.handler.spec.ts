@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import { WorkoutSessionMother } from '../../../../../../tests/mothers/workouts'
 import { WorkoutSessionNotFoundError } from '../../../domain/errors/workouts.errors'
 import { DeleteWorkoutSessionCommand } from './delete-workout-session.command'
@@ -8,7 +9,7 @@ import { DeleteWorkoutSessionHandler } from './delete-workout-session.handler'
 
 function setup() {
     const sessions = new InMemoryWorkoutSessionRepository([WorkoutSessionMother.empty({ id: 's-1', userId: 'u-1' })])
-    return { sessions, handler: new DeleteWorkoutSessionHandler(sessions) }
+    return { sessions, handler: new DeleteWorkoutSessionHandler(sessions, new FakeCoachLinks()) }
 }
 
 describe('DeleteWorkoutSessionHandler', () => {

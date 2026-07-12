@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { FakeClock, FakeIdGenerator, InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
+import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import { WorkoutSessionMother } from '../../../../../../tests/mothers/workouts'
 import { ConflictingIntensityError, WorkoutSessionNotFoundError } from '../../../domain/errors/workouts.errors'
 import { LogSetCommand } from './log-set.command'
@@ -12,7 +13,12 @@ function setup() {
     const session = WorkoutSessionMother.empty({ id: 's-1', userId: 'u-1' })
     session.addEntry({ id: 'e-1', exerciseId: 'x-1' }, NOW)
     const sessions = new InMemoryWorkoutSessionRepository([session])
-    const handler = new LogSetHandler(sessions, new FakeClock(NOW), new FakeIdGenerator(['set-1']))
+    const handler = new LogSetHandler(
+        sessions,
+        new FakeCoachLinks(),
+        new FakeClock(NOW),
+        new FakeIdGenerator(['set-1']),
+    )
     return { handler }
 }
 

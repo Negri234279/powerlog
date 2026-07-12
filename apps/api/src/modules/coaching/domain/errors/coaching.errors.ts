@@ -48,6 +48,13 @@ export class InvalidInvitationStateError extends CoachingError {
     }
 }
 
+export class NotYourCoachError extends CoachingError {
+    readonly code = 'NOT_YOUR_COACH'
+    constructor() {
+        super('This coach is not linked to you.')
+    }
+}
+
 export class NotYourAthleteError extends CoachingError {
     readonly code = 'NOT_YOUR_ATHLETE'
     constructor() {

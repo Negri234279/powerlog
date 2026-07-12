@@ -10,6 +10,7 @@ import {
     COACHING_QUERY_HANDLERS,
 } from './application/coaching.application'
 import { AdminCoachingStatsReadModel } from './application/ports/admin-coaching-stats.read-model'
+import { CoachUnlinker } from './application/services/coach-unlinker.service'
 import { DrizzleAdminCoachingStatsReadModel } from './infrastructure/persistence/read-models/drizzle-admin-coaching-stats.read-model'
 import { Clock } from './application/ports/clock.port'
 import { IdGenerator } from './application/ports/id-generator.port'
@@ -47,6 +48,7 @@ const ADAPTERS: Provider[] = [
         ...ADAPTERS,
         RolesGuard,
         AdminGuard,
+        CoachUnlinker,
         ...COACHING_COMMAND_HANDLERS,
         ...COACHING_QUERY_HANDLERS,
         ...COACHING_EVENT_HANDLERS,

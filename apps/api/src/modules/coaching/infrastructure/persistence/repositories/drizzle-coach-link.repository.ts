@@ -25,6 +25,14 @@ export class DrizzleCoachLinkRepository extends CoachLinkRepository {
         await this.db.insert(coachAthlete).values({ coachId, athleteId, createdAt: now }).onConflictDoNothing()
     }
 
+    async unlink(coachId: string, athleteId: string): Promise<boolean> {
+        const removed = await this.db
+            .delete(coachAthlete)
+            .where(and(eq(coachAthlete.coachId, coachId), eq(coachAthlete.athleteId, athleteId)))
+            .returning({ id: coachAthlete.id })
+        return removed.length > 0
+    }
+
     async coachIdsOf(athleteId: string): Promise<string[]> {
         const rows = await this.db
             .select({ coachId: coachAthlete.coachId })
