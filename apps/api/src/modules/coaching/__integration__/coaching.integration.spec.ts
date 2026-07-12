@@ -11,12 +11,14 @@ import * as schema from '../../../database/schema'
 import { CoachInvitationEntity } from '../domain/entities/coach-invitation.entity'
 import { DrizzleCoachInvitationRepository } from '../infrastructure/persistence/repositories/drizzle-coach-invitation.repository'
 import { DrizzleCoachLinkRepository } from '../infrastructure/persistence/repositories/drizzle-coach-link.repository'
+import { DrizzleCoachNoteRepository } from '../infrastructure/persistence/repositories/drizzle-coach-note.repository'
 
 let container: StartedPostgreSqlContainer
 let pool: Pool
 let db: NodePgDatabase<typeof schema>
 let invitations: DrizzleCoachInvitationRepository
 let links: DrizzleCoachLinkRepository
+let notes: DrizzleCoachNoteRepository
 
 beforeAll(async () => {
     container = await new PostgreSqlContainer('postgres:16-alpine').start()
@@ -25,6 +27,7 @@ beforeAll(async () => {
     await migrate(db, { migrationsFolder: './drizzle' })
     invitations = new DrizzleCoachInvitationRepository(db)
     links = new DrizzleCoachLinkRepository(db)
+    notes = new DrizzleCoachNoteRepository(db)
 }, 120_000)
 
 afterAll(async () => {
@@ -33,7 +36,9 @@ afterAll(async () => {
 })
 
 beforeEach(async () => {
-    await db.execute(sql`TRUNCATE TABLE coach_athlete_invitations, coach_athlete RESTART IDENTITY CASCADE`)
+    await db.execute(
+        sql`TRUNCATE TABLE coach_athlete_invitations, coach_athlete, coach_athlete_notes RESTART IDENTITY CASCADE`,
+    )
 })
 
 describe('Coaching invitations (integration)', () => {
@@ -75,5 +80,25 @@ describe('Coach links (integration)', () => {
 
         const rows = await db.select().from(schema.coachAthlete)
         expect(rows).toHaveLength(1)
+    })
+})
+
+describe('Coach notes (integration)', () => {
+    it('upserts, reads and clears a coach note', async () => {
+        const coachId = randomUUID()
+        const athleteId = randomUUID()
+
+        expect(await notes.get(coachId, athleteId)).toBeNull()
+
+        await notes.upsert(coachId, athleteId, 'first pass', new Date('2026-04-01T00:00:00Z'))
+        expect((await notes.get(coachId, athleteId))?.body).toBe('first pass')
+
+        // Same (coach, athlete) upserts in place — no duplicate row.
+        await notes.upsert(coachId, athleteId, 'revised', new Date('2026-04-02T00:00:00Z'))
+        expect((await notes.get(coachId, athleteId))?.body).toBe('revised')
+        expect(await db.select().from(schema.coachAthleteNotes)).toHaveLength(1)
+
+        await notes.clear(coachId, athleteId)
+        expect(await notes.get(coachId, athleteId)).toBeNull()
     })
 })

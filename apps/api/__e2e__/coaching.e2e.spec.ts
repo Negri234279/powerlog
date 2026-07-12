@@ -47,7 +47,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
     await pool.query(
-        'TRUNCATE TABLE users, coach_athlete_invitations, coach_athlete, notifications RESTART IDENTITY CASCADE',
+        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, coach_athlete_notes, notifications RESTART IDENTITY CASCADE',
     )
 })
 
@@ -74,13 +74,17 @@ function usernameFor(email: string): string {
         .padEnd(3, '0')
 }
 
-async function register(email: string): Promise<{ access: string; username: string }> {
+async function register(email: string): Promise<{ access: string; username: string; userId: string }> {
     const username = usernameFor(email)
     const res = await gql(
         `mutation { register(input: { email: "${email}", username: "${username}", password: "supersecret" }) { id } }`,
     )
     expect(res.body.errors).toBeUndefined()
-    return { access: cookiePair(setCookies(res), COOKIE.access)!, username }
+    return {
+        access: cookiePair(setCookies(res), COOKIE.access)!,
+        username,
+        userId: res.body.data.register.id,
+    }
 }
 
 async function eventually<T>(run: () => Promise<T>, predicate: (value: T) => boolean): Promise<T> {
@@ -102,10 +106,7 @@ describe('Coaching via GraphQL', () => {
         expect(promoted.body.data.becomeCoach.role).toBe('coach')
         const coachAccess = cookiePair(setCookies(promoted), COOKIE.access)!
 
-        const invited = await gql(
-            `mutation { inviteAthlete(username: "${athlete.username}") { id status } }`,
-            coachAccess,
-        )
+        const invited = await gql(`mutation { inviteAthlete(email: "athlete@example.com") { id status } }`, coachAccess)
         expect(invited.body.errors).toBeUndefined()
         expect(invited.body.data.inviteAthlete.status).toBe('pending')
         const invitationId: string = invited.body.data.inviteAthlete.id
@@ -133,9 +134,77 @@ describe('Coaching via GraphQL', () => {
 
     it('forbids a non-coach from inviting', async () => {
         const athlete = await register('plain@example.com')
-        const target = await register('target@example.com')
+        await register('target@example.com')
 
-        const res = await gql(`mutation { inviteAthlete(username: "${target.username}") { id } }`, athlete.access)
+        const res = await gql(`mutation { inviteAthlete(email: "target@example.com") { id } }`, athlete.access)
         expect(res.body.errors[0].extensions.code).toBe('FORBIDDEN')
+    })
+
+    it('auto-links a not-yet-registered invitee when they sign up, notifying both', async () => {
+        const coach = await register('coach@example.com')
+        const promoted = await gql(`mutation { becomeCoach { role } }`, coach.access)
+        const coachAccess = cookiePair(setCookies(promoted), COOKIE.access)!
+
+        // Invite an email that has no account yet → pending, nobody belled.
+        const invited = await gql(`mutation { inviteAthlete(email: "newbie@example.com") { status } }`, coachAccess)
+        expect(invited.body.data.inviteAthlete.status).toBe('pending')
+
+        // The invitee signs up with that email → auto-linked, no accept needed.
+        const athlete = await register('newbie@example.com')
+
+        const myAthletes = await eventually(
+            async () => (await gql(`query { myAthletes { username } }`, coachAccess)).body.data.myAthletes,
+            (list: unknown[]) => list.length >= 1,
+        )
+        expect(myAthletes).toEqual([{ username: athlete.username }])
+
+        // Both parties get a link notification.
+        const coachUnread = await eventually(
+            async () =>
+                (await gql(`query { unreadNotificationsCount }`, coachAccess)).body.data.unreadNotificationsCount,
+            (n: number) => n >= 1,
+        )
+        expect(coachUnread).toBe(1)
+
+        const athleteBell = await gql(`query { myNotifications(limit: 5) { items { type } } }`, athlete.access)
+        const types = athleteBell.body.data.myNotifications.items.map((i: { type: string }) => i.type)
+        expect(types).toContain('coach_linked')
+    })
+
+    it('lets a coach keep a private note on a linked athlete and clear it', async () => {
+        const coach = await register('coach@example.com')
+        const athlete = await register('athlete@example.com')
+        const promoted = await gql(`mutation { becomeCoach { role } }`, coach.access)
+        const coachAccess = cookiePair(setCookies(promoted), COOKIE.access)!
+
+        const invited = await gql(`mutation { inviteAthlete(email: "athlete@example.com") { id } }`, coachAccess)
+        await gql(
+            `mutation { acceptInvitation(id: "${invited.body.data.inviteAthlete.id}") { status } }`,
+            athlete.access,
+        )
+
+        const setRes = await gql(
+            `mutation { setAthleteNote(athleteId: "${athlete.userId}", body: "  strong squats  ") }`,
+            coachAccess,
+        )
+        expect(setRes.body.data.setAthleteNote).toBe(true)
+
+        const note = await gql(`query { athleteNote(athleteId: "${athlete.userId}") { body } }`, coachAccess)
+        expect(note.body.data.athleteNote.body).toBe('strong squats')
+
+        // Empty body clears it.
+        await gql(`mutation { setAthleteNote(athleteId: "${athlete.userId}", body: "") }`, coachAccess)
+        const cleared = await gql(`query { athleteNote(athleteId: "${athlete.userId}") { body } }`, coachAccess)
+        expect(cleared.body.data.athleteNote).toBeNull()
+    })
+
+    it('rejects noting someone who is not your athlete', async () => {
+        const coach = await register('coach@example.com')
+        const stranger = await register('stranger@example.com')
+        const promoted = await gql(`mutation { becomeCoach { role } }`, coach.access)
+        const coachAccess = cookiePair(setCookies(promoted), COOKIE.access)!
+
+        const res = await gql(`mutation { setAthleteNote(athleteId: "${stranger.userId}", body: "nope") }`, coachAccess)
+        expect(res.body.errors[0].extensions.code).toBe('NOT_YOUR_ATHLETE')
     })
 })

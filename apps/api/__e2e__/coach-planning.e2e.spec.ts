@@ -100,7 +100,7 @@ async function linkedCoachAndAthlete(): Promise<{
     const promoted = await gql(`mutation { becomeCoach { role } }`, coach.access)
     const coachAccess = cookiePair(setCookies(promoted), COOKIE.access)!
 
-    const invited = await gql(`mutation { inviteAthlete(username: "${athlete.username}") { id } }`, coachAccess)
+    const invited = await gql(`mutation { inviteAthlete(email: "athlete@example.com") { id } }`, coachAccess)
     const invitationId: string = invited.body.data.inviteAthlete.id
     await gql(`mutation { acceptInvitation(id: "${invitationId}") { status } }`, athlete.access)
 
