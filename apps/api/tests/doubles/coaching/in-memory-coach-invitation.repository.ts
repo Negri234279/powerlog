@@ -28,6 +28,13 @@ export class InMemoryCoachInvitationRepository extends CoachInvitationRepository
         return null
     }
 
+    async findPendingByTokenHash(tokenHash: string): Promise<CoachInvitationEntity | null> {
+        for (const inv of this.byId.values()) {
+            if (inv.tokenHash === tokenHash && inv.status === 'pending') return inv
+        }
+        return null
+    }
+
     async listPendingByEmail(email: string): Promise<CoachInvitationEntity[]> {
         return [...this.byId.values()]
             .filter((inv) => inv.email === email && inv.status === 'pending')

@@ -62,6 +62,7 @@ type Documents = {
     "\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n": typeof types.PendingInvitationsDocument,
     "\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n": typeof types.BecomeCoachDocument,
     "\n    mutation InviteAthlete($email: String!) {\n        inviteAthlete(email: $email) {\n            id\n            status\n        }\n    }\n": typeof types.InviteAthleteDocument,
+    "\n    query CoachInvitationPreview($token: String!) {\n        coachInvitationPreview(token: $token) {\n            email\n            coachUsername\n            suggestedUsername\n        }\n    }\n": typeof types.CoachInvitationPreviewDocument,
     "\n    query AthleteNote($athleteId: ID!) {\n        athleteNote(athleteId: $athleteId) {\n            body\n            updatedAt\n        }\n    }\n": typeof types.AthleteNoteDocument,
     "\n    mutation SetAthleteNote($athleteId: ID!, $body: String!) {\n        setAthleteNote(athleteId: $athleteId, body: $body)\n    }\n": typeof types.SetAthleteNoteDocument,
     "\n    mutation AcceptInvitation($id: ID!) {\n        acceptInvitation(id: $id) {\n            id\n            status\n        }\n    }\n": typeof types.AcceptInvitationDocument,
@@ -157,6 +158,7 @@ const documents: Documents = {
     "\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n": types.PendingInvitationsDocument,
     "\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n": types.BecomeCoachDocument,
     "\n    mutation InviteAthlete($email: String!) {\n        inviteAthlete(email: $email) {\n            id\n            status\n        }\n    }\n": types.InviteAthleteDocument,
+    "\n    query CoachInvitationPreview($token: String!) {\n        coachInvitationPreview(token: $token) {\n            email\n            coachUsername\n            suggestedUsername\n        }\n    }\n": types.CoachInvitationPreviewDocument,
     "\n    query AthleteNote($athleteId: ID!) {\n        athleteNote(athleteId: $athleteId) {\n            body\n            updatedAt\n        }\n    }\n": types.AthleteNoteDocument,
     "\n    mutation SetAthleteNote($athleteId: ID!, $body: String!) {\n        setAthleteNote(athleteId: $athleteId, body: $body)\n    }\n": types.SetAthleteNoteDocument,
     "\n    mutation AcceptInvitation($id: ID!) {\n        acceptInvitation(id: $id) {\n            id\n            status\n        }\n    }\n": types.AcceptInvitationDocument,
@@ -410,6 +412,10 @@ export function graphql(source: "\n    mutation BecomeCoach {\n        becomeCoa
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    mutation InviteAthlete($email: String!) {\n        inviteAthlete(email: $email) {\n            id\n            status\n        }\n    }\n"): (typeof documents)["\n    mutation InviteAthlete($email: String!) {\n        inviteAthlete(email: $email) {\n            id\n            status\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query CoachInvitationPreview($token: String!) {\n        coachInvitationPreview(token: $token) {\n            email\n            coachUsername\n            suggestedUsername\n        }\n    }\n"): (typeof documents)["\n    query CoachInvitationPreview($token: String!) {\n        coachInvitationPreview(token: $token) {\n            email\n            coachUsername\n            suggestedUsername\n        }\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

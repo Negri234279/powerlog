@@ -13,10 +13,12 @@ import { AdminCoachingStatsReadModel } from './application/ports/admin-coaching-
 import { DrizzleAdminCoachingStatsReadModel } from './infrastructure/persistence/read-models/drizzle-admin-coaching-stats.read-model'
 import { Clock } from './application/ports/clock.port'
 import { IdGenerator } from './application/ports/id-generator.port'
+import { InviteTokenGenerator } from './application/ports/invite-token-generator.port'
 import { CoachInvitationRepository } from './domain/repositories/coach-invitation.repository'
 import { CoachLinkRepository } from './domain/repositories/coach-link.repository'
 import { CoachNoteRepository } from './domain/repositories/coach-note.repository'
 import { CoachingCoachLinks } from './infrastructure/coach-links/coaching-coach-links'
+import { Sha256InviteTokenGenerator } from './infrastructure/crypto/sha256-invite-token-generator'
 import { UuidGenerator } from './infrastructure/id/uuid-generator'
 import { DrizzleCoachInvitationRepository } from './infrastructure/persistence/repositories/drizzle-coach-invitation.repository'
 import { DrizzleCoachLinkRepository } from './infrastructure/persistence/repositories/drizzle-coach-link.repository'
@@ -31,6 +33,7 @@ const ADAPTERS: Provider[] = [
     { provide: CoachNoteRepository, useClass: DrizzleCoachNoteRepository },
     { provide: Clock, useClass: SystemClock },
     { provide: IdGenerator, useClass: UuidGenerator },
+    { provide: InviteTokenGenerator, useClass: Sha256InviteTokenGenerator },
     // Cross-module port consumed by workouts (Bloque 5.9) to authorize planning.
     { provide: CoachLinks, useClass: CoachingCoachLinks },
     { provide: AdminCoachingStatsReadModel, useClass: DrizzleAdminCoachingStatsReadModel },

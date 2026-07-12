@@ -9,6 +9,8 @@ export abstract class CoachInvitationRepository {
     abstract findById(id: string): Promise<CoachInvitationEntity | null>
     /** The pending invitation from this coach to this email, if any. */
     abstract findPendingByEmail(coachId: string, email: string): Promise<CoachInvitationEntity | null>
+    /** The pending invitation carrying this opaque-token hash (signup-link preview). */
+    abstract findPendingByTokenHash(tokenHash: string): Promise<CoachInvitationEntity | null>
     /** Pending invitations addressed to an email, across coaches (for auto-link on
      *  registration), newest first. */
     abstract listPendingByEmail(email: string): Promise<CoachInvitationEntity[]>

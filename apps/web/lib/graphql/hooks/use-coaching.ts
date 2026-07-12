@@ -6,6 +6,7 @@ import {
     AcceptInvitationDocument,
     AthleteNoteDocument,
     BecomeCoachDocument,
+    CoachInvitationPreviewDocument,
     DeclineInvitationDocument,
     InviteAthleteDocument,
     MyAthletesDocument,
@@ -60,6 +61,17 @@ export function useBecomeCoach() {
             void qc.invalidateQueries({ queryKey: ['me'] })
             void qc.invalidateQueries({ queryKey: ATHLETES_KEY })
         },
+    })
+}
+
+/** Public: preview a pending invitation from its opaque token (signup page). */
+export function useCoachInvitationPreview(token: string | null) {
+    return useQuery({
+        queryKey: ['coaching', 'invitePreview', token],
+        queryFn: async () =>
+            (await gqlRequest(CoachInvitationPreviewDocument, { token: token ?? '' })).coachInvitationPreview,
+        enabled: token !== null && token !== '',
+        retry: false,
     })
 }
 

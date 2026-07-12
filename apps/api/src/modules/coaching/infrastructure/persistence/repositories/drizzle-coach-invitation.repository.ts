@@ -48,6 +48,15 @@ export class DrizzleCoachInvitationRepository extends CoachInvitationRepository 
         return row ? CoachInvitationMapper.toDomain(row) : null
     }
 
+    async findPendingByTokenHash(tokenHash: string): Promise<CoachInvitationEntity | null> {
+        const [row] = await this.db
+            .select()
+            .from(coachAthleteInvitations)
+            .where(and(eq(coachAthleteInvitations.tokenHash, tokenHash), eq(coachAthleteInvitations.status, 'pending')))
+            .limit(1)
+        return row ? CoachInvitationMapper.toDomain(row) : null
+    }
+
     async listPendingByEmail(email: string): Promise<CoachInvitationEntity[]> {
         const rows = await this.db
             .select()

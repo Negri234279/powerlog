@@ -74,7 +74,8 @@
             "login": "Log in",
             "optional": "Optional · you can fill these later",
             "unitsKg": "Kilograms (kg)",
-            "unitsLb": "Pounds (lb)"
+            "unitsLb": "Pounds (lb)",
+            "invitedBanner": "@{coach} invited you. Sign up with this email and you'll be linked automatically."
         },
         "forgot": {
             "title": "Reset your password",

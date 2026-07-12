@@ -13,6 +13,7 @@ import { CoachInvitationRepository } from '../../../domain/repositories/coach-in
 import { CoachLinkRepository } from '../../../domain/repositories/coach-link.repository'
 import { Clock } from '../../ports/clock.port'
 import { IdGenerator } from '../../ports/id-generator.port'
+import { InviteTokenGenerator } from '../../ports/invite-token-generator.port'
 import { type InvitationView, toInvitationView } from '../../views'
 import { InviteAthleteCommand } from './invite-athlete.command'
 
@@ -25,6 +26,7 @@ export class InviteAthleteHandler implements ICommandHandler<InviteAthleteComman
         private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
+        private readonly tokens: InviteTokenGenerator,
         private readonly eventBus: EventBus,
     ) {}
 
@@ -50,17 +52,20 @@ export class InviteAthleteHandler implements ICommandHandler<InviteAthleteComman
         const currentAthletes = await this.links.athleteIdsOf(command.coachId)
         await this.entitlements.assertCanAddAthlete(command.coachId, currentAthletes.length)
 
+        // Opaque token for the signup link; only its hash is stored.
+        const token = this.tokens.generate()
         const invitation = CoachInvitationEntity.create({
             id: this.ids.uuid(),
             coachId: command.coachId,
             email,
             athleteId,
+            tokenHash: token.hash,
             now: this.clock.now(),
         })
         await this.invitations.save(invitation)
 
         // Lets the notifications module bell + email the athlete, or email-only a
-        // signup invite when the address has no account yet.
+        // signup invite (with the token link) when the address has no account yet.
         this.eventBus.publish(
             new CoachInvitationCreatedIntegrationEvent(
                 invitation.id,
@@ -68,6 +73,7 @@ export class InviteAthleteHandler implements ICommandHandler<InviteAthleteComman
                 athleteId,
                 email,
                 coach?.username ?? '',
+                token.raw,
             ),
         )
 

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
     FakeClock,
     FakeIdGenerator,
+    FakeInviteTokenGenerator,
     InMemoryCoachInvitationRepository,
     InMemoryCoachLinkRepository,
 } from '../../../../../../tests/doubles/coaching'
@@ -36,6 +37,7 @@ function setup() {
         entitlements,
         new FakeClock(),
         new FakeIdGenerator(['inv-1']),
+        new FakeInviteTokenGenerator(),
         events.asEventBus(),
     )
     return { handler, invitations, links, entitlements, events }
@@ -54,7 +56,15 @@ describe('InviteAthleteHandler', () => {
         expect(ctx.invitations.all()).toHaveLength(1)
 
         const event = ctx.events.firstOf(CoachInvitationCreatedIntegrationEvent)
-        expect(event).toMatchObject({ invitationId: 'inv-1', coachId: COACH, athleteId: ATHLETE, email: ATHLETE_EMAIL })
+        expect(event).toMatchObject({
+            invitationId: 'inv-1',
+            coachId: COACH,
+            athleteId: ATHLETE,
+            email: ATHLETE_EMAIL,
+            token: 'raw-1',
+        })
+        // Only the token's hash is persisted, never the raw token.
+        expect(ctx.invitations.all()[0]?.tokenHash).toBe('hash(raw-1)')
     })
 
     it('invites a not-yet-registered email with a null athleteId', async () => {

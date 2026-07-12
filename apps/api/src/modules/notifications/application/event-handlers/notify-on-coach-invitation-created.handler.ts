@@ -50,7 +50,7 @@ export class NotifyOnCoachInvitationCreated implements IEventHandler<CoachInvita
 
         // No account yet: email-only signup invite (no bell — there's no user).
         const webOrigin = this.config.get('WEB_ORIGIN', { infer: true })
-        const signupUrl = `${webOrigin}/register?invite=${event.invitationId}`
+        const signupUrl = `${webOrigin}/register?invite=${encodeURIComponent(event.token)}`
         try {
             await this.mailer.send({
                 to: event.email,

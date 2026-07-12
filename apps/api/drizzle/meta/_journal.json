@@ -260,6 +260,13 @@
       "when": 1783814319195,
       "tag": "0036_early_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1783816665385,
+      "tag": "0037_exotic_lily_hollister",
+      "breakpoints": true
     }
   ]
 }

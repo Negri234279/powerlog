@@ -8,6 +8,8 @@ export interface CoachInvitationProps {
     athleteId: string | null
     /** The email the invitation was addressed to (normalized lowercase). */
     email: string
+    /** SHA-256 of the opaque signup-link token; null for older rows. */
+    tokenHash: string | null
     status: InvitationStatus
     createdAt: Date
     updatedAt: Date
@@ -31,6 +33,7 @@ export class CoachInvitationEntity {
         coachId: string
         email: string
         athleteId?: string | null
+        tokenHash?: string | null
         now: Date
     }): CoachInvitationEntity {
         return new CoachInvitationEntity({
@@ -38,6 +41,7 @@ export class CoachInvitationEntity {
             coachId: input.coachId,
             athleteId: input.athleteId ?? null,
             email: input.email,
+            tokenHash: input.tokenHash ?? null,
             status: 'pending',
             createdAt: input.now,
             updatedAt: input.now,
@@ -92,6 +96,9 @@ export class CoachInvitationEntity {
     }
     get email(): string {
         return this.props.email
+    }
+    get tokenHash(): string | null {
+        return this.props.tokenHash
     }
     get status(): InvitationStatus {
         return this.props.status

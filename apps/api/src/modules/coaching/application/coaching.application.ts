@@ -6,6 +6,7 @@ import { SetAthleteNoteHandler } from './commands/set-athlete-note/set-athlete-n
 import { LinkInvitationsOnUserRegistered } from './event-handlers/link-invitations-on-user-registered.handler'
 import { AdminCoachingStatsHandler } from './queries/admin-coaching-stats/admin-coaching-stats.handler'
 import { GetAthleteNoteHandler } from './queries/get-athlete-note/get-athlete-note.handler'
+import { GetCoachInvitationPreviewHandler } from './queries/get-coach-invitation-preview/get-coach-invitation-preview.handler'
 import { MyAthletesHandler } from './queries/my-athletes/my-athletes.handler'
 import { MyCoachesHandler } from './queries/my-coaches/my-coaches.handler'
 import { PendingInvitationsHandler } from './queries/pending-invitations/pending-invitations.handler'
@@ -25,6 +26,7 @@ export const COACHING_QUERY_HANDLERS = [
     MyAthletesHandler,
     PendingInvitationsHandler,
     GetAthleteNoteHandler,
+    GetCoachInvitationPreviewHandler,
     AdminCoachingStatsHandler,
 ]
 

@@ -18,6 +18,7 @@ let container: StartedPostgreSqlContainer
 let app: INestApplication
 let pool: Pool
 let httpServer: ReturnType<INestApplication['getHttpServer']>
+let mailer: FakeMailer
 
 const COOKIE = { access: 'pl_at' }
 
@@ -38,6 +39,7 @@ beforeAll(async () => {
     pool = app.get<Pool>(PG_POOL)
     await migrate(drizzle(pool, { schema }), { migrationsFolder: './drizzle' })
     httpServer = app.getHttpServer()
+    mailer = app.get<FakeMailer>(Mailer)
 }, 180_000)
 
 afterAll(async () => {
@@ -49,6 +51,7 @@ beforeEach(async () => {
     await pool.query(
         'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, coach_athlete_notes, notifications RESTART IDENTITY CASCADE',
     )
+    mailer.sent.length = 0
 })
 
 // ── helpers ───────────────────────────────────────────────────────────
@@ -206,5 +209,33 @@ describe('Coaching via GraphQL', () => {
 
         const res = await gql(`mutation { setAthleteNote(athleteId: "${stranger.userId}", body: "nope") }`, coachAccess)
         expect(res.body.errors[0].extensions.code).toBe('NOT_YOUR_ATHLETE')
+    })
+
+    it('exposes a public invitation preview from the signup-link token', async () => {
+        const coach = await register('coach@example.com')
+        const promoted = await gql(`mutation { becomeCoach { role } }`, coach.access)
+        const coachAccess = cookiePair(setCookies(promoted), COOKIE.access)!
+
+        await gql(`mutation { inviteAthlete(email: "newbie@example.com") { id } }`, coachAccess)
+
+        // The email-only invite mails a signup link carrying the opaque token.
+        const text = await eventually(
+            async () => mailer.sent.at(-1)?.text ?? '',
+            (t: string) => t.includes('/register?invite='),
+        )
+        const token = decodeURIComponent(text.split('/register?invite=')[1]!.split(/\s/)[0]!.trim())
+
+        const preview = await gql(
+            `query { coachInvitationPreview(token: "${token}") { email coachUsername suggestedUsername } }`,
+        )
+        expect(preview.body.data.coachInvitationPreview).toEqual({
+            email: 'newbie@example.com',
+            coachUsername: coach.username,
+            suggestedUsername: 'newbie',
+        })
+
+        // An unknown token reveals nothing (public — must not leak existence).
+        const missing = await gql(`query { coachInvitationPreview(token: "nope") { email } }`)
+        expect(missing.body.data.coachInvitationPreview).toBeNull()
     })
 })

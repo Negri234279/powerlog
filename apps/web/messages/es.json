@@ -74,7 +74,8 @@
             "login": "Iniciar sesión",
             "optional": "Opcional · puedes rellenarlo más tarde",
             "unitsKg": "Kilogramos (kg)",
-            "unitsLb": "Libras (lb)"
+            "unitsLb": "Libras (lb)",
+            "invitedBanner": "Te invita @{coach}. Crea tu cuenta con este email y quedaréis vinculados automáticamente."
         },
         "forgot": {
             "title": "Restablece tu contraseña",

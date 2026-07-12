@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useState, useTransition } from 'react'
+import { type FormEvent, useEffect, useState, useTransition } from 'react'
 
 import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input, Select } from '@/components/ui/field'
@@ -13,6 +13,7 @@ import { track } from '@/lib/analytics/events'
 import { gqlErrorCode } from '@/lib/graphql/error'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useRegister } from '@/lib/graphql/hooks/use-auth'
+import { useCoachInvitationPreview } from '@/lib/graphql/hooks/use-coaching'
 import { setLocaleCookie } from '@/lib/i18n/actions'
 import { type Locale, LOCALE_LABELS, SUPPORTED_LOCALES } from '@/lib/i18n/config'
 import { fieldErrors, registerSchema } from '@/lib/validation/auth'
@@ -29,6 +30,25 @@ export function RegisterForm() {
     const [, startTransition] = useTransition()
     const [errors, setErrors] = useState<Record<string, string>>({})
     const [formError, setFormError] = useState<string | null>(null)
+
+    // Invite-aware signup: if the URL carries an ?invite=<token>, prefill the
+    // (locked) email and a suggested handle from the pending invitation, so the
+    // athlete lands linked to the coach after registering with that exact email.
+    const [inviteToken, setInviteToken] = useState<string | null>(null)
+    useEffect(() => {
+        setInviteToken(new URLSearchParams(window.location.search).get('invite'))
+    }, [])
+    const preview = useCoachInvitationPreview(inviteToken)
+    const invited = Boolean(preview.data)
+
+    const [email, setEmail] = useState('')
+    const [username, setUsername] = useState('')
+    useEffect(() => {
+        if (preview.data) {
+            setEmail(preview.data.email)
+            setUsername(preview.data.suggestedUsername)
+        }
+    }, [preview.data])
 
     function onLocaleChange(next: Locale) {
         if (next === locale) return
@@ -87,6 +107,11 @@ export function RegisterForm() {
             }
         >
             <form onSubmit={onSubmit} className="space-y-5" noValidate>
+                {invited ? (
+                    <div className="rounded-2xl bg-ember/10 px-4 py-3 text-sm text-text ring-1 ring-ember/30">
+                        {t('register.invitedBanner', { coach: preview.data?.coachUsername ?? '' })}
+                    </div>
+                ) : null}
                 <Field label={t('fields.email')} htmlFor="email" error={te(errors['email'])}>
                     <Input
                         id="email"
@@ -94,6 +119,10 @@ export function RegisterForm() {
                         type="email"
                         autoComplete="email"
                         placeholder={t('placeholders.email')}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        readOnly={invited}
+                        className={invited ? 'cursor-not-allowed opacity-70' : undefined}
                     />
                 </Field>
                 <Field
@@ -107,6 +136,8 @@ export function RegisterForm() {
                         name="username"
                         autoComplete="username"
                         placeholder={t('placeholders.username')}
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                     />
                 </Field>
                 <Field

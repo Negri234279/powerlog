@@ -12,6 +12,7 @@ export class CoachInvitationMother {
     private coachId = 'coach-1'
     private athleteId: string | null = 'athlete-1'
     private email = 'athlete-1@example.com'
+    private tokenHash: string | null = 'token-hash-1'
     private status: InvitationStatus = 'pending'
     private createdAt = DEFAULT_NOW
 
@@ -39,6 +40,11 @@ export class CoachInvitationMother {
         return this
     }
 
+    withTokenHash(tokenHash: string | null): this {
+        this.tokenHash = tokenHash
+        return this
+    }
+
     withStatus(status: InvitationStatus): this {
         this.status = status
         return this
@@ -55,6 +61,7 @@ export class CoachInvitationMother {
             coachId: this.coachId,
             athleteId: this.athleteId,
             email: this.email,
+            tokenHash: this.tokenHash,
             status: this.status,
             createdAt: this.createdAt,
             updatedAt: this.createdAt,

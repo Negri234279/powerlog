@@ -15,5 +15,7 @@ export class CoachInvitationCreatedIntegrationEvent {
         public readonly email: string,
         /** Coach's public handle, for the notification/email copy. */
         public readonly coachUsername: string,
+        /** Opaque signup-link token, for the not-yet-registered email path. */
+        public readonly token: string,
     ) {}
 }

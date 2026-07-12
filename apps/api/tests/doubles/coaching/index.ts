@@ -1,5 +1,6 @@
 export * from './fake-clock'
 export * from './fake-id-generator'
+export * from './fake-invite-token-generator'
 export * from './in-memory-coach-invitation.repository'
 export * from './in-memory-coach-link.repository'
 export * from './in-memory-coach-note.repository'

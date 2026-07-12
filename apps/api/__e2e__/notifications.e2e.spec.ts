@@ -99,7 +99,14 @@ describe('Notifications via GraphQL', () => {
         const { access, userId } = await registerAthlete('athlete@example.com')
 
         events.publish(
-            new CoachInvitationCreatedIntegrationEvent('inv-1', 'coach-1', userId, 'athlete@example.com', 'coachy'),
+            new CoachInvitationCreatedIntegrationEvent(
+                'inv-1',
+                'coach-1',
+                userId,
+                'athlete@example.com',
+                'coachy',
+                'tok-e2e',
+            ),
         )
 
         const page = await eventually(

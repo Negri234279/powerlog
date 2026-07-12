@@ -53,6 +53,18 @@ export const InviteAthleteDocument = graphql(`
     }
 `)
 
+// ── Public invitation preview (invite-aware signup) ──────────
+
+export const CoachInvitationPreviewDocument = graphql(`
+    query CoachInvitationPreview($token: String!) {
+        coachInvitationPreview(token: $token) {
+            email
+            coachUsername
+            suggestedUsername
+        }
+    }
+`)
+
 // ── Athlete note (coach's private note) ──────────────────────
 
 export const AthleteNoteDocument = graphql(`

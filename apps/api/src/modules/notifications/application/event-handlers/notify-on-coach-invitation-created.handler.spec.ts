@@ -27,6 +27,7 @@ const EVENT = new CoachInvitationCreatedIntegrationEvent(
     'athlete-1',
     'athlete@example.com',
     'coachy',
+    'tok-registered',
 )
 
 describe('NotifyOnCoachInvitationCreated', () => {
@@ -64,11 +65,18 @@ describe('NotifyOnCoachInvitationCreated', () => {
         const { handler, repo, mailer } = setup(new FakeUserDirectory())
 
         await handler.handle(
-            new CoachInvitationCreatedIntegrationEvent('inv-2', 'coach-1', null, 'stranger@example.com', 'coachy'),
+            new CoachInvitationCreatedIntegrationEvent(
+                'inv-2',
+                'coach-1',
+                null,
+                'stranger@example.com',
+                'coachy',
+                'signup-token-xyz',
+            ),
         )
 
         expect(repo.all()).toHaveLength(0)
         expect(mailer.last()?.to).toBe('stranger@example.com')
-        expect(mailer.last()?.text).toContain('https://app.test/register?invite=inv-2')
+        expect(mailer.last()?.text).toContain('https://app.test/register?invite=signup-token-xyz')
     })
 })

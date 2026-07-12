@@ -20,9 +20,14 @@ export const coachAthleteInvitations = pgTable(
         coachId: uuid('coach_id').notNull(),
         athleteId: uuid('athlete_id'),
         email: text('email').notNull(),
+        // SHA-256 of the opaque signup-link token; null for older rows.
+        tokenHash: text('token_hash'),
         status: invitationStatusEnum('status').notNull().default('pending'),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },
-    (table) => [index('coach_invitations_email_idx').on(table.email)],
+    (table) => [
+        index('coach_invitations_email_idx').on(table.email),
+        index('coach_invitations_token_hash_idx').on(table.tokenHash),
+    ],
 )

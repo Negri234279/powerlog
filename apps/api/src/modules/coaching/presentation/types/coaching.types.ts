@@ -51,6 +51,19 @@ export class CoachUserType {
     avatarUrl!: string | null
 }
 
+/** Public preview of a pending invitation for the invite-aware signup page. */
+@ObjectType('CoachInvitationPreview')
+export class CoachInvitationPreviewType {
+    @Field(() => String, { description: 'The invited email (prefilled + locked on signup).' })
+    email!: string
+
+    @Field(() => String, { description: "The inviting coach's handle." })
+    coachUsername!: string
+
+    @Field(() => String, { description: 'A valid, available handle suggested from the email.' })
+    suggestedUsername!: string
+}
+
 /** A coach's private note on one athlete. */
 @ObjectType('CoachAthleteNote')
 export class CoachAthleteNoteType {

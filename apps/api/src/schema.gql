@@ -289,6 +289,17 @@ type CoachInvitation {
   status: String!
 }
 
+type CoachInvitationPreview {
+  """The inviting coach's handle."""
+  coachUsername: String!
+
+  """The invited email (prefilled + locked on signup)."""
+  email: String!
+
+  """A valid, available handle suggested from the email."""
+  suggestedUsername: String!
+}
+
 type CoachUser {
   """Resolved avatar URL; null → show initials."""
   avatarUrl: String
@@ -944,6 +955,11 @@ type Query {
 
   """Your private note on one of your athletes (coaches only)."""
   athleteNote(athleteId: ID!): CoachAthleteNote
+
+  """
+  Public: preview a pending invitation by its opaque token (for the invite-aware signup page).
+  """
+  coachInvitationPreview(token: String!): CoachInvitationPreview
 
   """
   The caller's recent completed sessions logging one exercise, with their performed sets.

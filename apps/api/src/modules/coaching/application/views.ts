@@ -27,6 +27,16 @@ export interface CoachUserView {
     avatarUrl: string | null
 }
 
+/** Public preview of a pending invitation, for the invite-aware signup page. */
+export interface CoachInvitationPreview {
+    /** The invited email (prefilled + locked on the signup form). */
+    email: string
+    /** The inviting coach's handle, for the "invited by @coach" banner. */
+    coachUsername: string
+    /** A valid handle derived from the email, checked available at read time. */
+    suggestedUsername: string
+}
+
 export function toInvitationView(invitation: CoachInvitationEntity): InvitationView {
     return {
         id: invitation.id,
