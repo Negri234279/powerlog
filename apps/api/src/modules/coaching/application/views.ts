@@ -20,10 +20,11 @@ export interface PendingInvitationView {
     createdAt: Date
 }
 
-/** A linked user (coach or athlete) resolved to its public handle. */
+/** A linked user (coach or athlete) resolved to its public handle + avatar. */
 export interface CoachUserView {
     userId: string
     username: string
+    avatarUrl: string | null
 }
 
 export function toInvitationView(invitation: CoachInvitationEntity): InvitationView {

@@ -23,7 +23,7 @@ export async function resolveUsers(ids: string[], users: UserDirectory): Promise
     const resolved = await Promise.all(
         ids.map(async (userId) => {
             const contact = await users.getContact(userId)
-            return contact ? { userId, username: contact.username } : null
+            return contact ? { userId, username: contact.username, avatarUrl: contact.avatarUrl ?? null } : null
         }),
     )
     return resolved.filter((u): u is CoachUserView => u !== null)

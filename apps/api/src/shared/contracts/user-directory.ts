@@ -9,6 +9,8 @@
 export interface UserContact {
     email: string
     username: string
+    /** Resolved avatar URL; null/absent → client shows initials/default. */
+    avatarUrl?: string | null
 }
 
 export abstract class UserDirectory {

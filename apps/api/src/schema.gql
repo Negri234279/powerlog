@@ -290,6 +290,8 @@ type CoachInvitation {
 }
 
 type CoachUser {
+  """Resolved avatar URL; null → show initials."""
+  avatarUrl: String
   userId: ID!
   username: String!
 }

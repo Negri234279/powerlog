@@ -23,11 +23,16 @@ import { TextsReveal } from '@/components/ui/texts-reveal'
 import { Users } from '@/components/ui/icons'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
-/** Round initials chip from a handle. */
-function Avatar({ username }: { username: string }) {
+/** Round avatar chip: the profile image when present, else the handle initials. */
+function Avatar({ username, src }: { username: string; src?: string | null }) {
     return (
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/[0.06] font-mono text-sm uppercase text-text ring-1 ring-hairline">
-            {username.slice(0, 2)}
+        <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white/[0.06] font-mono text-sm uppercase text-text ring-1 ring-hairline">
+            {src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={src} alt="" className="size-full object-cover" />
+            ) : (
+                username.slice(0, 2)
+            )}
         </span>
     )
 }
@@ -108,7 +113,7 @@ function UserRow({ user, href }: { user: CoachUser; href?: string }) {
     const base = 'flex items-center gap-3 rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline'
     const content = (
         <>
-            <Avatar username={user.username} />
+            <Avatar username={user.username} src={user.avatarUrl} />
             <p className="truncate font-mono text-sm text-text">@{user.username}</p>
         </>
     )

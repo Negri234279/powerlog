@@ -46,6 +46,9 @@ export class CoachUserType {
 
     @Field(() => String)
     username!: string
+
+    @Field(() => String, { nullable: true, description: 'Resolved avatar URL; null → show initials.' })
+    avatarUrl!: string | null
 }
 
 /** A coach's private note on one athlete. */

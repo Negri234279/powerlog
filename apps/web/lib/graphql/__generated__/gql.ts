@@ -57,8 +57,8 @@ type Documents = {
     "\n    query MySessions {\n        mySessions {\n            id\n            current\n            userAgent\n            ip\n            lastUsedAt\n        }\n    }\n": typeof types.MySessionsDocument,
     "\n    mutation RevokeSession($id: String!) {\n        revokeSession(id: $id)\n    }\n": typeof types.RevokeSessionDocument,
     "\n    mutation RevokeOtherSessions {\n        revokeOtherSessions\n    }\n": typeof types.RevokeOtherSessionsDocument,
-    "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n        }\n    }\n": typeof types.MyAthletesDocument,
-    "\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n        }\n    }\n": typeof types.MyCoachesDocument,
+    "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            avatarUrl\n        }\n    }\n": typeof types.MyAthletesDocument,
+    "\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n            avatarUrl\n        }\n    }\n": typeof types.MyCoachesDocument,
     "\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n": typeof types.PendingInvitationsDocument,
     "\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n": typeof types.BecomeCoachDocument,
     "\n    mutation InviteAthlete($email: String!) {\n        inviteAthlete(email: $email) {\n            id\n            status\n        }\n    }\n": typeof types.InviteAthleteDocument,
@@ -152,8 +152,8 @@ const documents: Documents = {
     "\n    query MySessions {\n        mySessions {\n            id\n            current\n            userAgent\n            ip\n            lastUsedAt\n        }\n    }\n": types.MySessionsDocument,
     "\n    mutation RevokeSession($id: String!) {\n        revokeSession(id: $id)\n    }\n": types.RevokeSessionDocument,
     "\n    mutation RevokeOtherSessions {\n        revokeOtherSessions\n    }\n": types.RevokeOtherSessionsDocument,
-    "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n        }\n    }\n": types.MyAthletesDocument,
-    "\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n        }\n    }\n": types.MyCoachesDocument,
+    "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            avatarUrl\n        }\n    }\n": types.MyAthletesDocument,
+    "\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n            avatarUrl\n        }\n    }\n": types.MyCoachesDocument,
     "\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n": types.PendingInvitationsDocument,
     "\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n": types.BecomeCoachDocument,
     "\n    mutation InviteAthlete($email: String!) {\n        inviteAthlete(email: $email) {\n            id\n            status\n        }\n    }\n": types.InviteAthleteDocument,
@@ -393,11 +393,11 @@ export function graphql(source: "\n    mutation RevokeOtherSessions {\n        r
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n        }\n    }\n"): (typeof documents)["\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n        }\n    }\n"];
+export function graphql(source: "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            avatarUrl\n        }\n    }\n"): (typeof documents)["\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            avatarUrl\n        }\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n        }\n    }\n"): (typeof documents)["\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n        }\n    }\n"];
+export function graphql(source: "\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n            avatarUrl\n        }\n    }\n"): (typeof documents)["\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n            avatarUrl\n        }\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

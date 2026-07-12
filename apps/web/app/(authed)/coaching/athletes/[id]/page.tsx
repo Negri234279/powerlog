@@ -97,8 +97,13 @@ export default function AthleteDetailPage() {
             </TrackedLink>
 
             <div className="flex items-center gap-4">
-                <span className="grid size-14 shrink-0 place-items-center rounded-full bg-white/[0.06] font-mono text-lg uppercase text-text ring-1 ring-hairline">
-                    {(athlete?.username ?? '·').slice(0, 2)}
+                <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-full bg-white/[0.06] font-mono text-lg uppercase text-text ring-1 ring-hairline">
+                    {athlete?.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={athlete.avatarUrl} alt="" className="size-full object-cover" />
+                    ) : (
+                        (athlete?.username ?? '·').slice(0, 2)
+                    )}
                 </span>
                 <div>
                     <p className="font-mono text-eyebrow uppercase text-text-faint">{t('athlete')}</p>
