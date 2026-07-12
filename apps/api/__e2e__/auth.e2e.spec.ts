@@ -374,7 +374,8 @@ describe('Avatar (REST upload + serve)', () => {
             .set('Cookie', access)
             .attach('file', png, { filename: 'me.png', contentType: 'image/png' })
         expect(upload.status).toBe(201)
-        expect(upload.body.avatarUrl).toMatch(/\/avatars\/.+\.webp$/)
+        // The URL carries a cache-busting `?v=` suffix (the key is reused per user).
+        expect(upload.body.avatarUrl).toMatch(/\/avatars\/.+\.webp(\?.+)?$/)
 
         const path = new URL(upload.body.avatarUrl).pathname
         const served = await request(httpServer).get(path).responseType('blob')

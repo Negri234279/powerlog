@@ -21,6 +21,12 @@ process.env['GOOGLE_CLIENT_SECRET'] ??= 'test-google-secret'
 process.env['GOOGLE_CALLBACK_URL'] ??= 'http://localhost:4000/auth/google/callback'
 process.env['WEB_ORIGIN'] ??= 'http://localhost:3000'
 process.env['OTEL_SDK_DISABLED'] ??= 'true'
+// Avatars: pin the local filesystem adapter. Assigned (not `??=`) on purpose —
+// `apps/api/.env` may point AVATAR_STORAGE at R2 for staging/prod, and dotenv
+// never overrides what is already set, so this keeps the suite hermetic.
+process.env['AVATAR_STORAGE'] = 'filesystem'
+process.env['AVATAR_DIR'] = './var/avatars-e2e'
+process.env['AVATAR_PUBLIC_BASE_URL'] = 'http://localhost:4000/avatars'
 // 32 zero bytes, base64. Only shape matters: the cipher validates the length.
 process.env['AI_ENCRYPTION_KEY'] ??= Buffer.alloc(32).toString('base64')
 
