@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { MyNotificationsQuery } from '@/lib/graphql/__generated__/graphql'
 import { gqlRequest } from '@/lib/graphql/client'
 import {
+    DeleteNotificationDocument,
+    DeleteReadNotificationsDocument,
     MarkAllNotificationsReadDocument,
     MarkNotificationReadDocument,
     MyNotificationsDocument,
@@ -60,6 +62,27 @@ export function useMarkAllNotificationsRead() {
 
     return useMutation({
         mutationFn: () => gqlRequest(MarkAllNotificationsReadDocument),
+        onSuccess: invalidate,
+    })
+}
+
+/** Dismiss one notification for good — read or not (the row's ✕). */
+export function useDeleteNotification() {
+    const invalidate = useInvalidateNotifications()
+
+    return useMutation({
+        mutationFn: (id: string) => gqlRequest(DeleteNotificationDocument, { id }),
+        onSuccess: invalidate,
+    })
+}
+
+/** Clear the inbox of everything already read. Unread ones stay: the user can't
+ *  lose something they never saw. */
+export function useDeleteReadNotifications() {
+    const invalidate = useInvalidateNotifications()
+
+    return useMutation({
+        mutationFn: () => gqlRequest(DeleteReadNotificationsDocument),
         onSuccess: invalidate,
     })
 }

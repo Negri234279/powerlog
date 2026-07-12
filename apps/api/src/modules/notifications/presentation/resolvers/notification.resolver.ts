@@ -7,6 +7,8 @@ import type { AuthUser } from '../../../../auth/auth-user'
 import { CurrentUser } from '../../../../auth/current-user.decorator'
 import { JwtCookieGuard } from '../../../../auth/jwt-cookie.guard'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
+import { DeleteNotificationCommand } from '../../application/commands/delete-notification/delete-notification.command'
+import { DeleteReadNotificationsCommand } from '../../application/commands/delete-read-notifications/delete-read-notifications.command'
 import { MarkAllNotificationsReadCommand } from '../../application/commands/mark-all-notifications-read/mark-all-notifications-read.command'
 import { MarkNotificationReadCommand } from '../../application/commands/mark-notification-read/mark-notification-read.command'
 import { CountUnreadNotificationsQuery } from '../../application/queries/count-unread-notifications/count-unread-notifications.query'
@@ -81,5 +83,26 @@ export class NotificationResolver {
         return this.commandBus.execute<MarkAllNotificationsReadCommand, number>(
             new MarkAllNotificationsReadCommand(user.userId),
         )
+    }
+
+    @Mutation(() => Boolean, {
+        description: 'Delete one notification, read or not (no-op if not the caller’s).',
+    })
+    async deleteNotification(
+        @CurrentUser() user: AuthUser,
+        @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
+    ): Promise<boolean> {
+        const command = new DeleteNotificationCommand(user.userId, id)
+
+        return this.commandBus.execute<DeleteNotificationCommand, boolean>(command)
+    }
+
+    @Mutation(() => Int, {
+        description: 'Delete every already-read notification; returns how many were cleared.',
+    })
+    async deleteReadNotifications(@CurrentUser() user: AuthUser): Promise<number> {
+        const command = new DeleteReadNotificationsCommand(user.userId)
+
+        return this.commandBus.execute<DeleteReadNotificationsCommand, number>(command)
     }
 }

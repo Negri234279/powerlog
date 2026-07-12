@@ -78,6 +78,26 @@ export class InMemoryNotificationRepository extends NotificationRepository {
         return unread.length
     }
 
+    async delete(userId: string, id: string): Promise<boolean> {
+        const index = this.items.findIndex((n) => n.id === id && n.userId === userId)
+        if (index === -1) return false
+
+        this.items.splice(index, 1)
+        this.readAt.delete(id)
+
+        return true
+    }
+
+    async deleteRead(userId: string): Promise<number> {
+        const read = this.items.filter((n) => n.userId === userId && this.readAt.has(n.id))
+        for (const n of read) {
+            this.items.splice(this.items.indexOf(n), 1)
+            this.readAt.delete(n.id)
+        }
+
+        return read.length
+    }
+
     /** Test inspection: every stored notification. */
     all(): NotificationEntity[] {
         return [...this.items]

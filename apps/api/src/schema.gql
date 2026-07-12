@@ -716,6 +716,12 @@ type Mutation {
   """Delete a mesocycle (cascades to its weeks, days, exercises and sets)."""
   deleteMesocycle(id: ID!): Boolean!
 
+  """Delete one notification, read or not (no-op if not the caller’s)."""
+  deleteNotification(id: ID!): Boolean!
+
+  """Delete every already-read notification; returns how many were cleared."""
+  deleteReadNotifications: Int!
+
   """Delete a session (cascades to entries and sets)."""
   deleteWorkoutSession(id: ID!): Boolean!
 

@@ -17,6 +17,9 @@
     "notifications": {
         "title": "Notifications",
         "markAllRead": "Mark all read",
+        "clearRead": "Clear read",
+        "markRead": "Mark as read",
+        "delete": "Remove notification",
         "empty": "You're all caught up",
         "loading": "Loading…",
         "items": {

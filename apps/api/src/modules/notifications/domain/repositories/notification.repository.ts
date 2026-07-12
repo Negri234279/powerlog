@@ -33,4 +33,9 @@ export abstract class NotificationRepository {
     abstract markRead(userId: string, id: string, now: Date): Promise<boolean>
     /** Mark every unread notification read; returns how many were changed. */
     abstract markAllRead(userId: string, now: Date): Promise<number>
+    /** Delete one notification; returns true if a row was deleted. */
+    abstract delete(userId: string, id: string): Promise<boolean>
+    /** Delete every already-read notification; returns how many were deleted.
+     *  Unread ones are left alone — you can't lose what you haven't seen. */
+    abstract deleteRead(userId: string): Promise<number>
 }

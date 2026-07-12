@@ -35,3 +35,15 @@ export const MarkAllNotificationsReadDocument = graphql(`
         markAllNotificationsRead
     }
 `)
+
+export const DeleteNotificationDocument = graphql(`
+    mutation DeleteNotification($id: ID!) {
+        deleteNotification(id: $id)
+    }
+`)
+
+export const DeleteReadNotificationsDocument = graphql(`
+    mutation DeleteReadNotifications {
+        deleteReadNotifications
+    }
+`)

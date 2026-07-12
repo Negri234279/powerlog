@@ -89,6 +89,8 @@ type Documents = {
     "\n    query UnreadNotificationsCount {\n        unreadNotificationsCount\n    }\n": typeof types.UnreadNotificationsCountDocument,
     "\n    mutation MarkNotificationRead($id: ID!) {\n        markNotificationRead(id: $id)\n    }\n": typeof types.MarkNotificationReadDocument,
     "\n    mutation MarkAllNotificationsRead {\n        markAllNotificationsRead\n    }\n": typeof types.MarkAllNotificationsReadDocument,
+    "\n    mutation DeleteNotification($id: ID!) {\n        deleteNotification(id: $id)\n    }\n": typeof types.DeleteNotificationDocument,
+    "\n    mutation DeleteReadNotifications {\n        deleteReadNotifications\n    }\n": typeof types.DeleteReadNotificationsDocument,
     "\n    query Ping {\n        ping\n    }\n": typeof types.PingDocument,
     "\n    query MyProfile {\n        myProfile {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n            createdAt\n            updatedAt\n        }\n    }\n": typeof types.MyProfileDocument,
     "\n    mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n        }\n    }\n": typeof types.UpdateProfileDocument,
@@ -195,6 +197,8 @@ const documents: Documents = {
     "\n    query UnreadNotificationsCount {\n        unreadNotificationsCount\n    }\n": types.UnreadNotificationsCountDocument,
     "\n    mutation MarkNotificationRead($id: ID!) {\n        markNotificationRead(id: $id)\n    }\n": types.MarkNotificationReadDocument,
     "\n    mutation MarkAllNotificationsRead {\n        markAllNotificationsRead\n    }\n": types.MarkAllNotificationsReadDocument,
+    "\n    mutation DeleteNotification($id: ID!) {\n        deleteNotification(id: $id)\n    }\n": types.DeleteNotificationDocument,
+    "\n    mutation DeleteReadNotifications {\n        deleteReadNotifications\n    }\n": types.DeleteReadNotificationsDocument,
     "\n    query Ping {\n        ping\n    }\n": types.PingDocument,
     "\n    query MyProfile {\n        myProfile {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n            createdAt\n            updatedAt\n        }\n    }\n": types.MyProfileDocument,
     "\n    mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n        }\n    }\n": types.UpdateProfileDocument,
@@ -540,6 +544,14 @@ export function graphql(source: "\n    mutation MarkNotificationRead($id: ID!) {
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    mutation MarkAllNotificationsRead {\n        markAllNotificationsRead\n    }\n"): (typeof documents)["\n    mutation MarkAllNotificationsRead {\n        markAllNotificationsRead\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation DeleteNotification($id: ID!) {\n        deleteNotification(id: $id)\n    }\n"): (typeof documents)["\n    mutation DeleteNotification($id: ID!) {\n        deleteNotification(id: $id)\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation DeleteReadNotifications {\n        deleteReadNotifications\n    }\n"): (typeof documents)["\n    mutation DeleteReadNotifications {\n        deleteReadNotifications\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

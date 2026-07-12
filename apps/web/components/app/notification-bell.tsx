@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/cn'
-import { Bell, Users } from '@/components/ui/icons'
+import { Bell, Check, Close, Users } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
 import {
     type NotificationItem,
+    useDeleteNotification,
+    useDeleteReadNotifications,
     useMarkAllNotificationsRead,
     useMarkNotificationRead,
     useNotifications,
@@ -68,10 +70,13 @@ export function NotificationBell() {
     const { data, isLoading } = useNotifications(open)
     const markRead = useMarkNotificationRead()
     const markAll = useMarkAllNotificationsRead()
+    const remove = useDeleteNotification()
+    const clearRead = useDeleteReadNotifications()
 
     const count = unread ?? 0
     const items = data?.items ?? []
     const hasUnread = count > 0 || items.some((n) => n.readAt === null)
+    const hasRead = items.some((n) => n.readAt !== null)
 
     // Close the panel on outside click or Escape.
     useEffect(() => {
@@ -126,17 +131,30 @@ export function NotificationBell() {
                     <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface">
                         <div className="flex items-center justify-between gap-3 border-b border-hairline px-4 py-3">
                             <p className="font-mono text-eyebrow uppercase text-text-faint">{t('title')}</p>
-                            {hasUnread ? (
-                                <TrackedButton
-                                    analyticsId="notifications-mark-all"
-                                    type="button"
-                                    onClick={() => markAll.mutate()}
-                                    disabled={markAll.isPending}
-                                    className="text-xs text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-50"
-                                >
-                                    {t('markAllRead')}
-                                </TrackedButton>
-                            ) : null}
+                            <div className="flex items-center gap-3">
+                                {hasUnread ? (
+                                    <TrackedButton
+                                        analyticsId="notifications-mark-all"
+                                        type="button"
+                                        onClick={() => markAll.mutate()}
+                                        disabled={markAll.isPending}
+                                        className="text-xs text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-50"
+                                    >
+                                        {t('markAllRead')}
+                                    </TrackedButton>
+                                ) : null}
+                                {hasRead ? (
+                                    <TrackedButton
+                                        analyticsId="notifications-clear-read"
+                                        type="button"
+                                        onClick={() => clearRead.mutate()}
+                                        disabled={clearRead.isPending}
+                                        className="text-xs text-text-dim transition-colors duration-300 hover:text-text disabled:opacity-50"
+                                    >
+                                        {t('clearRead')}
+                                    </TrackedButton>
+                                ) : null}
+                            </div>
                         </div>
 
                         <div className="max-h-96 overflow-y-auto">
@@ -147,7 +165,13 @@ export function NotificationBell() {
                             ) : (
                                 <ul className="divide-y divide-hairline">
                                     {items.map((n) => (
-                                        <NotificationRow key={n.id} notification={n} onClick={() => onItemClick(n)} />
+                                        <NotificationRow
+                                            key={n.id}
+                                            notification={n}
+                                            onOpen={() => onItemClick(n)}
+                                            onMarkRead={() => markRead.mutate(n.id)}
+                                            onDelete={() => remove.mutate(n.id)}
+                                        />
                                     ))}
                                 </ul>
                             )}
@@ -159,7 +183,49 @@ export function NotificationBell() {
     )
 }
 
-function NotificationRow({ notification, onClick }: { notification: NotificationItem; onClick: () => void }) {
+/** Small round action on a row (mark read / remove). Kept always visible rather
+ *  than revealed on hover: the panel is used on touch too, where there is none. */
+function RowAction({
+    analyticsId,
+    label,
+    onClick,
+    children,
+    danger = false,
+}: {
+    analyticsId: string
+    label: string
+    onClick: () => void
+    children: ReactNode
+    danger?: boolean
+}) {
+    return (
+        <TrackedButton
+            analyticsId={analyticsId}
+            type="button"
+            onClick={onClick}
+            aria-label={label}
+            title={label}
+            className={cn(
+                'grid size-7 shrink-0 place-items-center rounded-full text-text-faint transition-colors duration-200 hover:bg-white/[0.06]',
+                danger ? 'hover:text-ember' : 'hover:text-text',
+            )}
+        >
+            {children}
+        </TrackedButton>
+    )
+}
+
+function NotificationRow({
+    notification,
+    onOpen,
+    onMarkRead,
+    onDelete,
+}: {
+    notification: NotificationItem
+    onOpen: () => void
+    onMarkRead: () => void
+    onDelete: () => void
+}) {
     const t = useTranslations('notifications')
     const relative = useRelativeTime()
     const unread = notification.readAt === null
@@ -167,15 +233,19 @@ function NotificationRow({ notification, onClick }: { notification: Notification
     const { icon, message } = describe(notification, t)
 
     return (
-        <li>
+        <li
+            className={cn(
+                'flex items-start gap-2 px-4 py-3 transition-colors duration-200 hover:bg-white/[0.03]',
+                unread && 'bg-white/[0.02]',
+            )}
+        >
+            {/* The row's own button: opening it marks it read and navigates. The
+                actions below are siblings — a button can't be nested in a button. */}
             <TrackedButton
                 analyticsId="notification-item"
                 type="button"
-                onClick={onClick}
-                className={cn(
-                    'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors duration-200 hover:bg-white/[0.03]',
-                    unread && 'bg-white/[0.02]',
-                )}
+                onClick={onOpen}
+                className="flex min-w-0 flex-1 items-start gap-3 text-left"
             >
                 <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-white/[0.05] text-text-dim ring-1 ring-hairline">
                     {icon}
@@ -186,8 +256,21 @@ function NotificationRow({ notification, onClick }: { notification: Notification
                         {relative(notification.createdAt)}
                     </span>
                 </span>
-                {unread ? <span className="mt-1.5 size-2 shrink-0 rounded-full bg-ember" /> : null}
             </TrackedButton>
+
+            <span className="flex items-center gap-0.5">
+                {unread ? (
+                    <>
+                        <span className="mr-0.5 size-2 shrink-0 rounded-full bg-ember" />
+                        <RowAction analyticsId="notification-mark-read" label={t('markRead')} onClick={onMarkRead}>
+                            <Check className="size-3.5" />
+                        </RowAction>
+                    </>
+                ) : null}
+                <RowAction analyticsId="notification-delete" label={t('delete')} onClick={onDelete} danger>
+                    <Close className="size-3.5" />
+                </RowAction>
+            </span>
         </li>
     )
 }

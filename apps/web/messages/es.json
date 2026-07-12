@@ -17,6 +17,9 @@
     "notifications": {
         "title": "Notificaciones",
         "markAllRead": "Marcar todo leído",
+        "clearRead": "Limpiar leídas",
+        "markRead": "Marcar como leída",
+        "delete": "Quitar notificación",
         "empty": "No tienes notificaciones",
         "loading": "Cargando…",
         "items": {

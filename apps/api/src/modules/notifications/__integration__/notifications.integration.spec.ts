@@ -89,4 +89,36 @@ describe('Notifications (integration)', () => {
         expect(await repo.countUnread(userId)).toBe(0)
         expect(await repo.countUnread(other)).toBe(1)
     })
+
+    it('deletes one notification, scoped to its owner', async () => {
+        const userId = randomUUID()
+        const other = randomUUID()
+        const id = randomUUID()
+        await repo.create(NotificationMother.create().withId(id).forUser(userId).build())
+        await repo.create(NotificationMother.create().withId(randomUUID()).forUser(other).build())
+
+        // A foreign user's delete matches no row — it can't be used to probe ids.
+        expect(await repo.delete(other, id)).toBe(false)
+        expect(await repo.delete(userId, id)).toBe(true)
+        expect((await repo.list({ userId, limit: 10 })).items).toEqual([])
+        expect((await repo.list({ userId: other, limit: 10 })).items).toHaveLength(1)
+    })
+
+    it('clears the read ones and leaves the unread (and other users) alone', async () => {
+        const userId = randomUUID()
+        const other = randomUUID()
+        const readId = randomUUID()
+        await repo.create(NotificationMother.create().withId(readId).forUser(userId).build())
+        await repo.create(NotificationMother.create().withId(randomUUID()).forUser(userId).build())
+        await repo.create(NotificationMother.create().withId(randomUUID()).forUser(other).build())
+        await repo.markRead(userId, readId, new Date())
+        await repo.markAllRead(other, new Date())
+
+        expect(await repo.deleteRead(userId)).toBe(1)
+
+        const remaining = await repo.list({ userId, limit: 10 })
+        expect(remaining.items).toHaveLength(1)
+        expect(remaining.items[0]?.readAt).toBeNull()
+        expect((await repo.list({ userId: other, limit: 10 })).items).toHaveLength(1)
+    })
 })

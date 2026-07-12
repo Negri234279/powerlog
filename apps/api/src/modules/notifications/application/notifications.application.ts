@@ -1,3 +1,5 @@
+import { DeleteNotificationHandler } from './commands/delete-notification/delete-notification.handler'
+import { DeleteReadNotificationsHandler } from './commands/delete-read-notifications/delete-read-notifications.handler'
 import { MarkAllNotificationsReadHandler } from './commands/mark-all-notifications-read/mark-all-notifications-read.handler'
 import { MarkNotificationReadHandler } from './commands/mark-notification-read/mark-notification-read.handler'
 import { NotifyOnCoachInvitationCreated } from './event-handlers/notify-on-coach-invitation-created.handler'
@@ -10,7 +12,12 @@ import { ListNotificationsHandler } from './queries/list-notifications/list-noti
 import { NotificationService } from './services/notification.service'
 
 /** CQRS command handlers for the notifications module. */
-export const NOTIFICATIONS_COMMAND_HANDLERS = [MarkNotificationReadHandler, MarkAllNotificationsReadHandler]
+export const NOTIFICATIONS_COMMAND_HANDLERS = [
+    MarkNotificationReadHandler,
+    MarkAllNotificationsReadHandler,
+    DeleteNotificationHandler,
+    DeleteReadNotificationsHandler,
+]
 
 /** CQRS query handlers for the notifications module. */
 export const NOTIFICATIONS_QUERY_HANDLERS = [ListNotificationsHandler, CountUnreadNotificationsHandler]

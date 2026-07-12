@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import type { NotificationEntity } from '../../../domain/entities/notification.entity'
@@ -66,5 +66,23 @@ export class DrizzleNotificationRepository extends NotificationRepository {
             .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)))
             .returning({ id: notifications.id })
         return updated.length
+    }
+
+    async delete(userId: string, id: string): Promise<boolean> {
+        // userId in the WHERE, not a read-then-delete: someone else's id simply
+        // matches no row.
+        const deleted = await this.db
+            .delete(notifications)
+            .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))
+            .returning({ id: notifications.id })
+        return deleted.length > 0
+    }
+
+    async deleteRead(userId: string): Promise<number> {
+        const deleted = await this.db
+            .delete(notifications)
+            .where(and(eq(notifications.userId, userId), isNotNull(notifications.readAt)))
+            .returning({ id: notifications.id })
+        return deleted.length
     }
 }

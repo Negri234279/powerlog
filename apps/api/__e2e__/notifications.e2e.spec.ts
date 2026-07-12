@@ -52,8 +52,10 @@ afterAll(async () => {
 })
 
 beforeEach(async () => {
-    await pool.query('TRUNCATE TABLE users RESTART IDENTITY CASCADE')
-    await pool.query('TRUNCATE TABLE notifications RESTART IDENTITY CASCADE')
+    // profiles must be listed explicitly: it references users by a *soft* id (no
+    // FK, to keep the modules apart), so CASCADE doesn't reach it — and a leftover
+    // profile keeps its handle taken, failing the next test's register.
+    await pool.query('TRUNCATE TABLE users, profiles, notifications RESTART IDENTITY CASCADE')
     mailer.sent.length = 0
 })
 
@@ -132,6 +134,75 @@ describe('Notifications via GraphQL', () => {
 
         const after = await gql(`query { unreadNotificationsCount }`, access)
         expect(after.body.data.unreadNotificationsCount).toBe(0)
+    })
+
+    it('dismisses one notification and clears the read ones, leaving the unread', async () => {
+        const { access, userId } = await registerAthlete('athlete@example.com')
+
+        for (const id of ['inv-1', 'inv-2', 'inv-3']) {
+            events.publish(
+                new CoachInvitationCreatedIntegrationEvent(
+                    id,
+                    'coach-1',
+                    userId,
+                    'athlete@example.com',
+                    'coachy',
+                    'tok-e2e',
+                ),
+            )
+        }
+
+        const listed = await eventually(
+            async () =>
+                (await gql(`query { myNotifications(limit: 10) { items { id } } }`, access)).body.data.myNotifications,
+            (page) => page.items.length === 3,
+        )
+        const [first, second, third] = listed.items as { id: string }[]
+
+        // The row's ✕ removes it outright, read or not.
+        const removed = await gql(`mutation { deleteNotification(id: "${first!.id}") }`, access)
+        expect(removed.body.data.deleteNotification).toBe(true)
+
+        // Clearing the read ones spares whatever is still unread.
+        await gql(`mutation { markNotificationRead(id: "${second!.id}") }`, access)
+        const cleared = await gql(`mutation { deleteReadNotifications }`, access)
+        expect(cleared.body.data.deleteReadNotifications).toBe(1)
+
+        const left = await gql(`query { myNotifications(limit: 10) { items { id readAt } } }`, access)
+        expect(left.body.data.myNotifications.items).toHaveLength(1)
+        expect(left.body.data.myNotifications.items[0]).toMatchObject({ id: third!.id, readAt: null })
+    })
+
+    it('cannot delete someone else’s notification', async () => {
+        const owner = await registerAthlete('owner@example.com')
+        const intruder = await registerAthlete('intruder@example.com')
+
+        events.publish(
+            new CoachInvitationCreatedIntegrationEvent(
+                'inv-1',
+                'coach-1',
+                owner.userId,
+                'owner@example.com',
+                'coachy',
+                'tok-e2e',
+            ),
+        )
+        const page = await eventually(
+            async () =>
+                (await gql(`query { myNotifications(limit: 10) { items { id } } }`, owner.access)).body.data
+                    .myNotifications,
+            (p) => p.items.length > 0,
+        )
+        const id: string = page.items[0].id
+
+        // A silent false, not an error: the delete is scoped by userId, so a
+        // foreign id is indistinguishable from a non-existent one.
+        const attempt = await gql(`mutation { deleteNotification(id: "${id}") }`, intruder.access)
+        expect(attempt.body.errors).toBeUndefined()
+        expect(attempt.body.data.deleteNotification).toBe(false)
+
+        const still = await gql(`query { myNotifications(limit: 10) { items { id } } }`, owner.access)
+        expect(still.body.data.myNotifications.items).toHaveLength(1)
     })
 
     it('rejects an unauthenticated caller', async () => {

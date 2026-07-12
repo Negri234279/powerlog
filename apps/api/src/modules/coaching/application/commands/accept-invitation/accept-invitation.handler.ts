@@ -42,7 +42,7 @@ export class AcceptInvitationHandler implements ICommandHandler<AcceptInvitation
             this.users.getContact(invitation.coachId),
             this.users.getContact(athleteId),
         ])
-        
+
         this.eventBus.publish(
             new CoachLinkEstablishedIntegrationEvent(
                 invitation.coachId,
