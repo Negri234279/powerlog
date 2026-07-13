@@ -288,6 +288,13 @@
       "when": 1783894124435,
       "tag": "0040_orange_kid_colt",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1783905795834,
+      "tag": "0041_sour_ezekiel",
+      "breakpoints": true
     }
   ]
 }

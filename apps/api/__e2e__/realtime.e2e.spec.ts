@@ -55,7 +55,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
     await pool.query(
-        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, coach_athlete_notes, notifications RESTART IDENTITY CASCADE',
+        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, coach_athlete_notes, workout_sessions, mesocycles, notifications RESTART IDENTITY CASCADE',
     )
 })
 
@@ -74,14 +74,14 @@ function gql(query: string, cookie?: string) {
     return cookie ? req.set('Cookie', cookie) : req
 }
 
-async function register(email: string): Promise<{ access: string }> {
+async function register(email: string): Promise<{ access: string; userId: string }> {
     const username = email.split('@')[0]!.padEnd(3, '0')
     const res = await gql(
         `mutation { register(input: { email: "${email}", username: "${username}", password: "supersecret" }) { id } }`,
     )
     expect(res.body.errors).toBeUndefined()
 
-    return { access: cookiePair(setCookies(res), COOKIE.access)! }
+    return { access: cookiePair(setCookies(res), COOKIE.access)!, userId: res.body.data.register.id }
 }
 
 /** An open SSE connection: reads the stream in the background and resolves
@@ -185,6 +185,51 @@ describe('Realtime stream (SSE)', () => {
         expect(await coachStream.next()).toEqual({ type: 'athlete_linked' })
 
         await coachStream.close()
+    })
+
+    it("refreshes the athlete's open training list when the coach generates a week", async () => {
+        const coach = await register('coach@example.com')
+        const athlete = await register('athlete@example.com')
+
+        const promoted = await gql(`mutation { becomeCoach { role } }`, coach.access)
+        const coachAccess = cookiePair(setCookies(promoted), COOKIE.access)!
+        const invited = await gql(`mutation { inviteAthlete(email: "athlete@example.com") { id } }`, coachAccess)
+        await gql(
+            `mutation { acceptInvitation(id: "${invited.body.data.inviteAthlete.id}") { status } }`,
+            athlete.access,
+        )
+
+        // A block the athlete owns and the coach plans, with one training day.
+        const exercises = await gql(`query { exercises { id } }`, coachAccess)
+        const exerciseId: string = exercises.body.data.exercises[0].id
+        const block = await gql(
+            `mutation { createAthleteMesocycle(athleteId: "${athlete.userId}", input: {
+                name: "Block", startDate: "2026-03-02", microcycles: [
+                    { label: "W1", days: [{ dayOffset: 0, exercises: [
+                        { exerciseId: "${exerciseId}", sets: [{ plannedReps: 5 }] }
+                    ] }] }
+                ]
+            }) { id } }`,
+            coachAccess,
+        )
+        expect(block.body.errors).toBeUndefined()
+        const mesocycleId: string = block.body.data.createAthleteMesocycle.id
+
+        // The athlete is looking at /workouts with the stream open…
+        const athleteStream = openStream(athlete.access)
+        expect(await athleteStream.status()).toBe(200)
+
+        // …the coach materializes week 1 into their log…
+        const generated = await gql(
+            `mutation { generateMesocycleWeek(input: { mesocycleId: "${mesocycleId}", week: 1 }) { id status } }`,
+            coachAccess,
+        )
+        expect(generated.body.errors).toBeUndefined()
+
+        // …and the list refreshes itself instead of showing yesterday's plan.
+        expect(await athleteStream.next()).toEqual({ type: 'session_planned' })
+
+        await athleteStream.close()
     })
 
     it("never leaks another user's events into a stream", async () => {

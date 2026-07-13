@@ -14,6 +14,7 @@ import { PG_POOL } from '../src/database/database.module'
 import * as schema from '../src/database/schema'
 import { Mailer } from '../src/mail/mailer.port'
 import { CoachInvitationCreatedIntegrationEvent } from '../src/shared/integration-events/coach-invitation-created.integration-event'
+import { MesocycleWeekGeneratedIntegrationEvent } from '../src/shared/integration-events/mesocycle-week-generated.integration-event'
 import { FakeMailer } from '../tests/doubles/shared'
 
 let container: StartedPostgreSqlContainer
@@ -203,6 +204,32 @@ describe('Notifications via GraphQL', () => {
 
         const still = await gql(`query { myNotifications(limit: 10) { items { id } } }`, owner.access)
         expect(still.body.data.myNotifications.items).toHaveLength(1)
+    })
+
+    it('bells the athlete once when the coach generates a week of their block', async () => {
+        const { access, userId } = await registerAthlete('athlete@example.com')
+        // A real coach row: this handler resolves the handle through the directory,
+        // so a made-up id would blow up on the uuid cast rather than bell anyone.
+        const coach = await registerAthlete('coach@example.com')
+
+        events.publish(new MesocycleWeekGeneratedIntegrationEvent(coach.userId, userId, 'meso-1', 2, 4))
+
+        const page = await eventually(
+            async () =>
+                (await gql(`query { myNotifications(limit: 10) { items { type data } } }`, access)).body.data
+                    .myNotifications,
+            (p) => p.items.length > 0,
+        )
+
+        // Four sessions landed, one entry: the copy carries the count instead.
+        expect(page.items).toHaveLength(1)
+        expect(page.items[0].type).toBe('mesocycle_week_generated')
+        expect(JSON.parse(page.items[0].data)).toMatchObject({
+            mesocycleId: 'meso-1',
+            week: 2,
+            sessions: 4,
+            coachUsername: 'coach',
+        })
     })
 
     it('rejects an unauthenticated caller', async () => {

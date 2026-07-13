@@ -26,6 +26,9 @@
             "coachInvitation": "{coach} wants to be your coach",
             "coachLinked": "{coach} is now coaching you",
             "athleteLinked": "{athlete} is now your athlete",
+            "sessionPlanned": "{coach} planned a session for you",
+            "mesocycleAssigned": "{coach} gave you a block: {name}",
+            "mesocycleWeekGenerated": "{coach} planned week {week} for you — {sessions, plural, one {# session} other {# sessions}}",
             "generic": "You have a new notification"
         }
     },

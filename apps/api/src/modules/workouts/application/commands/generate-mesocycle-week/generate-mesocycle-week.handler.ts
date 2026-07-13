@@ -1,7 +1,8 @@
-import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { MesocycleWeekGeneratedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-week-generated.integration-event'
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import {
     MesocycleStartDateRequiredError,
@@ -35,6 +36,7 @@ export class GenerateMesocycleWeekHandler implements ICommandHandler<
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly metrics: MesocycleMetrics,
+        private readonly eventBus: EventBus,
         private readonly logger?: PinoLogger,
     ) {
         this.logger?.setContext(GenerateMesocycleWeekHandler.name)
@@ -91,6 +93,23 @@ export class GenerateMesocycleWeekHandler implements ICommandHandler<
 
         const mode = alreadyGenerated ? 'replace' : 'fresh'
         this.metrics.recordSessionsGenerated(mode, views.length)
+
+        // Someone else's block ⇒ a coach filled the athlete's log. Announce it once
+        // for the whole week so the athlete's open app refreshes itself; an athlete
+        // generating their own week already knows.
+        const coachId = mesocycle.plannedByUserId
+        if (coachId !== null && mesocycle.ownerId !== coachId) {
+            this.eventBus.publish(
+                new MesocycleWeekGeneratedIntegrationEvent(
+                    coachId,
+                    mesocycle.ownerId,
+                    mesocycle.id,
+                    command.week,
+                    views.length,
+                ),
+            )
+        }
+
         this.logger?.info(
             { mesocycleId: mesocycle.id, week: command.week, sessions: views.length, mode },
             'mesocycle week generated',

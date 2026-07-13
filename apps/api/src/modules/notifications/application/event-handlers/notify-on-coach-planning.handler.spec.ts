@@ -4,9 +4,11 @@ import { FakeClock, FakeIdGenerator, InMemoryNotificationRepository } from '../.
 import { FakeMailer, FakeUserDirectory } from '../../../../../tests/doubles/shared'
 import { testCounter } from '../../../../../tests/doubles/shared/test-counter'
 import { MesocycleAssignedIntegrationEvent } from '../../../../shared/integration-events/mesocycle-assigned.integration-event'
+import { MesocycleWeekGeneratedIntegrationEvent } from '../../../../shared/integration-events/mesocycle-week-generated.integration-event'
 import { WorkoutSessionPlannedIntegrationEvent } from '../../../../shared/integration-events/workout-session-planned.integration-event'
 import { NotificationService } from '../services/notification.service'
 import { NotifyOnMesocycleAssigned } from './notify-on-mesocycle-assigned.handler'
+import { NotifyOnMesocycleWeekGenerated } from './notify-on-mesocycle-week-generated.handler'
 import { NotifyOnSessionPlanned } from './notify-on-session-planned.handler'
 
 const PERFORMED_AT = new Date('2026-03-09T12:00:00.000Z')
@@ -66,6 +68,29 @@ describe('NotifyOnMesocycleAssigned', () => {
         expect(note.data).toEqual({
             mesocycleId: 'm-1',
             name: 'Peaking Block',
+            coachId: 'coach-1',
+            coachUsername: 'coachy',
+        })
+    })
+})
+
+describe('NotifyOnMesocycleWeekGenerated', () => {
+    it('bells the athlete once for the whole week, with how many sessions landed', async () => {
+        const { repo, users, service } = setup()
+        const handler = new NotifyOnMesocycleWeekGenerated(service, users)
+
+        await handler.handle(new MesocycleWeekGeneratedIntegrationEvent('coach-1', 'athlete-1', 'm-1', 2, 4))
+
+        // Four sessions, one bell entry: the event is already per-week, which is
+        // what stops one coach action from becoming four notifications.
+        expect(repo.all()).toHaveLength(1)
+        const note = repo.all()[0]!
+        expect(note.userId).toBe('athlete-1')
+        expect(note.type).toBe('mesocycle_week_generated')
+        expect(note.data).toEqual({
+            mesocycleId: 'm-1',
+            week: 2,
+            sessions: 4,
             coachId: 'coach-1',
             coachUsername: 'coachy',
         })

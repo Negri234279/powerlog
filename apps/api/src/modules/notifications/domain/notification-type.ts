@@ -9,6 +9,7 @@ export const NOTIFICATION_TYPES = [
     'athlete_linked',
     'session_planned',
     'mesocycle_assigned',
+    'mesocycle_week_generated',
     'coach_unlinked',
     'athlete_unlinked',
 ] as const

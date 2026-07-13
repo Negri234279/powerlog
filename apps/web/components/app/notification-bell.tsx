@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/cn'
-import { Bell, Check, Close, Users } from '@/components/ui/icons'
+import { Bell, Calendar, Check, Close, Dumbbell, Users } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
 import {
     type NotificationItem,
@@ -24,6 +24,11 @@ function hrefFor(type: string): string | null {
         case 'coach_linked':
         case 'athlete_linked':
             return '/coaching'
+        // Everything a coach put on your calendar lands in your training log.
+        case 'session_planned':
+        case 'mesocycle_assigned':
+        case 'mesocycle_week_generated':
+            return '/workouts'
         default:
             return null
     }
@@ -284,6 +289,9 @@ function describe(
 
     const coach = typeof data['coachUsername'] === 'string' ? data['coachUsername'] : '—'
     const athlete = typeof data['athleteUsername'] === 'string' ? data['athleteUsername'] : '—'
+    const name = typeof data['name'] === 'string' ? data['name'] : '—'
+    const week = typeof data['week'] === 'number' ? data['week'] : 0
+    const sessions = typeof data['sessions'] === 'number' ? data['sessions'] : 0
 
     switch (notification.type) {
         case 'coach_invitation':
@@ -292,6 +300,15 @@ function describe(
             return { icon: <Users className="size-4" />, message: t('items.coachLinked', { coach }) }
         case 'athlete_linked':
             return { icon: <Users className="size-4" />, message: t('items.athleteLinked', { athlete }) }
+        case 'session_planned':
+            return { icon: <Calendar className="size-4" />, message: t('items.sessionPlanned', { coach }) }
+        case 'mesocycle_assigned':
+            return { icon: <Dumbbell className="size-4" />, message: t('items.mesocycleAssigned', { coach, name }) }
+        case 'mesocycle_week_generated':
+            return {
+                icon: <Calendar className="size-4" />,
+                message: t('items.mesocycleWeekGenerated', { coach, week, sessions }),
+            }
         default:
             return { icon: <Bell className="size-4" />, message: t('items.generic') }
     }

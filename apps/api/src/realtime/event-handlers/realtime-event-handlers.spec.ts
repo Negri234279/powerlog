@@ -7,12 +7,14 @@ import { CoachInvitationCreatedIntegrationEvent } from '../../shared/integration
 import { CoachLinkEstablishedIntegrationEvent } from '../../shared/integration-events/coach-link-established.integration-event'
 import { CoachLinkRemovedIntegrationEvent } from '../../shared/integration-events/coach-link-removed.integration-event'
 import { MesocycleAssignedIntegrationEvent } from '../../shared/integration-events/mesocycle-assigned.integration-event'
+import { MesocycleWeekGeneratedIntegrationEvent } from '../../shared/integration-events/mesocycle-week-generated.integration-event'
 import { WorkoutSessionPlannedIntegrationEvent } from '../../shared/integration-events/workout-session-planned.integration-event'
 import { RealtimeHub } from '../realtime.hub'
 import { PushOnCoachInvitationCreated } from './push-on-coach-invitation-created.handler'
 import { PushOnCoachLinkEstablished } from './push-on-coach-link-established.handler'
 import { PushOnCoachLinkRemoved } from './push-on-coach-link-removed.handler'
 import { PushOnMesocycleAssigned } from './push-on-mesocycle-assigned.handler'
+import { PushOnMesocycleWeekGenerated } from './push-on-mesocycle-week-generated.handler'
 import { PushOnSessionPlanned } from './push-on-session-planned.handler'
 
 /** A real hub with both parties connected, so each test asserts what actually
@@ -90,6 +92,21 @@ describe('realtime event handlers', () => {
             ),
         )
 
+        expect(coach).toEqual([])
+    })
+
+    it('pushes a generated week to the athlete, once, as planned work', () => {
+        const { hub, connect } = setup()
+        const coach = connect('coach-1')
+        const athlete = connect('athlete-1')
+
+        new PushOnMesocycleWeekGenerated(hub).handle(
+            new MesocycleWeekGeneratedIntegrationEvent('coach-1', 'athlete-1', 'meso-1', 2, 4),
+        )
+
+        // Four sessions landed, but the athlete's app only needs telling once — and
+        // `session_planned` is already what it maps to a history refetch.
+        expect(athlete).toEqual([{ type: 'session_planned' }])
         expect(coach).toEqual([])
     })
 

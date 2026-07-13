@@ -1,0 +1,1 @@
+ALTER TYPE "public"."notification_type" ADD VALUE 'mesocycle_week_generated' BEFORE 'coach_unlinked';

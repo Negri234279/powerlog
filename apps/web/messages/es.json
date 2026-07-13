@@ -26,6 +26,9 @@
             "coachInvitation": "{coach} quiere ser tu coach",
             "coachLinked": "Ahora te entrena {coach}",
             "athleteLinked": "{athlete} ahora es tu atleta",
+            "sessionPlanned": "{coach} te ha planificado una sesión",
+            "mesocycleAssigned": "{coach} te ha dado un bloque: {name}",
+            "mesocycleWeekGenerated": "{coach} te ha planificado la semana {week} — {sessions, plural, one {# sesión} other {# sesiones}}",
             "generic": "Tienes una notificación nueva"
         }
     },

@@ -8,7 +8,7 @@ import {
     InMemoryMesocycleRepository,
     InMemoryWorkoutSessionRepository,
 } from '../../../../../../tests/doubles/workouts'
-import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
+import { FakeCoachLinks, RecordingEventBus } from '../../../../../../tests/doubles/shared'
 import type { MesocycleContentInput } from '../../../domain/entities/mesocycle.entity'
 import {
     MesocycleNotFoundError,
@@ -18,6 +18,7 @@ import {
 } from '../../../domain/errors/workouts.errors'
 import { MesocycleNameVO } from '../../../domain/value-objects/mesocycle-name.vo'
 import { RepsVO } from '../../../domain/value-objects/reps.vo'
+import { MesocycleWeekGeneratedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-week-generated.integration-event'
 import { GenerateMesocycleWeekCommand } from './generate-mesocycle-week.command'
 import { GenerateMesocycleWeekHandler } from './generate-mesocycle-week.handler'
 
@@ -33,6 +34,7 @@ function setup(
     const mesocycles = new InMemoryMesocycleRepository([seed])
     const sessions = new InMemoryWorkoutSessionRepository()
     const metrics = new FakeMesocycleMetrics()
+    const events = new RecordingEventBus()
     const handler = new GenerateMesocycleWeekHandler(
         mesocycles,
         sessions,
@@ -40,8 +42,9 @@ function setup(
         new FakeClock(NOW),
         new FakeIdGenerator(),
         metrics,
+        events.asEventBus(),
     )
-    return { mesocycles, sessions, metrics, handler }
+    return { mesocycles, sessions, metrics, events, handler }
 }
 
 describe('GenerateMesocycleWeekHandler', () => {
@@ -68,6 +71,32 @@ describe('GenerateMesocycleWeekHandler', () => {
 
         // Owned by the athlete, stamped with the coach who planned it.
         expect(session).toMatchObject({ userId: OWNER, plannedByUserId: COACH, status: 'planned' })
+    })
+
+    it('announces the week once, so the athlete’s open app refreshes itself', async () => {
+        const coached = MesocycleMother.withTree(EXERCISE, { id: 'm-1', ownerId: OWNER, plannedByUserId: COACH })
+        const { handler, events } = setup(coached, new FakeCoachLinks().link(COACH, OWNER))
+
+        const views = await handler.execute(new GenerateMesocycleWeekCommand(COACH, 'm-1', 1))
+
+        // One event for the whole week, not one per session: several sessions
+        // landing at once are a single piece of news.
+        expect(events.published).toHaveLength(1)
+        expect(events.firstOf(MesocycleWeekGeneratedIntegrationEvent)).toMatchObject({
+            coachId: COACH,
+            athleteId: OWNER,
+            mesocycleId: 'm-1',
+            week: 1,
+            sessions: views.length,
+        })
+    })
+
+    it('stays quiet when an athlete generates their own week — they already know', async () => {
+        const { handler, events } = setup()
+
+        await handler.execute(new GenerateMesocycleWeekCommand(OWNER, 'm-1', 1))
+
+        expect(events.published).toEqual([])
     })
 
     it('counts generated sessions as fresh on first generation and replace on regeneration', async () => {

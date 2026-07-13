@@ -9,6 +9,7 @@ import { PushOnCoachInvitationCreated } from './event-handlers/push-on-coach-inv
 import { PushOnCoachLinkEstablished } from './event-handlers/push-on-coach-link-established.handler'
 import { PushOnCoachLinkRemoved } from './event-handlers/push-on-coach-link-removed.handler'
 import { PushOnMesocycleAssigned } from './event-handlers/push-on-mesocycle-assigned.handler'
+import { PushOnMesocycleWeekGenerated } from './event-handlers/push-on-mesocycle-week-generated.handler'
 import { PushOnSessionPlanned } from './event-handlers/push-on-session-planned.handler'
 import { RealtimeBus } from './realtime.bus'
 import { RealtimeController } from './realtime.controller'
@@ -20,6 +21,7 @@ const EVENT_HANDLERS: Provider[] = [
     PushOnCoachLinkEstablished,
     PushOnCoachLinkRemoved,
     PushOnMesocycleAssigned,
+    PushOnMesocycleWeekGenerated,
     PushOnSessionPlanned,
 ]
 
