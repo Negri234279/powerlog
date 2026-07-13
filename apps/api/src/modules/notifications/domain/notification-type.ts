@@ -12,6 +12,9 @@ export const NOTIFICATION_TYPES = [
     'mesocycle_week_generated',
     'coach_unlinked',
     'athlete_unlinked',
+    'subscription_activated',
+    'subscription_canceled',
+    'subscription_payment_failed',
 ] as const
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]

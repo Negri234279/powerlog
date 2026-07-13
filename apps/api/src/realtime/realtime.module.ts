@@ -11,6 +11,7 @@ import { PushOnCoachLinkRemoved } from './event-handlers/push-on-coach-link-remo
 import { PushOnMesocycleAssigned } from './event-handlers/push-on-mesocycle-assigned.handler'
 import { PushOnMesocycleWeekGenerated } from './event-handlers/push-on-mesocycle-week-generated.handler'
 import { PushOnSessionPlanned } from './event-handlers/push-on-session-planned.handler'
+import { PushOnSubscriptionChanged } from './event-handlers/push-on-subscription-changed.handler'
 import { RealtimeBus } from './realtime.bus'
 import { RealtimeController } from './realtime.controller'
 import { RealtimeHub } from './realtime.hub'
@@ -18,6 +19,7 @@ import { RealtimeHub } from './realtime.hub'
 /** Turn integration events into pushes on the affected users' streams. */
 const EVENT_HANDLERS: Provider[] = [
     PushOnCoachInvitationCreated,
+    PushOnSubscriptionChanged,
     PushOnCoachLinkEstablished,
     PushOnCoachLinkRemoved,
     PushOnMesocycleAssigned,

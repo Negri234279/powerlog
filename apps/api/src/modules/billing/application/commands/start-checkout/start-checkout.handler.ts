@@ -68,8 +68,11 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
             // does not end up as two customers with two payment methods.
             customerId: live?.gatewayCustomerId ?? null,
             email: contact?.email ?? '',
-            successUrl: `${this.config.webOrigin}/account/plan?checkout=success`,
-            cancelUrl: `${this.config.webOrigin}/account/plan?checkout=cancelled`,
+            // The web's account area lives under /profile. The redirect is only a
+            // landing spot: the real state arrives by webhook, and the page is told to
+            // refetch by the realtime event — it never trusts these query params.
+            successUrl: `${this.config.webOrigin}/profile/plan?checkout=success`,
+            cancelUrl: `${this.config.webOrigin}/profile/plan?checkout=cancelled`,
         })
 
         this.metrics.recordCheckout(command.gateway, plan.slug, 'started')

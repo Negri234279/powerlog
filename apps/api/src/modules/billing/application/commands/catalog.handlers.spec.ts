@@ -6,7 +6,7 @@ import {
     InMemoryPlanPriceRepository,
     InMemoryPlanRepository,
 } from '../../../../../tests/doubles/billing'
-import { silentLogger } from '../../../../../tests/doubles/shared'
+import { RecordingEventBus, silentLogger } from '../../../../../tests/doubles/shared'
 import { PlanMother } from '../../../../../tests/mothers/billing'
 import { InvalidPlanEntitlementsError } from '../../domain/errors/billing.errors'
 import {
@@ -42,9 +42,10 @@ describe('catalog admin handlers', () => {
         ids = new FakeIdGenerator()
     })
 
+    const bus = () => new RecordingEventBus().asEventBus()
     const createPlan = () => new CreatePlanHandler(plans, clock, ids, silentLogger())
-    const updatePlan = () => new UpdatePlanHandler(plans, clock, silentLogger())
-    const setStatus = () => new SetPlanStatusHandler(plans, clock, silentLogger())
+    const updatePlan = () => new UpdatePlanHandler(plans, clock, bus(), silentLogger())
+    const setStatus = () => new SetPlanStatusHandler(plans, clock, bus(), silentLogger())
     const addPrice = () => new AddPlanPriceHandler(plans, prices, clock, ids, silentLogger())
     const deactivatePrice = () => new DeactivatePlanPriceHandler(prices, clock, silentLogger())
 

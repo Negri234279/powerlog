@@ -29,7 +29,10 @@
             "sessionPlanned": "{coach} te ha planificado una sesión",
             "mesocycleAssigned": "{coach} te ha dado un bloque: {name}",
             "mesocycleWeekGenerated": "{coach} te ha planificado la semana {week} — {sessions, plural, one {# sesión} other {# sesiones}}",
-            "generic": "Tienes una notificación nueva"
+            "generic": "Tienes una notificación nueva",
+            "subscriptionActivated": "Tu plan {plan} está activo",
+            "subscriptionCanceled": "Tu plan no se renovará — lo conservas hasta el {until}",
+            "subscriptionPaymentFailed": "Tu pago ha fallado — actualiza la tarjeta para no perder el plan"
         }
     },
     "coaching": {
@@ -642,7 +645,9 @@
         "cantUndo": "Esto no se puede deshacer.",
         "typeToConfirm": "Escribe <handle></handle> para confirmar.",
         "deleting": "Eliminando…",
-        "permanentlyDelete": "Eliminar permanentemente"
+        "permanentlyDelete": "Eliminar permanentemente",
+        "plan": "Plan",
+        "billing": "Facturación"
     },
     "admin": {
         "eyebrow": "Admin",
@@ -900,7 +905,17 @@
         "PLAN_NOT_AVAILABLE": "Ese plan no está disponible.",
         "SUBSCRIPTION_ALREADY_ACTIVE": "Este usuario ya tiene una suscripción activa.",
         "SUBSCRIPTION_NOT_FOUND": "Suscripción no encontrada.",
-        "NOT_A_MANUAL_SUBSCRIPTION": "Esta suscripción la cobra una pasarela; termínala allí."
+        "NOT_A_MANUAL_SUBSCRIPTION": "Esta suscripción la cobra una pasarela; termínala allí.",
+        "GATEWAY_NOT_CONFIGURED": "Los pagos no están disponibles ahora mismo. Inténtalo más tarde.",
+        "GATEWAY_REQUEST_FAILED": "La pasarela de pago no pudo completar la operación. Inténtalo de nuevo.",
+        "NO_ACTIVE_SUBSCRIPTION": "No tienes una suscripción activa.",
+        "NOT_A_GATEWAY_SUBSCRIPTION": "Este plan lo concedió un admin; aquí no hay nada que gestionar.",
+        "SAME_PLAN": "Ya estás en ese plan.",
+        "OFFER_NOT_REDEEMABLE": "Esa oferta ya no está disponible.",
+        "PRICE_NOT_SYNCED": "Ese precio aún no está a la venta. Inténtalo en un momento.",
+        "PLAN_SYNC_FAILED": "El plan no se pudo publicar en la pasarela de pago.",
+        "INVALID_PLAN_OFFER": "Esa oferta no tiene sentido.",
+        "PLAN_OFFER_NOT_FOUND": "Oferta no encontrada."
     },
     "ai": {
         "eyebrow": "Proveedor",
@@ -1008,5 +1023,71 @@
         "weekBody": "Diseña esta semana con IA, en los días que ya entrena. Reemplaza la semana; luego puedes editarla.",
         "weekDraftBody": "Una semana propuesta. Úsala para rellenar esta semana y edítala como cualquier otra.",
         "useWeek": "Usar esta semana"
+    },
+    "billing": {
+        "checkoutSuccess": "Pago recibido — estamos terminando de activar tu plan. Esta página se actualiza sola.",
+        "checkoutCancelled": "Pago cancelado. No se ha cobrado nada.",
+        "currentPlan": "Tu plan",
+        "freePlan": "Gratis",
+        "freePlanBody": "Estás en el plan gratuito. Puedes mejorarlo cuando quieras.",
+        "grantedByAdmin": "Concedido por un admin — sin cobro",
+        "renewsOn": "renueva el {date}",
+        "accessUntil": "lo conservas hasta el {date}",
+        "pendingDowngrade": "Pasarás a {plan} el {date}.",
+        "pastDue": "Tu último pago falló. Mantenemos tu plan mientras el banco reintenta — actualiza la tarjeta por si acaso.",
+        "cancel": "Cancelar plan",
+        "cancelTitle": "¿Cancelar tu plan?",
+        "cancelBody": "Deja de renovarse y lo conservas todo hasta el {date}. No se te vuelve a cobrar.",
+        "cancelConfirm": "Cancelar plan",
+        "keepPlan": "Mantenerlo",
+        "resume": "Reanudar plan",
+        "choosePlan": "Planes",
+        "free": "Gratis",
+        "priceUnavailable": "—",
+        "subscribe": "Suscribirme",
+        "switchToPlan": "Cambiar a este plan",
+        "yourPlan": "Tu plan actual",
+        "noGateway": "No está a la venta ahora mismo.",
+        "offerTrial": "{days} días gratis",
+        "offerDiscount": "{percent}% de descuento al empezar",
+        "paymentMethod": "Método de pago",
+        "paymentMethodBody": "Tu tarjeta y tus recibos están en nuestra pasarela de pago.",
+        "openPortal": "Gestionar método de pago",
+        "invoices": "Facturas",
+        "noInvoices": "Todavía no hay facturas.",
+        "invoiceNoNumber": "Factura",
+        "viewInvoice": "Ver",
+        "interval": {
+            "month": "mes",
+            "quarter": "trimestre",
+            "semester": "semestre",
+            "year": "año"
+        },
+        "invoiceStatus": {
+            "draft": "Borrador",
+            "open": "Pendiente",
+            "paid": "Pagada",
+            "uncollectible": "Incobrable",
+            "void": "Anulada"
+        },
+        "features": {
+            "templates": "Plantillas de entrenamiento",
+            "mesocycles": "Bloques de entrenamiento",
+            "ai": "Asistente de IA",
+            "planSessions": "Planificar a tus atletas",
+            "athletes": "Hasta {count} atletas",
+            "athletesUnlimited": "Atletas ilimitados"
+        },
+        "gate": {
+            "cta": "Ver planes",
+            "featureGeneric": "Tu plan no incluye esto.",
+            "limitReached": "Has llegado al límite de tu plan: {limit} atletas.",
+            "feature": {
+                "ai": "El asistente de IA todavía no está en tu plan.",
+                "templates": "Las plantillas todavía no están en tu plan.",
+                "mesocycles": "Los bloques de entrenamiento todavía no están en tu plan.",
+                "plan_sessions": "Planificar a atletas todavía no está en tu plan."
+            }
+        }
     }
 }

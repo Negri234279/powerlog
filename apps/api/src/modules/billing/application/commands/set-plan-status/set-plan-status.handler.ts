@@ -1,6 +1,7 @@
-import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
+import { PlanCatalogChangedIntegrationEvent } from '../../../../../shared/integration-events/plan-catalog-changed.integration-event'
 import { FreePlanExistsError, LastFreePlanError, PlanNotFoundError } from '../../../domain/errors/billing.errors'
 import { PlanRepository } from '../../../domain/repositories/plan.repository'
 import { Clock } from '../../ports/clock.port'
@@ -20,6 +21,7 @@ export class SetPlanStatusHandler implements ICommandHandler<SetPlanStatusComman
     constructor(
         private readonly plans: PlanRepository,
         private readonly clock: Clock,
+        private readonly eventBus: EventBus,
         private readonly logger: PinoLogger,
     ) {
         this.logger.setContext(SetPlanStatusHandler.name)
@@ -47,6 +49,10 @@ export class SetPlanStatusHandler implements ICommandHandler<SetPlanStatusComman
 
         plan.setStatus(command.status, this.clock.now())
         await this.plans.save(plan)
+
+        // Archiving the free plan of an audience changes what every user without a
+        // subscription falls back to.
+        this.eventBus.publish(new PlanCatalogChangedIntegrationEvent(plan.id, plan.slug))
 
         this.logger.info({ plan: plan.slug, status: command.status }, 'plan status changed')
     }

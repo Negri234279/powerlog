@@ -5,6 +5,7 @@ import { type FormEvent, useMemo, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { FormError } from '@/components/ui/form-error'
+import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Bolt } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
@@ -67,6 +68,10 @@ export function AiPlanPanel({
     const discard = useDiscardPlanDraft(sessionId)
 
     const [error, setError] = useState<string | null>(null)
+    // The raw error too: only it carries the `extensions.code` that tells a plan
+    // refusal ("you don't pay for AI") from a real failure. One gets an upgrade CTA,
+    // the other an error message.
+    const [rawError, setRawError] = useState<unknown>(null)
     const [extraInfo, setExtraInfo] = useState('')
     const [open, setOpen] = useState(false)
 
@@ -99,11 +104,13 @@ export function AiPlanPanel({
 
     async function run(action: () => Promise<unknown>, onDone?: () => void) {
         setError(null)
+        setRawError(null)
         try {
             await action()
             onDone?.()
         } catch (caught) {
             setError(errorMessage(caught))
+            setRawError(caught)
         }
     }
 
@@ -237,7 +244,7 @@ export function AiPlanPanel({
                             </form>
                         </div>
 
-                        <FormError error={error} />
+                        {isPlanRefusal(rawError) ? <UpgradeGate error={rawError} /> : <FormError error={error} />}
 
                         <div className="flex flex-wrap items-center gap-3">
                             <TrackedButton
@@ -288,7 +295,7 @@ export function AiPlanPanel({
                             </Field>
                         </div>
 
-                        <FormError error={error} />
+                        {isPlanRefusal(rawError) ? <UpgradeGate error={rawError} /> : <FormError error={error} />}
 
                         <div className="flex flex-wrap items-center gap-3">
                             <TrackedButton

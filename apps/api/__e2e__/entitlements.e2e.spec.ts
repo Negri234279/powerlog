@@ -13,7 +13,7 @@ import { PG_POOL } from '../src/database/database.module'
 import * as schema from '../src/database/schema'
 import { Mailer } from '../src/mail/mailer.port'
 import { FakeMailer } from '../tests/doubles/shared'
-import { grantPlan } from './helpers/grant-plan'
+import { grantPlan, invalidateEntitlements } from './helpers/grant-plan'
 
 /**
  * Plan enforcement, end to end, against the catalog the migration actually seeds:
@@ -132,7 +132,7 @@ describe('plan enforcement (seeded catalog)', () => {
 
     it('lets the same athlete through once they are on a plan that includes AI', async () => {
         const athlete = await register('paid@example.com')
-        await grantPlan(pool, athlete.userId, 'athlete-pro')
+        await grantPlan(app, pool, athlete.userId, 'athlete-pro')
 
         const res = await generateAiDraft(athlete.access)
 
@@ -164,7 +164,7 @@ describe('plan enforcement (seeded catalog)', () => {
 
     it('lifts the cap when the coach is on a bigger plan', async () => {
         const coach = await aCoach('coach@example.com')
-        await grantPlan(pool, coach.userId, 'coach-pro')
+        await grantPlan(app, pool, coach.userId, 'coach-pro')
 
         for (const email of ['athlete1@example.com', 'athlete2@example.com', 'athlete3@example.com']) {
             const invited = await gql(`mutation { inviteAthlete(email: "${email}") { id } }`, coach.access)
@@ -182,7 +182,7 @@ describe('plan enforcement (seeded catalog)', () => {
 
     it('keeps a canceled subscriber on their plan until the period they paid for ends', async () => {
         const athlete = await register('canceled@example.com')
-        await grantPlan(pool, athlete.userId, 'athlete-pro')
+        await grantPlan(app, pool, athlete.userId, 'athlete-pro')
         // Cancelled, but the month is still running: cancelling never takes back time
         // that was already bought — whether it was cancelled here or in the gateway.
         await pool.query(
@@ -190,6 +190,7 @@ describe('plan enforcement (seeded catalog)', () => {
              WHERE user_id = $1`,
             [athlete.userId],
         )
+        await invalidateEntitlements(app, athlete.userId)
 
         expect(errorCode(await generateAiDraft(athlete.access))).not.toBe('FEATURE_NOT_IN_PLAN')
 
@@ -197,6 +198,7 @@ describe('plan enforcement (seeded catalog)', () => {
         await pool.query(`UPDATE subscriptions SET current_period_end = now() - interval '1 day' WHERE user_id = $1`, [
             athlete.userId,
         ])
+        await invalidateEntitlements(app, athlete.userId)
 
         expect(errorCode(await generateAiDraft(athlete.access))).toBe('FEATURE_NOT_IN_PLAN')
     })

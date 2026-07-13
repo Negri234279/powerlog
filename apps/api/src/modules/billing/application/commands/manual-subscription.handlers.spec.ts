@@ -6,7 +6,7 @@ import {
     InMemoryPlanRepository,
     InMemorySubscriptionRepository,
 } from '../../../../../tests/doubles/billing'
-import { silentLogger } from '../../../../../tests/doubles/shared'
+import { RecordingEventBus, silentLogger } from '../../../../../tests/doubles/shared'
 import { PlanMother, SubscriptionMother } from '../../../../../tests/mothers/billing'
 import { PlanAggregate } from '../../domain/entities/plan.entity'
 import {
@@ -29,16 +29,19 @@ describe('manual subscriptions (admin)', () => {
     let subscriptions: InMemorySubscriptionRepository
     let clock: FakeClock
     let ids: FakeIdGenerator
+    let bus: RecordingEventBus
 
     beforeEach(() => {
+        bus = new RecordingEventBus()
         plans = new InMemoryPlanRepository([PlanMother.athleteFree(), PlanMother.athletePro()])
         subscriptions = new InMemorySubscriptionRepository()
         clock = new FakeClock(NOW)
         ids = new FakeIdGenerator(['sub-1'])
     })
 
-    const assign = () => new AssignSubscriptionHandler(subscriptions, plans, clock, ids, silentLogger())
-    const revoke = () => new RevokeSubscriptionHandler(subscriptions, clock, silentLogger())
+    const assign = () =>
+        new AssignSubscriptionHandler(subscriptions, plans, clock, ids, bus.asEventBus(), silentLogger())
+    const revoke = () => new RevokeSubscriptionHandler(subscriptions, plans, clock, bus.asEventBus(), silentLogger())
 
     it('grants a plan with no gateway and nothing charged', async () => {
         const id = await assign().execute(new AssignSubscriptionCommand(USER, 'plan-athlete-pro', null))

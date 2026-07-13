@@ -224,6 +224,6 @@ export class BillingPortalUrlHandler implements IQueryHandler<BillingPortalUrlQu
 
         const gateway = this.gateways.get(subscription.gateway)
 
-        return gateway.billingPortalUrl(subscription, `${this.config.webOrigin}/account/billing`)
+        return gateway.billingPortalUrl(subscription, `${this.config.webOrigin}/profile/billing`)
     }
 }

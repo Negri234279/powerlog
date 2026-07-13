@@ -22,6 +22,9 @@ const INVALIDATES = {
     athlete_unlinked: [['coaching', 'athletes'], ['notifications']],
     session_planned: [['workoutHistory'], ['notifications']],
     mesocycle_assigned: [['mesocycles'], ['workoutHistory'], ['notifications']],
+    // The checkout redirect cannot be trusted (the subscription is created by the
+    // webhook), so this is what actually tells the open tab that the money landed.
+    subscription_updated: [['myPlan'], ['myInvoices'], ['notifications']],
 } as const satisfies Record<string, readonly string[][]>
 
 type RealtimeEventType = keyof typeof INVALIDATES

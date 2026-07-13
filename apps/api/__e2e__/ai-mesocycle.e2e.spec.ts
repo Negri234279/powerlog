@@ -110,7 +110,7 @@ async function registerUser(email: string): Promise<string> {
  */
 async function anAthleteWithAi(email: string, plan = 'athlete-pro'): Promise<string> {
     const access = await registerUser(email)
-    await grantPlan(pool, await userIdOf(access), plan)
+    await grantPlan(app, pool, await userIdOf(access), plan)
 
     const configured = await gql(
         `mutation { setAiProviderKey(input: { provider: "openai", apiKey: "sk-test-key-0123456789", model: "gpt-5" }) { provider } }`,
@@ -308,7 +308,7 @@ describe('AI mesocycle drafts via GraphQL', () => {
         // first (a free user is told to upgrade, not to add a key — see the
         // entitlements e2e), so the missing key is only reachable from a paid plan.
         const access = await registerUser('nokey@example.com')
-        await grantPlan(pool, await userIdOf(access), 'athlete-pro')
+        await grantPlan(app, pool, await userIdOf(access), 'athlete-pro')
 
         const res = await generate(access)
 

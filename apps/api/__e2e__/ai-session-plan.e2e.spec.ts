@@ -95,7 +95,7 @@ async function register(email: string): Promise<{ access: string; userId: string
  * a paid feature, and a fresh account is on the free plan.
  */
 async function withAiConfigured(user: { access: string; userId: string }, plan = 'coach-pro'): Promise<void> {
-    await grantPlan(pool, user.userId, plan)
+    await grantPlan(app, pool, user.userId, plan)
 
     const configured = await gql(
         `mutation { setAiProviderKey(input: { provider: "openai", apiKey: "sk-test-key-0123456789", model: "gpt-5" }) { provider } }`,

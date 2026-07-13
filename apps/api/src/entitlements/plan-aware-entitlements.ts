@@ -12,6 +12,7 @@ import {
 } from '../shared/contracts/entitlements'
 import { GetUserEntitlementsQuery } from '../shared/contracts/get-user-entitlements.query'
 import { METRIC } from '../observability/metrics'
+import { EntitlementsCache } from './entitlements.cache'
 
 /**
  * The real {@link Entitlements}: it answers from the user's plan.
@@ -30,6 +31,7 @@ import { METRIC } from '../observability/metrics'
 export class PlanAwareEntitlements extends Entitlements {
     constructor(
         private readonly queryBus: QueryBus,
+        private readonly cache: EntitlementsCache,
         @InjectMetric(METRIC.entitlementDenials) private readonly denials: Counter<string>,
     ) {
         super()
@@ -56,10 +58,21 @@ export class PlanAwareEntitlements extends Entitlements {
         throw new PlanLimitReachedError(maxAthletes, currentAthleteCount, snapshot.plan)
     }
 
-    forUser(userId: string): Promise<EntitlementsSnapshot> {
-        const query = new GetUserEntitlementsQuery(userId)
+    /**
+     * Cached for a minute, and dropped the instant the user's subscription moves —
+     * the web asks this on every page load and every gated write asks again. A
+     * cache miss (or a Redis that is down) just means asking billing, so this can
+     * only ever make the app slower, never wrong.
+     */
+    async forUser(userId: string): Promise<EntitlementsSnapshot> {
+        const cached = await this.cache.get(userId)
+        if (cached) return cached
 
-        return this.queryBus.execute<GetUserEntitlementsQuery, EntitlementsSnapshot>(query)
+        const query = new GetUserEntitlementsQuery(userId)
+        const snapshot = await this.queryBus.execute<GetUserEntitlementsQuery, EntitlementsSnapshot>(query)
+        await this.cache.set(userId, snapshot)
+
+        return snapshot
     }
 
     private grants(snapshot: EntitlementsSnapshot, feature: Feature): boolean {

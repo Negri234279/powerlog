@@ -1,7 +1,9 @@
-import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
+import { SubscriptionChangedIntegrationEvent } from '../../../../../shared/integration-events/subscription-changed.integration-event'
 import { NotAManualSubscriptionError, SubscriptionNotFoundError } from '../../../domain/errors/billing.errors'
+import { PlanRepository } from '../../../domain/repositories/plan.repository'
 import { SubscriptionRepository } from '../../../domain/repositories/subscription.repository'
 import { Clock } from '../../ports/clock.port'
 import { RevokeSubscriptionCommand } from './revoke-subscription.command'
@@ -19,7 +21,9 @@ import { RevokeSubscriptionCommand } from './revoke-subscription.command'
 export class RevokeSubscriptionHandler implements ICommandHandler<RevokeSubscriptionCommand, void> {
     constructor(
         private readonly subscriptions: SubscriptionRepository,
+        private readonly plans: PlanRepository,
         private readonly clock: Clock,
+        private readonly eventBus: EventBus,
         private readonly logger: PinoLogger,
     ) {
         this.logger.setContext(RevokeSubscriptionHandler.name)
@@ -32,6 +36,19 @@ export class RevokeSubscriptionHandler implements ICommandHandler<RevokeSubscrip
 
         subscription.expire(this.clock.now())
         await this.subscriptions.save(subscription)
+
+        // Announce it like any other ending: the cached entitlements have to go, or
+        // the user would keep the features they no longer have for up to a minute.
+        const plan = await this.plans.findById(subscription.planId)
+        this.eventBus.publish(
+            new SubscriptionChangedIntegrationEvent(
+                subscription.userId,
+                subscription.id,
+                plan?.slug ?? 'unknown',
+                'expired',
+                subscription.currentPeriodEnd,
+            ),
+        )
 
         this.logger.info({ subscriptionId: subscription.id, planId: subscription.planId }, 'manual grant revoked')
     }

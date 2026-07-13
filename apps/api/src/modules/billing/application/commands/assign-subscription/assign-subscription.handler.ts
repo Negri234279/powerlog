@@ -1,6 +1,7 @@
-import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
+import { SubscriptionChangedIntegrationEvent } from '../../../../../shared/integration-events/subscription-changed.integration-event'
 import { SubscriptionAggregate } from '../../../domain/entities/subscription.entity'
 import {
     PlanNotAvailableError,
@@ -29,6 +30,7 @@ export class AssignSubscriptionHandler implements ICommandHandler<AssignSubscrip
         private readonly plans: PlanRepository,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
+        private readonly eventBus: EventBus,
         private readonly logger: PinoLogger,
     ) {
         this.logger.setContext(AssignSubscriptionHandler.name)
@@ -60,6 +62,18 @@ export class AssignSubscriptionHandler implements ICommandHandler<AssignSubscrip
             now,
         })
         await this.subscriptions.save(subscription)
+
+        // The same announcement a paid activation makes: the bell, the open tab and
+        // the entitlements cache all react to a comp exactly as they do to a payment.
+        this.eventBus.publish(
+            new SubscriptionChangedIntegrationEvent(
+                subscription.userId,
+                subscription.id,
+                plan.slug,
+                'activated',
+                subscription.currentPeriodEnd,
+            ),
+        )
 
         this.logger.info(
             { subscriptionId: subscription.id, plan: plan.slug, gateway: 'manual', until },

@@ -29,7 +29,10 @@
             "sessionPlanned": "{coach} planned a session for you",
             "mesocycleAssigned": "{coach} gave you a block: {name}",
             "mesocycleWeekGenerated": "{coach} planned week {week} for you — {sessions, plural, one {# session} other {# sessions}}",
-            "generic": "You have a new notification"
+            "generic": "You have a new notification",
+            "subscriptionActivated": "Your {plan} plan is active",
+            "subscriptionCanceled": "Your plan won’t renew — you keep it until {until}",
+            "subscriptionPaymentFailed": "Your payment failed — update your card to keep your plan"
         }
     },
     "coaching": {
@@ -642,7 +645,9 @@
         "cantUndo": "This can’t be undone.",
         "typeToConfirm": "Type <handle></handle> to confirm.",
         "deleting": "Deleting…",
-        "permanentlyDelete": "Permanently delete"
+        "permanentlyDelete": "Permanently delete",
+        "plan": "Plan",
+        "billing": "Billing"
     },
     "admin": {
         "eyebrow": "Admin",
@@ -900,7 +905,17 @@
         "PLAN_NOT_AVAILABLE": "That plan is not available.",
         "SUBSCRIPTION_ALREADY_ACTIVE": "This user already has an active subscription.",
         "SUBSCRIPTION_NOT_FOUND": "Subscription not found.",
-        "NOT_A_MANUAL_SUBSCRIPTION": "This subscription is billed by a payment gateway; end it there."
+        "NOT_A_MANUAL_SUBSCRIPTION": "This subscription is billed by a payment gateway; end it there.",
+        "GATEWAY_NOT_CONFIGURED": "Payments aren’t available right now. Try again later.",
+        "GATEWAY_REQUEST_FAILED": "The payment provider couldn’t complete the request. Try again.",
+        "NO_ACTIVE_SUBSCRIPTION": "You don’t have an active subscription.",
+        "NOT_A_GATEWAY_SUBSCRIPTION": "This plan was granted by an admin; there’s nothing to manage here.",
+        "SAME_PLAN": "You’re already on that plan.",
+        "OFFER_NOT_REDEEMABLE": "That offer is no longer available.",
+        "PRICE_NOT_SYNCED": "That price isn’t on sale yet. Try again in a moment.",
+        "PLAN_SYNC_FAILED": "The plan couldn’t be published to the payment provider.",
+        "INVALID_PLAN_OFFER": "That offer doesn’t make sense.",
+        "PLAN_OFFER_NOT_FOUND": "Offer not found."
     },
     "ai": {
         "eyebrow": "Provider",
@@ -1008,5 +1023,71 @@
         "weekBody": "Design this week with AI, on the days it already trains. It replaces the week; you can edit it after.",
         "weekDraftBody": "A proposed week. Use it to fill this week, then edit it like any other.",
         "useWeek": "Use this week"
+    },
+    "billing": {
+        "checkoutSuccess": "Payment received — we’re finishing setting up your plan. This page updates itself.",
+        "checkoutCancelled": "Checkout cancelled. Nothing was charged.",
+        "currentPlan": "Your plan",
+        "freePlan": "Free",
+        "freePlanBody": "You’re on the free plan. Upgrade any time.",
+        "grantedByAdmin": "Granted by an admin — nothing is charged",
+        "renewsOn": "renews on {date}",
+        "accessUntil": "you keep it until {date}",
+        "pendingDowngrade": "You move to {plan} on {date}.",
+        "pastDue": "Your last payment failed. We keep your plan while your bank retries — update your card to be safe.",
+        "cancel": "Cancel plan",
+        "cancelTitle": "Cancel your plan?",
+        "cancelBody": "It stops renewing, and you keep everything until {date}. Nothing is charged again.",
+        "cancelConfirm": "Cancel plan",
+        "keepPlan": "Keep it",
+        "resume": "Resume plan",
+        "choosePlan": "Plans",
+        "free": "Free",
+        "priceUnavailable": "—",
+        "subscribe": "Subscribe",
+        "switchToPlan": "Switch to this plan",
+        "yourPlan": "Your current plan",
+        "noGateway": "Not on sale right now.",
+        "offerTrial": "{days} days free",
+        "offerDiscount": "{percent}% off to start",
+        "paymentMethod": "Payment method",
+        "paymentMethodBody": "Your card and receipts live with our payment provider.",
+        "openPortal": "Manage payment method",
+        "invoices": "Invoices",
+        "noInvoices": "No invoices yet.",
+        "invoiceNoNumber": "Invoice",
+        "viewInvoice": "View",
+        "interval": {
+            "month": "month",
+            "quarter": "quarter",
+            "semester": "semester",
+            "year": "year"
+        },
+        "invoiceStatus": {
+            "draft": "Draft",
+            "open": "Pending",
+            "paid": "Paid",
+            "uncollectible": "Uncollectible",
+            "void": "Void"
+        },
+        "features": {
+            "templates": "Workout templates",
+            "mesocycles": "Training blocks",
+            "ai": "AI assistant",
+            "planSessions": "Program for your athletes",
+            "athletes": "Up to {count} athletes",
+            "athletesUnlimited": "Unlimited athletes"
+        },
+        "gate": {
+            "cta": "See plans",
+            "featureGeneric": "Your plan doesn’t include this.",
+            "limitReached": "You’ve reached your plan’s limit of {limit} athletes.",
+            "feature": {
+                "ai": "The AI assistant isn’t part of your plan yet.",
+                "templates": "Workout templates aren’t part of your plan yet.",
+                "mesocycles": "Training blocks aren’t part of your plan yet.",
+                "plan_sessions": "Programming for athletes isn’t part of your plan yet."
+            }
+        }
     }
 }

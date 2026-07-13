@@ -1,6 +1,9 @@
 import { Global, Module } from '@nestjs/common'
 
 import { Entitlements } from '../shared/contracts/entitlements'
+import { EntitlementsCache } from './entitlements.cache'
+import { FlushEntitlementsOnPlanCatalogChanged } from './flush-on-plan-catalog-changed.handler'
+import { InvalidateEntitlementsOnSubscriptionChanged } from './invalidate-on-subscription-changed.handler'
 import { PlanAwareEntitlements } from './plan-aware-entitlements'
 
 /**
@@ -13,7 +16,16 @@ import { PlanAwareEntitlements } from './plan-aware-entitlements'
  */
 @Global()
 @Module({
-    providers: [{ provide: Entitlements, useClass: PlanAwareEntitlements }],
+    providers: [
+        EntitlementsCache,
+        // Drops a user's cached answer the moment their subscription moves. Without
+        // it the cache could not exist: someone who just paid would sit on the free
+        // plan for up to a minute.
+        InvalidateEntitlementsOnSubscriptionChanged,
+        // A plan edit is retroactive by design, so the whole cache goes with it.
+        FlushEntitlementsOnPlanCatalogChanged,
+        { provide: Entitlements, useClass: PlanAwareEntitlements },
+    ],
     exports: [Entitlements],
 })
 export class EntitlementsModule {}
