@@ -125,6 +125,11 @@ services:
       # BYOK master key (AES-256-GCM). Throwaway dev default — it only ever
       # encrypts keys in the local database. Real envs inject their own.
       AI_ENCRYPTION_KEY: ${AI_ENCRYPTION_KEY:-Rcm3M6WDGav0aytwV+pkxy6UHSVsP4/z+HjgkNmSMeI=}
+      # Payments. Blank by default: no Stripe keys → checkout is not offered and the
+      # app runs in free/manual mode, which is what dev normally wants. Fill them in
+      # `.dev.env` (test-mode key + the whsec from `stripe listen`) to try the real flow.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       OTEL_SERVICE_NAME: powerlog-api
       OTEL_EXPORTER_OTLP_ENDPOINT: http://powerlog-tempo:4318
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf

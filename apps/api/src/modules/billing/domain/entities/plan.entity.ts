@@ -21,6 +21,8 @@ export interface PlanProps {
     isFree: boolean
     sortOrder: number
     entitlements: PlanEntitlementsVO
+    /** The Stripe Product this plan was published as. Null until the catalog is synced. */
+    stripeProductId: string | null
     createdAt: Date
     updatedAt: Date
 }
@@ -70,6 +72,7 @@ export class PlanAggregate {
             isFree: input.isFree ?? false,
             sortOrder: input.sortOrder ?? 0,
             entitlements: planEntitlementsFor(input.audience, input.entitlements),
+            stripeProductId: null,
             createdAt: input.now,
             updatedAt: input.now,
         })
@@ -125,6 +128,12 @@ export class PlanAggregate {
         this.props.updatedAt = now
     }
 
+    /** Record the Stripe Product this plan was published as. */
+    syncedToStripe(productId: string, now: Date): void {
+        this.props.stripeProductId = productId
+        this.props.updatedAt = now
+    }
+
     /** Whether new subscriptions may be started on this plan. */
     acceptsSignups(): boolean {
         return this.props.status === 'active'
@@ -156,6 +165,9 @@ export class PlanAggregate {
     }
     get entitlements(): PlanEntitlementsVO {
         return this.props.entitlements
+    }
+    get stripeProductId(): string | null {
+        return this.props.stripeProductId
     }
     get createdAt(): Date {
         return this.props.createdAt

@@ -4,7 +4,9 @@ import { CreatePlanHandler } from './commands/create-plan/create-plan.handler'
 import { DeactivatePlanPriceHandler } from './commands/deactivate-plan-price/deactivate-plan-price.handler'
 import { RevokeSubscriptionHandler } from './commands/revoke-subscription/revoke-subscription.handler'
 import { SetPlanStatusHandler } from './commands/set-plan-status/set-plan-status.handler'
+import { SyncPlanHandler } from './commands/sync-plan/sync-plan.handler'
 import { UpdatePlanHandler } from './commands/update-plan/update-plan.handler'
+import { UpsertPlanOfferHandler } from './commands/upsert-plan-offer/upsert-plan-offer.handler'
 import { AdminBillingStatsHandler } from './queries/admin-billing-stats/admin-billing-stats.handler'
 import { AdminPlansHandler } from './queries/admin-plans/admin-plans.handler'
 import { AdminSubscriptionsHandler } from './queries/admin-subscriptions/admin-subscriptions.handler'
@@ -19,6 +21,8 @@ export const BILLING_COMMAND_HANDLERS = [
     DeactivatePlanPriceHandler,
     AssignSubscriptionHandler,
     RevokeSubscriptionHandler,
+    UpsertPlanOfferHandler,
+    SyncPlanHandler,
 ]
 
 /** CQRS query handlers for the billing module. */

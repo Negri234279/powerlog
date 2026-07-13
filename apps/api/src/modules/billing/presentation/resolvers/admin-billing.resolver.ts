@@ -13,7 +13,9 @@ import { CreatePlanCommand } from '../../application/commands/create-plan/create
 import { DeactivatePlanPriceCommand } from '../../application/commands/deactivate-plan-price/deactivate-plan-price.command'
 import { RevokeSubscriptionCommand } from '../../application/commands/revoke-subscription/revoke-subscription.command'
 import { SetPlanStatusCommand } from '../../application/commands/set-plan-status/set-plan-status.command'
+import { SyncPlanCommand } from '../../application/commands/sync-plan/sync-plan.command'
 import { UpdatePlanCommand } from '../../application/commands/update-plan/update-plan.command'
+import { UpsertPlanOfferCommand } from '../../application/commands/upsert-plan-offer/upsert-plan-offer.command'
 import type { AdminBillingStats } from '../../application/ports/admin-billing-stats.read-model'
 import { AdminBillingStatsQuery } from '../../application/queries/admin-billing-stats/admin-billing-stats.query'
 import type { AdminPlanView } from '../../application/queries/admin-plans/admin-plans.handler'
@@ -30,11 +32,13 @@ import {
     AssignSubscriptionInput,
     CreatePlanInput,
     UpdatePlanInput,
+    UpsertPlanOfferInput,
     addPlanPriceSchema,
     assignSubscriptionSchema,
     audienceArg,
     createPlanSchema,
     gatewayArg,
+    gatewayArgRequired,
     idArg,
     limitArg,
     offsetArg,
@@ -42,6 +46,7 @@ import {
     searchArg,
     statusArg,
     updatePlanSchema,
+    upsertPlanOfferSchema,
     uuidArg,
 } from '../inputs/admin-billing.inputs'
 import { AdminBillingStatsType } from '../types/admin-billing-stats.type'
@@ -182,6 +187,39 @@ export class AdminBillingResolver {
     ): Promise<boolean> {
         const command = new DeactivatePlanPriceCommand(id)
         await this.commandBus.execute<DeactivatePlanPriceCommand, void>(command)
+
+        return true
+    }
+
+    @Mutation(() => ID, {
+        description:
+            'Publish an offer on a plan (trial and/or a discounted opening phase). It replaces the plan’s live offer — terms are immutable, so a change is a new offer.',
+    })
+    async upsertPlanOffer(
+        @Args('input', new ZodValidationPipe(upsertPlanOfferSchema)) input: UpsertPlanOfferInput,
+    ): Promise<string> {
+        const command = new UpsertPlanOfferCommand(
+            input.planId,
+            input.name,
+            input.trialDays ?? null,
+            input.introPhase ?? null,
+            input.startsAt ?? new Date(),
+            input.endsAt ?? null,
+        )
+
+        return this.commandBus.execute<UpsertPlanOfferCommand, string>(command)
+    }
+
+    @Mutation(() => Boolean, {
+        description:
+            'Publish the plan, its prices on sale and its offer to a payment gateway. Re-runnable — this is also the retry.',
+    })
+    async syncPlanToGateway(
+        @Args('planId', { type: () => ID }, new ZodValidationPipe(uuidArg)) planId: string,
+        @Args('gateway', { type: () => String }, new ZodValidationPipe(gatewayArgRequired)) gateway: PaymentGateway,
+    ): Promise<boolean> {
+        const command = new SyncPlanCommand(planId, gateway)
+        await this.commandBus.execute<SyncPlanCommand, void>(command)
 
         return true
     }

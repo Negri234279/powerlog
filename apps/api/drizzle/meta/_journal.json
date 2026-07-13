@@ -309,6 +309,13 @@
       "when": 1783940812134,
       "tag": "0043_seed_billing_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1783946204595,
+      "tag": "0044_sparkling_pandemic",
+      "breakpoints": true
     }
   ]
 }

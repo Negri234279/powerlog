@@ -54,6 +54,41 @@ export class PlanEntitlementsType {
     maxAthletes!: number | null
 }
 
+/** A discounted opening phase, in cycles and percent. */
+@ObjectType('IntroPhase')
+export class IntroPhaseType {
+    @Field(() => Int)
+    cycles!: number
+
+    @Field(() => Int)
+    percentOff!: number
+}
+
+/** The plan's live introductory offer. Applies to new signups only. */
+@ObjectType('PlanOffer')
+export class PlanOfferType {
+    @Field(() => ID)
+    id!: string
+
+    @Field(() => String)
+    name!: string
+
+    @Field(() => Int, { nullable: true, description: 'Free days before the first charge.' })
+    trialDays!: number | null
+
+    @Field(() => IntroPhaseType, { nullable: true })
+    introPhase!: IntroPhaseType | null
+
+    @Field(() => Date)
+    startsAt!: Date
+
+    @Field(() => Date, { nullable: true, description: 'Null = open-ended.' })
+    endsAt!: Date | null
+
+    @Field(() => String, { nullable: true, description: 'The Stripe coupon behind the intro phase.' })
+    stripeCouponId!: string | null
+}
+
 @ObjectType('AdminPlan')
 export class AdminPlanType {
     @Field(() => ID)
@@ -92,6 +127,15 @@ export class AdminPlanType {
 
     @Field(() => [PlanPriceType])
     prices!: PlanPriceType[]
+
+    @Field(() => PlanOfferType, { nullable: true, description: 'The plan’s live offer, if it has one.' })
+    offer!: PlanOfferType | null
+
+    @Field(() => String, {
+        nullable: true,
+        description: 'The Stripe Product this plan was published as. Null → never synced.',
+    })
+    stripeProductId!: string | null
 
     @Field(() => Date)
     createdAt!: Date

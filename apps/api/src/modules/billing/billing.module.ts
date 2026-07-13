@@ -5,13 +5,20 @@ import { AuthModule } from '../auth/auth.module'
 import { BILLING_COMMAND_HANDLERS, BILLING_QUERY_HANDLERS } from './application/billing.application'
 import { AdminBillingStatsReadModel } from './application/ports/admin-billing-stats.read-model'
 import { AdminSubscriptionReadModel } from './application/ports/admin-subscription.read-model'
+import { BillingMetrics } from './application/ports/billing-metrics.port'
 import { Clock } from './application/ports/clock.port'
+import { GatewayProvider } from './application/ports/gateway-provider.port'
 import { IdGenerator } from './application/ports/id-generator.port'
+import { PlanOfferRepository } from './domain/repositories/plan-offer.repository'
 import { PlanPriceRepository } from './domain/repositories/plan-price.repository'
 import { PlanRepository } from './domain/repositories/plan.repository'
 import { SubscriptionRepository } from './domain/repositories/subscription.repository'
+import { GatewayRegistry } from './infrastructure/gateways/gateway.registry'
+import { StripeGateway } from './infrastructure/gateways/stripe.gateway'
 import { UuidGenerator } from './infrastructure/id/uuid-generator'
 import { BillingStateMetrics } from './infrastructure/metrics/billing-state-metrics'
+import { PrometheusBillingMetrics } from './infrastructure/metrics/prometheus-billing-metrics'
+import { DrizzlePlanOfferRepository } from './infrastructure/persistence/repositories/drizzle-plan-offer.repository'
 import { DrizzleAdminBillingStatsReadModel } from './infrastructure/persistence/read-models/drizzle-admin-billing-stats.read-model'
 import { DrizzleAdminSubscriptionReadModel } from './infrastructure/persistence/read-models/drizzle-admin-subscription.read-model'
 import { DrizzlePlanPriceRepository } from './infrastructure/persistence/repositories/drizzle-plan-price.repository'
@@ -24,9 +31,15 @@ import { BILLING_RESOLVERS } from './presentation/billing.presentation'
 const ADAPTERS: Provider[] = [
     { provide: PlanRepository, useClass: DrizzlePlanRepository },
     { provide: PlanPriceRepository, useClass: DrizzlePlanPriceRepository },
+    { provide: PlanOfferRepository, useClass: DrizzlePlanOfferRepository },
     { provide: SubscriptionRepository, useClass: DrizzleSubscriptionRepository },
     { provide: AdminBillingStatsReadModel, useClass: DrizzleAdminBillingStatsReadModel },
     { provide: AdminSubscriptionReadModel, useClass: DrizzleAdminSubscriptionReadModel },
+    { provide: BillingMetrics, useClass: PrometheusBillingMetrics },
+    // The gateways. StripeGateway is a concrete provider because the registry needs
+    // it by class; nothing else in the app may inject it.
+    StripeGateway,
+    { provide: GatewayProvider, useClass: GatewayRegistry },
     { provide: Clock, useClass: SystemClock },
     { provide: IdGenerator, useClass: UuidGenerator },
 ]

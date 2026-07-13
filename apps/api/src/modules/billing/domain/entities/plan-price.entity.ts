@@ -61,6 +61,12 @@ export class PlanPriceEntity {
         return new PlanPriceEntity(props)
     }
 
+    /** Record the provider-side price this version was published as. */
+    syncedToStripe(priceId: string, now: Date): void {
+        this.props.stripePriceId = priceId
+        this.props.updatedAt = now
+    }
+
     /** Withdraw from sale. Live subscriptions on it are untouched — they paid for it. */
     deactivate(now: Date): void {
         this.props.active = false

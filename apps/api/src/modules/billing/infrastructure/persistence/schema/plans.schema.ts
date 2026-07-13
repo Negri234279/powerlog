@@ -43,6 +43,9 @@ export const plans = pgTable(
         isFree: boolean('is_free').notNull().default(false),
         sortOrder: integer('sort_order').notNull().default(0),
         entitlements: jsonb('entitlements').notNull(),
+        // The Stripe Product this plan was published as. Null until an admin syncs
+        // the catalog — the seed migration never calls an external API.
+        stripeProductId: text('stripe_product_id'),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },

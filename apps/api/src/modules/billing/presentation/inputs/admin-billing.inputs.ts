@@ -162,6 +162,49 @@ export const assignSubscriptionSchema = z.object({
         .transform((value) => value ?? null),
 })
 
+// ── offers ──────────────────────────────────────────────────────────────
+@InputType()
+export class IntroPhaseInput {
+    @Field(() => Int, { description: 'How many billing cycles the discount lasts.' })
+    cycles!: number
+
+    @Field(() => Int, { description: 'How much is taken off each of those cycles (1–100).' })
+    percentOff!: number
+}
+
+@InputType()
+export class UpsertPlanOfferInput {
+    @Field(() => ID)
+    planId!: string
+
+    @Field()
+    name!: string
+
+    @Field(() => Int, { nullable: true, description: 'Free days before the first charge.' })
+    trialDays?: number | null
+
+    @Field(() => IntroPhaseInput, { nullable: true })
+    introPhase?: IntroPhaseInput | null
+
+    @Field(() => Date, { nullable: true, description: 'When it opens. Omitted → now.' })
+    startsAt?: Date | null
+
+    @Field(() => Date, { nullable: true, description: 'When it closes. Omitted → open-ended.' })
+    endsAt?: Date | null
+}
+
+export const upsertPlanOfferSchema = z.object({
+    planId: uuid,
+    name: z.string().trim().min(1).max(60),
+    trialDays: z.int().min(1).max(365).nullish(),
+    introPhase: z.object({ cycles: z.int().min(1).max(36), percentOff: z.int().min(1).max(100) }).nullish(),
+    startsAt: z.coerce.date().nullish(),
+    endsAt: z.coerce.date().nullish(),
+})
+
+// ── gateways ────────────────────────────────────────────────────────────
+export const gatewayArgRequired = gateway
+
 // ── list filters ────────────────────────────────────────────────────────
 const optionalArg = <T extends z.ZodTypeAny>(schema: T) => schema.nullish().transform((value) => value ?? undefined)
 

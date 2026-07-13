@@ -117,6 +117,15 @@ export const envSchema = z.object({
     // Set it in every deployed env. Format: redis://[user:pass@]host:port[/db].
     REDIS_URL: z.url({ protocol: /^rediss?$/ }).optional(),
 
+    // ── Payments (Stripe) ──────────────────────────────────────────
+    // Optional on purpose, like REDIS_URL: with no key the gateway is simply not
+    // offered (checkout answers GATEWAY_NOT_CONFIGURED) and the app runs in
+    // free/manual mode — which is what dev and the test suites do.
+    // The webhook secret is what makes an inbound event trustworthy: without it
+    // the endpoint refuses every payload rather than trusting an unsigned one.
+    STRIPE_SECRET_KEY: z.string().default(''),
+    STRIPE_WEBHOOK_SECRET: z.string().default(''),
+
     // ── Observability (OpenTelemetry → Tempo) ──────────────────────
     OTEL_SERVICE_NAME: z.string().default('powerlog-api'),
     // OTLP/HTTP base endpoint. Empty (or OTEL_SDK_DISABLED) disables exporting.

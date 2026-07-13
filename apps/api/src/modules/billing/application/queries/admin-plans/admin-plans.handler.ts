@@ -1,8 +1,10 @@
 import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 
 import type { EntitlementsSnapshot, PlanAudience } from '../../../../../shared/contracts/entitlements'
+import type { IntroPhase, PlanOfferEntity } from '../../../domain/entities/plan-offer.entity'
 import type { PlanStatus } from '../../../domain/entities/plan.entity'
 import type { Currency, PlanInterval } from '../../../domain/plan-interval'
+import { PlanOfferRepository } from '../../../domain/repositories/plan-offer.repository'
 import { PlanPriceRepository } from '../../../domain/repositories/plan-price.repository'
 import { PlanRepository } from '../../../domain/repositories/plan.repository'
 import { AdminPlansQuery } from './admin-plans.query'
@@ -15,6 +17,16 @@ export interface AdminPlanPriceView {
     active: boolean
     stripePriceId: string | null
     paypalPlanId: string | null
+}
+
+export interface AdminPlanOfferView {
+    id: string
+    name: string
+    trialDays: number | null
+    introPhase: IntroPhase | null
+    startsAt: Date
+    endsAt: Date | null
+    stripeCouponId: string | null
 }
 
 export interface AdminPlanView {
@@ -32,6 +44,10 @@ export interface AdminPlanView {
     snapshot: EntitlementsSnapshot
     /** Every version, active or withdrawn: the price history is part of the plan. */
     prices: AdminPlanPriceView[]
+    /** The live offer, if the plan has one. */
+    offer: AdminPlanOfferView | null
+    /** Null until an admin publishes the plan to Stripe. */
+    stripeProductId: string | null
     createdAt: Date
     updatedAt: Date
 }
@@ -41,12 +57,15 @@ export class AdminPlansHandler implements IQueryHandler<AdminPlansQuery, AdminPl
     constructor(
         private readonly plans: PlanRepository,
         private readonly prices: PlanPriceRepository,
+        private readonly offers: PlanOfferRepository,
     ) {}
 
     async execute(query: AdminPlansQuery): Promise<AdminPlanView[]> {
         const plans = await this.plans.findAll(query.audience)
-        // One query for every price of the page, not one per plan.
-        const prices = await this.prices.findByPlans(plans.map((plan) => plan.id))
+        const planIds = plans.map((plan) => plan.id)
+        // One query for every price (and offer) of the page, not one per plan.
+        const prices = await this.prices.findByPlans(planIds)
+        const offers = await this.offers.findActiveByPlans(planIds)
 
         return plans.map((plan) => ({
             id: plan.id,
@@ -70,8 +89,24 @@ export class AdminPlansHandler implements IQueryHandler<AdminPlansQuery, AdminPl
                     stripePriceId: price.stripePriceId,
                     paypalPlanId: price.paypalPlanId,
                 })),
+            offer: offerViewOf(offers.find((offer) => offer.planId === plan.id)),
+            stripeProductId: plan.stripeProductId,
             createdAt: plan.createdAt,
             updatedAt: plan.updatedAt,
         }))
+    }
+}
+
+function offerViewOf(offer: PlanOfferEntity | undefined): AdminPlanOfferView | null {
+    if (!offer) return null
+
+    return {
+        id: offer.id,
+        name: offer.name,
+        trialDays: offer.trialDays,
+        introPhase: offer.introPhase,
+        startsAt: offer.startsAt,
+        endsAt: offer.endsAt,
+        stripeCouponId: offer.stripeCouponId,
     }
 }

@@ -43,6 +43,12 @@ export const METRIC = {
     subscriptionsByPlan: 'powerlog_subscriptions_by_plan',
     mrrCents: 'powerlog_mrr_cents',
     subscriptionsCanceling: 'powerlog_subscriptions_canceling',
+    gatewayRequestDuration: 'powerlog_gateway_request_duration_seconds',
+    planSync: 'powerlog_plan_sync_total',
+    checkoutSessions: 'powerlog_checkout_sessions_total',
+    subscriptionEvents: 'powerlog_subscription_events_total',
+    offerRedemptions: 'powerlog_offer_redemptions_total',
+    billingWebhooks: 'powerlog_billing_webhooks_total',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -317,5 +323,38 @@ export const metricsProviders = [
     makeGaugeProvider({
         name: METRIC.subscriptionsCanceling,
         help: 'Cancelled but still inside the period they paid for: churn already decided, not yet visible.',
+    }),
+    // Outgoing calls to the payment providers — the same treatment mail and R2 get.
+    makeHistogramProvider({
+        name: METRIC.gatewayRequestDuration,
+        help: 'Duration of outgoing calls to a payment gateway.',
+        labelNames: ['gateway', 'operation', 'status'],
+        buckets: DURATION_BUCKETS,
+    }),
+    makeCounterProvider({
+        name: METRIC.planSync,
+        help: 'Catalog publications to a payment gateway.',
+        labelNames: ['gateway', 'status'],
+    }),
+    makeCounterProvider({
+        name: METRIC.checkoutSessions,
+        help: 'Checkout funnel: started here, completed/expired by webhook.',
+        labelNames: ['gateway', 'plan', 'status'],
+    }),
+    makeCounterProvider({
+        name: METRIC.subscriptionEvents,
+        help: 'The subscription lifecycle — churn and dunning recovery are derived from this.',
+        labelNames: ['type', 'gateway'],
+    }),
+    makeCounterProvider({
+        name: METRIC.offerRedemptions,
+        help: 'Signups that came in through an offer.',
+        labelNames: ['plan'],
+    }),
+    // `duplicate` is visible on purpose: it is the proof the idempotency works.
+    makeCounterProvider({
+        name: METRIC.billingWebhooks,
+        help: 'Inbound billing webhooks, by outcome.',
+        labelNames: ['gateway', 'type', 'status'],
     }),
 ]

@@ -29,6 +29,7 @@ export class DrizzlePlanRepository extends PlanRepository {
                     status: row.status,
                     sortOrder: row.sortOrder,
                     entitlements: row.entitlements,
+                    stripeProductId: row.stripeProductId,
                     updatedAt: row.updatedAt,
                 },
             })

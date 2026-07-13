@@ -21,6 +21,7 @@ export function toPlanAggregate(row: PlanRow): PlanAggregate {
         isFree: row.isFree,
         sortOrder: row.sortOrder,
         entitlements: row.entitlements,
+        stripeProductId: row.stripeProductId,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
     })
@@ -38,6 +39,7 @@ export function toPlanRow(plan: PlanAggregate): PlanInsert {
         sortOrder: plan.sortOrder,
         // The VO's value is the validated jsonb — it went through zod on the way in.
         entitlements: plan.entitlements.value,
+        stripeProductId: plan.stripeProductId,
         createdAt: plan.createdAt,
         updatedAt: plan.updatedAt,
     }

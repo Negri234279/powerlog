@@ -37,4 +37,5 @@ export * from '../modules/ai/infrastructure/persistence/schema/ai-mesocycle-draf
 export * from '../modules/ai/infrastructure/persistence/schema/ai-usage.schema'
 export * from '../modules/billing/infrastructure/persistence/schema/plans.schema'
 export * from '../modules/billing/infrastructure/persistence/schema/plan-prices.schema'
+export * from '../modules/billing/infrastructure/persistence/schema/plan-offers.schema'
 export * from '../modules/billing/infrastructure/persistence/schema/subscriptions.schema'

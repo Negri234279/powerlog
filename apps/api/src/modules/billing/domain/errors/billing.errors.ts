@@ -142,3 +142,75 @@ export class NotAManualSubscriptionError extends BillingError {
         super('This subscription is billed by a payment gateway; end it there.')
     }
 }
+
+/** An offer that would promise nothing, or promise the impossible. */
+export class InvalidPlanOfferError extends BillingError {
+    readonly code = 'INVALID_PLAN_OFFER'
+
+    constructor(detail: string) {
+        super(detail)
+    }
+}
+
+export class PlanOfferNotFoundError extends BillingError {
+    readonly code = 'PLAN_OFFER_NOT_FOUND'
+
+    constructor() {
+        super('Offer not found.')
+    }
+}
+
+/** The offer is over, not started, or belongs to another plan. */
+export class OfferNotRedeemableError extends BillingError {
+    readonly code = 'OFFER_NOT_REDEEMABLE'
+
+    constructor() {
+        super('That offer is no longer available.')
+    }
+}
+
+/**
+ * The gateway asked for has no keys in this environment. Not a bug: with no
+ * `STRIPE_SECRET_KEY` the app runs perfectly well in free/manual mode — it just
+ * cannot take money.
+ */
+export class GatewayNotConfiguredError extends BillingError {
+    readonly code = 'GATEWAY_NOT_CONFIGURED'
+
+    constructor(readonly gateway: string) {
+        super(`Payments through ${gateway} are not available right now.`)
+    }
+}
+
+/** The catalog could not be pushed to the gateway (its API said no). */
+export class PlanSyncFailedError extends BillingError {
+    readonly code = 'PLAN_SYNC_FAILED'
+
+    constructor(
+        readonly gateway: string,
+        detail: string,
+    ) {
+        super(`Could not sync the plan to ${gateway}: ${detail}`)
+    }
+}
+
+/** The plan/price the user is trying to buy has never been pushed to the gateway. */
+export class PriceNotSyncedError extends BillingError {
+    readonly code = 'PRICE_NOT_SYNCED'
+
+    constructor() {
+        super('That price is not on sale yet. Try again in a moment.')
+    }
+}
+
+/** A gateway call failed (network, API error). Distinct from "not configured". */
+export class GatewayRequestFailedError extends BillingError {
+    readonly code = 'GATEWAY_REQUEST_FAILED'
+
+    constructor(
+        readonly gateway: string,
+        detail: string,
+    ) {
+        super(`The payment provider could not complete the request: ${detail}`)
+    }
+}
