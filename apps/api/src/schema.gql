@@ -8,6 +8,31 @@ input AddExerciseEntryInput {
   sessionId: ID!
 }
 
+input AddPlanPriceInput {
+  """Integer cents. Replaces the version on sale for this combo."""
+  amountCents: Int!
+
+  """EUR | USD"""
+  currency: String!
+
+  """month | quarter | semester | year"""
+  interval: String!
+  planId: ID!
+}
+
+type AdminBillingStats {
+  """Subscriptions currently granting their plan."""
+  activeSubscriptions: Int!
+  byPlan: [SubscriptionsByPlan!]!
+  byStatus: [SubscriptionsByStatus!]!
+
+  """Cancelled but still inside the period they paid for."""
+  canceling: Int!
+  mrr: [MrrByPlan!]!
+  pastDue: Int!
+  trialing: Int!
+}
+
 type AdminCoachingStats {
   activeCoaches: Int!
   linkedAthletes: Int!
@@ -40,6 +65,66 @@ type AdminExercisePage {
   rows: [AdminExercise!]!
 
   """Total exercises matching the filter (ignoring pagination)."""
+  total: Int!
+}
+
+type AdminPlan {
+  """athlete | coach"""
+  audience: String!
+  createdAt: DateTime!
+  description: String
+
+  """
+  The raw entitlements the admin form edits. Its shape is the zod schema of the audience.
+  """
+  entitlements: JSON!
+  id: ID!
+
+  """The fallback of its audience: no subscription row, no charge."""
+  isFree: Boolean!
+  name: String!
+  prices: [PlanPrice!]!
+
+  """Stable public identifier. Immutable — it labels metrics."""
+  slug: String!
+
+  """The same entitlements, collapsed as a subscriber would get them."""
+  snapshot: PlanEntitlements!
+  sortOrder: Int!
+
+  """draft | active | archived"""
+  status: String!
+  updatedAt: DateTime!
+}
+
+type AdminSubscription {
+  """Null for a manual grant: nothing is charged."""
+  amountCents: Int
+  cancelAtPeriodEnd: Boolean!
+  createdAt: DateTime!
+  currency: String
+  currentPeriodEnd: DateTime!
+  currentPeriodStart: DateTime!
+
+  """Null if the account is gone."""
+  email: String
+
+  """stripe | paypal | manual"""
+  gateway: String!
+  id: ID!
+  interval: String
+  planId: ID!
+  planName: String!
+  planSlug: String!
+  status: String!
+  userId: ID!
+  username: String
+}
+
+type AdminSubscriptionPage {
+  limit: Int!
+  offset: Int!
+  rows: [AdminSubscription!]!
   total: Int!
 }
 
@@ -267,6 +352,14 @@ type AiUsageTotals {
   totalCost: Float
 }
 
+input AssignSubscriptionInput {
+  planId: ID!
+
+  """When the grant ends. Omitted → one year."""
+  until: DateTime
+  userId: ID!
+}
+
 input ChangePasswordInput {
   currentPassword: String
   newPassword: String!
@@ -333,6 +426,26 @@ input CreateExerciseInput {
 
   """Stable key; derived from name if omitted."""
   slug: String
+}
+
+input CreatePlanInput {
+  """athlete | coach — decides the shape of the entitlements."""
+  audience: String!
+  description: String
+
+  """Validated against the zod schema of the audience."""
+  entitlements: JSON!
+
+  """The audience fallback. At most one active free plan per audience."""
+  isFree: Boolean
+  name: String!
+
+  """Stable public id (e.g. athlete-pro). Immutable afterwards."""
+  slug: String!
+  sortOrder: Int
+
+  """draft (default) | active | archived"""
+  status: String
 }
 
 input CreateSessionFromTemplateInput {
@@ -481,6 +594,9 @@ type IntensityBucket {
   """Rounded RPE (6–10) or RIR (0–50)."""
   value: Int!
 }
+
+"""An arbitrary JSON value (validated against a schema by the server)."""
+scalar JSON
 
 input LogSetInput {
   entryId: ID!
@@ -656,6 +772,13 @@ input MicrocycleInput {
   notes: String
 }
 
+type MrrByPlan {
+  """Monthly-normalised cents: a yearly plan is not 12× a monthly one."""
+  amountCents: Int!
+  currency: String!
+  plan: String!
+}
+
 type Mutation {
   """Accept a pending invitation (links you to the coach)."""
   acceptInvitation(id: ID!): CoachInvitation!
@@ -670,6 +793,19 @@ type Mutation {
 
   """Add an exercise to a session."""
   addExerciseEntry(input: AddExerciseEntryInput!): WorkoutSession!
+
+  """
+  Put a price on sale. The version currently on sale for that interval+currency is withdrawn.
+  """
+  addPlanPrice(input: AddPlanPriceInput!): ID!
+
+  """Put a user on a plan by hand (comp/support): no gateway, no charge."""
+  adminAssignSubscription(input: AssignSubscriptionInput!): ID!
+
+  """
+  End a manual grant now. Gateway-billed subscriptions must be ended at the gateway.
+  """
+  adminRevokeSubscription(id: ID!): Boolean!
 
   """
   Copy one of your own mesocycles to an athlete (they own the copy, you plan it; coaches only). The source stays in your library.
@@ -701,6 +837,9 @@ type Mutation {
   """Create a mesocycle (weeks → days → programmed sets)."""
   createMesocycle(input: MesocycleInput!): Mesocycle!
 
+  """Create a plan. Born `draft` unless told otherwise."""
+  createPlan(input: CreatePlanInput!): ID!
+
   """
   Create a session for yourself, pre-filled from one of your templates (status: planned).
   """
@@ -711,6 +850,9 @@ type Mutation {
 
   """Create a reusable workout template."""
   createWorkoutTemplate(input: WorkoutTemplateInput!): WorkoutTemplate!
+
+  """Withdraw a price. Subscriptions on it keep running — they paid for it."""
+  deactivatePlanPrice(id: ID!): Boolean!
 
   """Decline a pending invitation."""
   declineInvitation(id: ID!): CoachInvitation!
@@ -858,6 +1000,11 @@ type Mutation {
   """Transition a mesocycle’s status (draft/active/completed/archived)."""
   setMesocycleStatus(id: ID!, status: String!): Mesocycle!
 
+  """
+  Publish, unpublish or archive a plan. Archiving stops new signups; the subscriptions already on it keep it.
+  """
+  setPlanStatus(id: ID!, status: String!): Boolean!
+
   """Grant or revoke platform admin (cannot revoke your own)."""
   setUserAdmin(input: SetUserAdminInput!): AdminUser!
 
@@ -877,6 +1024,11 @@ type Mutation {
 
   """Replace a mesocycle’s details and its whole week/day/set tree."""
   updateMesocycle(id: ID!, input: MesocycleInput!): Mesocycle!
+
+  """
+  Edit a plan. Entitlement changes are retroactive: live subscribers see them at once.
+  """
+  updatePlan(input: UpdatePlanInput!): Boolean!
 
   """Update the authenticated user’s profile fields."""
   updateProfile(input: UpdateProfileInput!): Profile!
@@ -925,6 +1077,39 @@ type PendingInvitation {
   coachUsername: String!
   createdAt: DateTime!
   id: ID!
+}
+
+type PlanEntitlements {
+  ai: Boolean!
+  audience: String!
+
+  """null = unlimited."""
+  maxAthletes: Int
+  mesocycles: Boolean!
+  plan: String!
+  planSessions: Boolean!
+  templates: Boolean!
+}
+
+type PlanPrice {
+  """
+  Whether it is on sale. Withdrawn versions stay: subscriptions point at them.
+  """
+  active: Boolean!
+  amountCents: Int!
+
+  """EUR | USD"""
+  currency: String!
+  id: ID!
+
+  """month | quarter | semester | year"""
+  interval: String!
+
+  """Set once the catalog is synced to PayPal."""
+  paypalPlanId: String
+
+  """Set once the catalog is synced to Stripe."""
+  stripePriceId: String
 }
 
 input PlanSessionFromTemplateInput {
@@ -977,6 +1162,9 @@ type Profile {
 }
 
 type Query {
+  """Aggregate billing figures (admin only)."""
+  adminBillingStats: AdminBillingStats!
+
   """Aggregate coaching counts (admin only)."""
   adminCoachingStats: AdminCoachingStats!
 
@@ -984,6 +1172,19 @@ type Query {
   Exercise catalog for admins (filter by category/equipment/muscle/text; offset-paginated).
   """
   adminExercises(categories: [String!], equipment: [String!], limit: Int, muscles: [String!], offset: Int, search: String): AdminExercisePage!
+
+  """
+  JSON Schema of the entitlements an audience accepts — the admin form renders itself from this, so adding a feature needs no UI change.
+  """
+  adminPlanEntitlementsSchema(audience: String!): JSON!
+
+  """The whole catalog, any status (admin only)."""
+  adminPlans(audience: String): [AdminPlan!]!
+
+  """
+  Subscriptions, filterable by status/gateway/plan and by exact email or handle.
+  """
+  adminSubscriptions(gateway: String, limit: Int, offset: Int, planId: ID, search: String, status: String): AdminSubscriptionPage!
 
   """Aggregate user counts for the admin dashboard."""
   adminUserStats: AdminUserStats!
@@ -1264,6 +1465,18 @@ type StrengthTrend {
   slopePerWeekKg: Float!
 }
 
+type SubscriptionsByPlan {
+  audience: String!
+  count: Int!
+  plan: String!
+}
+
+type SubscriptionsByStatus {
+  count: Int!
+  gateway: String!
+  status: String!
+}
+
 input TemplateExerciseInput {
   exerciseId: ID!
   notes: String
@@ -1334,6 +1547,17 @@ input UpdateExerciseInput {
   """
   nameEs: String
   primaryMuscle: String
+}
+
+input UpdatePlanInput {
+  """Pass null to clear it."""
+  description: String
+
+  """Editing these reaches live subscribers immediately."""
+  entitlements: JSON
+  id: ID!
+  name: String
+  sortOrder: Int
 }
 
 input UpdateProfileInput {

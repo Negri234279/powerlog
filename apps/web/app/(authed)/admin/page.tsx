@@ -3,8 +3,9 @@
 import { useTranslations } from 'next-intl'
 
 import { env } from '@/lib/env'
+import { useAdminBillingStats } from '@/lib/graphql/hooks/use-admin-billing'
 import { useAdminStats } from '@/lib/graphql/hooks/use-admin-stats'
-import { ArrowUpRight, ChartLine, Dumbbell, Shield, Users } from '@/components/ui/icons'
+import { ArrowUpRight, ChartLine, CreditCard, Dumbbell, Shield, Users } from '@/components/ui/icons'
 import { PopNumber } from '@/components/ui/pop-number'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
@@ -15,6 +16,7 @@ import { AdminTabs } from '@/components/admin/admin-tabs'
 export default function AdminOverviewPage() {
     const t = useTranslations('admin')
     const { data, isLoading } = useAdminStats()
+    const { data: billing } = useAdminBillingStats()
     const users = data?.adminUserStats
     const coaching = data?.adminCoachingStats
     const workouts = data?.adminWorkoutStats
@@ -55,6 +57,16 @@ export default function AdminOverviewPage() {
                         <Stat label={t('coachingActiveCoaches')} value={coaching?.activeCoaches} />
                         <Stat label={t('coachingLinkedAthletes')} value={coaching?.linkedAthletes} />
                         <Stat label={t('coachingPending')} value={coaching?.pendingInvitations} />
+                    </Section>
+
+                    <Section title={t('sectionBilling')} icon={<CreditCard className="size-4" />}>
+                        <Stat label={t('billingActive')} value={billing?.activeSubscriptions} />
+                        <Stat label={t('billingTrialing')} value={billing?.trialing} />
+                        <Stat label={t('billingPastDue')} value={billing?.pastDue} />
+                        {/* Cancelled but still inside the period they paid for: churn that is
+                            already decided and does not show up in the active count yet. */}
+                        <Stat label={t('billingCanceling')} value={billing?.canceling} />
+                        {billing?.mrr.length ? <Mrr mrr={billing.mrr} /> : <Stat label={t('billingMrr')} value={0} />}
                     </Section>
 
                     <Section title={t('sectionTraining')} icon={<Dumbbell className="size-4" />}>
@@ -99,6 +111,31 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
             </h2>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{children}</div>
         </section>
+    )
+}
+
+/**
+ * MRR, one figure per currency. They are NOT added together: a euro and a dollar
+ * are different money, and a single number would be a made-up exchange rate.
+ */
+function Mrr({ mrr }: { mrr: { currency: string; amountCents: number }[] }) {
+    const t = useTranslations('admin')
+    const byCurrency = new Map<string, number>()
+    for (const row of mrr) {
+        byCurrency.set(row.currency, (byCurrency.get(row.currency) ?? 0) + row.amountCents)
+    }
+
+    return (
+        <div className="rounded-2xl bg-surface p-5 ring-1 ring-hairline">
+            <p className="font-mono text-eyebrow uppercase text-text-faint">{t('billingMrr')}</p>
+            <div className="mt-2 space-y-0.5">
+                {[...byCurrency].map(([currency, amountCents]) => (
+                    <p key={currency} className="font-display text-h4 tabular-nums tracking-tight">
+                        {new Intl.NumberFormat('en', { style: 'currency', currency }).format(amountCents / 100)}
+                    </p>
+                ))}
+            </div>
+        </div>
     )
 }
 

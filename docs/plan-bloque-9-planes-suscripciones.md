@@ -4,8 +4,14 @@
 > (decisiones abajo). Implementar **por sub-bloques con checkpoint** como el resto
 > del proyecto: generar un bloque, resumir, esperar OK.
 >
-> **Estado: [x] 9.1 · [ ] 9.2 · [ ] 9.3 · [ ] 9.4 · [ ] 9.5.** El detalle de lo
-> construido en 9.1 está en [HANDOFF.md](../HANDOFF.md).
+> **Estado: [x] 9.1 · [x] 9.2 · [ ] 9.3 · [ ] 9.4 · [ ] 9.5.** El detalle de lo
+> construido está en [HANDOFF.md](../HANDOFF.md).
+>
+> **Añadidos en 9.2 sobre lo planeado**: `adminRevokeSubscription` (terminar un comp;
+> sin él el panel no era operable) · **scalar `JSON`** + `adminPlanEntitlementsSchema`
+> (el form de admin se genera desde el schema zod → añadir un check no toca la UI) ·
+> `upsertPlanOffer`/`syncPlanToGateways` siguen **aplazados a 9.3** (no tienen sentido
+> sin pasarela).
 
 ## Ajustes al plan decididos al implementar 9.1 (mandan sobre lo de abajo)
 
@@ -373,8 +379,9 @@ pasarelas · si hay exporter de Stripe, fila con sus series externas.
    por migración (`0042`/`0043`) + `GetUserEntitlementsQuery` + `PlanAwareEntitlements`
    (rebind) + gates en los handlers existentes + errores + métrica de denials + tests.
    _Los límites ya son reales sin pasarela: todo el mundo en free/manual._
-2. **9.2 Admin de planes** — CRUD dinámico API+web, asignación manual
-   (comps), `adminBillingStats` básicos.
+2. **9.2 Admin de planes** — ✅ **HECHO** (921 tests verdes + web). CRUD dinámico
+   API+web, asignación manual (comps) + revocación, `adminSubscriptions`,
+   `adminBillingStats` + gauges de estado.
 3. **9.3 Stripe end-to-end** — sync de catálogo, checkout, webhooks,
    suscripciones + facturas espejo, cancel/resume/changePlan, portal,
    `/account/plan` + `/account/billing`.

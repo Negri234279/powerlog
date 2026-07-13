@@ -175,3 +175,10 @@ export const Dumbbell = (p: SVGProps<SVGSVGElement>) => (
         <path d="M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12" />
     </Icon>
 )
+
+export const CreditCard = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M3 10h18M7 15h3" />
+    </Icon>
+)
