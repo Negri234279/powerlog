@@ -30,6 +30,7 @@ export class DrizzlePlanRepository extends PlanRepository {
                     sortOrder: row.sortOrder,
                     entitlements: row.entitlements,
                     stripeProductId: row.stripeProductId,
+                    paypalProductId: row.paypalProductId,
                     updatedAt: row.updatedAt,
                 },
             })

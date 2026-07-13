@@ -84,6 +84,11 @@ export class StripeGateway extends PaymentGatewayPort {
         return this.client !== null
     }
 
+    /** Stripe models cancel-at-period-end natively, so a cancellation is undoable. */
+    get supportsResume(): boolean {
+        return true
+    }
+
     async syncPlan(
         plan: PlanAggregate,
         prices: PlanPriceEntity[],
@@ -95,8 +100,9 @@ export class StripeGateway extends PaymentGatewayPort {
             const result = await this.timed('sync', async () => {
                 // One Stripe Product per plan; re-syncing an already-published plan
                 // updates its name instead of creating a second product.
-                const product = plan.stripeProductId
-                    ? await stripe.products.update(plan.stripeProductId, {
+                const existingProduct = plan.productIdOn('stripe')
+                const product = existingProduct
+                    ? await stripe.products.update(existingProduct, {
                           name: plan.name,
                           ...(plan.description ? { description: plan.description } : {}),
                       })
@@ -110,8 +116,9 @@ export class StripeGateway extends PaymentGatewayPort {
                 for (const price of prices) {
                     // A price is immutable on both sides, so an already-synced one is
                     // never touched: that row is what somebody is being billed on.
-                    if (price.stripePriceId) {
-                        priceIds[price.id] = price.stripePriceId
+                    const existing = price.externalIdOn('stripe')
+                    if (existing) {
+                        priceIds[price.id] = existing
                         continue
                     }
 
@@ -128,7 +135,7 @@ export class StripeGateway extends PaymentGatewayPort {
                 return {
                     productId: product.id,
                     priceIds,
-                    offerDiscountId: offer ? await this.syncOffer(stripe, plan, offer) : null,
+                    offer: offer ? { discountId: await this.syncOffer(stripe, plan, offer) } : null,
                 }
             })
 
@@ -169,7 +176,7 @@ export class StripeGateway extends PaymentGatewayPort {
 
     async createCheckout(request: CheckoutRequest): Promise<string> {
         const stripe = this.require()
-        const priceId = request.price.stripePriceId
+        const priceId = request.price.externalIdOn('stripe')
         // Never send someone to a checkout for a price the provider has never heard
         // of: they would land on an error page with their card out.
         if (!priceId) throw new PriceNotSyncedError()
@@ -226,9 +233,9 @@ export class StripeGateway extends PaymentGatewayPort {
         subscription: SubscriptionAggregate,
         newPrice: PlanPriceEntity,
         mode: PlanChangeMode,
-    ): Promise<void> {
+    ): Promise<string | null> {
         const stripe = this.require()
-        const priceId = newPrice.stripePriceId
+        const priceId = newPrice.externalIdOn('stripe')
         if (!priceId) throw new PriceNotSyncedError()
 
         await this.call('change_plan', async () => {
@@ -249,6 +256,9 @@ export class StripeGateway extends PaymentGatewayPort {
                 ...(mode === 'at_period_end' ? { billing_cycle_anchor: 'unchanged' as const } : {}),
             })
         })
+
+        // Stripe applies it on its own — the user does not have to approve anything.
+        return null
     }
 
     async billingPortalUrl(subscription: SubscriptionAggregate, returnUrl: string): Promise<string | null> {
@@ -270,12 +280,14 @@ export class StripeGateway extends PaymentGatewayPort {
      * is somebody claiming a payment happened, and taking their word for it would
      * hand out paid plans for free.
      */
-    verifyWebhook(rawBody: Buffer, signature: string): GatewayEvent {
+    async verifyWebhook(rawBody: Buffer, headers: Record<string, string | undefined>): Promise<GatewayEvent> {
         const stripe = this.require()
         const secret = this.webhookSecret
-        if (!secret) throw new GatewayNotConfiguredError('stripe')
+        const signature = headers['stripe-signature']
+        if (!secret || !signature) throw new GatewayNotConfiguredError('stripe')
 
-        // Throws on a bad signature or a stale timestamp (replay protection).
+        // Local HMAC over the raw bytes. Throws on a bad signature or a stale
+        // timestamp (replay protection) — no network call, unlike PayPal.
         const event = stripe.webhooks.constructEvent(rawBody, signature, secret)
 
         return this.translate(event)
@@ -367,6 +379,22 @@ export class StripeGateway extends PaymentGatewayPort {
                 // and counted — a provider starting to send something new is worth seeing.
                 return { ...base, kind: 'unhandled' }
         }
+    }
+
+    /** Everything Stripe is still billing, paged through in full. */
+    async listLiveSubscriptionIds(): Promise<string[] | null> {
+        const stripe = this.require()
+        const ids: string[] = []
+
+        // `status: 'all'` would include the finished ones; what we want is what Stripe
+        // still considers alive, which is exactly what our own "live" statuses mean.
+        for (const status of ['active', 'trialing', 'past_due'] as const) {
+            for await (const subscription of stripe.subscriptions.list({ status, limit: 100 })) {
+                ids.push(subscription.id)
+            }
+        }
+
+        return ids
     }
 
     private require(): Stripe {

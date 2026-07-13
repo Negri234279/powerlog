@@ -156,9 +156,12 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
 
     /** Renewal, dunning, cancellation, plan change — the gateway's whole story. */
     private async onSubscriptionChanged(event: SubscriptionChangedEvent): Promise<void> {
-        const subscription = await this.subscriptions.findByGatewayId(event.gatewaySubscriptionId)
-        // Nothing to update yet: the checkout event has not arrived. It will, and it
-        // creates the row; this one is simply early.
+        const subscription =
+            (await this.subscriptions.findByGatewayId(event.gatewaySubscriptionId)) ??
+            (await this.createFromSubscriptionEvent(event))
+
+        // Nothing to update, and nothing to create it from: Stripe's checkout event
+        // has not arrived yet. It will, and it creates the row; this one is early.
         if (!subscription) return
 
         const previousStatus = subscription.status
@@ -219,6 +222,39 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
                 subscription.currentPeriodEnd,
             ),
         )
+    }
+
+    /**
+     * PayPal has no "checkout completed" event: its `BILLING.SUBSCRIPTION.ACTIVATED`
+     * is the first we hear of the subscription, and it carries the user. So when an
+     * event brings a user id and points at a price we published, it may create the
+     * row itself — the same row a Stripe checkout would have created.
+     */
+    private async createFromSubscriptionEvent(event: SubscriptionChangedEvent): Promise<SubscriptionAggregate | null> {
+        if (!event.userId || !event.gatewayPriceId) return null
+
+        const price = await this.prices.findByGatewayPriceId(event.gatewayPriceId)
+        if (!price) return null
+
+        const now = this.clock.now()
+        const subscription = SubscriptionAggregate.create({
+            id: this.ids.uuid(),
+            userId: event.userId,
+            planId: price.planId,
+            planPriceId: price.id,
+            gateway: event.gateway,
+            gatewaySubscriptionId: event.gatewaySubscriptionId,
+            status: 'incomplete',
+            currentPeriodStart: now,
+            currentPeriodEnd: now,
+            now,
+        })
+        await this.subscriptions.save(subscription)
+
+        const plan = await this.plans.findById(price.planId)
+        if (plan) this.metrics.recordCheckout(event.gateway, plan.slug, 'completed')
+
+        return subscription
     }
 
     /**

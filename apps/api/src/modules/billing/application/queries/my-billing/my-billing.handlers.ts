@@ -61,6 +61,12 @@ export interface MySubscriptionView {
     cancelAtPeriodEnd: boolean
     /** The plan they drop to at renewal (a downgrade they asked for). */
     pendingPlanSlug: string | null
+    /**
+     * Whether a cancellation can still be undone here. False on PayPal, whose
+     * cancellation is terminal — the UI reads this instead of offering a button
+     * that could only produce an error.
+     */
+    canResume: boolean
 }
 
 export interface MyInvoiceView {
@@ -124,9 +130,10 @@ export class AvailablePlansHandler implements IQueryHandler<AvailablePlansQuery,
                         interval: price.interval,
                         currency: price.currency,
                         amountCents: price.amountCents,
-                        // A price the gateway has never heard of cannot be bought, however
-                        // configured the gateway is.
-                        gateways: price.stripePriceId ? configured.filter((name) => name === 'stripe') : [],
+                        // A price the provider has never heard of cannot be bought,
+                        // however configured that provider is — so each gateway only
+                        // counts if the catalog was actually published to it.
+                        gateways: configured.filter((name) => price.externalIdOn(name) !== null),
                     })),
                 offer: offer
                     ? {
@@ -148,6 +155,7 @@ export class MySubscriptionHandler implements IQueryHandler<MySubscriptionQuery,
         private readonly subscriptions: SubscriptionRepository,
         private readonly plans: PlanRepository,
         private readonly prices: PlanPriceRepository,
+        private readonly gateways: GatewayProvider,
         private readonly clock: Clock,
     ) {}
 
@@ -176,6 +184,19 @@ export class MySubscriptionHandler implements IQueryHandler<MySubscriptionQuery,
             currentPeriodEnd: subscription.currentPeriodEnd,
             cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
             pendingPlanSlug: pendingPlan?.slug ?? null,
+            canResume: this.canResume(subscription.gateway),
+        }
+    }
+
+    /** A manual grant has no gateway to ask, so it cannot be resumed either. */
+    private canResume(gateway: string): boolean {
+        if (gateway === 'manual') return false
+
+        try {
+            return this.gateways.get(gateway as 'stripe' | 'paypal').supportsResume
+        } catch {
+            // The gateway is not configured here any more — nothing can be done to it.
+            return false
         }
     }
 }

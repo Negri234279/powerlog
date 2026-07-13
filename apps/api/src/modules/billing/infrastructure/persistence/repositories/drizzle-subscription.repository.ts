@@ -4,7 +4,8 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import type { SubscriptionAggregate } from '../../../domain/entities/subscription.entity'
 import { SubscriptionRepository } from '../../../domain/repositories/subscription.repository'
-import { LIVE_STATUSES } from '../../../domain/subscription-status'
+import type { PaymentGateway } from '../../../domain/entities/subscription.entity'
+import { ENTITLING_STATUSES, LIVE_STATUSES } from '../../../domain/subscription-status'
 import { toSubscriptionAggregate, toSubscriptionRow } from '../mappers/subscription.mapper'
 import { subscriptions } from '../schema/subscriptions.schema'
 
@@ -46,6 +47,15 @@ export class DrizzleSubscriptionRepository extends SubscriptionRepository {
             .limit(1)
 
         return row ? toSubscriptionAggregate(row) : null
+    }
+
+    async findLiveByGateway(gateway: PaymentGateway): Promise<SubscriptionAggregate[]> {
+        const rows = await this.db
+            .select()
+            .from(subscriptions)
+            .where(and(eq(subscriptions.gateway, gateway), inArray(subscriptions.status, [...ENTITLING_STATUSES])))
+
+        return rows.map(toSubscriptionAggregate)
     }
 
     async findById(id: string): Promise<SubscriptionAggregate | null> {

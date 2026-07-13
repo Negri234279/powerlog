@@ -1,4 +1,4 @@
-import type { SubscriptionAggregate } from '../entities/subscription.entity'
+import type { PaymentGateway, SubscriptionAggregate } from '../entities/subscription.entity'
 
 /** Persistence port for subscriptions. */
 export abstract class SubscriptionRepository {
@@ -20,4 +20,7 @@ export abstract class SubscriptionRepository {
 
     /** The local mirror of a gateway subscription — how a webhook finds its row. */
     abstract findByGatewayId(gatewaySubscriptionId: string): Promise<SubscriptionAggregate | null>
+
+    /** Everything we believe is live on a gateway. The reconciliation's local side. */
+    abstract findLiveByGateway(gateway: PaymentGateway): Promise<SubscriptionAggregate[]>
 }

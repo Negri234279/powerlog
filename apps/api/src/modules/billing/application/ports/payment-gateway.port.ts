@@ -23,10 +23,19 @@ import type { GatewayEvent } from './gateway-event'
 export interface PlanSyncResult {
     /** The provider's product (Stripe Product / PayPal Product). */
     productId: string
-    /** Price id per local price id — what a checkout is started against. */
+    /** External id per local price id — what a checkout is started against. */
     priceIds: Record<string, string>
-    /** The coupon/discount implementing the offer's intro phase, if there is one. */
-    offerDiscountId?: string | null
+    /**
+     * How the offer was expressed on this provider. The two are genuinely
+     * different mechanisms, not two names for one:
+     *  - Stripe: a **coupon** applied to a normal price (`discountId`).
+     *  - PayPal: the trial and intro cycles live inside the billing plan, so the
+     *    offer gets **its own plan per price** (`priceIds`).
+     */
+    offer?: {
+        discountId?: string | null
+        priceIds?: Record<string, string>
+    } | null
 }
 
 export interface CheckoutRequest {
@@ -78,15 +87,31 @@ export abstract class PaymentGatewayPort {
      */
     abstract cancelAtPeriodEnd(subscription: SubscriptionAggregate): Promise<void>
 
-    /** Undo a scheduled cancellation, while the period it paid for is still running. */
+    /**
+     * Undo a scheduled cancellation, while the period it paid for is still running.
+     *
+     * Not every provider can. PayPal's cancellation is **terminal**, so its adapter
+     * refuses and `supportsResume` is false — the UI reads that and does not offer
+     * a button that would only produce an error.
+     */
     abstract resume(subscription: SubscriptionAggregate): Promise<void>
 
-    /** Move a live subscription to another price. */
+    /** Whether `resume` means anything here. Stripe yes; PayPal no (see above). */
+    abstract get supportsResume(): boolean
+
+    /**
+     * Move a live subscription to another price.
+     *
+     * Returns **an approval URL when the provider needs the user to say yes again**
+     * (PayPal's `revise` does), or null when it applied the change on its own
+     * (Stripe). The caller sends the browser there; the change only becomes real
+     * when the webhook confirms it, either way.
+     */
     abstract changePlan(
         subscription: SubscriptionAggregate,
         newPrice: PlanPriceEntity,
         mode: PlanChangeMode,
-    ): Promise<void>
+    ): Promise<string | null>
 
     /**
      * A URL where the user manages their payment method and invoices, or null if
@@ -97,11 +122,33 @@ export abstract class PaymentGatewayPort {
 
     /**
      * Verify an inbound webhook against **the raw body** and translate it into a
-     * {@link GatewayEvent}. Throws if the signature does not check out — an
-     * unsigned payload is somebody claiming a payment happened.
+     * {@link GatewayEvent}. Throws if it does not check out — an unauthenticated
+     * payload is somebody claiming a payment happened.
      *
      * The raw bytes matter: the signature covers the exact body the provider sent,
      * so a JSON round-trip (parse → re-serialize) invalidates it.
+     *
+     * It takes **all the headers** and it is **async**, because the two providers
+     * authenticate an event in fundamentally different ways: Stripe signs it with a
+     * shared secret (one header, local HMAC), while PayPal signs with a certificate
+     * and expects you to **ask its API** whether the event is genuine (five headers,
+     * a network call). The port hides that; the controller just hands over what came
+     * in.
      */
-    abstract verifyWebhook(rawBody: Buffer, signature: string): GatewayEvent
+    abstract verifyWebhook(rawBody: Buffer, headers: Record<string, string | undefined>): Promise<GatewayEvent>
+
+    /**
+     * Every subscription the provider currently considers live, by its own id.
+     *
+     * This is the input to the reconciliation: **a webhook we never received is a
+     * silent bug that bills people wrongly for weeks**, and the only way to see it
+     * is to ask the provider what it thinks and compare. Returns null when the
+     * provider cannot answer, which is not the same as "nothing is live" — a null
+     * means "no signal", and the drift gauge is left alone rather than alerting on
+     * a made-up zero.
+     *
+     * `planExternalIds` is the catalog we published there; PayPal can only list
+     * subscriptions per plan, and Stripe ignores it.
+     */
+    abstract listLiveSubscriptionIds(planExternalIds: string[]): Promise<string[] | null>
 }

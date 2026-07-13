@@ -68,6 +68,12 @@ export class DrizzleWebhookEventStore extends WebhookEventStore {
             .where(and(eq(billingWebhookEvents.gateway, gateway), eq(billingWebhookEvents.eventId, eventId)))
     }
 
+    async reopen(gateway: PaymentGateway, eventId: string): Promise<void> {
+        await this.db
+            .delete(billingWebhookEvents)
+            .where(and(eq(billingWebhookEvents.gateway, gateway), eq(billingWebhookEvents.eventId, eventId)))
+    }
+
     async list(
         filter: { status?: WebhookEventStatus; gateway?: PaymentGateway },
         page: { limit: number; offset: number },

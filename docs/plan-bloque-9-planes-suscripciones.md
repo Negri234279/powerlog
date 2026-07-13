@@ -4,7 +4,7 @@
 > (decisiones abajo). Implementar **por sub-bloques con checkpoint** como el resto
 > del proyecto: generar un bloque, resumir, esperar OK.
 >
-> **Estado: [x] 9.1 · [x] 9.2 · [ ] 9.3 · [ ] 9.4 · [ ] 9.5.** El detalle de lo
+> **Estado: [x] 9.1 · [x] 9.2 · [x] 9.3 · [x] 9.4 · [x] 9.5 — bloque completo.** El detalle de lo
 > construido está en [HANDOFF.md](../HANDOFF.md).
 >
 > **Añadidos en 9.2 sobre lo planeado**: `adminRevokeSubscription` (terminar un comp;
@@ -382,11 +382,21 @@ pasarelas · si hay exporter de Stripe, fila con sus series externas.
 2. **9.2 Admin de planes** — ✅ **HECHO** (921 tests verdes + web). CRUD dinámico
    API+web, asignación manual (comps) + revocación, `adminSubscriptions`,
    `adminBillingStats` + gauges de estado.
-3. **9.3 Stripe end-to-end** — sync de catálogo, checkout, webhooks,
-   suscripciones + facturas espejo, cancel/resume/changePlan, portal,
-   `/account/plan` + `/account/billing`.
-4. **9.4 PayPal end-to-end** — segundo adapter del mismo puerto + sus webhooks
-   (la UI ya existe; se enciende el botón).
+3. **9.3 Stripe end-to-end** — ✅ **HECHO** (974 tests + web). Sync de catálogo,
+   checkout, webhooks firmados con idempotencia, suscripciones + facturas espejo,
+   cancel/resume/changePlan, portal, cache de entitlements, campana/realtime y las
+   páginas — que viven en **`/profile/plan` y `/profile/billing`** (el área de cuenta
+   ya existía ahí), no en `/account`.
+   **Desviaciones**: la fase intro de una oferta es un **porcentaje**, no céntimos
+   (un importe fijo no significa lo mismo contra EUR/USD × mes/año).
+4. **9.4 PayPal end-to-end** — ✅ **HECHO** (989 tests). Segundo adapter del mismo
+   puerto + sus webhooks. **Corrección al plan**: el SDK oficial NO está abandonado,
+   pero no cubre catálogo ni verificación de webhooks ⇒ REST con `fetch`.
+   Diferencias que obligaron a tocar el puerto: cancelar es **terminal** (no hay
+   resume), cambiar de plan **exige aprobación** (`changePlan` devuelve URL|null), y
+   el webhook se verifica **llamando a su API** (`verifyWebhook` es async y recibe
+   todas las cabeceras). Una oferta en PayPal es **un plan propio por precio**, no un
+   cupón.
 5. **9.5 Cierre** — notificaciones de billing (campana + realtime), dashboard
    Grafana `powerlog-billing.json`, **job de reconciliación + gauge de drift**,
    evaluación del exporter/datasource de Stripe, `/admin/billing` completo,

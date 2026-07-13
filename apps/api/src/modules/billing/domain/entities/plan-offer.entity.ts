@@ -29,6 +29,12 @@ export interface PlanOfferProps {
     active: boolean
     /** The Stripe coupon that implements the intro phase (filled by the catalog sync). */
     stripeCouponId: string | null
+    /**
+     * PayPal has no coupons: an offer's trial and intro cycles are part of the
+     * billing plan itself, so the offer needs its OWN PayPal plan per price. Maps
+     * our price id → that plan.
+     */
+    paypalPlanIds: Record<string, string> | null
     createdAt: Date
     updatedAt: Date
 }
@@ -87,6 +93,7 @@ export class PlanOfferEntity {
             endsAt: input.endsAt ?? null,
             active: true,
             stripeCouponId: null,
+            paypalPlanIds: null,
             createdAt: input.now,
             updatedAt: input.now,
         })
@@ -104,10 +111,21 @@ export class PlanOfferEntity {
         return this.props.endsAt === null || now < this.props.endsAt
     }
 
-    /** Record the coupon the gateway created for the intro phase. */
+    /** Record the Stripe coupon that implements the intro phase. */
     syncedToStripe(couponId: string | null, now: Date): void {
         this.props.stripeCouponId = couponId
         this.props.updatedAt = now
+    }
+
+    /** Record the PayPal plans (one per price) that carry the trial + intro cycles. */
+    syncedToPaypal(planIds: Record<string, string>, now: Date): void {
+        this.props.paypalPlanIds = { ...this.props.paypalPlanIds, ...planIds }
+        this.props.updatedAt = now
+    }
+
+    /** What a checkout on this offer must point at, on a given gateway. */
+    paypalPlanFor(priceId: string): string | null {
+        return this.props.paypalPlanIds?.[priceId] ?? null
     }
 
     deactivate(now: Date): void {
@@ -141,6 +159,9 @@ export class PlanOfferEntity {
     }
     get stripeCouponId(): string | null {
         return this.props.stripeCouponId
+    }
+    get paypalPlanIds(): Record<string, string> | null {
+        return this.props.paypalPlanIds
     }
     get createdAt(): Date {
         return this.props.createdAt

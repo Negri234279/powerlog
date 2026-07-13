@@ -46,7 +46,7 @@ export class StripeWebhookController {
 
         let event
         try {
-            event = gateway.verifyWebhook(rawBody, signature)
+            event = await gateway.verifyWebhook(rawBody, request.headers as Record<string, string | undefined>)
         } catch (error) {
             // Never log the payload of something we could not authenticate.
             this.logger.warn({ err: error }, 'rejected an unverifiable stripe webhook')

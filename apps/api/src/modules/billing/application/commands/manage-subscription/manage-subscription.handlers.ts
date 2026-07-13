@@ -8,6 +8,7 @@ import {
     PlanNotAvailableError,
     PlanNotFoundError,
     PlanPriceNotFoundError,
+    ResumeNotSupportedError,
     SamePlanError,
 } from '../../../domain/errors/billing.errors'
 import { PlanPriceRepository } from '../../../domain/repositories/plan-price.repository'
@@ -81,15 +82,20 @@ export class ResumeSubscriptionHandler extends SubscriberAction implements IComm
 
     async execute(command: ResumeSubscriptionCommand): Promise<void> {
         const subscription = await this.requireGatewaySubscription(command.userId)
+        const gateway = this.gateways.get(subscription.gateway)
 
-        await this.gateways.get(subscription.gateway).resume(subscription)
+        // PayPal's cancellation is terminal. The UI already hides the button; this is
+        // the server saying the same thing to anyone who calls the API directly.
+        if (!gateway.supportsResume) throw new ResumeNotSupportedError(subscription.gateway)
+
+        await gateway.resume(subscription)
 
         this.logger.info({ subscriptionId: subscription.id }, 'resume requested')
     }
 }
 
 @CommandHandler(ChangePlanCommand)
-export class ChangePlanHandler extends SubscriberAction implements ICommandHandler<ChangePlanCommand> {
+export class ChangePlanHandler extends SubscriberAction implements ICommandHandler<ChangePlanCommand, string | null> {
     constructor(
         subscriptions: SubscriptionRepository,
         gateways: GatewayProvider,
@@ -102,7 +108,7 @@ export class ChangePlanHandler extends SubscriberAction implements ICommandHandl
         this.logger.setContext(ChangePlanHandler.name)
     }
 
-    async execute(command: ChangePlanCommand): Promise<void> {
+    async execute(command: ChangePlanCommand): Promise<string | null> {
         const subscription = await this.requireGatewaySubscription(command.userId)
         if (subscription.planPriceId === command.planPriceId) throw new SamePlanError()
 
@@ -119,7 +125,9 @@ export class ChangePlanHandler extends SubscriberAction implements ICommandHandl
         // An upgrade is charged now, pro-rated: they want the feature today.
         // A downgrade waits for the period they already paid for to run out — this
         // app does not take money back, and it does not take away time either.
-        await this.gateways
+        // PayPal makes the subscriber approve the change; Stripe applies it. So this
+        // is an approval URL or nothing, and the caller sends the browser there.
+        const approvalUrl = await this.gateways
             .get(subscription.gateway)
             .changePlan(subscription, target, isUpgrade ? 'immediate_proration' : 'at_period_end')
 
@@ -131,8 +139,15 @@ export class ChangePlanHandler extends SubscriberAction implements ICommandHandl
         }
 
         this.logger.info(
-            { subscriptionId: subscription.id, plan: plan.slug, upgrade: isUpgrade },
+            {
+                subscriptionId: subscription.id,
+                plan: plan.slug,
+                upgrade: isUpgrade,
+                needsApproval: Boolean(approvalUrl),
+            },
             'plan change requested',
         )
+
+        return approvalUrl
     }
 }

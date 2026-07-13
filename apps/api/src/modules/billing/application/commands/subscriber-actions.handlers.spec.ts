@@ -20,6 +20,7 @@ import {
     NoActiveSubscriptionError,
     NotAGatewaySubscriptionError,
     OfferNotRedeemableError,
+    ResumeNotSupportedError,
     SamePlanError,
     SubscriptionAlreadyActiveError,
 } from '../../domain/errors/billing.errors'
@@ -49,7 +50,7 @@ function aPrice(id: string, amountCents: number, synced = true): PlanPriceEntity
         amountCents,
         now: NOW,
     })
-    if (synced) price.syncedToStripe(`px_${id}`, NOW)
+    if (synced) price.syncedTo('stripe', `px_${id}`, NOW)
 
     return price
 }
@@ -174,6 +175,17 @@ describe('what a subscriber can do', () => {
             )
         })
 
+        it('refuses to resume on a provider whose cancellation is terminal (PayPal)', async () => {
+            gateway.withoutResume()
+            await subscriptions.save(aLiveSubscription())
+
+            await expect(resume().execute(new ResumeSubscriptionCommand(USER))).rejects.toBeInstanceOf(
+                ResumeNotSupportedError,
+            )
+            // And it never even asked the provider.
+            expect(gateway.calls).toEqual([])
+        })
+
         it('resumes a subscription that was going to end', async () => {
             await subscriptions.save(aLiveSubscription())
 
@@ -210,6 +222,25 @@ describe('what a subscriber can do', () => {
             // Remembered locally so the UI can say "you move to X on the 15th" before
             // the renewal webhook makes it real.
             expect((await subscriptions.findLiveByUser(USER))?.pendingPlanPriceId).toBe('price-lite')
+        })
+
+        it('hands back the approval URL when the provider needs the user to say yes again', async () => {
+            // PayPal's `revise` cannot just apply the change: the subscriber has to
+            // approve it. The caller sends the browser there; the change lands by webhook.
+            gateway.needsApprovalToChangePlan()
+            await prices.save(aPrice('price-elite', 3999))
+            await subscriptions.save(aLiveSubscription())
+
+            const url = await changePlan().execute(new ChangePlanCommand(USER, 'price-elite'))
+
+            expect(url).toBe('https://gateway.test/approve')
+        })
+
+        it('returns nothing when the provider applied it on its own (Stripe)', async () => {
+            await prices.save(aPrice('price-elite', 3999))
+            await subscriptions.save(aLiveSubscription())
+
+            expect(await changePlan().execute(new ChangePlanCommand(USER, 'price-elite'))).toBeNull()
         })
 
         it('refuses to change to the plan they are already on', async () => {

@@ -133,9 +133,15 @@ export class AdminPlanType {
 
     @Field(() => String, {
         nullable: true,
-        description: 'The Stripe Product this plan was published as. Null → never synced.',
+        description: 'The Stripe Product this plan was published as. Null → never synced there.',
     })
     stripeProductId!: string | null
+
+    @Field(() => String, {
+        nullable: true,
+        description: 'The PayPal Product this plan was published as. Null → never synced there.',
+    })
+    paypalProductId!: string | null
 
     @Field(() => Date)
     createdAt!: Date

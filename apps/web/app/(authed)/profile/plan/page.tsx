@@ -164,7 +164,7 @@ function CurrentPlan({ subscription, planSlug }: { subscription: MySubscription 
 
             {subscription && subscription.gateway !== 'manual' ? (
                 <div className="mt-4">
-                    {subscription.cancelAtPeriodEnd ? (
+                    {subscription.cancelAtPeriodEnd && subscription.canResume ? (
                         <TrackedButton
                             analyticsId="billing-resume"
                             type="button"
@@ -202,7 +202,13 @@ function CurrentPlan({ subscription, planSlug }: { subscription: MySubscription 
                     })
                 }
                 title={t('cancelTitle')}
-                description={t('cancelBody', { date: endsOn ?? '' })}
+                // PayPal's cancellation is terminal: say so before they click, rather
+                // than hiding a "resume" button afterwards and letting them find out.
+                description={
+                    subscription?.canResume
+                        ? t('cancelBody', { date: endsOn ?? '' })
+                        : t('cancelBodyTerminal', { date: endsOn ?? '' })
+                }
                 confirmLabel={t('cancelConfirm')}
                 cancelLabel={t('keepPlan')}
                 pending={cancel.isPending}
@@ -231,12 +237,12 @@ function PlanCard({
 
     const isCurrent = currentPlanSlug === plan.slug
     // A price no gateway can sell is shown honestly, but there is nothing to click.
-    const gateway = price?.gateways[0] ?? null
+    const gateways = price?.gateways ?? []
     const offer = plan.offer
 
-    const buy = () => {
+    const buy = (gateway: string) => {
         setError(null)
-        if (!price || !gateway) return
+        if (!price) return
 
         // Someone who already pays switches plan; they do not buy a second one.
         if (subscription) {
@@ -300,24 +306,35 @@ function PlanCard({
 
             <FormError error={error} />
 
-            <div className="mt-5">
+            <div className="mt-5 space-y-2">
                 {isCurrent ? (
                     <p className="rounded-full bg-white/[0.04] py-2.5 text-center text-sm text-text-faint">
                         {t('yourPlan')}
                     </p>
                 ) : plan.isFree ? null : (
-                    <TrackedButton
-                        analyticsId="billing-checkout"
-                        type="button"
-                        disabled={!price || !gateway || checkout.isPending || changePlan.isPending}
-                        onClick={buy}
-                        className="w-full rounded-full bg-ember-gradient py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        {subscription ? t('switchToPlan') : t('subscribe')}
-                    </TrackedButton>
+                    // One button per provider this deployment can actually charge with:
+                    // the user picks how to pay, and a provider without keys never shows.
+                    gateways.map((gateway, index) => (
+                        <TrackedButton
+                            key={gateway}
+                            analyticsId={`billing-checkout-${gateway}`}
+                            type="button"
+                            disabled={!price || checkout.isPending || changePlan.isPending}
+                            onClick={() => buy(gateway)}
+                            className={
+                                index === 0
+                                    ? 'w-full rounded-full bg-ember-gradient py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50'
+                                    : 'w-full rounded-full py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text disabled:opacity-50'
+                            }
+                        >
+                            {subscription
+                                ? t('switchWith', { gateway: t(`gateway.${gateway}` as 'gateway.stripe') })
+                                : t('subscribeWith', { gateway: t(`gateway.${gateway}` as 'gateway.stripe') })}
+                        </TrackedButton>
+                    ))
                 )}
-                {!plan.isFree && price && !gateway ? (
-                    <p className="mt-2 text-center text-xs text-text-faint">{t('noGateway')}</p>
+                {!plan.isFree && price && gateways.length === 0 ? (
+                    <p className="text-center text-xs text-text-faint">{t('noGateway')}</p>
                 ) : null}
             </div>
         </article>

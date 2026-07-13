@@ -233,6 +233,27 @@ export class SamePlanError extends BillingError {
     }
 }
 
+/**
+ * The provider cannot undo a cancellation (PayPal's is terminal). The UI reads
+ * `supportsResume` and never offers the button, so this only fires if somebody
+ * calls the API directly.
+ */
+export class ResumeNotSupportedError extends BillingError {
+    readonly code = 'RESUME_NOT_SUPPORTED'
+
+    constructor(readonly gateway: string) {
+        super(`${gateway} cannot undo a cancellation. Subscribe again to come back.`)
+    }
+}
+
+export class WebhookEventNotFoundError extends BillingError {
+    readonly code = 'WEBHOOK_EVENT_NOT_FOUND'
+
+    constructor() {
+        super('Webhook event not found.')
+    }
+}
+
 /** A gateway call failed (network, API error). Distinct from "not configured". */
 export class GatewayRequestFailedError extends BillingError {
     readonly code = 'GATEWAY_REQUEST_FAILED'

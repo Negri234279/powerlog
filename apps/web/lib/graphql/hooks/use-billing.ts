@@ -99,6 +99,25 @@ export function useResumeSubscription() {
     return useSubscriptionAction(() => gqlRequest(ResumeSubscriptionDocument))
 }
 
+/**
+ * Switching plan. Stripe applies it and returns nothing; **PayPal hands back an
+ * approval URL** — the subscriber has to say yes again — so if there is one, the
+ * browser goes there. Either way the change only becomes real when the webhook
+ * lands.
+ */
 export function useChangePlan() {
-    return useSubscriptionAction((planPriceId: string) => gqlRequest(ChangePlanDocument, { planPriceId }))
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: (planPriceId: string) => gqlRequest(ChangePlanDocument, { planPriceId }).then((r) => r.changePlan),
+        onSuccess: (approvalUrl) => {
+            if (approvalUrl) {
+                window.location.assign(approvalUrl)
+
+                return
+            }
+
+            void queryClient.invalidateQueries({ queryKey: MY_PLAN_KEY })
+        },
+    })
 }

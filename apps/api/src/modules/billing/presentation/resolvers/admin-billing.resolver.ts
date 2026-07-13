@@ -17,7 +17,19 @@ import { SyncPlanCommand } from '../../application/commands/sync-plan/sync-plan.
 import { UpdatePlanCommand } from '../../application/commands/update-plan/update-plan.command'
 import { UpsertPlanOfferCommand } from '../../application/commands/upsert-plan-offer/upsert-plan-offer.command'
 import type { AdminBillingStats } from '../../application/ports/admin-billing-stats.read-model'
+import { RetryWebhookEventCommand } from '../../application/commands/retry-webhook-event/retry-webhook-event.command'
+import type { WebhookEventStatus } from '../../application/ports/webhook-event.store'
 import { AdminBillingStatsQuery } from '../../application/queries/admin-billing-stats/admin-billing-stats.query'
+import type {
+    AdminWebhookEventView,
+    GatewayStatusView,
+} from '../../application/queries/admin-gateways/admin-gateways.handlers'
+import {
+    AdminBillingDriftQuery,
+    AdminGatewayStatusQuery,
+    AdminWebhookEventsQuery,
+} from '../../application/queries/admin-gateways/admin-gateways.queries'
+import type { GatewayDrift } from '../../application/services/reconcile-subscriptions.service'
 import type { AdminPlanView } from '../../application/queries/admin-plans/admin-plans.handler'
 import { AdminPlansQuery } from '../../application/queries/admin-plans/admin-plans.query'
 import type { AdminSubscriptionsPageView } from '../../application/queries/admin-subscriptions/admin-subscriptions.handler'
@@ -45,11 +57,13 @@ import {
     planStatusArg,
     searchArg,
     statusArg,
+    webhookStatusArg,
     updatePlanSchema,
     upsertPlanOfferSchema,
     uuidArg,
 } from '../inputs/admin-billing.inputs'
 import { AdminBillingStatsType } from '../types/admin-billing-stats.type'
+import { BillingDriftType, BillingWebhookEventPageType, GatewayStatusType } from '../types/admin-gateway.type'
 import { AdminPlanType } from '../types/admin-plan.type'
 import { AdminSubscriptionPageType } from '../types/admin-subscription-page.type'
 
@@ -115,6 +129,53 @@ export class AdminBillingResolver {
         )
 
         return this.queryBus.execute<AdminSubscriptionsQuery, AdminSubscriptionsPageView>(query)
+    }
+
+    @Query(() => [GatewayStatusType], {
+        description:
+            'Health of each payment integration: configured, catalog published, when the last webhook arrived, how many failed.',
+    })
+    async adminGatewayStatus(): Promise<GatewayStatusView[]> {
+        const query = new AdminGatewayStatusQuery()
+
+        return this.queryBus.execute<AdminGatewayStatusQuery, GatewayStatusView[]>(query)
+    }
+
+    @Query(() => BillingWebhookEventPageType, { description: 'The webhook journal — what came in and what failed.' })
+    async adminWebhookEvents(
+        @Args('status', { type: () => String, nullable: true }, new ZodValidationPipe(webhookStatusArg))
+        status?: WebhookEventStatus,
+        @Args('gateway', { type: () => String, nullable: true }, new ZodValidationPipe(gatewayArg))
+        gateway?: PaymentGateway,
+        @Args('limit', { type: () => Int, nullable: true }, new ZodValidationPipe(limitArg)) limit?: number,
+        @Args('offset', { type: () => Int, nullable: true }, new ZodValidationPipe(offsetArg)) offset?: number,
+    ): Promise<{ rows: AdminWebhookEventView[]; total: number }> {
+        const query = new AdminWebhookEventsQuery(status, gateway, limit ?? DEFAULT_LIMIT, offset ?? 0)
+
+        return this.queryBus.execute<AdminWebhookEventsQuery, { rows: AdminWebhookEventView[]; total: number }>(query)
+    }
+
+    @Query(() => [BillingDriftType], {
+        description:
+            'Compare our subscriptions with each gateway now. Should be 0 — anything else is a webhook we never received.',
+    })
+    async adminBillingDrift(): Promise<GatewayDrift[]> {
+        const query = new AdminBillingDriftQuery()
+
+        return this.queryBus.execute<AdminBillingDriftQuery, GatewayDrift[]>(query)
+    }
+
+    @Mutation(() => Boolean, {
+        description:
+            'Re-process a webhook whose handler failed, from the payload the journal kept. It runs the same command the webhook does.',
+    })
+    async retryWebhookEvent(
+        @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
+    ): Promise<boolean> {
+        const command = new RetryWebhookEventCommand(id)
+        await this.commandBus.execute<RetryWebhookEventCommand, void>(command)
+
+        return true
     }
 
     @Mutation(() => ID, { description: 'Create a plan. Born `draft` unless told otherwise.' })

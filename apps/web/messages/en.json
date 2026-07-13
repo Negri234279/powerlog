@@ -656,7 +656,8 @@
             "exercises": "Exercises",
             "users": "Users",
             "plans": "Plans",
-            "subscriptions": "Subscriptions"
+            "subscriptions": "Subscriptions",
+            "billing": "Billing"
         },
         "overviewTitle": "Overview",
         "sectionUsers": "Users",
@@ -828,7 +829,34 @@
             "planSessions": "Program for athletes",
             "maxAthletes": "Athletes",
             "athlete": "Their own training"
-        }
+        },
+        "billingTitle": "Billing",
+        "billingGrafana": "Open the billing dashboard in Grafana",
+        "gatewayHealth": "Payment integrations",
+        "gatewayConfigured": "configured",
+        "gatewayNotConfigured": "no keys",
+        "gatewayNotConfiguredBody": "No credentials in this environment, so it is not offered at checkout.",
+        "gatewaySyncedPlans": "Plans published",
+        "gatewayLastWebhook": "Last webhook",
+        "gatewayNever": "never",
+        "gatewayFailedWebhooks": "Failed webhooks",
+        "gatewaySilent": "No webhook in hours. Providers send events constantly — a silence this long usually means the endpoint is unreachable (URL, TLS or proxy).",
+        "driftTitle": "Reconciliation",
+        "driftHint": "Asks each gateway what it thinks is live and compares. A webhook we never received bills people wrongly for weeks in silence — this is what sees it.",
+        "driftCheck": "Check now",
+        "driftChecking": "Checking…",
+        "driftClean": "{gateway}: our books and theirs agree.",
+        "driftFound": "{gateway}: {count} disagreements. Replay the failed events below, or investigate.",
+        "driftNoSignal": "{gateway}: could not be asked — no signal, which is not the same as no drift.",
+        "driftMissing": "Live at the gateway, missing here (someone is paying for nothing):",
+        "driftStale": "Live here, gone at the gateway (we are granting a plan nobody pays for):",
+        "webhooksTitle": "Webhook journal",
+        "webhooksOnlyFailed": "Only failed",
+        "webhooksNone": "No webhooks yet.",
+        "webhooksNoneFailed": "Nothing failed. ",
+        "webhookRetry": "Replay",
+        "planSync": "Publish to {gateway}",
+        "planSynced": "{gateway} ✓ — re-publish"
     },
     "serverErrors": {
         "generic": "Something went wrong. Please try again.",
@@ -915,7 +943,9 @@
         "PRICE_NOT_SYNCED": "That price isn’t on sale yet. Try again in a moment.",
         "PLAN_SYNC_FAILED": "The plan couldn’t be published to the payment provider.",
         "INVALID_PLAN_OFFER": "That offer doesn’t make sense.",
-        "PLAN_OFFER_NOT_FOUND": "Offer not found."
+        "PLAN_OFFER_NOT_FOUND": "Offer not found.",
+        "RESUME_NOT_SUPPORTED": "This provider can’t undo a cancellation. Subscribe again to come back.",
+        "WEBHOOK_EVENT_NOT_FOUND": "That webhook event no longer exists."
     },
     "ai": {
         "eyebrow": "Provider",
@@ -1088,6 +1118,13 @@
                 "mesocycles": "Training blocks aren’t part of your plan yet.",
                 "plan_sessions": "Programming for athletes isn’t part of your plan yet."
             }
+        },
+        "subscribeWith": "Subscribe with {gateway}",
+        "switchWith": "Switch with {gateway}",
+        "cancelBodyTerminal": "It ends now and you keep everything until {date}. PayPal cannot undo a cancellation — to come back you would subscribe again.",
+        "gateway": {
+            "stripe": "card",
+            "paypal": "PayPal"
         }
     }
 }

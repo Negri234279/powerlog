@@ -35,7 +35,7 @@ function aPrice(id: string, amountCents: number, stripePriceId: string): PlanPri
         amountCents,
         now: NOW,
     })
-    price.syncedToStripe(stripePriceId, NOW)
+    price.syncedTo('stripe', stripePriceId, NOW)
 
     return price
 }
@@ -203,6 +203,33 @@ describe('the webhook pipeline', () => {
             expect(record?.status).toBe('failed')
             expect(record?.payload).toBeDefined()
             expect(metrics.webhooks).toEqual([{ type: 'checkout.session.completed', status: 'failed' }])
+        })
+    })
+
+    describe('a provider with no checkout event (PayPal)', () => {
+        it('creates the subscription from the activation itself, when it carries the user', async () => {
+            // PayPal never sends a "checkout completed": BILLING.SUBSCRIPTION.ACTIVATED
+            // is the first we hear of the subscription, and it carries the subscriber.
+            await deliver(
+                subscriptionChanged({
+                    gateway: 'paypal',
+                    eventId: 'evt_paypal_activated',
+                    type: 'BILLING.SUBSCRIPTION.ACTIVATED',
+                    userId: USER,
+                }),
+            )
+
+            const created = await subscriptions.findByGatewayId(GATEWAY_SUB)
+            expect(created?.userId).toBe(USER)
+            expect(created?.gateway).toBe('paypal')
+            expect(created?.planPriceId).toBe('price-eur')
+            expect(created?.isEntitledAt(NOW)).toBe(true)
+        })
+
+        it('still ignores an event it cannot attribute to anybody', async () => {
+            await deliver(subscriptionChanged({ userId: null }))
+
+            expect(subscriptions.all()).toEqual([])
         })
     })
 

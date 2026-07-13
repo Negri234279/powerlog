@@ -1,3 +1,4 @@
+import { PayPalWebhookController } from './controllers/paypal-webhook.controller'
 import { StripeWebhookController } from './controllers/stripe-webhook.controller'
 import { AdminBillingResolver } from './resolvers/admin-billing.resolver'
 import { BillingResolver } from './resolvers/billing.resolver'
@@ -6,4 +7,4 @@ import { BillingResolver } from './resolvers/billing.resolver'
 export const BILLING_RESOLVERS = [AdminBillingResolver, BillingResolver]
 
 /** REST controllers — sanctioned only where the protocol rules GraphQL out (signed webhooks). */
-export const BILLING_CONTROLLERS = [StripeWebhookController]
+export const BILLING_CONTROLLERS = [StripeWebhookController, PayPalWebhookController]

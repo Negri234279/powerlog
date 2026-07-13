@@ -65,7 +65,7 @@ describe('publishing the catalog to a gateway', () => {
 
     it('never republishes a price that already has an id — that is the one somebody is being billed on', async () => {
         const price = aPrice('price-eur')
-        price.syncedToStripe('px_original', NOW)
+        price.syncedTo('stripe', 'px_original', NOW)
         await prices.save(price)
 
         await sync().execute(new SyncPlanCommand(PLAN.id, 'stripe'))

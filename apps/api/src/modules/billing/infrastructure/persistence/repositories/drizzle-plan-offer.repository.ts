@@ -19,6 +19,7 @@ function toEntity(row: OfferRow): PlanOfferEntity {
         endsAt: row.endsAt,
         active: row.active,
         stripeCouponId: row.stripeCouponId,
+        paypalPlanIds: row.paypalPlanIds,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
     })
@@ -41,6 +42,7 @@ export class DrizzlePlanOfferRepository extends PlanOfferRepository {
             endsAt: offer.endsAt,
             active: offer.active,
             stripeCouponId: offer.stripeCouponId,
+            paypalPlanIds: offer.paypalPlanIds,
             createdAt: offer.createdAt,
             updatedAt: offer.updatedAt,
         }
@@ -56,6 +58,7 @@ export class DrizzlePlanOfferRepository extends PlanOfferRepository {
                 set: {
                     active: row.active,
                     stripeCouponId: row.stripeCouponId,
+                    paypalPlanIds: row.paypalPlanIds,
                     updatedAt: row.updatedAt,
                 },
             })

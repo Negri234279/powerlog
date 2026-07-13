@@ -34,6 +34,10 @@ export const planOffers = pgTable(
         endsAt: timestamp('ends_at', { withTimezone: true }),
         active: boolean('active').notNull().default(true),
         stripeCouponId: text('stripe_coupon_id'),
+        // PayPal has no coupons: an offer's trial and intro cycles are part of the
+        // BILLING PLAN itself. So an offer needs its own PayPal plan per price —
+        // this maps our price id to it.
+        paypalPlanIds: jsonb('paypal_plan_ids').$type<Record<string, string>>(),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },

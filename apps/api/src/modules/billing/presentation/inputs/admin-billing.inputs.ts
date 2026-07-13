@@ -204,6 +204,7 @@ export const upsertPlanOfferSchema = z.object({
 
 // ── gateways ────────────────────────────────────────────────────────────
 export const gatewayArgRequired = gateway
+const webhookStatus = z.enum(['received', 'processed', 'failed'])
 
 // ── list filters ────────────────────────────────────────────────────────
 const optionalArg = <T extends z.ZodTypeAny>(schema: T) => schema.nullish().transform((value) => value ?? undefined)
@@ -215,4 +216,5 @@ export const gatewayArg = optionalArg(gateway)
 export const searchArg = optionalArg(z.string().trim().min(1).max(120))
 export const limitArg = optionalArg(z.coerce.number().int().min(1).max(100))
 export const offsetArg = optionalArg(z.coerce.number().int().min(0))
+export const webhookStatusArg = optionalArg(webhookStatus)
 export const uuidArg = uuid

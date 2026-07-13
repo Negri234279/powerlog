@@ -1,6 +1,7 @@
 import type { SubscriptionAggregate } from '../../../src/modules/billing/domain/entities/subscription.entity'
 import { SubscriptionRepository } from '../../../src/modules/billing/domain/repositories/subscription.repository'
-import { LIVE_STATUSES } from '../../../src/modules/billing/domain/subscription-status'
+import type { PaymentGateway } from '../../../src/modules/billing/domain/entities/subscription.entity'
+import { ENTITLING_STATUSES, LIVE_STATUSES } from '../../../src/modules/billing/domain/subscription-status'
 
 /** In-memory SubscriptionRepository implementing the real port. */
 export class InMemorySubscriptionRepository extends SubscriptionRepository {
@@ -24,6 +25,12 @@ export class InMemorySubscriptionRepository extends SubscriptionRepository {
             [...this.byId.values()].find(
                 (subscription) => subscription.gatewaySubscriptionId === gatewaySubscriptionId,
             ) ?? null
+        )
+    }
+
+    async findLiveByGateway(gateway: PaymentGateway): Promise<SubscriptionAggregate[]> {
+        return [...this.byId.values()].filter(
+            (subscription) => subscription.gateway === gateway && ENTITLING_STATUSES.includes(subscription.status),
         )
     }
 

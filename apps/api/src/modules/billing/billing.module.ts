@@ -17,8 +17,11 @@ import { PlanPriceRepository } from './domain/repositories/plan-price.repository
 import { PlanRepository } from './domain/repositories/plan.repository'
 import { SubscriptionRepository } from './domain/repositories/subscription.repository'
 import { GatewayRegistry } from './infrastructure/gateways/gateway.registry'
+import { PayPalGateway } from './infrastructure/gateways/paypal.gateway'
 import { StripeGateway } from './infrastructure/gateways/stripe.gateway'
 import { UuidGenerator } from './infrastructure/id/uuid-generator'
+import { ReconcileSubscriptions } from './application/services/reconcile-subscriptions.service'
+import { BillingDriftProbe } from './infrastructure/metrics/billing-drift-probe'
 import { BillingStateMetrics } from './infrastructure/metrics/billing-state-metrics'
 import { PrometheusBillingMetrics } from './infrastructure/metrics/prometheus-billing-metrics'
 import { EnvBillingConfig } from './infrastructure/config/env-billing-config'
@@ -48,6 +51,7 @@ const ADAPTERS: Provider[] = [
     // The gateways. StripeGateway is a concrete provider because the registry needs
     // it by class; nothing else in the app may inject it.
     StripeGateway,
+    PayPalGateway,
     { provide: GatewayProvider, useClass: GatewayRegistry },
     { provide: Clock, useClass: SystemClock },
     { provide: IdGenerator, useClass: UuidGenerator },
@@ -73,6 +77,10 @@ const ADAPTERS: Provider[] = [
         // Instantiated for its side effect: it attaches the scrape-time `collect` to
         // the billing state gauges.
         BillingStateMetrics,
+        ReconcileSubscriptions,
+        // Hourly: asks each gateway what it thinks is live and publishes the
+        // disagreement as `powerlog_billing_drift` — a number that should be zero.
+        BillingDriftProbe,
         ...BILLING_COMMAND_HANDLERS,
         ...BILLING_QUERY_HANDLERS,
         ...BILLING_RESOLVERS,

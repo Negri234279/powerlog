@@ -49,6 +49,7 @@ export const METRIC = {
     subscriptionEvents: 'powerlog_subscription_events_total',
     offerRedemptions: 'powerlog_offer_redemptions_total',
     billingWebhooks: 'powerlog_billing_webhooks_total',
+    billingDrift: 'powerlog_billing_drift',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -356,5 +357,15 @@ export const metricsProviders = [
         name: METRIC.billingWebhooks,
         help: 'Inbound billing webhooks, by outcome.',
         labelNames: ['gateway', 'type', 'status'],
+    }),
+    // Subscriptions the gateway thinks are live but we do not (a webhook we never
+    // got), plus the reverse. **It should always be zero** — which is exactly what
+    // makes it worth alerting on: a missed webhook bills people wrongly for weeks
+    // in complete silence otherwise. A gateway that could not be asked leaves its
+    // series untouched rather than reporting a fabricated zero.
+    makeGaugeProvider({
+        name: METRIC.billingDrift,
+        help: 'Disagreements between our subscriptions and the gateway’s. Should be 0.',
+        labelNames: ['gateway'],
     }),
 ]

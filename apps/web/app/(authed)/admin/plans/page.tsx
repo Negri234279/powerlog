@@ -15,6 +15,7 @@ import {
     useUpdatePlan,
 } from '@/lib/graphql/hooks/use-admin-billing'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
+import { useSyncPlanToGateway } from '@/lib/graphql/hooks/use-admin-gateways'
 import { AdminTabs } from '@/components/admin/admin-tabs'
 import { type EntitlementsValue, EntitlementsForm, emptyEntitlements } from '@/components/admin/entitlements-form'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -187,8 +188,49 @@ function PlanCard({ plan, onEdit, onPrices }: { plan: AdminPlan; onEdit: () => v
                 >
                     {t('planPrices')}
                 </TrackedButton>
+
+                {/* Without this the catalog never reaches the providers, and a checkout
+                    has nothing to point at. Re-running it IS the retry. */}
+                {plan.isFree ? null : <SyncButtons plan={plan} />}
             </div>
         </article>
+    )
+}
+
+/** Publish the plan to a gateway. Shows whether it has ever been published there. */
+function SyncButtons({ plan }: { plan: AdminPlan }) {
+    const t = useTranslations('admin')
+    const toMessage = useErrorMessage()
+    const sync = useSyncPlanToGateway()
+    const [error, setError] = useState<string | null>(null)
+
+    return (
+        <>
+            {(['stripe', 'paypal'] as const).map((gateway) => {
+                const published = gateway === 'stripe' ? plan.stripeProductId !== null : plan.paypalProductId !== null
+
+                return (
+                    <TrackedButton
+                        key={gateway}
+                        analyticsId={`admin-plan-sync-${gateway}`}
+                        type="button"
+                        disabled={sync.isPending}
+                        onClick={() => {
+                            setError(null)
+                            sync.mutate({ planId: plan.id, gateway }, { onError: (err) => setError(toMessage(err)) })
+                        }}
+                        className={`rounded-full px-3 py-1.5 text-xs ring-1 transition-colors duration-300 disabled:opacity-50 ${
+                            published
+                                ? 'text-ember ring-ember/30 hover:text-ember'
+                                : 'text-text-dim ring-hairline hover:text-text'
+                        }`}
+                    >
+                        {published ? t('planSynced', { gateway }) : t('planSync', { gateway })}
+                    </TrackedButton>
+                )
+            })}
+            <FormError error={error} />
+        </>
     )
 }
 

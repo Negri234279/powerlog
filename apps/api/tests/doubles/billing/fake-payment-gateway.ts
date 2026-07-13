@@ -37,6 +37,22 @@ export class FakePaymentGateway extends PaymentGatewayPort {
 
     private configured = true
     private failure: Error | null = null
+    private resumeSupported = true
+    private approvalUrl: string | null = null
+
+    /** Model a provider whose cancellation is terminal (PayPal). */
+    withoutResume(): this {
+        this.resumeSupported = false
+
+        return this
+    }
+
+    /** Model a provider that makes the user approve a plan change (PayPal). */
+    needsApprovalToChangePlan(url = 'https://gateway.test/approve'): this {
+        this.approvalUrl = url
+
+        return this
+    }
 
     unconfigured(): this {
         this.configured = false
@@ -55,6 +71,10 @@ export class FakePaymentGateway extends PaymentGatewayPort {
         return this.configured
     }
 
+    get supportsResume(): boolean {
+        return this.resumeSupported
+    }
+
     async syncPlan(
         plan: PlanAggregate,
         prices: PlanPriceEntity[],
@@ -64,9 +84,11 @@ export class FakePaymentGateway extends PaymentGatewayPort {
         this.calls.push({ operation: 'sync' })
 
         return {
-            productId: plan.stripeProductId ?? `prod_${plan.slug}`,
-            priceIds: Object.fromEntries(prices.map((price) => [price.id, price.stripePriceId ?? `px_${price.id}`])),
-            offerDiscountId: offer?.introPhase ? (offer.stripeCouponId ?? `cpn_${offer.id}`) : null,
+            productId: plan.productIdOn(this.name) ?? `prod_${plan.slug}`,
+            priceIds: Object.fromEntries(
+                prices.map((price) => [price.id, price.externalIdOn(this.name) ?? `px_${price.id}`]),
+            ),
+            offer: offer?.introPhase ? { discountId: offer.stripeCouponId ?? `cpn_${offer.id}` } : null,
         }
     }
 
@@ -91,9 +113,11 @@ export class FakePaymentGateway extends PaymentGatewayPort {
         subscription: SubscriptionAggregate,
         newPrice: PlanPriceEntity,
         mode: PlanChangeMode,
-    ): Promise<void> {
+    ): Promise<string | null> {
         this.guard()
         this.calls.push({ operation: 'change_plan', subscriptionId: subscription.id, priceId: newPrice.id, mode })
+
+        return this.approvalUrl
     }
 
     async billingPortalUrl(subscription: SubscriptionAggregate): Promise<string | null> {
@@ -108,10 +132,25 @@ export class FakePaymentGateway extends PaymentGatewayPort {
      * to deliver and passes it as the raw body. Verifying a real signature is the
      * StripeGateway's job, and the e2e signs a payload for real with the test secret.
      */
-    verifyWebhook(rawBody: Buffer): GatewayEvent {
+    async verifyWebhook(rawBody: Buffer): Promise<GatewayEvent> {
         this.guard()
 
         return JSON.parse(rawBody.toString('utf8')) as GatewayEvent
+    }
+
+    /** What the fake provider claims is live. Tests set it to model drift. */
+    private liveIds: string[] | null = []
+
+    liveAtGateway(ids: string[] | null): this {
+        this.liveIds = ids
+
+        return this
+    }
+
+    async listLiveSubscriptionIds(): Promise<string[] | null> {
+        this.guard()
+
+        return this.liveIds
     }
 
     private guard(): void {

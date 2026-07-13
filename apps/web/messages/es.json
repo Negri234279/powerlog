@@ -656,7 +656,8 @@
             "exercises": "Ejercicios",
             "users": "Usuarios",
             "plans": "Planes",
-            "subscriptions": "Suscripciones"
+            "subscriptions": "Suscripciones",
+            "billing": "Facturación"
         },
         "overviewTitle": "Resumen",
         "sectionUsers": "Usuarios",
@@ -828,7 +829,34 @@
             "planSessions": "Planificar a atletas",
             "maxAthletes": "Atletas",
             "athlete": "Su propio entrenamiento"
-        }
+        },
+        "billingTitle": "Facturación",
+        "billingGrafana": "Abrir el dashboard de facturación en Grafana",
+        "gatewayHealth": "Pasarelas de pago",
+        "gatewayConfigured": "configurada",
+        "gatewayNotConfigured": "sin claves",
+        "gatewayNotConfiguredBody": "No hay credenciales en este entorno, así que no se ofrece en el checkout.",
+        "gatewaySyncedPlans": "Planes publicados",
+        "gatewayLastWebhook": "Último webhook",
+        "gatewayNever": "nunca",
+        "gatewayFailedWebhooks": "Webhooks fallidos",
+        "gatewaySilent": "Llevas horas sin recibir un webhook. Las pasarelas mandan eventos constantemente — un silencio así suele significar que el endpoint no es alcanzable (URL, TLS o proxy).",
+        "driftTitle": "Reconciliación",
+        "driftHint": "Le pregunta a cada pasarela qué cree que está vivo y lo compara. Un webhook que nunca llegó cobra mal durante semanas en silencio — esto es lo único que lo ve.",
+        "driftCheck": "Comprobar ahora",
+        "driftChecking": "Comprobando…",
+        "driftClean": "{gateway}: sus libros y los nuestros coinciden.",
+        "driftFound": "{gateway}: {count} discrepancias. Reprocesa los eventos fallidos de abajo, o investiga.",
+        "driftNoSignal": "{gateway}: no se pudo preguntar — sin señal, que no es lo mismo que sin drift.",
+        "driftMissing": "Vivas en la pasarela y no aquí (alguien está pagando por nada):",
+        "driftStale": "Vivas aquí y no en la pasarela (regalamos un plan que nadie paga):",
+        "webhooksTitle": "Registro de webhooks",
+        "webhooksOnlyFailed": "Solo fallidos",
+        "webhooksNone": "Todavía no hay webhooks.",
+        "webhooksNoneFailed": "Nada ha fallado. ",
+        "webhookRetry": "Reprocesar",
+        "planSync": "Publicar en {gateway}",
+        "planSynced": "{gateway} ✓ — republicar"
     },
     "serverErrors": {
         "generic": "Algo salió mal. Inténtalo de nuevo.",
@@ -915,7 +943,9 @@
         "PRICE_NOT_SYNCED": "Ese precio aún no está a la venta. Inténtalo en un momento.",
         "PLAN_SYNC_FAILED": "El plan no se pudo publicar en la pasarela de pago.",
         "INVALID_PLAN_OFFER": "Esa oferta no tiene sentido.",
-        "PLAN_OFFER_NOT_FOUND": "Oferta no encontrada."
+        "PLAN_OFFER_NOT_FOUND": "Oferta no encontrada.",
+        "RESUME_NOT_SUPPORTED": "Esta pasarela no permite deshacer una cancelación. Suscríbete de nuevo para volver.",
+        "WEBHOOK_EVENT_NOT_FOUND": "Ese evento de webhook ya no existe."
     },
     "ai": {
         "eyebrow": "Proveedor",
@@ -1088,6 +1118,13 @@
                 "mesocycles": "Los bloques de entrenamiento todavía no están en tu plan.",
                 "plan_sessions": "Planificar a atletas todavía no está en tu plan."
             }
+        },
+        "subscribeWith": "Suscribirme con {gateway}",
+        "switchWith": "Cambiar con {gateway}",
+        "cancelBodyTerminal": "Se cancela ya y lo conservas todo hasta el {date}. PayPal no permite deshacer una cancelación — para volver tendrías que suscribirte de nuevo.",
+        "gateway": {
+            "stripe": "tarjeta",
+            "paypal": "PayPal"
         }
     }
 }

@@ -35,10 +35,8 @@ export class SyncPlanHandler implements ICommandHandler<SyncPlanCommand, void> {
         const plan = await this.plans.findById(command.planId)
         if (!plan) throw new PlanNotFoundError()
 
-        // Asking for a gateway this environment has no keys for (or one that does
-        // not exist yet — PayPal until 9.4) lands on GATEWAY_NOT_CONFIGURED here,
-        // which is why the `syncedToStripe` calls below are only ever reached for
-        // Stripe. PayPal will bring its own id columns.
+        // A gateway this environment has no keys for lands on GATEWAY_NOT_CONFIGURED
+        // right here, before anything is written.
         const gateway = this.gateways.get(command.gateway)
         // Only what is on sale is published: a withdrawn price must not reappear on
         // the provider's side.
@@ -47,21 +45,31 @@ export class SyncPlanHandler implements ICommandHandler<SyncPlanCommand, void> {
 
         const result = await gateway.syncPlan(plan, prices, offer)
         const now = this.clock.now()
+        const name = command.gateway
 
-        plan.syncedToStripe(result.productId, now)
+        plan.syncedTo(name, result.productId, now)
         await this.plans.save(plan)
 
         for (const price of prices) {
             const externalId = result.priceIds[price.id]
-            if (!externalId || price.stripePriceId === externalId) continue
+            if (!externalId || price.externalIdOn(name) === externalId) continue
 
-            price.syncedToStripe(externalId, now)
+            price.syncedTo(name, externalId, now)
             await this.prices.save(price)
         }
 
-        if (offer && result.offerDiscountId && offer.stripeCouponId !== result.offerDiscountId) {
-            offer.syncedToStripe(result.offerDiscountId, now)
-            await this.offers.save(offer)
+        if (offer && result.offer) {
+            // The two providers express an offer with different machinery: Stripe with
+            // a coupon on the normal price, PayPal with a whole billing plan of its own
+            // per price (the trial and intro cycles live inside the plan there).
+            if (result.offer.discountId && offer.stripeCouponId !== result.offer.discountId) {
+                offer.syncedToStripe(result.offer.discountId, now)
+                await this.offers.save(offer)
+            }
+            if (result.offer.priceIds && Object.keys(result.offer.priceIds).length > 0) {
+                offer.syncedToPaypal(result.offer.priceIds, now)
+                await this.offers.save(offer)
+            }
         }
 
         this.logger.info(

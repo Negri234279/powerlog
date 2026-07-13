@@ -37,6 +37,15 @@ export interface CheckoutCompletedEvent extends BaseEvent {
 export interface SubscriptionChangedEvent extends BaseEvent {
     kind: 'subscription_changed'
     gatewaySubscriptionId: string
+    /**
+     * Who it belongs to, when the provider tells us.
+     *
+     * Stripe leaves this null: its `checkout.session.completed` already created the
+     * row. **PayPal has no such event** — its `BILLING.SUBSCRIPTION.ACTIVATED` is the
+     * first we ever hear of the subscription — so it carries the user id and the
+     * handler creates the row from this event instead.
+     */
+    userId?: string | null
     status: SubscriptionStatus
     currentPeriodStart: Date
     currentPeriodEnd: Date

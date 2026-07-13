@@ -38,6 +38,13 @@ export abstract class WebhookEventStore {
 
     abstract markFailed(gateway: PaymentGateway, eventId: string, error: string): Promise<void>
 
+    /**
+     * Delete the journal row so the event can be handled again. Only a **replay** of
+     * a failed one does this: the row is what makes a provider's retry a no-op, so
+     * removing it is exactly how a human says "no, do try that one again".
+     */
+    abstract reopen(gateway: PaymentGateway, eventId: string): Promise<void>
+
     /** For the admin panel: what came in, and what failed. */
     abstract list(
         filter: { status?: WebhookEventStatus; gateway?: PaymentGateway },

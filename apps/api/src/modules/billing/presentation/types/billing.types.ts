@@ -119,6 +119,11 @@ export class MySubscriptionType {
 
     @Field(() => String, { nullable: true, description: 'A downgrade that lands at the next renewal.' })
     pendingPlanSlug!: string | null
+
+    @Field(() => Boolean, {
+        description: 'Whether a cancellation can still be undone. False on PayPal — its cancellation is terminal.',
+    })
+    canResume!: boolean
 }
 
 @ObjectType('MyInvoice')

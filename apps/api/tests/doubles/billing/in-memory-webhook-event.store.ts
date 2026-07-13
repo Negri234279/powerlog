@@ -47,6 +47,10 @@ export class InMemoryWebhookEventStore extends WebhookEventStore {
         if (record) Object.assign(record, { status: 'failed', error })
     }
 
+    async reopen(gateway: PaymentGateway, eventId: string): Promise<void> {
+        this.byKey.delete(`${gateway}:${eventId}`)
+    }
+
     async list(
         filter: { status?: WebhookEventStatus; gateway?: PaymentGateway },
         page: { limit: number; offset: number },

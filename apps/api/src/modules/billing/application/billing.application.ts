@@ -14,7 +14,13 @@ import { StartCheckoutHandler } from './commands/start-checkout/start-checkout.h
 import { SyncPlanHandler } from './commands/sync-plan/sync-plan.handler'
 import { UpdatePlanHandler } from './commands/update-plan/update-plan.handler'
 import { UpsertPlanOfferHandler } from './commands/upsert-plan-offer/upsert-plan-offer.handler'
+import { RetryWebhookEventHandler } from './commands/retry-webhook-event/retry-webhook-event.handler'
 import { AdminBillingStatsHandler } from './queries/admin-billing-stats/admin-billing-stats.handler'
+import {
+    AdminBillingDriftHandler,
+    AdminGatewayStatusHandler,
+    AdminWebhookEventsHandler,
+} from './queries/admin-gateways/admin-gateways.handlers'
 import { AdminPlansHandler } from './queries/admin-plans/admin-plans.handler'
 import { AdminSubscriptionsHandler } from './queries/admin-subscriptions/admin-subscriptions.handler'
 import { GetUserEntitlementsHandler } from './queries/get-user-entitlements/get-user-entitlements.handler'
@@ -41,6 +47,7 @@ export const BILLING_COMMAND_HANDLERS = [
     ResumeSubscriptionHandler,
     ChangePlanHandler,
     HandleGatewayEventHandler,
+    RetryWebhookEventHandler,
 ]
 
 /** CQRS query handlers for the billing module. */
@@ -53,4 +60,7 @@ export const BILLING_QUERY_HANDLERS = [
     MySubscriptionHandler,
     MyInvoicesHandler,
     BillingPortalUrlHandler,
+    AdminGatewayStatusHandler,
+    AdminWebhookEventsHandler,
+    AdminBillingDriftHandler,
 ]

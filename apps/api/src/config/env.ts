@@ -126,6 +126,16 @@ export const envSchema = z.object({
     STRIPE_SECRET_KEY: z.string().default(''),
     STRIPE_WEBHOOK_SECRET: z.string().default(''),
 
+    // ── Payments (PayPal) ──────────────────────────────────────────
+    // Same deal as Stripe: no credentials ⇒ PayPal is simply not offered.
+    // `PAYPAL_WEBHOOK_ID` is not a secret to sign with — PayPal verifies a webhook
+    // by calling its own API with the id, so without it we cannot authenticate an
+    // event and the endpoint refuses everything.
+    PAYPAL_CLIENT_ID: z.string().default(''),
+    PAYPAL_CLIENT_SECRET: z.string().default(''),
+    PAYPAL_WEBHOOK_ID: z.string().default(''),
+    PAYPAL_ENV: z.enum(['sandbox', 'live']).default('sandbox'),
+
     // ── Observability (OpenTelemetry → Tempo) ──────────────────────
     OTEL_SERVICE_NAME: z.string().default('powerlog-api'),
     // OTLP/HTTP base endpoint. Empty (or OTEL_SDK_DISABLED) disables exporting.

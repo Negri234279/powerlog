@@ -46,8 +46,9 @@ export interface AdminPlanView {
     prices: AdminPlanPriceView[]
     /** The live offer, if the plan has one. */
     offer: AdminPlanOfferView | null
-    /** Null until an admin publishes the plan to Stripe. */
+    /** Null until an admin publishes the plan to that gateway. */
     stripeProductId: string | null
+    paypalProductId: string | null
     createdAt: Date
     updatedAt: Date
 }
@@ -91,6 +92,7 @@ export class AdminPlansHandler implements IQueryHandler<AdminPlansQuery, AdminPl
                 })),
             offer: offerViewOf(offers.find((offer) => offer.planId === plan.id)),
             stripeProductId: plan.stripeProductId,
+            paypalProductId: plan.paypalProductId,
             createdAt: plan.createdAt,
             updatedAt: plan.updatedAt,
         }))

@@ -59,6 +59,7 @@ export const MyPlanDocument = graphql(`
             currentPeriodEnd
             cancelAtPeriodEnd
             pendingPlanSlug
+            canResume
         }
     }
 `)

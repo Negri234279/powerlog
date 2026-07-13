@@ -107,3 +107,35 @@ groups:
         annotations:
           summary: "powerlog high email bounce rate"
           description: ">5% of recent emails bounced (1h) — check recipients / domain reputation."
+
+      # ── Billing ────────────────────────────────────────────────────
+      # The drift gauge is the whole point of the reconciliation job: a webhook we
+      # never received bills people wrongly for WEEKS without anything throwing,
+      # logging or turning red. This number should always be zero.
+      - alert: PowerlogBillingDrift
+        expr: sum(powerlog_billing_drift) > 0
+        for: 15m
+        labels: { app: powerlog, severity: critical }
+        annotations:
+          summary: "powerlog billing drift"
+          description: "Our subscriptions and the gateway's disagree — a webhook was probably lost. Check /admin/billing and replay the failed events."
+
+      - alert: PowerlogBillingWebhooksFailing
+        expr: sum(increase(powerlog_billing_webhooks_total{status="failed"}[1h])) > 0
+        for: 0m
+        labels: { app: powerlog, severity: warning }
+        annotations:
+          summary: "powerlog billing webhooks failing"
+          description: "A billing webhook handler blew up. The event kept its payload — replay it from /admin/billing."
+
+      # Silence on this channel is not calm, it is deaf: the providers send events
+      # constantly, so nothing arriving for hours means the endpoint is broken (bad
+      # URL, TLS, proxy). Only fires where a gateway is actually configured — the
+      # series does not exist otherwise.
+      - alert: PowerlogBillingWebhooksSilent
+        expr: sum(increase(powerlog_billing_webhooks_total[6h])) == 0 and on() sum(powerlog_subscriptions) > 0
+        for: 30m
+        labels: { app: powerlog, severity: warning }
+        annotations:
+          summary: "powerlog billing webhooks silent"
+          description: "No billing webhook in 6h while subscriptions exist — the endpoint is probably unreachable from the gateway."

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray, or } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import type { PlanPriceEntity } from '../../../domain/entities/plan-price.entity'
@@ -53,10 +53,12 @@ export class DrizzlePlanPriceRepository extends PlanPriceRepository {
     }
 
     async findByGatewayPriceId(gatewayPriceId: string): Promise<PlanPriceEntity | null> {
+        // The id could come from either provider — a Stripe price or a PayPal billing
+        // plan. They are minted by different systems, so they cannot collide.
         const [row] = await this.db
             .select()
             .from(planPrices)
-            .where(eq(planPrices.stripePriceId, gatewayPriceId))
+            .where(or(eq(planPrices.stripePriceId, gatewayPriceId), eq(planPrices.paypalPlanId, gatewayPriceId)))
             .limit(1)
 
         return row ? toPlanPriceEntity(row) : null

@@ -1,4 +1,5 @@
 import { InvalidPlanPriceError } from '../errors/billing.errors'
+import type { PaymentGateway } from './subscription.entity'
 import { type Currency, type PlanInterval, monthlyAmountCents } from '../plan-interval'
 
 export interface PlanPriceProps {
@@ -61,10 +62,19 @@ export class PlanPriceEntity {
         return new PlanPriceEntity(props)
     }
 
-    /** Record the provider-side price this version was published as. */
-    syncedToStripe(priceId: string, now: Date): void {
-        this.props.stripePriceId = priceId
+    /** Record the provider-side price (PayPal: billing plan) this was published as. */
+    syncedTo(gateway: PaymentGateway, externalId: string, now: Date): void {
+        if (gateway === 'stripe') this.props.stripePriceId = externalId
+        if (gateway === 'paypal') this.props.paypalPlanId = externalId
         this.props.updatedAt = now
+    }
+
+    /** What this price is called on a gateway, or null if never published there. */
+    externalIdOn(gateway: PaymentGateway): string | null {
+        if (gateway === 'stripe') return this.props.stripePriceId
+        if (gateway === 'paypal') return this.props.paypalPlanId
+
+        return null
     }
 
     /** Withdraw from sale. Live subscriptions on it are untouched — they paid for it. */

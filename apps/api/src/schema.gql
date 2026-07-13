@@ -86,6 +86,11 @@ type AdminPlan {
 
   """The plan’s live offer, if it has one."""
   offer: PlanOffer
+
+  """
+  The PayPal Product this plan was published as. Null → never synced there.
+  """
+  paypalProductId: String
   prices: [PlanPrice!]!
 
   """Stable public identifier. Immutable — it labels metrics."""
@@ -98,7 +103,9 @@ type AdminPlan {
   """draft | active | archived"""
   status: String!
 
-  """The Stripe Product this plan was published as. Null → never synced."""
+  """
+  The Stripe Product this plan was published as. Null → never synced there.
+  """
   stripeProductId: String
   updatedAt: DateTime!
 }
@@ -366,6 +373,41 @@ input AssignSubscriptionInput {
   userId: ID!
 }
 
+type BillingDrift {
+  gateway: String!
+
+  """Live at the gateway but not here: a webhook we never received."""
+  missingLocally: [String!]!
+
+  """Live here but not at the gateway: a plan granted to nobody paying."""
+  staleLocally: [String!]!
+
+  """
+  Null when the provider could not be asked — no signal, which is not the same as no drift.
+  """
+  total: Int
+}
+
+type BillingWebhookEvent {
+  error: String
+
+  """The provider’s own event id — the idempotency key."""
+  eventId: String!
+  gateway: String!
+  id: ID!
+  processedAt: DateTime
+  receivedAt: DateTime!
+
+  """received | processed | failed"""
+  status: String!
+  type: String!
+}
+
+type BillingWebhookEventPage {
+  rows: [BillingWebhookEvent!]!
+  total: Int!
+}
+
 input ChangePasswordInput {
   currentPassword: String
   newPassword: String!
@@ -543,6 +585,20 @@ type ExerciseStats {
 
   """Σ weight·reps (kg) over logged sets."""
   totalVolumeKg: Float!
+}
+
+type GatewayStatus {
+  """Whether this deployment has keys for it at all."""
+  configured: Boolean!
+  failedWebhooks: Int!
+  gateway: String!
+
+  """
+  A long silence here means the endpoint is broken — the cheapest signal there is.
+  """
+  lastWebhookAt: DateTime
+  syncedPlans: Int!
+  totalPlans: Int!
 }
 
 input GenerateMesocycleDraftInput {
@@ -848,9 +904,9 @@ type Mutation {
   changePassword(input: ChangePasswordInput!): Boolean!
 
   """
-  Move to another plan. An upgrade is charged now, pro-rated; a downgrade lands when the period you paid for ends.
+  Move to another plan. An upgrade is charged now, pro-rated; a downgrade lands when the period you paid for ends. Returns a URL when the provider needs you to approve it again (PayPal), null when it just applied it (Stripe).
   """
-  changePlan(planPriceId: ID!): Boolean!
+  changePlan(planPriceId: ID!): String
 
   """Mark a session as completed."""
   completeWorkoutSession(id: ID!): WorkoutSession!
@@ -1005,6 +1061,11 @@ type Mutation {
   """Undo a scheduled cancellation, while the paid period is still running."""
   resumeSubscription: Boolean!
 
+  """
+  Re-process a webhook whose handler failed, from the payload the journal kept. It runs the same command the webhook does.
+  """
+  retryWebhookEvent(id: ID!): Boolean!
+
   """Revoke every session except the current one."""
   revokeOtherSessions: Boolean!
 
@@ -1132,6 +1193,11 @@ type MyInvoicePage {
 
 type MySubscription {
   amountCents: Int
+
+  """
+  Whether a cancellation can still be undone. False on PayPal — its cancellation is terminal.
+  """
+  canResume: Boolean!
 
   """It will not renew; the plan is kept until currentPeriodEnd."""
   cancelAtPeriodEnd: Boolean!
@@ -1319,6 +1385,11 @@ type PublicPrice {
 }
 
 type Query {
+  """
+  Compare our subscriptions with each gateway now. Should be 0 — anything else is a webhook we never received.
+  """
+  adminBillingDrift: [BillingDrift!]!
+
   """Aggregate billing figures (admin only)."""
   adminBillingStats: AdminBillingStats!
 
@@ -1329,6 +1400,11 @@ type Query {
   Exercise catalog for admins (filter by category/equipment/muscle/text; offset-paginated).
   """
   adminExercises(categories: [String!], equipment: [String!], limit: Int, muscles: [String!], offset: Int, search: String): AdminExercisePage!
+
+  """
+  Health of each payment integration: configured, catalog published, when the last webhook arrived, how many failed.
+  """
+  adminGatewayStatus: [GatewayStatus!]!
 
   """
   JSON Schema of the entitlements an audience accepts — the admin form renders itself from this, so adding a feature needs no UI change.
@@ -1348,6 +1424,9 @@ type Query {
 
   """List users with filters + offset pagination (admin only)."""
   adminUsers(isAdmin: Boolean, limit: Int, offset: Int, roles: [String!], search: String, statuses: [String!], verified: Boolean): AdminUserPage!
+
+  """The webhook journal — what came in and what failed."""
+  adminWebhookEvents(gateway: String, limit: Int, offset: Int, status: String): BillingWebhookEventPage!
 
   """Aggregate training counts (admin only)."""
   adminWorkoutStats: AdminWorkoutStats!

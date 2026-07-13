@@ -14,6 +14,8 @@ export const AdminPlansDocument = graphql(`
             isFree
             sortOrder
             entitlements
+            stripeProductId
+            paypalProductId
             snapshot {
                 templates
                 mesocycles

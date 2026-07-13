@@ -150,18 +150,18 @@ export class BillingResolver {
         return true
     }
 
-    @Mutation(() => Boolean, {
+    @Mutation(() => String, {
+        nullable: true,
         description:
-            'Move to another plan. An upgrade is charged now, pro-rated; a downgrade lands when the period you paid for ends.',
+            'Move to another plan. An upgrade is charged now, pro-rated; a downgrade lands when the period you paid for ends. Returns a URL when the provider needs you to approve it again (PayPal), null when it just applied it (Stripe).',
     })
     @UseGuards(JwtCookieGuard)
     async changePlan(
         @CurrentUser() user: AuthUser,
         @Args('planPriceId', { type: () => ID }, new ZodValidationPipe(uuidArg)) planPriceId: string,
-    ): Promise<boolean> {
+    ): Promise<string | null> {
         const command = new ChangePlanCommand(user.userId, planPriceId)
-        await this.commandBus.execute<ChangePlanCommand, void>(command)
 
-        return true
+        return this.commandBus.execute<ChangePlanCommand, string | null>(command)
     }
 }

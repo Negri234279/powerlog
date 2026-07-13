@@ -1,4 +1,5 @@
 import type { PlanAudience } from '../../../../shared/contracts/entitlements'
+import type { PaymentGateway } from './subscription.entity'
 import { InvalidPlanSlugError } from '../errors/billing.errors'
 import { type PlanEntitlementsVO, planEntitlementsFor } from '../value-objects/plan-entitlements'
 
@@ -21,8 +22,9 @@ export interface PlanProps {
     isFree: boolean
     sortOrder: number
     entitlements: PlanEntitlementsVO
-    /** The Stripe Product this plan was published as. Null until the catalog is synced. */
+    /** The provider-side product this plan was published as. Null until synced. */
     stripeProductId: string | null
+    paypalProductId: string | null
     createdAt: Date
     updatedAt: Date
 }
@@ -73,6 +75,7 @@ export class PlanAggregate {
             sortOrder: input.sortOrder ?? 0,
             entitlements: planEntitlementsFor(input.audience, input.entitlements),
             stripeProductId: null,
+            paypalProductId: null,
             createdAt: input.now,
             updatedAt: input.now,
         })
@@ -128,10 +131,19 @@ export class PlanAggregate {
         this.props.updatedAt = now
     }
 
-    /** Record the Stripe Product this plan was published as. */
-    syncedToStripe(productId: string, now: Date): void {
-        this.props.stripeProductId = productId
+    /** Record the product this plan was published as, on the gateway that made it. */
+    syncedTo(gateway: PaymentGateway, productId: string, now: Date): void {
+        if (gateway === 'stripe') this.props.stripeProductId = productId
+        if (gateway === 'paypal') this.props.paypalProductId = productId
         this.props.updatedAt = now
+    }
+
+    /** The product id on a gateway, or null if the plan was never published there. */
+    productIdOn(gateway: PaymentGateway): string | null {
+        if (gateway === 'stripe') return this.props.stripeProductId
+        if (gateway === 'paypal') return this.props.paypalProductId
+
+        return null
     }
 
     /** Whether new subscriptions may be started on this plan. */
@@ -168,6 +180,9 @@ export class PlanAggregate {
     }
     get stripeProductId(): string | null {
         return this.props.stripeProductId
+    }
+    get paypalProductId(): string | null {
+        return this.props.paypalProductId
     }
     get createdAt(): Date {
         return this.props.createdAt
