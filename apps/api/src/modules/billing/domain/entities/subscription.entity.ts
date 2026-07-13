@@ -75,6 +75,18 @@ export class SubscriptionAggregate {
     }
 
     /**
+     * End it now, with no grace period. Only admins revoking a `manual` grant get
+     * here: a gateway-billed subscription is cancelled at the gateway, comes back
+     * as `canceled` through the webhook, and keeps the time it paid for.
+     */
+    expire(now: Date): void {
+        this.props.status = 'expired'
+        this.props.canceledAt ??= now
+        this.props.currentPeriodEnd = now
+        this.props.updatedAt = now
+    }
+
+    /**
      * Does this subscription grant its plan's entitlements at `now`?
      *
      * `trialing | active | past_due` do outright. `canceled` does too **while the

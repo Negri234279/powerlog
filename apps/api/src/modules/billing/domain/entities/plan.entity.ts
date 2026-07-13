@@ -83,6 +83,48 @@ export class PlanAggregate {
         })
     }
 
+    /**
+     * Edit the plan in place. `entitlements` is **retroactive on purpose**: every
+     * check reads the plan as it is now, so granting a feature reaches live
+     * subscribers immediately (and revoking one closes it for them just as fast).
+     * Prices are the opposite — see `PlanPriceEntity`.
+     *
+     * `audience`, `slug` and `isFree` are not editable: the audience decides the
+     * shape of the entitlements, the slug is a stable public id that labels metrics,
+     * and which plan is the free fallback is not something to flip on a live catalog.
+     * Undefined fields are left alone; `description` is nullable, so it is cleared
+     * by passing null.
+     */
+    update(
+        patch: {
+            name?: string
+            description?: string | null
+            entitlements?: unknown
+            sortOrder?: number
+        },
+        now: Date,
+    ): void {
+        if (patch.name !== undefined) this.props.name = patch.name.trim()
+        if (patch.description !== undefined) this.props.description = patch.description
+        if (patch.sortOrder !== undefined) this.props.sortOrder = patch.sortOrder
+        if (patch.entitlements !== undefined) {
+            this.props.entitlements = planEntitlementsFor(this.props.audience, patch.entitlements)
+        }
+
+        this.props.updatedAt = now
+    }
+
+    /**
+     * Move through the catalog lifecycle. Archiving does not touch the
+     * subscriptions already on the plan — they keep reading it until they end; it
+     * only stops new signups. Refusing to archive the last free plan of an audience
+     * is the handler's job: this object cannot see the rest of the catalog.
+     */
+    setStatus(status: PlanStatus, now: Date): void {
+        this.props.status = status
+        this.props.updatedAt = now
+    }
+
     /** Whether new subscriptions may be started on this plan. */
     acceptsSignups(): boolean {
         return this.props.status === 'active'

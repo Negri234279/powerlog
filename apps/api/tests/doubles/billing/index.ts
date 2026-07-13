@@ -1,3 +1,5 @@
 export * from './fake-clock'
+export * from './fake-id-generator'
+export * from './in-memory-plan-price.repository'
 export * from './in-memory-plan.repository'
 export * from './in-memory-subscription.repository'

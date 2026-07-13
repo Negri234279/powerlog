@@ -55,3 +55,90 @@ export class FreePlanMissingError extends BillingError {
         super(`No active free plan for the ${audience} catalog.`)
     }
 }
+
+/** Slugs are unique across the catalog: they are the plan's public identity. */
+export class PlanSlugTakenError extends BillingError {
+    readonly code = 'PLAN_SLUG_TAKEN'
+
+    constructor() {
+        super('Another plan already uses that slug.')
+    }
+}
+
+/**
+ * Refusing to take the last active free plan of an audience out of service.
+ * Without it, every user of that audience without a subscription — most of them —
+ * could not be told what they may do at all.
+ */
+export class LastFreePlanError extends BillingError {
+    readonly code = 'LAST_FREE_PLAN'
+
+    constructor(readonly audience: PlanAudience) {
+        super(`The ${audience} catalog would be left with no free plan.`)
+    }
+}
+
+/** An audience already has its free plan; there can only be one active. */
+export class FreePlanExistsError extends BillingError {
+    readonly code = 'FREE_PLAN_EXISTS'
+
+    constructor(readonly audience: PlanAudience) {
+        super(`The ${audience} catalog already has an active free plan.`)
+    }
+}
+
+/** A price amount that would not charge anything (free is a plan flag, not a 0 price). */
+export class InvalidPlanPriceError extends BillingError {
+    readonly code = 'INVALID_PLAN_PRICE'
+
+    constructor(detail: string) {
+        super(detail)
+    }
+}
+
+export class PlanPriceNotFoundError extends BillingError {
+    readonly code = 'PLAN_PRICE_NOT_FOUND'
+
+    constructor() {
+        super('Price not found.')
+    }
+}
+
+/** The plan is not open for signups (draft or archived). */
+export class PlanNotAvailableError extends BillingError {
+    readonly code = 'PLAN_NOT_AVAILABLE'
+
+    constructor() {
+        super('That plan is not available.')
+    }
+}
+
+/** The user already has a live subscription; end it before granting another. */
+export class SubscriptionAlreadyActiveError extends BillingError {
+    readonly code = 'SUBSCRIPTION_ALREADY_ACTIVE'
+
+    constructor() {
+        super('This user already has an active subscription.')
+    }
+}
+
+export class SubscriptionNotFoundError extends BillingError {
+    readonly code = 'SUBSCRIPTION_NOT_FOUND'
+
+    constructor() {
+        super('Subscription not found.')
+    }
+}
+
+/**
+ * Only a `manual` grant can be revoked from here. A subscription billed by a
+ * gateway must be ended at the gateway — killing the local row would leave the
+ * user's card being charged for something they no longer have.
+ */
+export class NotAManualSubscriptionError extends BillingError {
+    readonly code = 'NOT_A_MANUAL_SUBSCRIPTION'
+
+    constructor() {
+        super('This subscription is billed by a payment gateway; end it there.')
+    }
+}

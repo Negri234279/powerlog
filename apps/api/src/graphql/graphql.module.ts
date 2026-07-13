@@ -7,6 +7,7 @@ import { GraphQLModule } from '@nestjs/graphql'
 import type { GraphQLFormattedError } from 'graphql'
 
 import { type Env, isDev } from '../config/env'
+import { JsonScalar } from './json.scalar'
 
 /**
  * GraphQL code-first. The schema is generated from decorators into
@@ -14,6 +15,11 @@ import { type Env, isDev } from '../config/env'
  * GraphiQL replaces the deprecated Apollo Playground.
  */
 @Module({
+    providers: [
+        // Registered here (not in a feature module) because a scalar is part of the
+        // schema, not of a feature: Nest discovers @Scalar providers when it builds it.
+        JsonScalar,
+    ],
     imports: [
         GraphQLModule.forRootAsync<ApolloDriverConfig>({
             driver: ApolloDriver,

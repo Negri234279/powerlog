@@ -1,6 +1,6 @@
-import type { PlanAudience } from '../../../src/shared/contracts/entitlements'
 import type { PlanAggregate } from '../../../src/modules/billing/domain/entities/plan.entity'
 import { PlanRepository } from '../../../src/modules/billing/domain/repositories/plan.repository'
+import type { PlanAudience } from '../../../src/shared/contracts/entitlements'
 
 /** In-memory PlanRepository implementing the real port. */
 export class InMemoryPlanRepository extends PlanRepository {
@@ -17,8 +17,22 @@ export class InMemoryPlanRepository extends PlanRepository {
         return this
     }
 
+    async save(plan: PlanAggregate): Promise<void> {
+        this.byId.set(plan.id, plan)
+    }
+
     async findById(id: string): Promise<PlanAggregate | null> {
         return this.byId.get(id) ?? null
+    }
+
+    async findBySlug(slug: string): Promise<PlanAggregate | null> {
+        return [...this.byId.values()].find((plan) => plan.slug === slug) ?? null
+    }
+
+    async findAll(audience?: PlanAudience): Promise<PlanAggregate[]> {
+        return [...this.byId.values()]
+            .filter((plan) => !audience || plan.audience === audience)
+            .sort((a, b) => a.sortOrder - b.sortOrder || a.slug.localeCompare(b.slug))
     }
 
     async findActiveFree(audience: PlanAudience): Promise<PlanAggregate | null> {

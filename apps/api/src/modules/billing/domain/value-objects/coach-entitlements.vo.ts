@@ -25,6 +25,9 @@ const schema = z.strictObject({
 
 export type CoachEntitlements = z.infer<typeof schema>
 
+/** The coach schema, exposed so the admin form can be generated from it. */
+export const coachEntitlementsSchema = schema
+
 export class CoachEntitlementsVO extends ValueObject<CoachEntitlements> {
     /** Validate raw input (admin form, jsonb column) into a VO. */
     static create(raw: unknown): CoachEntitlementsVO {

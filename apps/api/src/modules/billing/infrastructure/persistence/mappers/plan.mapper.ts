@@ -3,6 +3,7 @@ import { PlanAggregate, type PlanStatus } from '../../../domain/entities/plan.en
 import type { plans } from '../schema/plans.schema'
 
 type PlanRow = typeof plans.$inferSelect
+type PlanInsert = typeof plans.$inferInsert
 
 /**
  * Rehydration re-validates the `entitlements` jsonb against the audience's zod
@@ -23,4 +24,21 @@ export function toPlanAggregate(row: PlanRow): PlanAggregate {
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
     })
+}
+
+export function toPlanRow(plan: PlanAggregate): PlanInsert {
+    return {
+        id: plan.id,
+        audience: plan.audience,
+        slug: plan.slug,
+        name: plan.name,
+        description: plan.description,
+        status: plan.status,
+        isFree: plan.isFree,
+        sortOrder: plan.sortOrder,
+        // The VO's value is the validated jsonb — it went through zod on the way in.
+        entitlements: plan.entitlements.value,
+        createdAt: plan.createdAt,
+        updatedAt: plan.updatedAt,
+    }
 }

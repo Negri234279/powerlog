@@ -38,6 +38,12 @@ export class DrizzleSubscriptionRepository extends SubscriptionRepository {
             })
     }
 
+    async findById(id: string): Promise<SubscriptionAggregate | null> {
+        const [row] = await this.db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1)
+
+        return row ? toSubscriptionAggregate(row) : null
+    }
+
     async findLiveByUser(userId: string): Promise<SubscriptionAggregate | null> {
         const [row] = await this.db
             .select()

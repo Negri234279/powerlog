@@ -1,0 +1,71 @@
+import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { PinoLogger } from 'nestjs-pino'
+
+import { SubscriptionAggregate } from '../../../domain/entities/subscription.entity'
+import {
+    PlanNotAvailableError,
+    PlanNotFoundError,
+    SubscriptionAlreadyActiveError,
+} from '../../../domain/errors/billing.errors'
+import { PlanRepository } from '../../../domain/repositories/plan.repository'
+import { SubscriptionRepository } from '../../../domain/repositories/subscription.repository'
+import { Clock } from '../../ports/clock.port'
+import { IdGenerator } from '../../ports/id-generator.port'
+import { AssignSubscriptionCommand } from './assign-subscription.command'
+
+/** A grant with no end date lasts a year — long enough to be useful, short enough
+ *  that a forgotten comp does not become permanent. */
+const DEFAULT_GRANT_DAYS = 365
+
+/**
+ * Puts a user on a plan by hand: comps, support, testing. `gateway = 'manual'`, no
+ * price, nothing charged — but from every other point of view it is an ordinary
+ * subscription, so entitlements resolve through exactly the same path as a paid one.
+ */
+@CommandHandler(AssignSubscriptionCommand)
+export class AssignSubscriptionHandler implements ICommandHandler<AssignSubscriptionCommand, string> {
+    constructor(
+        private readonly subscriptions: SubscriptionRepository,
+        private readonly plans: PlanRepository,
+        private readonly clock: Clock,
+        private readonly ids: IdGenerator,
+        private readonly logger: PinoLogger,
+    ) {
+        this.logger.setContext(AssignSubscriptionHandler.name)
+    }
+
+    async execute(command: AssignSubscriptionCommand): Promise<string> {
+        const plan = await this.plans.findById(command.planId)
+        if (!plan) throw new PlanNotFoundError()
+        if (!plan.acceptsSignups()) throw new PlanNotAvailableError()
+
+        // One live subscription per user. Refusing here (rather than letting the
+        // partial unique index do it) also stops an admin from silently shadowing a
+        // paid subscription with a comp.
+        if (await this.subscriptions.findLiveByUser(command.userId)) {
+            throw new SubscriptionAlreadyActiveError()
+        }
+
+        const now = this.clock.now()
+        const until = command.until ?? new Date(now.getTime() + DEFAULT_GRANT_DAYS * 24 * 60 * 60 * 1000)
+
+        const subscription = SubscriptionAggregate.create({
+            id: this.ids.uuid(),
+            userId: command.userId,
+            planId: plan.id,
+            gateway: 'manual',
+            status: 'active',
+            currentPeriodStart: now,
+            currentPeriodEnd: until,
+            now,
+        })
+        await this.subscriptions.save(subscription)
+
+        this.logger.info(
+            { subscriptionId: subscription.id, plan: plan.slug, gateway: 'manual', until },
+            'subscription granted manually',
+        )
+
+        return subscription.id
+    }
+}

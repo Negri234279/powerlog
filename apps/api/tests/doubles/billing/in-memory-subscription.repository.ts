@@ -15,6 +15,10 @@ export class InMemorySubscriptionRepository extends SubscriptionRepository {
         this.byId.set(subscription.id, subscription)
     }
 
+    async findById(id: string): Promise<SubscriptionAggregate | null> {
+        return this.byId.get(id) ?? null
+    }
+
     async findLiveByUser(userId: string): Promise<SubscriptionAggregate | null> {
         for (const subscription of this.byId.values()) {
             if (subscription.userId === userId && LIVE_STATUSES.includes(subscription.status)) return subscription

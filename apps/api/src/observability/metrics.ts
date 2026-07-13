@@ -39,6 +39,10 @@ export const METRIC = {
     coachingAthletes: 'powerlog_coaching_athletes',
     coachingPendingInvitations: 'powerlog_coaching_pending_invitations',
     entitlementDenials: 'powerlog_entitlement_denials_total',
+    subscriptions: 'powerlog_subscriptions',
+    subscriptionsByPlan: 'powerlog_subscriptions_by_plan',
+    mrrCents: 'powerlog_mrr_cents',
+    subscriptionsCanceling: 'powerlog_subscriptions_canceling',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -291,5 +295,27 @@ export const metricsProviders = [
         name: METRIC.entitlementDenials,
         help: 'Actions refused because the user’s plan does not include them.',
         labelNames: ['feature', 'audience', 'plan'],
+    }),
+    // Where the business stands, sampled at scrape time from the same read model
+    // that backs the admin billing panel (set by BillingStateMetrics). `plan` is a
+    // catalog slug — bounded, admin-created; never a user or gateway id.
+    makeGaugeProvider({
+        name: METRIC.subscriptions,
+        help: 'Subscriptions currently granting their plan, by status and gateway.',
+        labelNames: ['status', 'gateway'],
+    }),
+    makeGaugeProvider({
+        name: METRIC.subscriptionsByPlan,
+        help: 'Subscriptions currently granting their plan, by plan — which plans sell and which are dead.',
+        labelNames: ['plan', 'audience'],
+    }),
+    makeGaugeProvider({
+        name: METRIC.mrrCents,
+        help: 'Monthly recurring revenue in cents (each interval normalised to a month), by plan and currency.',
+        labelNames: ['plan', 'currency'],
+    }),
+    makeGaugeProvider({
+        name: METRIC.subscriptionsCanceling,
+        help: 'Cancelled but still inside the period they paid for: churn already decided, not yet visible.',
     }),
 ]
