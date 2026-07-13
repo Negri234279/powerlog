@@ -2,6 +2,7 @@ import type { PlanOfferEntity } from '../../domain/entities/plan-offer.entity'
 import type { PlanPriceEntity } from '../../domain/entities/plan-price.entity'
 import type { PlanAggregate } from '../../domain/entities/plan.entity'
 import type { PaymentGateway as GatewayName, SubscriptionAggregate } from '../../domain/entities/subscription.entity'
+import type { GatewayEvent } from './gateway-event'
 
 /**
  * What the app needs from a payment provider — and nothing more. Stripe and
@@ -93,4 +94,14 @@ export abstract class PaymentGatewayPort {
      * only shows when this returns something.
      */
     abstract billingPortalUrl(subscription: SubscriptionAggregate, returnUrl: string): Promise<string | null>
+
+    /**
+     * Verify an inbound webhook against **the raw body** and translate it into a
+     * {@link GatewayEvent}. Throws if the signature does not check out — an
+     * unsigned payload is somebody claiming a payment happened.
+     *
+     * The raw bytes matter: the signature covers the exact body the provider sent,
+     * so a JSON round-trip (parse → re-serialize) invalidates it.
+     */
+    abstract verifyWebhook(rawBody: Buffer, signature: string): GatewayEvent
 }

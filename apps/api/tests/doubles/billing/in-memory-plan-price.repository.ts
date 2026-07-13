@@ -23,6 +23,10 @@ export class InMemoryPlanPriceRepository extends PlanPriceRepository {
         return [...this.byId.values()].filter((price) => planIds.includes(price.planId))
     }
 
+    async findByGatewayPriceId(gatewayPriceId: string): Promise<PlanPriceEntity | null> {
+        return [...this.byId.values()].find((price) => price.stripePriceId === gatewayPriceId) ?? null
+    }
+
     async findActive(planId: string, interval: PlanInterval, currency: Currency): Promise<PlanPriceEntity | null> {
         return (
             [...this.byId.values()].find(

@@ -13,7 +13,10 @@ export const SubscriptionMother = {
             id: string
             userId: string
             planId: string
+            planPriceId: string | null
             gateway: PaymentGateway
+            gatewaySubscriptionId: string | null
+            gatewayCustomerId: string | null
             status: SubscriptionStatus
             currentPeriodStart: Date
             currentPeriodEnd: Date
@@ -23,7 +26,10 @@ export const SubscriptionMother = {
             id: overrides.id ?? 'sub-1',
             userId: overrides.userId ?? 'u-1',
             planId: overrides.planId ?? 'plan-athlete-pro',
+            planPriceId: overrides.planPriceId ?? null,
             gateway: overrides.gateway ?? 'stripe',
+            gatewaySubscriptionId: overrides.gatewaySubscriptionId ?? null,
+            gatewayCustomerId: overrides.gatewayCustomerId ?? null,
             status: overrides.status ?? 'active',
             currentPeriodStart: overrides.currentPeriodStart ?? PERIOD_START,
             currentPeriodEnd: overrides.currentPeriodEnd ?? PERIOD_END,

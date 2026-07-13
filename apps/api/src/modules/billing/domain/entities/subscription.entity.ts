@@ -75,6 +75,51 @@ export class SubscriptionAggregate {
     }
 
     /**
+     * Bring the local projection in line with what the gateway just told us.
+     *
+     * **This is the only way a gateway-billed subscription changes.** Cancelling,
+     * resuming and switching plan all go out to the provider and come back as a
+     * webhook, so the app converges on the same state whether the change was made
+     * in our UI or in Stripe's own portal — and a webhook we missed is repaired by
+     * the next one, instead of leaving two versions of the truth.
+     */
+    syncFromGateway(
+        input: {
+            status: SubscriptionStatus
+            currentPeriodStart: Date
+            currentPeriodEnd: Date
+            cancelAtPeriodEnd: boolean
+            canceledAt?: Date | null
+            /** Set when the gateway reports a different price (a plan change landed). */
+            planId?: string
+            planPriceId?: string | null
+        },
+        now: Date,
+    ): void {
+        this.props.status = input.status
+        this.props.currentPeriodStart = input.currentPeriodStart
+        this.props.currentPeriodEnd = input.currentPeriodEnd
+        this.props.cancelAtPeriodEnd = input.cancelAtPeriodEnd
+        this.props.canceledAt = input.canceledAt ?? this.props.canceledAt
+
+        if (input.planId) this.props.planId = input.planId
+        if (input.planPriceId !== undefined) this.props.planPriceId = input.planPriceId
+
+        // The gateway applied the plan change, so there is nothing pending any more.
+        if (input.planPriceId && input.planPriceId === this.props.pendingPlanPriceId) {
+            this.props.pendingPlanPriceId = null
+        }
+
+        this.props.updatedAt = now
+    }
+
+    /** A downgrade that is paid for but not yet applied; it lands on renewal. */
+    schedulePlanChange(planPriceId: string, now: Date): void {
+        this.props.pendingPlanPriceId = planPriceId
+        this.props.updatedAt = now
+    }
+
+    /**
      * End it now, with no grace period. Only admins revoking a `manual` grant get
      * here: a gateway-billed subscription is cancelled at the gateway, comes back
      * as `canceled` through the webhook, and keeps the time it paid for.

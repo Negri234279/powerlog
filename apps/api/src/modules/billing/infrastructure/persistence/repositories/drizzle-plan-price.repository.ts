@@ -52,6 +52,16 @@ export class DrizzlePlanPriceRepository extends PlanPriceRepository {
         return rows.map(toPlanPriceEntity)
     }
 
+    async findByGatewayPriceId(gatewayPriceId: string): Promise<PlanPriceEntity | null> {
+        const [row] = await this.db
+            .select()
+            .from(planPrices)
+            .where(eq(planPrices.stripePriceId, gatewayPriceId))
+            .limit(1)
+
+        return row ? toPlanPriceEntity(row) : null
+    }
+
     async findActive(planId: string, interval: PlanInterval, currency: Currency): Promise<PlanPriceEntity | null> {
         const [row] = await this.db
             .select()

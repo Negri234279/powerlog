@@ -17,4 +17,7 @@ export abstract class SubscriptionRepository {
      * period has elapsed.
      */
     abstract findLiveByUser(userId: string): Promise<SubscriptionAggregate | null>
+
+    /** The local mirror of a gateway subscription — how a webhook finds its row. */
+    abstract findByGatewayId(gatewaySubscriptionId: string): Promise<SubscriptionAggregate | null>
 }

@@ -12,4 +12,10 @@ export abstract class PlanPriceRepository {
 
     /** The price currently on sale for a combo, if any. */
     abstract findActive(planId: string, interval: PlanInterval, currency: Currency): Promise<PlanPriceEntity | null>
+
+    /**
+     * The local price a gateway-side price id belongs to — how a webhook works out
+     * which plan the user was just moved onto. Null for a price we did not publish.
+     */
+    abstract findByGatewayPriceId(gatewayPriceId: string): Promise<PlanPriceEntity | null>
 }

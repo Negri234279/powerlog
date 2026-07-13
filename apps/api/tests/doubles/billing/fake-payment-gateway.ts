@@ -1,3 +1,4 @@
+import type { GatewayEvent } from '../../../src/modules/billing/application/ports/gateway-event'
 import { GatewayProvider } from '../../../src/modules/billing/application/ports/gateway-provider.port'
 import {
     type CheckoutRequest,
@@ -100,6 +101,17 @@ export class FakePaymentGateway extends PaymentGatewayPort {
         this.calls.push({ operation: 'portal', subscriptionId: subscription.id })
 
         return subscription.gatewayCustomerId ? `https://gateway.test/portal/${subscription.gatewayCustomerId}` : null
+    }
+
+    /**
+     * The fake "signature" is the JSON body itself: a test builds the event it wants
+     * to deliver and passes it as the raw body. Verifying a real signature is the
+     * StripeGateway's job, and the e2e signs a payload for real with the test secret.
+     */
+    verifyWebhook(rawBody: Buffer): GatewayEvent {
+        this.guard()
+
+        return JSON.parse(rawBody.toString('utf8')) as GatewayEvent
     }
 
     private guard(): void {

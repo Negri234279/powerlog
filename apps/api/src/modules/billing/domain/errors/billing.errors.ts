@@ -203,6 +203,36 @@ export class PriceNotSyncedError extends BillingError {
     }
 }
 
+/** The user has nothing to cancel, resume or change: they are on the free plan. */
+export class NoActiveSubscriptionError extends BillingError {
+    readonly code = 'NO_ACTIVE_SUBSCRIPTION'
+
+    constructor() {
+        super('You do not have an active subscription.')
+    }
+}
+
+/**
+ * A manual grant is not the user's to manage: an admin gave it and an admin takes
+ * it away. There is no gateway to ask.
+ */
+export class NotAGatewaySubscriptionError extends BillingError {
+    readonly code = 'NOT_A_GATEWAY_SUBSCRIPTION'
+
+    constructor() {
+        super('This subscription was granted by an admin; there is nothing to manage here.')
+    }
+}
+
+/** Changing to the plan they are already on. */
+export class SamePlanError extends BillingError {
+    readonly code = 'SAME_PLAN'
+
+    constructor() {
+        super('You are already on that plan.')
+    }
+}
+
 /** A gateway call failed (network, API error). Distinct from "not configured". */
 export class GatewayRequestFailedError extends BillingError {
     readonly code = 'GATEWAY_REQUEST_FAILED'

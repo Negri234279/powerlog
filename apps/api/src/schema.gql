@@ -83,6 +83,9 @@ type AdminPlan {
   """The fallback of its audience: no subscription row, no charge."""
   isFree: Boolean!
   name: String!
+
+  """The plan’s live offer, if it has one."""
+  offer: PlanOffer
   prices: [PlanPrice!]!
 
   """Stable public identifier. Immutable — it labels metrics."""
@@ -94,6 +97,9 @@ type AdminPlan {
 
   """draft | active | archived"""
   status: String!
+
+  """The Stripe Product this plan was published as. Null → never synced."""
+  stripeProductId: String
   updatedAt: DateTime!
 }
 
@@ -595,6 +601,19 @@ type IntensityBucket {
   value: Int!
 }
 
+type IntroPhase {
+  cycles: Int!
+  percentOff: Int!
+}
+
+input IntroPhaseInput {
+  """How many billing cycles the discount lasts."""
+  cycles: Int!
+
+  """How much is taken off each of those cycles (1–100)."""
+  percentOff: Int!
+}
+
 """An arbitrary JSON value (validated against a schema by the server)."""
 scalar JSON
 
@@ -820,8 +839,18 @@ type Mutation {
   """Cancel an invitation you sent (coaches only)."""
   cancelInvitation(id: ID!): CoachInvitation!
 
+  """
+  Stop the subscription renewing. You keep the plan until the period you paid for ends.
+  """
+  cancelSubscription: Boolean!
+
   """Change (or set, for Google-only accounts) the password."""
   changePassword(input: ChangePasswordInput!): Boolean!
+
+  """
+  Move to another plan. An upgrade is charged now, pro-rated; a downgrade lands when the period you paid for ends.
+  """
+  changePlan(planPriceId: ID!): Boolean!
 
   """Mark a session as completed."""
   completeWorkoutSession(id: ID!): WorkoutSession!
@@ -973,6 +1002,9 @@ type Mutation {
   """Reset the password using the token from the reset email."""
   resetPassword(input: ResetPasswordInput!): Boolean!
 
+  """Undo a scheduled cancellation, while the paid period is still running."""
+  resumeSubscription: Boolean!
+
   """Revoke every session except the current one."""
   revokeOtherSessions: Boolean!
 
@@ -1016,6 +1048,16 @@ type Mutation {
   """
   setUserStatus(input: SetUserStatusInput!): AdminUser!
 
+  """
+  Start paying for a plan. Returns the URL to send the browser to; the subscription is created by the webhook, not by the redirect.
+  """
+  startCheckout(gateway: String!, offerId: ID, planPriceId: ID!): String!
+
+  """
+  Publish the plan, its prices on sale and its offer to a payment gateway. Re-runnable — this is also the retry.
+  """
+  syncPlanToGateway(gateway: String!, planId: ID!): Boolean!
+
   """Select the model used for a configured provider."""
   updateAiProviderModel(input: UpdateAiProviderModelInput!): AiProviderConfig!
 
@@ -1044,8 +1086,70 @@ type Mutation {
   """Replace a template’s name, notes and exercise/set tree."""
   updateWorkoutTemplate(id: ID!, input: WorkoutTemplateInput!): WorkoutTemplate!
 
+  """
+  Publish an offer on a plan (trial and/or a discounted opening phase). It replaces the plan’s live offer — terms are immutable, so a change is a new offer.
+  """
+  upsertPlanOffer(input: UpsertPlanOfferInput!): ID!
+
   """Confirm email ownership with the token from the verification email."""
   verifyEmail(token: String!): Boolean!
+}
+
+type MyEntitlements {
+  ai: Boolean!
+  audience: String!
+
+  """null = unlimited."""
+  maxAthletes: Int
+  mesocycles: Boolean!
+  plan: String!
+  planSessions: Boolean!
+  templates: Boolean!
+}
+
+type MyInvoice {
+  amountDueCents: Int!
+  amountPaidCents: Int!
+  currency: String!
+
+  """The invoice on the gateway’s site."""
+  hostedUrl: String
+  id: ID!
+  issuedAt: DateTime!
+
+  """The gateway’s invoice number, when it issues one."""
+  number: String
+
+  """Null for gateways that issue no PDF (PayPal)."""
+  pdfUrl: String
+  status: String!
+}
+
+type MyInvoicePage {
+  rows: [MyInvoice!]!
+  total: Int!
+}
+
+type MySubscription {
+  amountCents: Int
+
+  """It will not renew; the plan is kept until currentPeriodEnd."""
+  cancelAtPeriodEnd: Boolean!
+  currency: String
+
+  """When the access they have paid for runs out."""
+  currentPeriodEnd: DateTime!
+
+  """stripe | paypal | manual"""
+  gateway: String!
+  id: ID!
+  interval: String
+
+  """A downgrade that lands at the next renewal."""
+  pendingPlanSlug: String
+  planName: String!
+  planSlug: String!
+  status: String!
 }
 
 type Notification {
@@ -1089,6 +1193,21 @@ type PlanEntitlements {
   plan: String!
   planSessions: Boolean!
   templates: Boolean!
+}
+
+type PlanOffer {
+  """Null = open-ended."""
+  endsAt: DateTime
+  id: ID!
+  introPhase: IntroPhase
+  name: String!
+  startsAt: DateTime!
+
+  """The Stripe coupon behind the intro phase."""
+  stripeCouponId: String
+
+  """Free days before the first charge."""
+  trialDays: Int
 }
 
 type PlanPrice {
@@ -1159,6 +1278,44 @@ type Profile {
   timezone: String
   updatedAt: DateTime!
   userId: ID!
+}
+
+type PublicOffer {
+  endsAt: DateTime
+  id: ID!
+  introPhase: IntroPhase
+  name: String!
+  trialDays: Int
+}
+
+type PublicPlan {
+  ai: Boolean!
+  description: String
+  id: ID!
+  isFree: Boolean!
+
+  """null = unlimited."""
+  maxAthletes: Int
+  mesocycles: Boolean!
+  name: String!
+  offer: PublicOffer
+  planSessions: Boolean!
+  prices: [PublicPrice!]!
+  slug: String!
+  sortOrder: Int!
+  templates: Boolean!
+}
+
+type PublicPrice {
+  amountCents: Int!
+  currency: String!
+
+  """
+  The gateways that can sell this price right now. Empty → no checkout available.
+  """
+  gateways: [String!]!
+  id: ID!
+  interval: String!
 }
 
 type Query {
@@ -1250,6 +1407,14 @@ type Query {
   """One of an athlete's sessions, with its full tree (coaches only)."""
   athleteWorkoutSession(athleteId: ID!, id: ID!): WorkoutSession!
 
+  """The plans on sale for an audience. Public — no session needed."""
+  availablePlans(audience: String!): [PublicPlan!]!
+
+  """
+  The gateway’s billing portal (card, invoices). Null when there is none — the button hides.
+  """
+  billingPortalUrl: String
+
   """
   Public: preview a pending invitation by its opaque token (for the invite-aware signup page).
   """
@@ -1298,6 +1463,14 @@ type Query {
   """Coaches linked to the caller."""
   myCoaches: [CoachUser!]!
 
+  """
+  What your plan includes. For the UI only — the server is the authority on every gate.
+  """
+  myEntitlements: MyEntitlements!
+
+  """Your billing history, as the gateway issued it."""
+  myInvoices(limit: Int, offset: Int): MyInvoicePage!
+
   """The caller's notification inbox, newest first (keyset-paginated)."""
   myNotifications(cursor: String, limit: Int): NotificationsPage!
 
@@ -1306,6 +1479,9 @@ type Query {
 
   """The user’s active sessions (devices)."""
   mySessions: [Session!]!
+
+  """Your subscription, or null when you are on the free plan."""
+  mySubscription: MySubscription
 
   """Pending invitations received by the caller."""
   pendingInvitations: [PendingInvitation!]!
@@ -1612,6 +1788,20 @@ input UpdateWorkoutSessionInput {
   """ISO 8601 datetime; absent = leave unchanged."""
   performedAt: String
   sessionId: ID!
+}
+
+input UpsertPlanOfferInput {
+  """When it closes. Omitted → open-ended."""
+  endsAt: DateTime
+  introPhase: IntroPhaseInput
+  name: String!
+  planId: ID!
+
+  """When it opens. Omitted → now."""
+  startsAt: DateTime
+
+  """Free days before the first charge."""
+  trialDays: Int
 }
 
 type VolumeBucket {

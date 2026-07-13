@@ -39,3 +39,5 @@ export * from '../modules/billing/infrastructure/persistence/schema/plans.schema
 export * from '../modules/billing/infrastructure/persistence/schema/plan-prices.schema'
 export * from '../modules/billing/infrastructure/persistence/schema/plan-offers.schema'
 export * from '../modules/billing/infrastructure/persistence/schema/subscriptions.schema'
+export * from '../modules/billing/infrastructure/persistence/schema/invoices.schema'
+export * from '../modules/billing/infrastructure/persistence/schema/billing-webhook-events.schema'

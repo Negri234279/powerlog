@@ -19,6 +19,14 @@ export class InMemorySubscriptionRepository extends SubscriptionRepository {
         return this.byId.get(id) ?? null
     }
 
+    async findByGatewayId(gatewaySubscriptionId: string): Promise<SubscriptionAggregate | null> {
+        return (
+            [...this.byId.values()].find(
+                (subscription) => subscription.gatewaySubscriptionId === gatewaySubscriptionId,
+            ) ?? null
+        )
+    }
+
     async findLiveByUser(userId: string): Promise<SubscriptionAggregate | null> {
         for (const subscription of this.byId.values()) {
             if (subscription.userId === userId && LIVE_STATUSES.includes(subscription.status)) return subscription

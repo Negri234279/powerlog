@@ -38,6 +38,16 @@ export class DrizzleSubscriptionRepository extends SubscriptionRepository {
             })
     }
 
+    async findByGatewayId(gatewaySubscriptionId: string): Promise<SubscriptionAggregate | null> {
+        const [row] = await this.db
+            .select()
+            .from(subscriptions)
+            .where(eq(subscriptions.gatewaySubscriptionId, gatewaySubscriptionId))
+            .limit(1)
+
+        return row ? toSubscriptionAggregate(row) : null
+    }
+
     async findById(id: string): Promise<SubscriptionAggregate | null> {
         const [row] = await this.db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1)
 
