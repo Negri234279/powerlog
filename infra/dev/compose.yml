@@ -229,6 +229,32 @@ services:
     networks: [powerlog-net]
     restart: "no"
 
+  # ── Public tunnel (opt-in: --profile tunnel) ─────────────────
+  # Stripe and PayPal only talk to a public HTTPS URL, so in dev the webhooks —
+  # the only thing that ever moves a subscription's state — cannot arrive at all.
+  # This gives the local API a throwaway public URL without opening a port on the
+  # router or owning a certificate:
+  #
+  #   docker compose -f infra/dev/compose.yml --profile tunnel up -d powerlog-tunnel
+  #   docker logs powerlog-tunnel 2>&1 | grep trycloudflare.com
+  #
+  # The URL is random and dies with the container. Don't create a new endpoint in
+  # the dashboards every time: keep ONE per gateway and just edit its URL — Stripe
+  # keeps the signing secret and PayPal the webhook id when the URL changes, so
+  # STRIPE_WEBHOOK_SECRET / PAYPAL_WEBHOOK_ID stay valid across restarts.
+  powerlog-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: powerlog-tunnel
+    profiles: ["tunnel"]
+    command: ["tunnel", "--no-autoupdate", "--url", "http://powerlog-api:4000"]
+    depends_on:
+      powerlog-api:
+        condition: service_healthy
+    networks: [powerlog-net]
+    # NOT unless-stopped: a restart mints a different hostname, and a tunnel that
+    # silently comes back at a new URL looks exactly like one that works.
+    restart: "no"
+
   # ── Mail (dev catch-all) ─────────────────────────────────────
   powerlog-mailpit:
     image: axllent/mailpit:latest

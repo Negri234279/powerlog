@@ -43,6 +43,44 @@ docker compose -f infra/prod/compose.yml -f infra/staging/compose.yml up -d --bu
 docker compose -f infra/test/compose.yml --env-file infra/test/.env up -d powerlog-postgres
 ```
 
+## Webhooks de pasarela (Stripe / PayPal) en dev
+
+Las suscripciones **solo cambian de estado por webhook**. Stripe y PayPal necesitan
+una URL pública HTTPS, así que en local no llega ninguno: el flujo entero queda a
+medias sin que nada dé error. El dev compose trae un túnel opcional para eso:
+
+```bash
+docker compose -f infra/dev/compose.yml --profile tunnel up -d powerlog-tunnel
+docker logs powerlog-tunnel 2>&1 | grep trycloudflare.com   # → https://<random>.trycloudflare.com
+```
+
+Esa URL va a `POST /webhooks/stripe` y `POST /webhooks/paypal`. Es efímera (cambia
+en cada arranque del contenedor), pero **no hace falta crear un endpoint nuevo cada
+vez**: en Stripe y en PayPal, editar la URL de un endpoint existente conserva su
+signing secret / webhook id ⇒ `STRIPE_WEBHOOK_SECRET` y `PAYPAL_WEBHOOK_ID` siguen
+valiendo.
+
+Dos cosas que no son bugs:
+
+- **El catálogo hay que publicarlo antes**: sin `syncPlanToGateway` (botón en
+  `/admin/plans`) los planes no existen del lado de la pasarela y no hay checkout
+  que iniciar.
+- **El simulador de webhooks de PayPal no sirve para probar el endpoint**: sus
+  eventos de prueba no pasan la verificación de firma (PayPal la hace preguntando a
+  su propia API por el evento, y el simulado no existe allí). Hace falta una
+  suscripción real de sandbox.
+
+`/admin/billing` es el sitio donde se ve si están llegando (último webhook por
+pasarela, fallidos, replay).
+
+> **Por qué no basta con un subdominio del Pi**: el TLS de Cloudflare en el plan
+> free (Universal SSL) cubre `negri.es` y `*.negri.es` — **un solo nivel**. Cualquier
+> host más profundo (`dev.api.powerlog.es.negri.es`, `api.powerlog.negri.es`) resuelve
+> pero **revienta el handshake**: no hay certificado que lo cubra, y el navegador o
+> Stripe ven un error de TLS, no un 404. Si en algún momento se quiere un host estable
+> para webhooks, tiene que ser de **un nivel** (`powerlog-api.negri.es`) o pagar el
+> certificado avanzado.
+
 ## Notes
 
 - **Secrets**: each env ships a `*.env.example`; copy it (to `.env` for dev/test,
