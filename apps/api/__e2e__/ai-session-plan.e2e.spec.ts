@@ -15,6 +15,7 @@ import * as schema from '../src/database/schema'
 import { Mailer } from '../src/mail/mailer.port'
 import { StubLlmProviderClient, stubRegistry } from '../tests/doubles/ai'
 import { FakeMailer } from '../tests/doubles/shared'
+import { grantPlan } from './helpers/grant-plan'
 
 let container: StartedPostgreSqlContainer
 let app: INestApplication
@@ -55,7 +56,10 @@ afterAll(async () => {
 
 beforeEach(async () => {
     await pool.query(
-        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, workout_sessions, ai_plan_drafts, ai_provider_configs, notifications RESTART IDENTITY CASCADE',
+        // `subscriptions` holds a soft reference to users (no FK across modules), so
+        // TRUNCATE ... CASCADE on users does not reach it — it must be named. The
+        // `plans` catalog is seeded by migration and deliberately survives.
+        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, workout_sessions, ai_plan_drafts, ai_provider_configs, notifications, subscriptions RESTART IDENTITY CASCADE',
     )
     openai.reset()
 })
@@ -85,14 +89,20 @@ async function register(email: string): Promise<{ access: string; userId: string
     return { access: cookiePair(setCookies(res), COOKIE.access)!, userId: res.body.data.register.id }
 }
 
-/** Store a (stubbed) provider key and make it the default — BYOK is per user. */
-async function withAiConfigured(access: string): Promise<void> {
+/**
+ * Store a (stubbed) provider key and make it the default — BYOK is per user —
+ * and put the user on a plan that includes AI. The key alone is not enough: AI is
+ * a paid feature, and a fresh account is on the free plan.
+ */
+async function withAiConfigured(user: { access: string; userId: string }, plan = 'coach-pro'): Promise<void> {
+    await grantPlan(pool, user.userId, plan)
+
     const configured = await gql(
         `mutation { setAiProviderKey(input: { provider: "openai", apiKey: "sk-test-key-0123456789", model: "gpt-5" }) { provider } }`,
-        access,
+        user.access,
     )
     expect(configured.body.errors).toBeUndefined()
-    await gql(`mutation { setAiProviderDefault(provider: "openai") { provider } }`, access)
+    await gql(`mutation { setAiProviderDefault(provider: "openai") { provider } }`, user.access)
 }
 
 async function anExerciseId(access: string): Promise<string> {
@@ -128,7 +138,9 @@ async function linkedPair(): Promise<{ coachAccess: string; athlete: { access: s
     const invited = await gql(`mutation { inviteAthlete(email: "athlete@example.com") { id } }`, coachAccess)
     await gql(`mutation { acceptInvitation(id: "${invited.body.data.inviteAthlete.id}") { status } }`, athlete.access)
 
-    await withAiConfigured(coachAccess)
+    // The coach is the one who runs the AI here, so it is their plan that must
+    // include it (the cookie is the pre-promotion one; the plan is by user id).
+    await withAiConfigured({ access: coachAccess, userId: coach.userId })
 
     return { coachAccess, athlete }
 }

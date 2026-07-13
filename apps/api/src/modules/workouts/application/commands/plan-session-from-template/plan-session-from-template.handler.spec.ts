@@ -7,7 +7,7 @@ import {
     InMemoryWorkoutSessionRepository,
     InMemoryWorkoutTemplateRepository,
 } from '../../../../../../tests/doubles/workouts'
-import { FakeCoachLinks, RecordingEventBus } from '../../../../../../tests/doubles/shared'
+import { FakeCoachLinks, FakeEntitlements, RecordingEventBus } from '../../../../../../tests/doubles/shared'
 import { NotLinkedToAthleteError, WorkoutTemplateNotFoundError } from '../../../domain/errors/workouts.errors'
 import { PlanSessionFromTemplateCommand } from './plan-session-from-template.command'
 import { PlanSessionFromTemplateHandler } from './plan-session-from-template.handler'
@@ -26,6 +26,7 @@ function setup({ links = new FakeCoachLinks(), templateOwner = COACH } = {}) {
         sessions,
         templates,
         links,
+        new FakeEntitlements(),
         new FakeClock(NOW),
         new FakeIdGenerator(),
         events.asEventBus(),

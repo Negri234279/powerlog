@@ -1,6 +1,7 @@
 import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { MesocycleAssignedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-assigned.integration-event'
 import { MesocycleAggregate } from '../../../domain/entities/mesocycle.entity'
 import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
@@ -18,6 +19,7 @@ export class CreateMesocycleHandler implements ICommandHandler<CreateMesocycleCo
         private readonly mesocycles: MesocycleRepository,
         private readonly exercises: ExerciseRepository,
         private readonly coachLinks: CoachLinks,
+        private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly eventBus: EventBus,
@@ -28,6 +30,11 @@ export class CreateMesocycleHandler implements ICommandHandler<CreateMesocycleCo
         if (athleteId !== undefined && !(await this.coachLinks.areLinked(command.userId, athleteId))) {
             throw new NotLinkedToAthleteError()
         }
+
+        // Two different features share this command: building a block for yourself
+        // (`mesocycles`) and a coach building one for an athlete (`plan_sessions`).
+        // Either way the plan that pays is the one of whoever is doing it.
+        await this.entitlements.assertFeature(command.userId, athleteId !== undefined ? 'plan_sessions' : 'mesocycles')
 
         const content = await buildMesocycleContent(command.content, this.exercises)
         const mesocycle = MesocycleAggregate.create({

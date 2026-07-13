@@ -28,14 +28,20 @@ import { type Env, isDev } from '../config/env'
                 playground: false,
                 graphiql: config.get('NODE_ENV') !== 'production',
                 // Never leak server internals in error responses. The
-                // GlobalExceptionFilter already sets a client-safe message + code;
-                // strip everything else Apollo would add (stacktrace, locations,
-                // path) so the client only ever sees { message, code }.
+                // GlobalExceptionFilter already sets a client-safe message + code
+                // (plus the client-safe `details` of a domain error — e.g. WHICH
+                // feature the plan is missing); strip everything Apollo would add on
+                // top: `stacktrace`, and the `locations`/`path` dropped by rebuilding
+                // the object.
                 includeStacktraceInErrorResponses: false,
-                formatError: (formatted: GraphQLFormattedError): GraphQLFormattedError => ({
-                    message: formatted.message,
-                    extensions: { code: formatted.extensions?.['code'] ?? 'INTERNAL_SERVER_ERROR' },
-                }),
+                formatError: (formatted: GraphQLFormattedError): GraphQLFormattedError => {
+                    const { stacktrace: _stacktrace, ...extensions } = formatted.extensions ?? {}
+
+                    return {
+                        message: formatted.message,
+                        extensions: { ...extensions, code: extensions['code'] ?? 'INTERNAL_SERVER_ERROR' },
+                    }
+                },
                 // Expose req/res so resolvers/guards can read the auth cookie.
                 context: ({ req, res }: { req: unknown; res: unknown }) => ({
                     req,

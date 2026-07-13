@@ -15,6 +15,7 @@ import * as schema from '../src/database/schema'
 import { Mailer } from '../src/mail/mailer.port'
 import { StubLlmProviderClient, stubRegistry } from '../tests/doubles/ai'
 import { FakeMailer } from '../tests/doubles/shared'
+import { grantPlan } from './helpers/grant-plan'
 
 let container: StartedPostgreSqlContainer
 let app: INestApplication
@@ -70,7 +71,9 @@ beforeEach(async () => {
     // keep the modules apart), so CASCADE doesn't reach it — and a leftover profile
     // keeps its handle taken, failing the next test's register.
     await pool.query(
-        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, workout_sessions, mesocycles, notifications, ai_mesocycle_drafts, ai_provider_configs RESTART IDENTITY CASCADE',
+        // `subscriptions` has a soft reference to users (no FK across modules), so
+        // CASCADE from users does not reach it. The seeded `plans` catalog survives.
+        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, workout_sessions, mesocycles, notifications, ai_mesocycle_drafts, ai_provider_configs, subscriptions RESTART IDENTITY CASCADE',
     )
     openai.reset().willAnswer(VALID_WEEK)
 })
@@ -97,9 +100,18 @@ async function registerUser(email: string): Promise<string> {
     return cookiePair(setCookies(res), COOKIE.access)!
 }
 
-/** Register, then store a (stubbed) provider key and make it the default. */
-async function anAthleteWithAi(email: string): Promise<string> {
+/**
+ * Register, store a (stubbed) provider key and make it the default — and put the
+ * user on a plan that includes AI. The key alone is not enough: AI is a paid
+ * feature and a fresh account lands on the free plan.
+ *
+ * A user who will go on to coach needs `coach-pro`: the plan of their subscription
+ * decides what they may do, so an `athlete-pro` coach would have no athlete seats.
+ */
+async function anAthleteWithAi(email: string, plan = 'athlete-pro'): Promise<string> {
     const access = await registerUser(email)
+    await grantPlan(pool, await userIdOf(access), plan)
+
     const configured = await gql(
         `mutation { setAiProviderKey(input: { provider: "openai", apiKey: "sk-test-key-0123456789", model: "gpt-5" }) { provider } }`,
         access,
@@ -173,7 +185,7 @@ async function linkedPairWithAi(): Promise<{
     athlete: { access: string; userId: string }
     second: { access: string; userId: string }
 }> {
-    const coach = await anAthleteWithAi('coach@example.com')
+    const coach = await anAthleteWithAi('coach@example.com', 'coach-pro')
     const promoted = await gql(`mutation { becomeCoach { role } }`, coach)
     const coachAccess = cookiePair(setCookies(promoted), COOKIE.access)!
 
@@ -292,7 +304,11 @@ describe('AI mesocycle drafts via GraphQL', () => {
     })
 
     it('tells an athlete with no provider configured, before charging them a wait', async () => {
+        // On a plan that includes AI but with no key of their own: the plan gate runs
+        // first (a free user is told to upgrade, not to add a key — see the
+        // entitlements e2e), so the missing key is only reachable from a paid plan.
         const access = await registerUser('nokey@example.com')
+        await grantPlan(pool, await userIdOf(access), 'athlete-pro')
 
         const res = await generate(access)
 

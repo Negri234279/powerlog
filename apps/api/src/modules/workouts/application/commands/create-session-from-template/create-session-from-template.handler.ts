@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
 import { WorkoutTemplateRepository } from '../../../domain/repositories/workout-template.repository'
@@ -21,11 +22,16 @@ export class CreateSessionFromTemplateHandler implements ICommandHandler<
     constructor(
         private readonly sessions: WorkoutSessionRepository,
         private readonly templates: WorkoutTemplateRepository,
+        private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
     ) {}
 
     async execute(command: CreateSessionFromTemplateCommand): Promise<WorkoutSessionView> {
+        // Using a template is the other half of the templates feature — a plan that
+        // took it away would otherwise leave old templates as a working back door.
+        await this.entitlements.assertFeature(command.userId, 'templates')
+
         const template = await requireOwnedTemplate(this.templates, command.templateId, command.userId)
 
         const now = this.clock.now()

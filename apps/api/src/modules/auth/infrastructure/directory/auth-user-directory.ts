@@ -4,7 +4,7 @@ import { QueryBus } from '@nestjs/cqrs'
 import { FindUserIdByHandleQuery } from '../../../../shared/contracts/find-user-id-by-handle.query'
 import { GetProfileSnapshotQuery } from '../../../../shared/contracts/get-profile-snapshot.query'
 import type { ProfileSnapshot } from '../../../../shared/contracts/profile-snapshot-reader'
-import { UserContact, UserDirectory } from '../../../../shared/contracts/user-directory'
+import { UserContact, UserDirectory, type UserRole } from '../../../../shared/contracts/user-directory'
 import { EmailVO } from '../../domain/value-objects/email.vo'
 import { UserRepository } from '../../domain/repositories/user.repository'
 
@@ -56,5 +56,11 @@ export class AuthUserDirectory extends UserDirectory {
             lastName: snapshot.lastName,
             avatarUrl: snapshot.avatarUrl,
         }
+    }
+
+    async getRole(userId: string): Promise<UserRole | null> {
+        const user = await this.users.findById(userId)
+
+        return user ? user.role.value : null
     }
 }

@@ -1,6 +1,7 @@
 import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { WorkoutSessionPlannedIntegrationEvent } from '../../../../../shared/integration-events/workout-session-planned.integration-event'
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
@@ -18,6 +19,7 @@ export class PlanWorkoutSessionHandler implements ICommandHandler<PlanWorkoutSes
     constructor(
         private readonly sessions: WorkoutSessionRepository,
         private readonly coachLinks: CoachLinks,
+        private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly eventBus: EventBus,
@@ -27,6 +29,9 @@ export class PlanWorkoutSessionHandler implements ICommandHandler<PlanWorkoutSes
         if (!(await this.coachLinks.areLinked(command.coachId, command.athleteId))) {
             throw new NotLinkedToAthleteError()
         }
+
+        // The coach's plan pays for programming, not the athlete's.
+        await this.entitlements.assertFeature(command.coachId, 'plan_sessions')
 
         const now = this.clock.now()
         const session = WorkoutSessionAggregate.create({

@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { SessionPlanContextReader } from '../../../../../shared/contracts/session-plan-context'
 import { AiPlanDraftAggregate } from '../../../domain/entities/ai-plan-draft.entity'
 import { SessionNotProgrammableError } from '../../../domain/errors/ai-plan.errors'
@@ -20,6 +21,7 @@ export class GenerateSessionPlanDraftHandler implements ICommandHandler<
         private readonly drafts: AiPlanDraftRepository,
         private readonly context: SessionPlanContextReader,
         private readonly prescriber: SetPrescriber,
+        private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly logger: PinoLogger,
@@ -28,8 +30,13 @@ export class GenerateSessionPlanDraftHandler implements ICommandHandler<
     }
 
     async execute(command: GenerateSessionPlanDraftCommand): Promise<AiPlanDraftView> {
-        // Resolve the provider first: a missing key should fail before the
-        // athlete waits for anything.
+        // The plan gate goes before everything: the key is the user's own (BYOK),
+        // but whether they may use the feature at all is ours to say — and saying
+        // it first means a plan that doesn't include AI never reaches the provider.
+        await this.entitlements.assertFeature(command.userId, 'ai')
+
+        // Resolve the provider next: a missing key should fail before the athlete
+        // waits for anything.
         const config = await this.prescriber.resolveConfig(command.userId)
 
         const context = await this.context.read(command.userId, command.sessionId, command.entryId ?? undefined)

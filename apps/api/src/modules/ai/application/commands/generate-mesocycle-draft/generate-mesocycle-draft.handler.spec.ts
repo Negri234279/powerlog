@@ -10,7 +10,8 @@ import {
     StubMesocycleDesignContextReader,
     stubRegistry,
 } from '../../../../../../tests/doubles/ai'
-import { RecordingEventBus, silentLogger } from '../../../../../../tests/doubles/shared'
+import { FakeEntitlements, RecordingEventBus, silentLogger } from '../../../../../../tests/doubles/shared'
+import { FeatureNotInPlanError } from '../../../../../shared/contracts/entitlements'
 import { AiProviderConfigMother, CATALOG_IDS, MesocycleDesignContextMother } from '../../../../../../tests/mothers/ai'
 import type { MesocycleDesignContext } from '../../../../../shared/contracts/mesocycle-design-context'
 import { InvalidAiMesocycleResponseError } from '../../../domain/errors/ai-mesocycle.errors'
@@ -43,6 +44,7 @@ describe('GenerateMesocycleDraftHandler', () => {
     let configs: InMemoryAiProviderConfigRepository
     let openai: StubLlmProviderClient
     let reader: StubMesocycleDesignContextReader
+    let entitlements: FakeEntitlements
 
     const buildHandler = (context: MesocycleDesignContext = MesocycleDesignContextMother.create()) => {
         const conversation = new AiConversation(
@@ -57,6 +59,7 @@ describe('GenerateMesocycleDraftHandler', () => {
             drafts,
             reader,
             new MesocycleDesigner(new AiProviderResolver(configs), conversation),
+            entitlements,
             new FakeClock(),
             new FakeIdGenerator('draft'),
             silentLogger(),
@@ -71,6 +74,7 @@ describe('GenerateMesocycleDraftHandler', () => {
         configs = new InMemoryAiProviderConfigRepository()
         configs.seed(AiProviderConfigMother.openai({ userId: USER_ID, model: 'gpt-5', isDefault: true }))
         openai = new StubLlmProviderClient('openai').willAnswer(validWeek)
+        entitlements = new FakeEntitlements()
     })
 
     it('drafts the template week the athlete asked for, with catalog ids resolved', async () => {
@@ -174,5 +178,13 @@ describe('GenerateMesocycleDraftHandler', () => {
         openai.willAnswer(reshaped, reshaped)
 
         await expect(buildHandler().execute(command())).rejects.toThrow(InvalidAiMesocycleResponseError)
+    })
+
+    it('refuses on a plan without AI, without calling the provider', async () => {
+        entitlements.on({ plan: 'athlete-free', ai: false })
+
+        await expect(buildHandler().execute(command())).rejects.toBeInstanceOf(FeatureNotInPlanError)
+        expect(openai.completeCalls).toHaveLength(0)
+        expect(drafts.all()).toEqual([])
     })
 })

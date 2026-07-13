@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { FakeCoachLinks, RecordingEventBus } from '../../../../../../tests/doubles/shared'
+import { FakeCoachLinks, FakeEntitlements, RecordingEventBus } from '../../../../../../tests/doubles/shared'
 import { MesocycleAssignedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-assigned.integration-event'
 import { FakeClock, FakeIdGenerator, InMemoryMesocycleRepository } from '../../../../../../tests/doubles/workouts'
 import { MesocycleMother } from '../../../../../../tests/mothers/workouts'
@@ -23,6 +23,7 @@ function setup(linked = true) {
     const handler = new AssignMesocycleToAthleteHandler(
         mesocycles,
         coachLinks,
+        new FakeEntitlements(),
         new FakeClock(NOW),
         new FakeIdGenerator(),
         events.asEventBus(),

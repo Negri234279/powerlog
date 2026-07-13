@@ -19,6 +19,7 @@ import { HealthModule } from './health/health.module'
 import { MailModule } from './mail/mail.module'
 import { AiSettingsModule } from './modules/ai/ai-settings.module'
 import { AuthModule } from './modules/auth/auth.module'
+import { BillingModule } from './modules/billing/billing.module'
 import { CoachingModule } from './modules/coaching/coaching.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
 import { ProfileModule } from './modules/profile/profile.module'
@@ -123,6 +124,9 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
         NotificationsModule,
         CoachingModule,
         AiSettingsModule,
+        // Answers GetUserEntitlementsQuery, which the Entitlements adapter above
+        // dispatches — so it must be registered for any gated action to resolve.
+        BillingModule,
     ],
     providers: [AppResolver, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],
 })

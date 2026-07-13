@@ -7,6 +7,8 @@ import {
     InMemoryExerciseRepository,
     InMemoryWorkoutTemplateRepository,
 } from '../../../../../../tests/doubles/workouts'
+import { FakeEntitlements } from '../../../../../../tests/doubles/shared'
+import { FeatureNotInPlanError } from '../../../../../shared/contracts/entitlements'
 import { ConflictingIntensityError, ExerciseNotFoundError } from '../../../domain/errors/workouts.errors'
 import type { TemplateContentRaw } from '../../template-content'
 import { CreateWorkoutTemplateCommand } from './create-workout-template.command'
@@ -21,8 +23,15 @@ const BENCH = ExerciseMother.create({ id: 'ex-bench', slug: 'bench-press', name:
 function setup() {
     const templates = new InMemoryWorkoutTemplateRepository()
     const exercises = new InMemoryExerciseRepository([SQUAT, BENCH])
-    const handler = new CreateWorkoutTemplateHandler(templates, exercises, new FakeClock(NOW), new FakeIdGenerator())
-    return { templates, handler }
+    const entitlements = new FakeEntitlements()
+    const handler = new CreateWorkoutTemplateHandler(
+        templates,
+        exercises,
+        entitlements,
+        new FakeClock(NOW),
+        new FakeIdGenerator(),
+    )
+    return { templates, entitlements, handler }
 }
 
 function content(overrides: Partial<TemplateContentRaw> = {}): TemplateContentRaw {
@@ -93,5 +102,15 @@ describe('CreateWorkoutTemplateHandler', () => {
                 ),
             ),
         ).rejects.toBeInstanceOf(ConflictingIntensityError)
+    })
+
+    it('refuses to create a template on a plan without templates', async () => {
+        const { templates, entitlements, handler } = setup()
+        entitlements.on({ plan: 'athlete-free', templates: false })
+
+        await expect(handler.execute(new CreateWorkoutTemplateCommand(OWNER, content()))).rejects.toBeInstanceOf(
+            FeatureNotInPlanError,
+        )
+        expect(templates.size).toBe(0)
     })
 })

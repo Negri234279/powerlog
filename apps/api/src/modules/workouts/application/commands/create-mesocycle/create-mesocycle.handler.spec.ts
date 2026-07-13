@@ -7,7 +7,8 @@ import {
     InMemoryExerciseRepository,
     InMemoryMesocycleRepository,
 } from '../../../../../../tests/doubles/workouts'
-import { FakeCoachLinks, RecordingEventBus } from '../../../../../../tests/doubles/shared'
+import { FakeCoachLinks, FakeEntitlements, RecordingEventBus } from '../../../../../../tests/doubles/shared'
+import { FeatureNotInPlanError } from '../../../../../shared/contracts/entitlements'
 import {
     ConflictingIntensityError,
     ExerciseNotFoundError,
@@ -27,15 +28,17 @@ const SQUAT = ExerciseMother.create({ id: 'ex-squat', slug: 'back-squat', name: 
 function setup(coachLinks = new FakeCoachLinks()) {
     const mesocycles = new InMemoryMesocycleRepository()
     const exercises = new InMemoryExerciseRepository([SQUAT])
+    const entitlements = new FakeEntitlements()
     const handler = new CreateMesocycleHandler(
         mesocycles,
         exercises,
         coachLinks,
+        entitlements,
         new FakeClock(NOW),
         new FakeIdGenerator(),
         new RecordingEventBus().asEventBus(),
     )
-    return { mesocycles, handler }
+    return { mesocycles, entitlements, handler }
 }
 
 function content(overrides: Partial<MesocycleContentRaw> = {}): MesocycleContentRaw {
@@ -166,5 +169,29 @@ describe('CreateMesocycleHandler', () => {
                 }),
             ),
         ).rejects.toBeInstanceOf(ConflictingIntensityError)
+    })
+
+    it('refuses to build a block of your own on a plan without mesocycles', async () => {
+        const { mesocycles, entitlements, handler } = setup()
+        entitlements.on({ plan: 'athlete-basic', mesocycles: false })
+
+        await expect(handler.execute(new CreateMesocycleCommand(OWNER, content()))).rejects.toBeInstanceOf(
+            FeatureNotInPlanError,
+        )
+        expect(mesocycles.size).toBe(0)
+    })
+
+    it("charges a block built FOR an athlete to the coach's plan_sessions, not to mesocycles", async () => {
+        // Same command, two features: a coach whose plan can't program for others is
+        // stopped even though they may design blocks for themselves.
+        const links = new FakeCoachLinks()
+        links.link(COACH, ATHLETE)
+        const { mesocycles, entitlements, handler } = setup(links)
+        entitlements.on({ plan: 'coach-lite', mesocycles: true, planSessions: false })
+
+        await expect(handler.execute(new CreateMesocycleCommand(COACH, content(), ATHLETE))).rejects.toBeInstanceOf(
+            FeatureNotInPlanError,
+        )
+        expect(mesocycles.size).toBe(0)
     })
 })

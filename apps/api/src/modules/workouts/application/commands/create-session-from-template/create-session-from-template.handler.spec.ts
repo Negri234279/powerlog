@@ -7,6 +7,8 @@ import {
     InMemoryWorkoutSessionRepository,
     InMemoryWorkoutTemplateRepository,
 } from '../../../../../../tests/doubles/workouts'
+import { FakeEntitlements } from '../../../../../../tests/doubles/shared'
+import { FeatureNotInPlanError } from '../../../../../shared/contracts/entitlements'
 import { WorkoutTemplateNotFoundError } from '../../../domain/errors/workouts.errors'
 import { CreateSessionFromTemplateCommand } from './create-session-from-template.command'
 import { CreateSessionFromTemplateHandler } from './create-session-from-template.handler'
@@ -19,8 +21,15 @@ function setup(seedOwner = OWNER) {
     const template = WorkoutTemplateMother.withTree(EXERCISE, { id: 't-1', ownerId: seedOwner })
     const templates = new InMemoryWorkoutTemplateRepository([template])
     const sessions = new InMemoryWorkoutSessionRepository()
-    const handler = new CreateSessionFromTemplateHandler(sessions, templates, new FakeClock(NOW), new FakeIdGenerator())
-    return { sessions, handler }
+    const entitlements = new FakeEntitlements()
+    const handler = new CreateSessionFromTemplateHandler(
+        sessions,
+        templates,
+        entitlements,
+        new FakeClock(NOW),
+        new FakeIdGenerator(),
+    )
+    return { sessions, entitlements, handler }
 }
 
 describe('CreateSessionFromTemplateHandler', () => {
@@ -52,6 +61,18 @@ describe('CreateSessionFromTemplateHandler', () => {
 
         await expect(handler.execute(new CreateSessionFromTemplateCommand(OWNER, 't-1'))).rejects.toBeInstanceOf(
             WorkoutTemplateNotFoundError,
+        )
+        expect(sessions.size).toBe(0)
+    })
+
+    it('refuses to apply a template on a plan without templates', async () => {
+        // The templates a downgraded user already owns are not a back door into the
+        // feature: applying one is gated exactly like creating one.
+        const { sessions, entitlements, handler } = setup()
+        entitlements.on({ plan: 'athlete-free', templates: false })
+
+        await expect(handler.execute(new CreateSessionFromTemplateCommand(OWNER, 't-1'))).rejects.toBeInstanceOf(
+            FeatureNotInPlanError,
         )
         expect(sessions.size).toBe(0)
     })

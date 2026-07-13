@@ -38,6 +38,7 @@ export const METRIC = {
     coachingCoaches: 'powerlog_coaching_coaches',
     coachingAthletes: 'powerlog_coaching_athletes',
     coachingPendingInvitations: 'powerlog_coaching_pending_invitations',
+    entitlementDenials: 'powerlog_entitlement_denials_total',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -280,5 +281,15 @@ export const metricsProviders = [
     makeGaugeProvider({
         name: METRIC.coachingPendingInvitations,
         help: 'Invitations still awaiting a response (the backlog).',
+    }),
+    // Every time a plan says no. Incremented in the Entitlements adapter, the one
+    // place all denials pass through: this is demand for a feature, measured at the
+    // moment someone wanted it and couldn't have it. `feature` is the closed
+    // Feature union plus `athletes` (the coach cap); `plan` is a catalog slug, so
+    // all three labels stay bounded.
+    makeCounterProvider({
+        name: METRIC.entitlementDenials,
+        help: 'Actions refused because the user’s plan does not include them.',
+        labelNames: ['feature', 'audience', 'plan'],
     }),
 ]
