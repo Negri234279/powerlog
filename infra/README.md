@@ -93,3 +93,8 @@ pasarela, fallidos, replay).
   pi-infra repo by the `sync-pi-infra` action — see `infra/prod/README.md`.
 - **dev fast loop**: run only `powerlog-postgres` (+ obs) in Docker and the API on
   the host with `pnpm dev` (the host-run API won't be scraped by Prometheus).
+- **Un dashboard o una alerta nuevos no aparecen solos**: Prometheus no revisa los
+  ficheros de reglas (y en dev no lleva `--web.enable-lifecycle`, así que tampoco hay
+  `/-/reload`) y el provisioner de Grafana solo los recoge de forma fiable al arrancar.
+  Tras tocar `observability/prometheus/rules/` o `observability/grafana/dashboards/`:
+  `docker restart powerlog-prometheus powerlog-grafana`.

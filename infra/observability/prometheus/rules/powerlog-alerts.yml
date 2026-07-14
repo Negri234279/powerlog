@@ -130,10 +130,17 @@ groups:
 
       # Silence on this channel is not calm, it is deaf: the providers send events
       # constantly, so nothing arriving for hours means the endpoint is broken (bad
-      # URL, TLS, proxy). Only fires where a gateway is actually configured — the
-      # series does not exist otherwise.
+      # URL, TLS, proxy). Guarded by sum(powerlog_subscriptions) > 0 so it stays quiet
+      # until there is actually someone to bill.
+      #
+      # `or on() vector(0)` is load-bearing: the webhooks counter carries labels, so
+      # its series does not exist until the FIRST webhook lands — and increase() over
+      # a missing series returns empty, not zero. Without the fallback this alert
+      # could never fire in the one case that matters most: an endpoint that has never
+      # worked at all (which is exactly what happened here — the TLS handshake failed
+      # and not a single event ever arrived).
       - alert: PowerlogBillingWebhooksSilent
-        expr: sum(increase(powerlog_billing_webhooks_total[6h])) == 0 and on() sum(powerlog_subscriptions) > 0
+        expr: (sum(increase(powerlog_billing_webhooks_total[6h])) or on() vector(0)) == 0 and on() sum(powerlog_subscriptions) > 0
         for: 30m
         labels: { app: powerlog, severity: warning }
         annotations:
