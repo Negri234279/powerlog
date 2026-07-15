@@ -18,6 +18,13 @@ export class InMemoryWorkoutTemplateRepository extends WorkoutTemplateRepository
         return this.store.get(id) ?? null
     }
 
+    async countByOwner(ownerId: string): Promise<number> {
+        let n = 0
+        for (const template of this.store.values()) if (template.ownerId === ownerId) n++
+
+        return n
+    }
+
     async delete(id: string): Promise<void> {
         this.store.delete(id)
     }

@@ -8,6 +8,8 @@ import type { WorkoutTemplateAggregate } from '../entities/workout-template.enti
 export abstract class WorkoutTemplateRepository {
     abstract save(template: WorkoutTemplateAggregate): Promise<void>
     abstract findById(id: string): Promise<WorkoutTemplateAggregate | null>
+    /** How many templates a user owns — for the plan's `maxTemplates` cap. */
+    abstract countByOwner(ownerId: string): Promise<number>
     abstract delete(id: string): Promise<void>
     /** Delete every template owned by a user (cascades to exercises + sets). Used
      *  to erase workout data on account deletion. */

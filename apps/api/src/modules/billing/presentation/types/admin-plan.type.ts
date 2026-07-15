@@ -38,11 +38,14 @@ export class PlanEntitlementsType {
     @Field(() => String)
     audience!: string
 
-    @Field(() => Boolean)
-    templates!: boolean
+    @Field(() => Int, { nullable: true, description: 'How many templates they may create. null = unlimited.' })
+    maxTemplates!: number | null
 
-    @Field(() => Boolean)
-    mesocycles!: boolean
+    @Field(() => Int, { nullable: true, description: 'How many mesocycles they may create. null = unlimited.' })
+    maxMesocycles!: number | null
+
+    @Field(() => Int, { nullable: true, description: 'How many workouts they may log. null = unlimited.' })
+    maxWorkouts!: number | null
 
     @Field(() => Boolean)
     ai!: boolean

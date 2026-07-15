@@ -40,8 +40,9 @@ export class CoachEntitlementsVO extends ValueObject<CoachEntitlements> {
         return {
             plan,
             audience: 'coach',
-            templates: this.value.athlete.templates,
-            mesocycles: this.value.athlete.mesocycles,
+            maxTemplates: this.value.athlete.maxTemplates,
+            maxMesocycles: this.value.athlete.maxMesocycles,
+            maxWorkouts: this.value.athlete.maxWorkouts,
             ai: this.value.athlete.ai,
             planSessions: this.value.planSessions,
             maxAthletes: this.value.maxAthletes,

@@ -16,10 +16,12 @@ import { InvalidPlanEntitlementsError } from '../errors/billing.errors'
  * looking present in the DB.
  */
 const schema = z.strictObject({
-    /** Create workout templates and start sessions from them. */
-    templates: z.boolean(),
-    /** Design their own training blocks (mesocycles). */
-    mesocycles: z.boolean(),
+    /** How many workout templates they may create. `null` = unlimited, `0` = none. */
+    maxTemplates: z.int().min(0).nullable(),
+    /** How many mesocycles (training blocks) they may design for themselves. */
+    maxMesocycles: z.int().min(0).nullable(),
+    /** How many workouts (sessions) they may log for themselves. */
+    maxWorkouts: z.int().min(0).nullable(),
     /** Use the AI drafts. A boolean, not a quota: the key is the user's own
      *  (BYOK), so a generation costs the app nothing to serve. */
     ai: z.boolean(),
@@ -38,8 +40,9 @@ export class AthleteEntitlementsVO extends ValueObject<AthleteEntitlements> {
         return {
             plan,
             audience: 'athlete',
-            templates: this.value.templates,
-            mesocycles: this.value.mesocycles,
+            maxTemplates: this.value.maxTemplates,
+            maxMesocycles: this.value.maxMesocycles,
+            maxWorkouts: this.value.maxWorkouts,
             ai: this.value.ai,
             planSessions: false,
             maxAthletes: 0,

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
@@ -60,6 +60,21 @@ export class DrizzleWorkoutSessionRepository extends WorkoutSessionRepository {
                 : []
 
         return WorkoutSessionMapper.toDomain(sessionRow, entryRows, setRows)
+    }
+
+    async countSelfCreatedBy(userId: string): Promise<number> {
+        const [row] = await this.db
+            .select({ value: count() })
+            .from(workoutSessions)
+            .where(
+                and(
+                    eq(workoutSessions.userId, userId),
+                    isNull(workoutSessions.plannedByUserId),
+                    isNull(workoutSessions.mesocycleId),
+                ),
+            )
+
+        return row?.value ?? 0
     }
 
     async delete(id: string): Promise<void> {

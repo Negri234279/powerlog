@@ -1162,10 +1162,17 @@ type MyEntitlements {
 
   """null = unlimited."""
   maxAthletes: Int
-  mesocycles: Boolean!
+
+  """How many mesocycles they may create. null = unlimited."""
+  maxMesocycles: Int
+
+  """How many templates they may create. null = unlimited."""
+  maxTemplates: Int
+
+  """How many workouts they may log. null = unlimited."""
+  maxWorkouts: Int
   plan: String!
   planSessions: Boolean!
-  templates: Boolean!
 }
 
 type MyInvoice {
@@ -1255,10 +1262,17 @@ type PlanEntitlements {
 
   """null = unlimited."""
   maxAthletes: Int
-  mesocycles: Boolean!
+
+  """How many mesocycles they may create. null = unlimited."""
+  maxMesocycles: Int
+
+  """How many templates they may create. null = unlimited."""
+  maxTemplates: Int
+
+  """How many workouts they may log. null = unlimited."""
+  maxWorkouts: Int
   plan: String!
   planSessions: Boolean!
-  templates: Boolean!
 }
 
 type PlanOffer {
@@ -1362,14 +1376,21 @@ type PublicPlan {
 
   """null = unlimited."""
   maxAthletes: Int
-  mesocycles: Boolean!
+
+  """How many mesocycles they may create. null = unlimited."""
+  maxMesocycles: Int
+
+  """How many templates they may create. null = unlimited."""
+  maxTemplates: Int
+
+  """How many workouts they may log. null = unlimited."""
+  maxWorkouts: Int
   name: String!
   offer: PublicOffer
   planSessions: Boolean!
   prices: [PublicPrice!]!
   slug: String!
   sortOrder: Int!
-  templates: Boolean!
 }
 
 type PublicPrice {

@@ -43,7 +43,7 @@ describe('GetUserEntitlementsHandler', () => {
 
         expect(snapshot.plan).toBe('athlete-free')
         expect(snapshot.ai).toBe(false)
-        expect(snapshot.templates).toBe(true)
+        expect(snapshot.maxTemplates).toBeNull()
     })
 
     it('falls back to the free COACH plan for a coach — which also covers their own training', async () => {
@@ -55,8 +55,8 @@ describe('GetUserEntitlementsHandler', () => {
         expect(snapshot.audience).toBe('coach')
         expect(snapshot.maxAthletes).toBe(3)
         // The coach's own athlete features come from the plan's nested section.
-        expect(snapshot.templates).toBe(true)
-        expect(snapshot.mesocycles).toBe(true)
+        expect(snapshot.maxTemplates).toBeNull()
+        expect(snapshot.maxMesocycles).toBeNull()
     })
 
     it('reads the plan of an active subscription', async () => {

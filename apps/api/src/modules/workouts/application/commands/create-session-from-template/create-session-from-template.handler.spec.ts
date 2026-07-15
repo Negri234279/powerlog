@@ -8,7 +8,7 @@ import {
     InMemoryWorkoutTemplateRepository,
 } from '../../../../../../tests/doubles/workouts'
 import { FakeEntitlements } from '../../../../../../tests/doubles/shared'
-import { FeatureNotInPlanError } from '../../../../../shared/contracts/entitlements'
+import { PlanLimitReachedError } from '../../../../../shared/contracts/entitlements'
 import { WorkoutTemplateNotFoundError } from '../../../domain/errors/workouts.errors'
 import { CreateSessionFromTemplateCommand } from './create-session-from-template.command'
 import { CreateSessionFromTemplateHandler } from './create-session-from-template.handler'
@@ -65,14 +65,14 @@ describe('CreateSessionFromTemplateHandler', () => {
         expect(sessions.size).toBe(0)
     })
 
-    it('refuses to apply a template on a plan without templates', async () => {
-        // The templates a downgraded user already owns are not a back door into the
-        // feature: applying one is gated exactly like creating one.
+    it('refuses to start a session from a template once the workout cap is reached', async () => {
+        // Starting a session — from a template or not — creates a workout, so it's
+        // the workout cap that gates it, not the template one.
         const { sessions, entitlements, handler } = setup()
-        entitlements.on({ plan: 'athlete-free', templates: false })
+        entitlements.on({ plan: 'athlete-free', maxWorkouts: 0 })
 
         await expect(handler.execute(new CreateSessionFromTemplateCommand(OWNER, 't-1'))).rejects.toBeInstanceOf(
-            FeatureNotInPlanError,
+            PlanLimitReachedError,
         )
         expect(sessions.size).toBe(0)
     })

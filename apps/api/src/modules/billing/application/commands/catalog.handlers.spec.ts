@@ -27,7 +27,7 @@ import { UpdatePlanCommand } from './update-plan/update-plan.command'
 import { UpdatePlanHandler } from './update-plan/update-plan.handler'
 
 const NOW = new Date('2026-07-15T00:00:00.000Z')
-const ATHLETE_ENTITLEMENTS = { templates: true, mesocycles: true, ai: true }
+const ATHLETE_ENTITLEMENTS = { maxTemplates: null, maxMesocycles: null, maxWorkouts: null, ai: true }
 
 describe('catalog admin handlers', () => {
     let plans: InMemoryPlanRepository
@@ -107,7 +107,9 @@ describe('catalog admin handlers', () => {
             plans.seed(plan)
 
             await updatePlan().execute(
-                new UpdatePlanCommand(plan.id, { entitlements: { templates: true, mesocycles: true, ai: false } }),
+                new UpdatePlanCommand(plan.id, {
+                    entitlements: { maxTemplates: null, maxMesocycles: null, maxWorkouts: null, ai: false },
+                }),
             )
 
             const updated = await plans.findById(plan.id)

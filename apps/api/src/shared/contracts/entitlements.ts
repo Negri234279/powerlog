@@ -16,8 +16,14 @@ import { DomainError } from '../domain/domain-error'
  * adapter that throws them sits outside the billing module.
  */
 
-/** The gateable features. A closed union so a typo can't silently allow. */
-export type Feature = 'templates' | 'mesocycles' | 'ai' | 'plan_sessions'
+/** The boolean-gated features. A closed union so a typo can't silently allow. */
+export type Feature = 'ai' | 'plan_sessions'
+
+/**
+ * The things an athlete's plan caps by count. Each maps to a `max*` in the
+ * snapshot; a handler routes a create through {@link Entitlements.assertWithinLimit}.
+ */
+export type CountableResource = 'templates' | 'mesocycles' | 'workouts'
 
 /** Which catalog a plan belongs to. Picks the free plan when there's no subscription. */
 export type PlanAudience = 'athlete' | 'coach'
@@ -27,14 +33,20 @@ export type PlanAudience = 'athlete' | 'coach'
  * plan nests the athlete section (its holder trains too); billing merges it in,
  * so consumers never see the nesting.
  *
- * `maxAthletes: null` means unlimited; `0` means the plan does no coaching.
+ * Every `max*` is a cap on how many the user may create: `null` = unlimited,
+ * `0` = none (the feature is effectively off). `maxAthletes: 0` means the plan
+ * does no coaching.
  */
 export interface EntitlementsSnapshot {
     /** Slug of the plan these came from — for upgrade CTAs and metric labels. */
     plan: string
     audience: PlanAudience
-    templates: boolean
-    mesocycles: boolean
+    /** How many workout templates they may create. */
+    maxTemplates: number | null
+    /** How many mesocycles they may create for themselves. */
+    maxMesocycles: number | null
+    /** How many workouts (sessions) they may log for themselves. */
+    maxWorkouts: number | null
     ai: boolean
     planSessions: boolean
     maxAthletes: number | null
@@ -64,11 +76,14 @@ export class FeatureNotInPlanError extends DomainError {
     }
 }
 
-/** The user is at their plan's cap for something countable (today: athletes). */
+/** The user is at their plan's cap for something countable (athletes, templates,
+ *  mesocycles, workouts). Carries `resource` so the web can point the upgrade at
+ *  the exact thing they ran out of. */
 export class PlanLimitReachedError extends DomainError {
     readonly code = 'PLAN_LIMIT_REACHED'
 
     constructor(
+        readonly resource: CountableResource | 'athletes',
         readonly limit: number,
         readonly current: number,
         readonly plan: string,
@@ -78,6 +93,7 @@ export class PlanLimitReachedError extends DomainError {
 
     override get details(): Record<string, unknown> {
         return {
+            resource: this.resource,
             limit: this.limit,
             current: this.current,
             plan: this.plan,
@@ -99,6 +115,15 @@ export abstract class Entitlements {
      * {@link PlanLimitReachedError} when the cap would be exceeded.
      */
     abstract assertCanAddAthlete(coachId: string, currentAthleteCount: number): Promise<void>
+
+    /**
+     * Assert the user may create one more of `resource` under their plan.
+     * `currentCount` is how many they already own (self-created only — what a coach
+     * programs for them is paid by the coach's plan). Throws
+     * {@link PlanLimitReachedError} when the cap would be exceeded. Only creating is
+     * gated: a soft downgrade leaves what they have, it just stops them making more.
+     */
+    abstract assertWithinLimit(userId: string, resource: CountableResource, currentCount: number): Promise<void>
 
     /**
      * The user's effective entitlements — for showing the plan in the UI, never

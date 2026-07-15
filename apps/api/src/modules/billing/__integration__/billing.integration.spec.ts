@@ -61,7 +61,7 @@ async function aTestPlan(slug: string): Promise<string> {
     const { rows } = await pool.query<{ id: string }>(
         `INSERT INTO plans (audience, slug, name, status, entitlements)
          VALUES ('athlete', $1, 'Test plan', 'active',
-                 '{"templates": true, "mesocycles": true, "ai": true}'::jsonb)
+                 '{"maxTemplates": null, "maxMesocycles": null, "maxWorkouts": null, "ai": true}'::jsonb)
          RETURNING id`,
         [slug],
     )
@@ -135,7 +135,7 @@ describe('Billing catalog (integration)', () => {
             pool.query(
                 `INSERT INTO plans (audience, slug, name, status, is_free, entitlements)
                  VALUES ('athlete', 'athlete-free-2', 'Free 2', 'active', true,
-                         '{"templates": true, "mesocycles": true, "ai": false}'::jsonb)`,
+                         '{"maxTemplates": null, "maxMesocycles": null, "maxWorkouts": null, "ai": false}'::jsonb)`,
             ),
         ).rejects.toThrow(/plans_one_active_free_per_audience/)
     })
@@ -145,7 +145,7 @@ describe('Billing catalog (integration)', () => {
             pool.query(
                 `INSERT INTO plans (audience, slug, name, status, is_free, entitlements)
                  VALUES ('athlete', 'athlete-free-old', 'Free (old)', 'archived', true,
-                         '{"templates": true, "mesocycles": false, "ai": false}'::jsonb)`,
+                         '{"maxTemplates": null, "maxMesocycles": 0, "maxWorkouts": null, "ai": false}'::jsonb)`,
             ),
         ).resolves.toBeDefined()
     })

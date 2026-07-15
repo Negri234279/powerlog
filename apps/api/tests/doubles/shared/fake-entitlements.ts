@@ -1,4 +1,5 @@
 import {
+    type CountableResource,
     type EntitlementsSnapshot,
     Entitlements,
     type Feature,
@@ -18,8 +19,9 @@ export class FakeEntitlements extends Entitlements {
     private snapshot: EntitlementsSnapshot = {
         plan: 'test-unlimited',
         audience: 'coach',
-        templates: true,
-        mesocycles: true,
+        maxTemplates: null,
+        maxMesocycles: null,
+        maxWorkouts: null,
         ai: true,
         planSessions: true,
         maxAthletes: null,
@@ -42,7 +44,16 @@ export class FakeEntitlements extends Entitlements {
         const { maxAthletes } = this.snapshot
         if (maxAthletes === null || currentAthleteCount < maxAthletes) return Promise.resolve()
 
-        return Promise.reject(new PlanLimitReachedError(maxAthletes, currentAthleteCount, this.snapshot.plan))
+        return Promise.reject(
+            new PlanLimitReachedError('athletes', maxAthletes, currentAthleteCount, this.snapshot.plan),
+        )
+    }
+
+    assertWithinLimit(_userId: string, resource: CountableResource, currentCount: number): Promise<void> {
+        const limit = this.limitFor(resource)
+        if (limit === null || currentCount < limit) return Promise.resolve()
+
+        return Promise.reject(new PlanLimitReachedError(resource, limit, currentCount, this.snapshot.plan))
     }
 
     forUser(): Promise<EntitlementsSnapshot> {
@@ -51,14 +62,21 @@ export class FakeEntitlements extends Entitlements {
 
     private grants(feature: Feature): boolean {
         switch (feature) {
-            case 'templates':
-                return this.snapshot.templates
-            case 'mesocycles':
-                return this.snapshot.mesocycles
             case 'ai':
                 return this.snapshot.ai
             case 'plan_sessions':
                 return this.snapshot.planSessions
+        }
+    }
+
+    private limitFor(resource: CountableResource): number | null {
+        switch (resource) {
+            case 'templates':
+                return this.snapshot.maxTemplates
+            case 'mesocycles':
+                return this.snapshot.maxMesocycles
+            case 'workouts':
+                return this.snapshot.maxWorkouts
         }
     }
 }

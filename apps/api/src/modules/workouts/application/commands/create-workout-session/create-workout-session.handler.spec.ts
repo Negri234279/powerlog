@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { FakeClock, FakeIdGenerator, InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
+import { FakeEntitlements } from '../../../../../../tests/doubles/shared'
+import { PlanLimitReachedError } from '../../../../../shared/contracts/entitlements'
 import { CreateWorkoutSessionCommand } from './create-workout-session.command'
 import { CreateWorkoutSessionHandler } from './create-workout-session.handler'
 
@@ -8,8 +10,14 @@ const NOW = new Date('2026-03-01T10:00:00.000Z')
 
 function setup() {
     const sessions = new InMemoryWorkoutSessionRepository()
-    const handler = new CreateWorkoutSessionHandler(sessions, new FakeClock(NOW), new FakeIdGenerator(['s-1']))
-    return { sessions, handler }
+    const entitlements = new FakeEntitlements()
+    const handler = new CreateWorkoutSessionHandler(
+        sessions,
+        entitlements,
+        new FakeClock(NOW),
+        new FakeIdGenerator(['s-1', 's-2']),
+    )
+    return { sessions, entitlements, handler }
 }
 
 describe('CreateWorkoutSessionHandler', () => {
@@ -32,5 +40,16 @@ describe('CreateWorkoutSessionHandler', () => {
 
         expect(view.performedAt).toEqual(new Date('2026-02-20T08:00:00.000Z'))
         expect(view.notes).toBe('leg day')
+    })
+
+    it('refuses to log a workout once the plan cap is reached', async () => {
+        const { sessions, entitlements, handler } = setup()
+        entitlements.on({ plan: 'athlete-free', maxWorkouts: 1 })
+
+        await handler.execute(new CreateWorkoutSessionCommand('u-1'))
+        await expect(handler.execute(new CreateWorkoutSessionCommand('u-1'))).rejects.toBeInstanceOf(
+            PlanLimitReachedError,
+        )
+        expect(sessions.size).toBe(1)
     })
 })

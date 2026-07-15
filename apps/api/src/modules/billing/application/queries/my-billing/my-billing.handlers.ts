@@ -39,8 +39,9 @@ export interface PublicPlanView {
     description: string | null
     isFree: boolean
     sortOrder: number
-    templates: boolean
-    mesocycles: boolean
+    maxTemplates: number | null
+    maxMesocycles: number | null
+    maxWorkouts: number | null
     ai: boolean
     planSessions: boolean
     maxAthletes: number | null
@@ -118,8 +119,9 @@ export class AvailablePlansHandler implements IQueryHandler<AvailablePlansQuery,
                 description: plan.description,
                 isFree: plan.isFree,
                 sortOrder: plan.sortOrder,
-                templates: snapshot.templates,
-                mesocycles: snapshot.mesocycles,
+                maxTemplates: snapshot.maxTemplates,
+                maxMesocycles: snapshot.maxMesocycles,
+                maxWorkouts: snapshot.maxWorkouts,
                 ai: snapshot.ai,
                 planSessions: snapshot.planSessions,
                 maxAthletes: snapshot.maxAthletes,

@@ -28,9 +28,11 @@ export class CreateSessionFromTemplateHandler implements ICommandHandler<
     ) {}
 
     async execute(command: CreateSessionFromTemplateCommand): Promise<WorkoutSessionView> {
-        // Using a template is the other half of the templates feature — a plan that
-        // took it away would otherwise leave old templates as a working back door.
-        await this.entitlements.assertFeature(command.userId, 'templates')
+        // Starting a session — from a template or not — creates a workout, so it's
+        // the workout cap that gates it. Using an existing template stays allowed
+        // after a downgrade; only creating new templates is what `maxTemplates` caps.
+        const owned = await this.sessions.countSelfCreatedBy(command.userId)
+        await this.entitlements.assertWithinLimit(command.userId, 'workouts', owned)
 
         const template = await requireOwnedTemplate(this.templates, command.templateId, command.userId)
 

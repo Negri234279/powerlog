@@ -123,7 +123,7 @@ describe('admin billing (GraphQL)', () => {
         expect(free.isFree).toBe(true)
         expect(free.snapshot.ai).toBe(false)
         // The raw jsonb the form edits comes back as JSON, not as a typed shape.
-        expect(free.entitlements).toEqual({ templates: true, mesocycles: true, ai: false })
+        expect(free.entitlements).toEqual({ maxTemplates: 5, maxMesocycles: 2, maxWorkouts: 50, ai: false })
 
         const pro = plans.find((plan: { slug: string }) => plan.slug === 'athlete-pro')
         expect(pro.prices).toHaveLength(4) // month/year × EUR/USD
@@ -149,7 +149,7 @@ describe('admin billing (GraphQL)', () => {
         const created = await gql(
             `mutation { createPlan(input: {
                 audience: "athlete", slug: "athlete-trial", name: "Trial",
-                entitlements: { templates: true, mesocycles: true, ai: true }
+                entitlements: { maxTemplates: null, maxMesocycles: null, maxWorkouts: null, ai: true }
             }) }`,
             admin.access,
         )
@@ -253,7 +253,7 @@ describe('admin billing (GraphQL)', () => {
 
         // Take AI out of the plan they are ON.
         const updated = await gql(
-            `mutation { updatePlan(input: { id: "${pro.id}", entitlements: { templates: true, mesocycles: true, ai: false } }) }`,
+            `mutation { updatePlan(input: { id: "${pro.id}", entitlements: { maxTemplates: null, maxMesocycles: null, maxWorkouts: null, ai: false } }) }`,
             admin.access,
         )
         expect(updated.body.errors).toBeUndefined()

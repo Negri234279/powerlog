@@ -5,8 +5,12 @@ import { AthleteEntitlementsVO } from './athlete-entitlements.vo'
 import { CoachEntitlementsVO } from './coach-entitlements.vo'
 import { planEntitlementsFor } from './plan-entitlements'
 
-const ATHLETE_FREE = { templates: true, mesocycles: true, ai: false }
-const COACH_PRO = { maxAthletes: 20, planSessions: true, athlete: { templates: true, mesocycles: true, ai: true } }
+const ATHLETE_FREE = { maxTemplates: 3, maxMesocycles: 1, maxWorkouts: null, ai: false }
+const COACH_PRO = {
+    maxAthletes: 20,
+    planSessions: true,
+    athlete: { maxTemplates: null, maxMesocycles: null, maxWorkouts: null, ai: true },
+}
 
 describe('plan entitlements', () => {
     it('collapses an athlete plan into a snapshot that grants no coaching', () => {
@@ -15,8 +19,9 @@ describe('plan entitlements', () => {
         expect(snapshot).toEqual({
             plan: 'athlete-free',
             audience: 'athlete',
-            templates: true,
-            mesocycles: true,
+            maxTemplates: 3,
+            maxMesocycles: 1,
+            maxWorkouts: null,
             ai: false,
             planSessions: false,
             maxAthletes: 0,
@@ -29,8 +34,9 @@ describe('plan entitlements', () => {
         expect(snapshot).toEqual({
             plan: 'coach-pro',
             audience: 'coach',
-            templates: true,
-            mesocycles: true,
+            maxTemplates: null,
+            maxMesocycles: null,
+            maxWorkouts: null,
             ai: true,
             planSessions: true,
             maxAthletes: 20,
@@ -44,7 +50,13 @@ describe('plan entitlements', () => {
     })
 
     it('rejects entitlements that are missing a feature', () => {
-        expect(() => AthleteEntitlementsVO.create({ templates: true, mesocycles: true })).toThrow(
+        expect(() => AthleteEntitlementsVO.create({ maxTemplates: 3, maxMesocycles: 1, maxWorkouts: null })).toThrow(
+            InvalidPlanEntitlementsError,
+        )
+    })
+
+    it('rejects a negative athlete cap', () => {
+        expect(() => AthleteEntitlementsVO.create({ ...ATHLETE_FREE, maxTemplates: -1 })).toThrow(
             InvalidPlanEntitlementsError,
         )
     })

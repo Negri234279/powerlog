@@ -84,7 +84,7 @@ describe('manual subscriptions (admin)', () => {
             slug: 'athlete-draft',
             name: 'Draft',
             status: 'draft',
-            entitlements: { templates: true, mesocycles: true, ai: true },
+            entitlements: { maxTemplates: null, maxMesocycles: null, maxWorkouts: null, ai: true },
             now: NOW,
         })
         plans.seed(draft)

@@ -9,8 +9,9 @@ import { SubscriptionChangedIntegrationEvent } from '../shared/integration-event
 const FREE: EntitlementsSnapshot = {
     plan: 'athlete-free',
     audience: 'athlete',
-    templates: true,
-    mesocycles: true,
+    maxTemplates: null,
+    maxMesocycles: null,
+    maxWorkouts: null,
     ai: false,
     planSessions: false,
     maxAthletes: 0,

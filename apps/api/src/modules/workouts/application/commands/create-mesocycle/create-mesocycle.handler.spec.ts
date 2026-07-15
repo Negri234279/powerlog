@@ -8,7 +8,7 @@ import {
     InMemoryMesocycleRepository,
 } from '../../../../../../tests/doubles/workouts'
 import { FakeCoachLinks, FakeEntitlements, RecordingEventBus } from '../../../../../../tests/doubles/shared'
-import { FeatureNotInPlanError } from '../../../../../shared/contracts/entitlements'
+import { FeatureNotInPlanError, PlanLimitReachedError } from '../../../../../shared/contracts/entitlements'
 import {
     ConflictingIntensityError,
     ExerciseNotFoundError,
@@ -171,12 +171,12 @@ describe('CreateMesocycleHandler', () => {
         ).rejects.toBeInstanceOf(ConflictingIntensityError)
     })
 
-    it('refuses to build a block of your own on a plan without mesocycles', async () => {
+    it('refuses to build a block of your own on a plan that allows none', async () => {
         const { mesocycles, entitlements, handler } = setup()
-        entitlements.on({ plan: 'athlete-basic', mesocycles: false })
+        entitlements.on({ plan: 'athlete-basic', maxMesocycles: 0 })
 
         await expect(handler.execute(new CreateMesocycleCommand(OWNER, content()))).rejects.toBeInstanceOf(
-            FeatureNotInPlanError,
+            PlanLimitReachedError,
         )
         expect(mesocycles.size).toBe(0)
     })
@@ -187,7 +187,7 @@ describe('CreateMesocycleHandler', () => {
         const links = new FakeCoachLinks()
         links.link(COACH, ATHLETE)
         const { mesocycles, entitlements, handler } = setup(links)
-        entitlements.on({ plan: 'coach-lite', mesocycles: true, planSessions: false })
+        entitlements.on({ plan: 'coach-lite', maxMesocycles: null, planSessions: false })
 
         await expect(handler.execute(new CreateMesocycleCommand(COACH, content(), ATHLETE))).rejects.toBeInstanceOf(
             FeatureNotInPlanError,

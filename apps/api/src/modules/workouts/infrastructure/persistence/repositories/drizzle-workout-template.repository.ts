@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { asc, eq, inArray } from 'drizzle-orm'
+import { asc, count, eq, inArray } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import { WorkoutTemplateAggregate } from '../../../domain/entities/workout-template.entity'
@@ -58,6 +58,15 @@ export class DrizzleWorkoutTemplateRepository extends WorkoutTemplateRepository 
                 : []
 
         return WorkoutTemplateMapper.toDomain(templateRow, exerciseRows, setRows)
+    }
+
+    async countByOwner(ownerId: string): Promise<number> {
+        const [row] = await this.db
+            .select({ value: count() })
+            .from(workoutTemplates)
+            .where(eq(workoutTemplates.ownerId, ownerId))
+
+        return row?.value ?? 0
     }
 
     async delete(id: string): Promise<void> {

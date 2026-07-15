@@ -8,6 +8,9 @@ import type { MesocycleAggregate } from '../entities/mesocycle.entity'
 export abstract class MesocycleRepository {
     abstract save(mesocycle: MesocycleAggregate): Promise<void>
     abstract findById(id: string): Promise<MesocycleAggregate | null>
+    /** How many mesocycles a user created for themselves (excludes ones a coach
+     *  planned for them) — for the plan's `maxMesocycles` cap. */
+    abstract countSelfCreatedBy(userId: string): Promise<number>
     abstract delete(id: string): Promise<void>
     /** Delete every mesocycle owned by a user (cascades to the whole tree). Used
      *  to erase workout data on account deletion. */

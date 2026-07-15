@@ -8,7 +8,7 @@ import {
     InMemoryWorkoutTemplateRepository,
 } from '../../../../../../tests/doubles/workouts'
 import { FakeEntitlements } from '../../../../../../tests/doubles/shared'
-import { FeatureNotInPlanError } from '../../../../../shared/contracts/entitlements'
+import { PlanLimitReachedError } from '../../../../../shared/contracts/entitlements'
 import { ConflictingIntensityError, ExerciseNotFoundError } from '../../../domain/errors/workouts.errors'
 import type { TemplateContentRaw } from '../../template-content'
 import { CreateWorkoutTemplateCommand } from './create-workout-template.command'
@@ -104,13 +104,24 @@ describe('CreateWorkoutTemplateHandler', () => {
         ).rejects.toBeInstanceOf(ConflictingIntensityError)
     })
 
-    it('refuses to create a template on a plan without templates', async () => {
+    it('refuses to create a template on a plan that allows none', async () => {
         const { templates, entitlements, handler } = setup()
-        entitlements.on({ plan: 'athlete-free', templates: false })
+        entitlements.on({ plan: 'athlete-free', maxTemplates: 0 })
 
         await expect(handler.execute(new CreateWorkoutTemplateCommand(OWNER, content()))).rejects.toBeInstanceOf(
-            FeatureNotInPlanError,
+            PlanLimitReachedError,
         )
         expect(templates.size).toBe(0)
+    })
+
+    it('refuses to create a template once the plan cap is reached', async () => {
+        const { templates, entitlements, handler } = setup()
+        entitlements.on({ plan: 'athlete-free', maxTemplates: 1 })
+
+        await handler.execute(new CreateWorkoutTemplateCommand(OWNER, content()))
+        await expect(handler.execute(new CreateWorkoutTemplateCommand(OWNER, content()))).rejects.toBeInstanceOf(
+            PlanLimitReachedError,
+        )
+        expect(templates.size).toBe(1)
     })
 })

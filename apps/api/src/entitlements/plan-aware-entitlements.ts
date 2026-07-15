@@ -4,6 +4,7 @@ import { InjectMetric } from '@willsoto/nestjs-prometheus'
 import type { Counter } from 'prom-client'
 
 import {
+    type CountableResource,
     type EntitlementsSnapshot,
     Entitlements,
     type Feature,
@@ -55,7 +56,19 @@ export class PlanAwareEntitlements extends Entitlements {
 
         this.denials.inc({ feature: 'athletes', audience: snapshot.audience, plan: snapshot.plan })
 
-        throw new PlanLimitReachedError(maxAthletes, currentAthleteCount, snapshot.plan)
+        throw new PlanLimitReachedError('athletes', maxAthletes, currentAthleteCount, snapshot.plan)
+    }
+
+    async assertWithinLimit(userId: string, resource: CountableResource, currentCount: number): Promise<void> {
+        const snapshot = await this.forUser(userId)
+        const limit = this.limitFor(snapshot, resource)
+
+        // null = unlimited.
+        if (limit === null || currentCount < limit) return
+
+        this.denials.inc({ feature: resource, audience: snapshot.audience, plan: snapshot.plan })
+
+        throw new PlanLimitReachedError(resource, limit, currentCount, snapshot.plan)
     }
 
     /**
@@ -77,14 +90,21 @@ export class PlanAwareEntitlements extends Entitlements {
 
     private grants(snapshot: EntitlementsSnapshot, feature: Feature): boolean {
         switch (feature) {
-            case 'templates':
-                return snapshot.templates
-            case 'mesocycles':
-                return snapshot.mesocycles
             case 'ai':
                 return snapshot.ai
             case 'plan_sessions':
                 return snapshot.planSessions
+        }
+    }
+
+    private limitFor(snapshot: EntitlementsSnapshot, resource: CountableResource): number | null {
+        switch (resource) {
+            case 'templates':
+                return snapshot.maxTemplates
+            case 'mesocycles':
+                return snapshot.maxMesocycles
+            case 'workouts':
+                return snapshot.maxWorkouts
         }
     }
 }

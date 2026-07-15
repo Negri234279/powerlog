@@ -29,7 +29,8 @@ export class CreateWorkoutTemplateHandler implements ICommandHandler<
     async execute(command: CreateWorkoutTemplateCommand): Promise<WorkoutTemplateView> {
         // Only creating is gated: a soft downgrade leaves what you already have
         // readable and editable, it just stops you making more.
-        await this.entitlements.assertFeature(command.ownerId, 'templates')
+        const owned = await this.templates.countByOwner(command.ownerId)
+        await this.entitlements.assertWithinLimit(command.ownerId, 'templates', owned)
 
         const content = await buildTemplateContent(command.content, this.exercises)
         const template = WorkoutTemplateAggregate.create({

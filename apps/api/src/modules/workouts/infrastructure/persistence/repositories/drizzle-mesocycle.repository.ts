@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import { MesocycleAggregate } from '../../../domain/entities/mesocycle.entity'
@@ -86,6 +86,15 @@ export class DrizzleMesocycleRepository extends MesocycleRepository {
                 : []
 
         return MesocycleMapper.toDomain(row, microcycleRows, dayRows, exerciseRows, setRows)
+    }
+
+    async countSelfCreatedBy(userId: string): Promise<number> {
+        const [row] = await this.db
+            .select({ value: count() })
+            .from(mesocycles)
+            .where(and(eq(mesocycles.ownerId, userId), isNull(mesocycles.plannedByUserId)))
+
+        return row?.value ?? 0
     }
 
     async delete(id: string): Promise<void> {
