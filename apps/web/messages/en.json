@@ -566,7 +566,9 @@
         "nav": {
             "profile": "Profile",
             "security": "Account & security",
-            "ai": "AI"
+            "ai": "AI",
+            "plan": "Plan",
+            "billing": "Billing"
         },
         "title": "Your profile",
         "intro": "This shapes how analytics and coaching read your training. Everything here is optional except your display name.",

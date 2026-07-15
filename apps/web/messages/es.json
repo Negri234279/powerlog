@@ -566,7 +566,9 @@
         "nav": {
             "profile": "Perfil",
             "security": "Cuenta y seguridad",
-            "ai": "IA"
+            "ai": "IA",
+            "plan": "Plan",
+            "billing": "Facturación"
         },
         "title": "Tu perfil",
         "intro": "Esto define cómo las analíticas y el coaching interpretan tu entrenamiento. Todo aquí es opcional salvo tu nombre público.",
