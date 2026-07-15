@@ -220,16 +220,14 @@ function PlanCard({
             <FormError error={error} />
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Grant label={t('entitlements.templates')} on={plan.snapshot.templates} />
-                <Grant label={t('entitlements.mesocycles')} on={plan.snapshot.mesocycles} />
+                <CapPill label={t('entitlements.maxTemplates')} cap={plan.snapshot.maxTemplates} />
+                <CapPill label={t('entitlements.maxMesocycles')} cap={plan.snapshot.maxMesocycles} />
+                <CapPill label={t('entitlements.maxWorkouts')} cap={plan.snapshot.maxWorkouts} />
                 <Grant label={t('entitlements.ai')} on={plan.snapshot.ai} />
                 {plan.audience === 'coach' ? (
                     <>
                         <Grant label={t('entitlements.planSessions')} on={plan.snapshot.planSessions} />
-                        <span className="rounded-full bg-white/[0.04] px-3 py-1 font-mono text-eyebrow uppercase text-text-dim">
-                            {t('entitlements.maxAthletes')}:{' '}
-                            {plan.snapshot.maxAthletes === null ? '∞' : plan.snapshot.maxAthletes}
-                        </span>
+                        <CapPill label={t('entitlements.maxAthletes')} cap={plan.snapshot.maxAthletes} />
                     </>
                 ) : null}
             </div>
@@ -312,6 +310,21 @@ function Grant({ label, on }: { label: string; on: boolean }) {
             }`}
         >
             {label}
+        </span>
+    )
+}
+
+/** A numeric cap: `∞` when null (unlimited), the number otherwise; 0 reads as "off". */
+function CapPill({ label, cap }: { label: string; cap: number | null }) {
+    const off = cap === 0
+
+    return (
+        <span
+            className={`rounded-full px-3 py-1 font-mono text-eyebrow uppercase ${
+                off ? 'bg-white/[0.03] text-text-faint line-through' : 'bg-ember/10 text-ember'
+            }`}
+        >
+            {label}: {cap === null ? '∞' : cap}
         </span>
     )
 }

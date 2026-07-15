@@ -10,8 +10,9 @@ export const AvailablePlansDocument = graphql(`
             description
             isFree
             sortOrder
-            templates
-            mesocycles
+            maxTemplates
+            maxMesocycles
+            maxWorkouts
             ai
             planSessions
             maxAthletes
@@ -41,8 +42,9 @@ export const MyPlanDocument = graphql(`
         myEntitlements {
             plan
             audience
-            templates
-            mesocycles
+            maxTemplates
+            maxMesocycles
+            maxWorkouts
             ai
             planSessions
             maxAthletes

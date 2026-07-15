@@ -24,6 +24,7 @@ import {
 import { useEnterExit } from '@/lib/hooks/use-enter-exit'
 import { kgTo, type Units, unitsOf } from '@/lib/units'
 import { Field, Input } from '@/components/ui/field'
+import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
 import { Bolt, ChevronDown, Close, Plus, Trash } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
@@ -228,6 +229,8 @@ export function MesocycleBuilder({
     const [notes, setNotes] = useState('')
     const [weeks, setWeeks] = useState<DraftWeek[]>([emptyWeek()])
     const [error, setError] = useState<string | null>(null)
+    // Kept alongside the message so a plan refusal can render an upgrade CTA instead.
+    const [rawError, setRawError] = useState<unknown>(null)
     // Which week (if any) has its AI fill panel open. One at a time: the server
     // holds a single open draft per user, so two panels would share one proposal.
     const [aiWeekKey, setAiWeekKey] = useState<string | null>(null)
@@ -365,6 +368,7 @@ export function MesocycleBuilder({
 
     async function onSave() {
         setError(null)
+        setRawError(null)
         if (name.trim() === '') {
             setError(t('nameRequired'))
             return
@@ -409,6 +413,7 @@ export function MesocycleBuilder({
             }
             onSaved()
         } catch (err) {
+            setRawError(err)
             setError(errorMessage(err))
         }
     }
@@ -515,7 +520,13 @@ export function MesocycleBuilder({
                 />
             </div>
 
-            <FormError error={error} className="mt-5" />
+            {isPlanRefusal(rawError) ? (
+                <div className="mt-5">
+                    <UpgradeGate error={rawError} />
+                </div>
+            ) : (
+                <FormError error={error} className="mt-5" />
+            )}
 
             <div className="mt-6 flex items-center gap-2">
                 <TrackedButton

@@ -16,6 +16,7 @@ import {
 } from '@/lib/graphql/hooks/use-workout-templates'
 import { kgTo, type Units, unitsOf } from '@/lib/units'
 import { Field, Input } from '@/components/ui/field'
+import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
 import { Close, Plus, Trash } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
@@ -110,6 +111,8 @@ export function TemplateBuilder({
     const [notes, setNotes] = useState('')
     const [draft, setDraft] = useState<DraftExercise[]>([])
     const [error, setError] = useState<string | null>(null)
+    // Kept alongside the message so a plan refusal can render an upgrade CTA instead.
+    const [rawError, setRawError] = useState<unknown>(null)
     const [picking, setPicking] = useState(false)
 
     // Seed the form from the loaded template (once it arrives, for edit mode).
@@ -172,6 +175,7 @@ export function TemplateBuilder({
 
     async function onSave() {
         setError(null)
+        setRawError(null)
         if (name.trim() === '') {
             setError(t('nameRequired'))
             return
@@ -204,6 +208,7 @@ export function TemplateBuilder({
             }
             onSaved()
         } catch (err) {
+            setRawError(err)
             setError(errorMessage(err))
         }
     }
@@ -289,7 +294,13 @@ export function TemplateBuilder({
                 )}
             </div>
 
-            <FormError error={error} className="mt-5" />
+            {isPlanRefusal(rawError) ? (
+                <div className="mt-5">
+                    <UpgradeGate error={rawError} />
+                </div>
+            ) : (
+                <FormError error={error} className="mt-5" />
+            )}
 
             <div className="mt-6 flex items-center gap-2">
                 <TrackedButton

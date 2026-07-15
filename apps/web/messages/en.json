@@ -840,6 +840,9 @@
         "entitlements": {
             "templates": "Templates",
             "mesocycles": "Training blocks",
+            "maxTemplates": "Templates",
+            "maxMesocycles": "Training blocks",
+            "maxWorkouts": "Workouts",
             "ai": "AI assistant",
             "planSessions": "Program for athletes",
             "maxAthletes": "Athletes",
@@ -1123,12 +1126,24 @@
             "ai": "AI assistant",
             "planSessions": "Program for your athletes",
             "athletes": "Up to {count} athletes",
-            "athletesUnlimited": "Unlimited athletes"
+            "athletesUnlimited": "Unlimited athletes",
+            "workoutsUnlimited": "Unlimited workout logging",
+            "workoutsLimited": "{count, plural, one {# logged workout} other {# logged workouts}}",
+            "templatesUnlimited": "Unlimited workout templates",
+            "templatesLimited": "{count, plural, one {# workout template} other {# workout templates}}",
+            "mesocyclesUnlimited": "Unlimited mesocycle planning",
+            "mesocyclesLimited": "{count, plural, one {# mesocycle} other {# mesocycles}}"
         },
         "gate": {
             "cta": "See plans",
             "featureGeneric": "Your plan doesn’t include this.",
-            "limitReached": "You’ve reached your plan’s limit of {limit} athletes.",
+            "limitReached": {
+                "athletes": "You’ve reached your plan’s limit of {limit} athletes.",
+                "templates": "You’ve reached your plan’s limit of {limit} workout templates.",
+                "mesocycles": "You’ve reached your plan’s limit of {limit} training blocks.",
+                "workouts": "You’ve reached your plan’s limit of {limit} logged workouts.",
+                "generic": "You’ve reached your plan’s limit."
+            },
             "feature": {
                 "ai": "The AI assistant isn’t part of your plan yet.",
                 "templates": "Workout templates aren’t part of your plan yet.",
@@ -1284,6 +1299,12 @@
             "featureUnlimited": "Unlimited sessions, sets & PRs",
             "featureTemplates": "Reusable workout templates",
             "featureMesocycles": "Mesocycle planning",
+            "featureWorkoutsUnlimited": "Unlimited workout logging",
+            "featureWorkoutsLimited": "{count, plural, one {# logged workout} other {# logged workouts}}",
+            "featureTemplatesUnlimited": "Unlimited workout templates",
+            "featureTemplatesLimited": "{count, plural, one {# workout template} other {# workout templates}}",
+            "featureMesocyclesUnlimited": "Unlimited mesocycle planning",
+            "featureMesocyclesLimited": "{count, plural, one {# mesocycle} other {# mesocycles}}",
             "featureAi": "AI assistant (bring your own key)",
             "featurePlanSessions": "Plan sessions into your athletes’ logs",
             "rosterUnlimited": "Unlimited athletes",

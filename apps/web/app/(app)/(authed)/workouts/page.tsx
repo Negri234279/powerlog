@@ -28,6 +28,7 @@ import { PeriodNavigator } from '@/components/workouts/period-navigator'
 import { type SelectedTemplate, TemplateBrowseModal, TemplateCombobox } from '@/components/workouts/template-select'
 import { ClearableSearch } from '@/components/ui/clearable-search'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
+import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
@@ -359,6 +360,8 @@ export default function WorkoutsPage() {
     const del = useDeleteWorkoutSession()
     const { data: exercises } = useExercises()
     const [createError, setCreateError] = useState<string | null>(null)
+    // Kept alongside the message so a plan refusal can render an upgrade CTA instead.
+    const [createRawError, setCreateRawError] = useState<unknown>(null)
     const [creating, setCreating] = useState(false)
     const [date, setDate] = useState(todayLocalIso)
     const [notes, setNotes] = useState('')
@@ -443,6 +446,7 @@ export default function WorkoutsPage() {
     async function onCreate(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
         setCreateError(null)
+        setCreateRawError(null)
         try {
             // Picking today keeps the API default (now, with a real time); any
             // other day is stored at noon UTC so it reads as that date everywhere.
@@ -465,6 +469,7 @@ export default function WorkoutsPage() {
             track('workout_session_created', {})
             router.push(`/workouts/${result.createWorkoutSession.id}`)
         } catch (error) {
+            setCreateRawError(error)
             setCreateError(errorMessage(error))
         }
     }
@@ -566,7 +571,13 @@ export default function WorkoutsPage() {
                             </div>
                         </div>
 
-                        <FormError error={createError} className="mt-3" />
+                        {isPlanRefusal(createRawError) ? (
+                            <div className="mt-3">
+                                <UpgradeGate error={createRawError} />
+                            </div>
+                        ) : (
+                            <FormError error={createError} className="mt-3" />
+                        )}
 
                         <div className="mt-4 flex items-center gap-2">
                             <TrackedButton

@@ -136,10 +136,19 @@ function PlanCard({
      * server will refuse to grant.
      */
     function featuresOf(): string[] {
-        const features = [t('featureUnlimited')]
+        const features: string[] = []
 
-        if (plan.templates) features.push(t('featureTemplates'))
-        if (plan.mesocycles) features.push(t('featureMesocycles'))
+        // A cap of null reads as unlimited, a positive one as the number, and 0 drops
+        // the line — the plan simply doesn't offer it.
+        if (plan.maxWorkouts === null) features.push(t('featureWorkoutsUnlimited'))
+        else if (plan.maxWorkouts > 0) features.push(t('featureWorkoutsLimited', { count: plan.maxWorkouts }))
+
+        if (plan.maxTemplates === null) features.push(t('featureTemplatesUnlimited'))
+        else if (plan.maxTemplates > 0) features.push(t('featureTemplatesLimited', { count: plan.maxTemplates }))
+
+        if (plan.maxMesocycles === null) features.push(t('featureMesocyclesUnlimited'))
+        else if (plan.maxMesocycles > 0) features.push(t('featureMesocyclesLimited', { count: plan.maxMesocycles }))
+
         if (plan.ai) features.push(t('featureAi'))
         if (plan.planSessions) features.push(t('featurePlanSessions'))
 

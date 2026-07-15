@@ -17,8 +17,9 @@ export const AdminPlansDocument = graphql(`
             stripeProductId
             paypalProductId
             snapshot {
-                templates
-                mesocycles
+                maxTemplates
+                maxMesocycles
+                maxWorkouts
                 ai
                 planSessions
                 maxAthletes

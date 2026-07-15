@@ -16,20 +16,20 @@ import { TrackedLink } from '@/components/ui/tracked'
  *
  * Anything else renders nothing: not every error is an upgrade opportunity.
  */
-type PlanRefusal = { kind: 'feature'; feature: string } | { kind: 'limit'; limit: number } | null
+type PlanRefusal = { kind: 'feature'; feature: string } | { kind: 'limit'; resource: string; limit: number } | null
 
 function refusalOf(error: unknown): PlanRefusal {
     if (!(error instanceof ClientError)) return null
 
     const extensions = error.response.errors?.[0]?.extensions as
-        | { code?: string; feature?: string; limit?: number }
+        | { code?: string; feature?: string; resource?: string; limit?: number }
         | undefined
 
     if (extensions?.code === 'FEATURE_NOT_IN_PLAN') {
         return { kind: 'feature', feature: extensions.feature ?? 'ai' }
     }
     if (extensions?.code === 'PLAN_LIMIT_REACHED') {
-        return { kind: 'limit', limit: extensions.limit ?? 0 }
+        return { kind: 'limit', resource: extensions.resource ?? 'athletes', limit: extensions.limit ?? 0 }
     }
 
     return null
@@ -47,7 +47,9 @@ export function UpgradeGate({ error }: { error: unknown }) {
 
     const message =
         refusal.kind === 'limit'
-            ? t('limitReached', { limit: refusal.limit })
+            ? t.has(`limitReached.${refusal.resource}` as 'limitReached.athletes')
+                ? t(`limitReached.${refusal.resource}` as 'limitReached.athletes', { limit: refusal.limit })
+                : t('limitReached.generic')
             : t.has(`feature.${refusal.feature}` as 'feature.ai')
               ? t(`feature.${refusal.feature}` as 'feature.ai')
               : t('featureGeneric')

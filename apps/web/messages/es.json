@@ -840,6 +840,9 @@
         "entitlements": {
             "templates": "Plantillas",
             "mesocycles": "Bloques de entrenamiento",
+            "maxTemplates": "Plantillas",
+            "maxMesocycles": "Bloques de entrenamiento",
+            "maxWorkouts": "Entrenos",
             "ai": "Asistente de IA",
             "planSessions": "Planificar a atletas",
             "maxAthletes": "Atletas",
@@ -1123,12 +1126,24 @@
             "ai": "Asistente de IA",
             "planSessions": "Planificar a tus atletas",
             "athletes": "Hasta {count} atletas",
-            "athletesUnlimited": "Atletas ilimitados"
+            "athletesUnlimited": "Atletas ilimitados",
+            "workoutsUnlimited": "Registro de entrenos ilimitado",
+            "workoutsLimited": "{count, plural, one {# entreno registrado} other {# entrenos registrados}}",
+            "templatesUnlimited": "Plantillas de entrenamiento ilimitadas",
+            "templatesLimited": "{count, plural, one {# plantilla de entrenamiento} other {# plantillas de entrenamiento}}",
+            "mesocyclesUnlimited": "Planificación de mesociclos ilimitada",
+            "mesocyclesLimited": "{count, plural, one {# mesociclo} other {# mesociclos}}"
         },
         "gate": {
             "cta": "Ver planes",
             "featureGeneric": "Tu plan no incluye esto.",
-            "limitReached": "Has llegado al límite de tu plan: {limit} atletas.",
+            "limitReached": {
+                "athletes": "Has llegado al límite de tu plan: {limit} atletas.",
+                "templates": "Has llegado al límite de tu plan: {limit} plantillas de entrenamiento.",
+                "mesocycles": "Has llegado al límite de tu plan: {limit} bloques de entrenamiento.",
+                "workouts": "Has llegado al límite de tu plan: {limit} entrenos registrados.",
+                "generic": "Has llegado al límite de tu plan."
+            },
             "feature": {
                 "ai": "El asistente de IA todavía no está en tu plan.",
                 "templates": "Las plantillas todavía no están en tu plan.",
@@ -1288,6 +1303,12 @@
             "featureUnlimited": "Sesiones, series y PRs ilimitados",
             "featureTemplates": "Plantillas de entrenamiento reutilizables",
             "featureMesocycles": "Planificación de mesociclos",
+            "featureWorkoutsUnlimited": "Registro de entrenos ilimitado",
+            "featureWorkoutsLimited": "{count, plural, one {# entreno registrado} other {# entrenos registrados}}",
+            "featureTemplatesUnlimited": "Plantillas de entrenamiento ilimitadas",
+            "featureTemplatesLimited": "{count, plural, one {# plantilla de entrenamiento} other {# plantillas de entrenamiento}}",
+            "featureMesocyclesUnlimited": "Planificación de mesociclos ilimitada",
+            "featureMesocyclesLimited": "{count, plural, one {# mesociclo} other {# mesociclos}}",
             "featureAi": "Asistente de IA (con tu propia clave)",
             "featurePlanSessions": "Planifica sesiones en los registros de tus atletas",
             "rosterUnlimited": "Atletas ilimitados",

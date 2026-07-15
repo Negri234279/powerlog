@@ -289,8 +289,21 @@ function PlanCard({
             </p>
 
             <ul className="mt-4 flex-1 space-y-1.5 text-sm text-text-dim">
-                <Feature on={plan.templates}>{t('features.templates')}</Feature>
-                <Feature on={plan.mesocycles}>{t('features.mesocycles')}</Feature>
+                {plan.maxWorkouts === null ? (
+                    <Feature on>{t('features.workoutsUnlimited')}</Feature>
+                ) : plan.maxWorkouts > 0 ? (
+                    <Feature on>{t('features.workoutsLimited', { count: plan.maxWorkouts })}</Feature>
+                ) : null}
+                {plan.maxTemplates === null ? (
+                    <Feature on>{t('features.templatesUnlimited')}</Feature>
+                ) : plan.maxTemplates > 0 ? (
+                    <Feature on>{t('features.templatesLimited', { count: plan.maxTemplates })}</Feature>
+                ) : null}
+                {plan.maxMesocycles === null ? (
+                    <Feature on>{t('features.mesocyclesUnlimited')}</Feature>
+                ) : plan.maxMesocycles > 0 ? (
+                    <Feature on>{t('features.mesocyclesLimited', { count: plan.maxMesocycles })}</Feature>
+                ) : null}
                 <Feature on={plan.ai}>{t('features.ai')}</Feature>
                 {plan.planSessions ? (
                     <>
