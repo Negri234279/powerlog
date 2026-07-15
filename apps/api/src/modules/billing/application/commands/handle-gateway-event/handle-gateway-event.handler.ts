@@ -152,6 +152,8 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
             { subscriptionId: subscription.id, plan: plan.slug, gateway: event.gateway },
             'checkout completed',
         )
+
+        await this.redriveFailedInvoices(subscription)
     }
 
     /** Renewal, dunning, cancellation, plan change — the gateway's whole story. */
@@ -254,7 +256,53 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
         const plan = await this.plans.findById(price.planId)
         if (plan) this.metrics.recordCheckout(event.gateway, plan.slug, 'completed')
 
+        await this.redriveFailedInvoices(subscription)
+
         return subscription
+    }
+
+    /**
+     * The out-of-order case, healed at the one moment it can be: a subscription just
+     * came into being, so any invoice that failed earlier for lacking it can finally
+     * be attributed. PayPal routinely sends `PAYMENT.SALE.COMPLETED` before
+     * `BILLING.SUBSCRIPTION.ACTIVATED`, so without this the first invoice of every
+     * PayPal subscription would sit `failed` until a human replayed it.
+     *
+     * Re-driving re-runs {@link apply} — the same code the live path runs, no second
+     * implementation — on the payload the journal kept, then flips the row to
+     * `processed`. The row already exists, so there is nothing to re-record.
+     *
+     * **Best-effort by design.** A bad invoice must never roll back the subscription
+     * that just activated, so a failure here is logged, left `failed`, and swallowed;
+     * the admin replay is still there as the backstop.
+     */
+    private async redriveFailedInvoices(subscription: SubscriptionAggregate): Promise<void> {
+        const gatewaySubscriptionId = subscription.gatewaySubscriptionId
+        if (!gatewaySubscriptionId) return
+
+        const pending = await this.events.findFailedInvoiceEvents(subscription.gateway, gatewaySubscriptionId)
+        for (const record of pending) {
+            const event = record.payload as GatewayEvent
+            try {
+                await this.apply(event)
+                await this.events.markProcessed(event.gateway, event.eventId, this.clock.now())
+                this.metrics.recordWebhook(event.gateway, event.type, 'processed')
+
+                this.logger.info(
+                    { subscriptionId: subscription.id, eventId: event.eventId },
+                    'recovered an invoice that arrived before its subscription',
+                )
+            } catch (error) {
+                const detail = error instanceof Error ? error.message : 'unknown error'
+                await this.events.markFailed(event.gateway, event.eventId, detail)
+                this.metrics.recordWebhook(event.gateway, event.type, 'failed')
+
+                this.logger.error(
+                    { subscriptionId: subscription.id, eventId: event.eventId, err: error },
+                    'could not re-drive an invoice that arrived before its subscription',
+                )
+            }
+        }
     }
 
     /**

@@ -52,4 +52,15 @@ export abstract class WebhookEventStore {
     ): Promise<{ rows: WebhookEventRecord[]; total: number }>
 
     abstract findById(id: string): Promise<WebhookEventRecord | null>
+
+    /**
+     * The `failed` invoice events that belong to a subscription — the ones that blew
+     * up because they arrived before the subscription they pay for existed. Read the
+     * moment that subscription is created, so those invoices can be re-driven at
+     * once instead of waiting for a human to replay them.
+     */
+    abstract findFailedInvoiceEvents(
+        gateway: PaymentGateway,
+        gatewaySubscriptionId: string,
+    ): Promise<WebhookEventRecord[]>
 }

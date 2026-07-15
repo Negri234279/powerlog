@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, count, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, sql } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import {
@@ -100,5 +100,28 @@ export class DrizzleWebhookEventStore extends WebhookEventStore {
         const [row] = await this.db.select().from(billingWebhookEvents).where(eq(billingWebhookEvents.id, id)).limit(1)
 
         return row ? toRecord(row) : null
+    }
+
+    async findFailedInvoiceEvents(
+        gateway: PaymentGateway,
+        gatewaySubscriptionId: string,
+    ): Promise<WebhookEventRecord[]> {
+        // The subscription id lives inside the normalized payload we journalled, so
+        // the `->>` reaches into it. The `kind` guard keeps this to invoices even if a
+        // future event type happens to carry the same field.
+        const rows = await this.db
+            .select()
+            .from(billingWebhookEvents)
+            .where(
+                and(
+                    eq(billingWebhookEvents.gateway, gateway),
+                    eq(billingWebhookEvents.status, 'failed'),
+                    sql`${billingWebhookEvents.payload}->>'kind' = 'invoice'`,
+                    sql`${billingWebhookEvents.payload}->>'gatewaySubscriptionId' = ${gatewaySubscriptionId}`,
+                ),
+            )
+            .orderBy(desc(billingWebhookEvents.receivedAt))
+
+        return rows.map(toRecord)
     }
 }

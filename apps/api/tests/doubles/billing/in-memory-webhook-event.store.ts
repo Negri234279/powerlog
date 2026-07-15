@@ -68,6 +68,22 @@ export class InMemoryWebhookEventStore extends WebhookEventStore {
         return this.byKey.get(id) ?? null
     }
 
+    async findFailedInvoiceEvents(
+        gateway: PaymentGateway,
+        gatewaySubscriptionId: string,
+    ): Promise<WebhookEventRecord[]> {
+        return [...this.byKey.values()].filter((record) => {
+            const payload = record.payload as { kind?: string; gatewaySubscriptionId?: string | null }
+
+            return (
+                record.gateway === gateway &&
+                record.status === 'failed' &&
+                payload.kind === 'invoice' &&
+                payload.gatewaySubscriptionId === gatewaySubscriptionId
+            )
+        })
+    }
+
     all(): WebhookEventRecord[] {
         return [...this.byKey.values()]
     }

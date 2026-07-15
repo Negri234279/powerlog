@@ -248,6 +248,31 @@ describe('the webhook pipeline', () => {
 
             expect(subscriptions.all()).toHaveLength(1)
         })
+
+        it('recovers an invoice that arrived before its subscription (PayPal ordering)', async () => {
+            // PayPal routinely delivers PAYMENT.SALE.COMPLETED before the activation, so
+            // the invoice fails first: there is nobody to attribute it to yet.
+            await expect(deliver(invoiceEvent({ gateway: 'paypal' }))).rejects.toThrow()
+            expect(invoices.all()).toHaveLength(0)
+
+            // The activation creates the subscription — and the failed invoice is
+            // re-driven on the spot, without waiting for an admin replay.
+            await deliver(
+                subscriptionChanged({
+                    gateway: 'paypal',
+                    eventId: 'evt_paypal_activated',
+                    type: 'BILLING.SUBSCRIPTION.ACTIVATED',
+                    userId: USER,
+                }),
+            )
+
+            const [mirrored] = invoices.all()
+            expect(mirrored?.userId).toBe(USER)
+            expect(mirrored?.amountPaidCents).toBe(799)
+
+            const invoiceRecord = events.all().find((event) => event.eventId === 'evt_inv_1')
+            expect(invoiceRecord?.status).toBe('processed')
+        })
     })
 
     describe('the lifecycle', () => {
