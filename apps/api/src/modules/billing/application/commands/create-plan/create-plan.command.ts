@@ -1,5 +1,6 @@
 import type { PlanAudience } from '../../../../../shared/contracts/entitlements'
 import type { PlanStatus } from '../../../domain/entities/plan.entity'
+import type { PlanTranslation } from '../../../domain/repositories/plan-translation.repository'
 
 export class CreatePlanCommand {
     constructor(
@@ -12,5 +13,8 @@ export class CreatePlanCommand {
         readonly status: PlanStatus,
         readonly isFree: boolean,
         readonly sortOrder: number,
+        /** Localized name/description for non-default locales. Base name/description
+         *  above are the default-locale (English) fallback. */
+        readonly translations: PlanTranslation[],
     ) {}
 }

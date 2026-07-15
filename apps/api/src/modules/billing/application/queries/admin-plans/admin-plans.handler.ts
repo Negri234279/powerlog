@@ -7,6 +7,10 @@ import type { Currency, PlanInterval } from '../../../domain/plan-interval'
 import { PlanOfferRepository } from '../../../domain/repositories/plan-offer.repository'
 import { PlanPriceRepository } from '../../../domain/repositories/plan-price.repository'
 import { PlanRepository } from '../../../domain/repositories/plan.repository'
+import {
+    type PlanTranslation,
+    PlanTranslationRepository,
+} from '../../../domain/repositories/plan-translation.repository'
 import { AdminPlansQuery } from './admin-plans.query'
 
 export interface AdminPlanPriceView {
@@ -46,6 +50,8 @@ export interface AdminPlanView {
     prices: AdminPlanPriceView[]
     /** The live offer, if the plan has one. */
     offer: AdminPlanOfferView | null
+    /** Localized name/description per non-default locale — what the form edits. */
+    translations: PlanTranslation[]
     /** Null until an admin publishes the plan to that gateway. */
     stripeProductId: string | null
     paypalProductId: string | null
@@ -59,14 +65,16 @@ export class AdminPlansHandler implements IQueryHandler<AdminPlansQuery, AdminPl
         private readonly plans: PlanRepository,
         private readonly prices: PlanPriceRepository,
         private readonly offers: PlanOfferRepository,
+        private readonly translations: PlanTranslationRepository,
     ) {}
 
     async execute(query: AdminPlansQuery): Promise<AdminPlanView[]> {
         const plans = await this.plans.findAll(query.audience)
         const planIds = plans.map((plan) => plan.id)
-        // One query for every price (and offer) of the page, not one per plan.
+        // One query for every price (and offer, and translation) of the page.
         const prices = await this.prices.findByPlans(planIds)
         const offers = await this.offers.findActiveByPlans(planIds)
+        const translations = await this.translations.findByPlans(planIds)
 
         return plans.map((plan) => ({
             id: plan.id,
@@ -91,6 +99,13 @@ export class AdminPlansHandler implements IQueryHandler<AdminPlansQuery, AdminPl
                     paypalPlanId: price.paypalPlanId,
                 })),
             offer: offerViewOf(offers.find((offer) => offer.planId === plan.id)),
+            translations: translations
+                .filter((translation) => translation.planId === plan.id)
+                .map((translation) => ({
+                    locale: translation.locale,
+                    name: translation.name,
+                    description: translation.description,
+                })),
             stripeProductId: plan.stripeProductId,
             paypalProductId: plan.paypalProductId,
             createdAt: plan.createdAt,

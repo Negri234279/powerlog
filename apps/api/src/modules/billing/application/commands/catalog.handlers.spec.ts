@@ -5,6 +5,7 @@ import {
     FakeIdGenerator,
     InMemoryPlanPriceRepository,
     InMemoryPlanRepository,
+    InMemoryPlanTranslationRepository,
 } from '../../../../../tests/doubles/billing'
 import { RecordingEventBus, silentLogger } from '../../../../../tests/doubles/shared'
 import { PlanMother } from '../../../../../tests/mothers/billing'
@@ -32,19 +33,21 @@ const ATHLETE_ENTITLEMENTS = { maxTemplates: null, maxMesocycles: null, maxWorko
 describe('catalog admin handlers', () => {
     let plans: InMemoryPlanRepository
     let prices: InMemoryPlanPriceRepository
+    let translations: InMemoryPlanTranslationRepository
     let clock: FakeClock
     let ids: FakeIdGenerator
 
     beforeEach(() => {
         plans = new InMemoryPlanRepository([PlanMother.athleteFree(), PlanMother.coachFree()])
         prices = new InMemoryPlanPriceRepository()
+        translations = new InMemoryPlanTranslationRepository()
         clock = new FakeClock(NOW)
         ids = new FakeIdGenerator()
     })
 
     const bus = () => new RecordingEventBus().asEventBus()
-    const createPlan = () => new CreatePlanHandler(plans, clock, ids, silentLogger())
-    const updatePlan = () => new UpdatePlanHandler(plans, clock, bus(), silentLogger())
+    const createPlan = () => new CreatePlanHandler(plans, translations, clock, ids, silentLogger())
+    const updatePlan = () => new UpdatePlanHandler(plans, translations, clock, bus(), silentLogger())
     const setStatus = () => new SetPlanStatusHandler(plans, clock, bus(), silentLogger())
     const addPrice = () => new AddPlanPriceHandler(plans, prices, clock, ids, silentLogger())
     const deactivatePrice = () => new DeactivatePlanPriceHandler(prices, clock, silentLogger())
@@ -59,6 +62,7 @@ describe('catalog admin handlers', () => {
             overrides.status ?? 'draft',
             overrides.isFree ?? false,
             5,
+            [],
         )
 
     describe('createPlan', () => {
@@ -95,6 +99,7 @@ describe('catalog admin handlers', () => {
                 'draft',
                 false,
                 0,
+                [],
             )
 
             await expect(createPlan().execute(command)).rejects.toBeInstanceOf(InvalidPlanEntitlementsError)

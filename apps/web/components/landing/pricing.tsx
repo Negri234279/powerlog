@@ -22,8 +22,8 @@ function currencyFor(locale: string): string {
     return locale === 'es' ? 'EUR' : 'USD'
 }
 
-async function loadPlans(audience: string): Promise<PublicPlan[]> {
-    const data = await gqlServerRequest(AvailablePlansDocument, { audience }, REVALIDATE_SECONDS)
+async function loadPlans(audience: string, locale: string): Promise<PublicPlan[]> {
+    const data = await gqlServerRequest(AvailablePlansDocument, { audience, locale }, REVALIDATE_SECONDS)
 
     return data.availablePlans
 }
@@ -40,8 +40,8 @@ export async function Pricing() {
 
     // The API being down must cost us the price cards, not the whole landing page.
     const [athlete, coach] = await Promise.all([
-        loadPlans('athlete').catch(() => []),
-        loadPlans('coach').catch(() => []),
+        loadPlans('athlete', locale).catch(() => []),
+        loadPlans('coach', locale).catch(() => []),
     ])
     const unavailable = athlete.length === 0 && coach.length === 0
 

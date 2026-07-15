@@ -2,6 +2,19 @@ import { Field, ID, Int, ObjectType } from '@nestjs/graphql'
 
 import { JsonValue } from '../../../../graphql/json.scalar'
 
+/** A plan's name/description in one non-default locale, as the admin form edits it. */
+@ObjectType('PlanTranslation')
+export class PlanTranslationType {
+    @Field(() => String, { description: 'BCP-47 base locale, e.g. "es".' })
+    locale!: string
+
+    @Field(() => String)
+    name!: string
+
+    @Field(() => String, { nullable: true })
+    description!: string | null
+}
+
 /** A price version of a plan. Amounts are integer cents. */
 @ObjectType('PlanPrice')
 export class PlanPriceType {
@@ -133,6 +146,9 @@ export class AdminPlanType {
 
     @Field(() => PlanOfferType, { nullable: true, description: 'The plan’s live offer, if it has one.' })
     offer!: PlanOfferType | null
+
+    @Field(() => [PlanTranslationType], { description: 'Localized name/description per non-default locale.' })
+    translations!: PlanTranslationType[]
 
     @Field(() => String, {
         nullable: true,

@@ -7,6 +7,7 @@ import {
     type AdminPlan,
     type AdminPlanPrice,
     type EntitlementsJsonSchema,
+    type PlanTranslationInput,
     useAddPlanPrice,
     useAdminPlans,
     useCreatePlan,
@@ -32,6 +33,10 @@ import { TextsReveal } from '@/components/ui/texts-reveal'
 import { TrackedButton } from '@/components/ui/tracked'
 
 const AUDIENCES = ['athlete', 'coach'] as const
+// Non-default locales the plan can be translated into. The base name/description on
+// the Plan tab are the default (English) and the fallback.
+const TRANSLATION_LOCALES = ['es'] as const
+type TranslationDraft = Record<string, { name: string; description: string }>
 const INTERVALS = ['month', 'quarter', 'semester', 'year'] as const
 const CURRENCIES = ['EUR', 'USD'] as const
 const STATUSES = ['draft', 'active', 'archived'] as const
@@ -369,11 +374,13 @@ function PlanModal({
     // Null until the plan exists. Set on create, so a price publish (and later edits)
     // can hang on the freshly-minted plan without closing the modal.
     const [planId, setPlanId] = useState<string | null>(initial?.id ?? null)
-    const [tab, setTab] = useState<'info' | 'prices'>('info')
+    const [tab, setTab] = useState<'info' | 'prices' | 'translations'>('info')
 
     const [name, setName] = useState(initial?.name ?? '')
     const [slug, setSlug] = useState(initial?.slug ?? '')
     const [description, setDescription] = useState(initial?.description ?? '')
+    // Localized name/description per non-default locale, seeded from what's saved.
+    const [translations, setTranslations] = useState<TranslationDraft>(() => seedTranslations(initial))
     const [entitlements, setEntitlements] = useState<EntitlementsValue>(
         (initial?.entitlements as EntitlementsValue | undefined) ?? {},
     )
@@ -415,6 +422,17 @@ function PlanModal({
         )
     }
 
+    const onUpdateTranslations = (event: FormEvent) => {
+        event.preventDefault()
+        setError(null)
+        if (!planId) return
+
+        update.mutate(
+            { id: planId, translations: translationPayload(translations) },
+            { onSuccess: () => setSaved(true), onError: (err) => setError(toMessage(err)) },
+        )
+    }
+
     // Create the plan, then publish whatever the price matrix was filled with. If a
     // price fails, the plan already exists (planId is set) so the modal flips to edit
     // mode on the prices tab, where the live table lets the admin finish.
@@ -452,6 +470,7 @@ function PlanModal({
                 description: description || null,
                 entitlements,
                 isFree: free,
+                translations: translationPayload(translations),
             })
             created = true
             setPlanId(newId)
@@ -479,9 +498,10 @@ function PlanModal({
                     items={[
                         { value: 'info', label: t('planTabInfo') },
                         { value: 'prices', label: t('planPrices') },
+                        { value: 'translations', label: t('planTabTranslations') },
                     ]}
                     value={tab}
-                    onChange={(value) => setTab(value as 'info' | 'prices')}
+                    onChange={(value) => setTab(value as 'info' | 'prices' | 'translations')}
                 />
 
                 {planId ? (
@@ -533,10 +553,57 @@ function PlanModal({
                                 </div>
                             </div>
                         </form>
-                    ) : plan ? (
-                        <PricesPanel plan={plan} onClose={onClose} />
+                    ) : tab === 'prices' ? (
+                        plan ? (
+                            <PricesPanel plan={plan} onClose={onClose} />
+                        ) : (
+                            <Skeleton className="h-40 rounded-2xl" />
+                        )
                     ) : (
-                        <Skeleton className="h-40 rounded-2xl" />
+                        <form onSubmit={onUpdateTranslations} className="space-y-4">
+                            <TranslationsFields
+                                value={translations}
+                                onChange={(locale, patch) =>
+                                    setTranslations((current) => {
+                                        const prev = current[locale] ?? { name: '', description: '' }
+
+                                        return {
+                                            ...current,
+                                            [locale]: {
+                                                name: patch.name ?? prev.name,
+                                                description: patch.description ?? prev.description,
+                                            },
+                                        }
+                                    })
+                                }
+                            />
+
+                            <FormError error={error} />
+
+                            <div className="flex items-center gap-2">
+                                <TrackedButton
+                                    analyticsId="admin-plan-cancel"
+                                    type="button"
+                                    onClick={onClose}
+                                    className="w-full rounded-full px-6 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
+                                >
+                                    {t('cancel')}
+                                </TrackedButton>
+                                <div className="flex w-full items-center justify-end gap-3">
+                                    {saved ? (
+                                        <span
+                                            className="font-mono text-eyebrow uppercase text-ember"
+                                            aria-live="polite"
+                                        >
+                                            {t('planSaved')}
+                                        </span>
+                                    ) : null}
+                                    <SubmitButton analyticsId="admin-plan-translations-save" loading={update.isPending}>
+                                        {t('save')}
+                                    </SubmitButton>
+                                </div>
+                            </div>
+                        </form>
                     )
                 ) : (
                     // New plan: base info and prices are filled together, then created
@@ -558,7 +625,7 @@ function PlanModal({
                                 setEntitlements={setEntitlements}
                                 liveNote={false}
                             />
-                        ) : (
+                        ) : tab === 'prices' ? (
                             <div className="space-y-3">
                                 <FreeToggle checked={free} onChange={setFree} />
                                 {free ? (
@@ -575,6 +642,23 @@ function PlanModal({
                                     </>
                                 )}
                             </div>
+                        ) : (
+                            <TranslationsFields
+                                value={translations}
+                                onChange={(locale, patch) =>
+                                    setTranslations((current) => {
+                                        const prev = current[locale] ?? { name: '', description: '' }
+
+                                        return {
+                                            ...current,
+                                            [locale]: {
+                                                name: patch.name ?? prev.name,
+                                                description: patch.description ?? prev.description,
+                                            },
+                                        }
+                                    })
+                                }
+                            />
                         )}
 
                         <FormError error={error} />
@@ -663,6 +747,66 @@ function PlanBaseFields({
                 )}
                 {liveNote ? <p className="text-xs text-text-faint">{t('planEntitlementsLive')}</p> : null}
             </div>
+        </div>
+    )
+}
+
+/** The seeded translation drafts: what's saved for each non-default locale, else empty. */
+function seedTranslations(initial?: AdminPlan): TranslationDraft {
+    const seed: TranslationDraft = {}
+    for (const locale of TRANSLATION_LOCALES) {
+        const saved = initial?.translations.find((translation) => translation.locale === locale)
+        seed[locale] = { name: saved?.name ?? '', description: saved?.description ?? '' }
+    }
+
+    return seed
+}
+
+/** The drafts as the API's translations input — a locale with no name is dropped so it
+ *  falls back to the base. */
+function translationPayload(draft: TranslationDraft): PlanTranslationInput[] {
+    return TRANSLATION_LOCALES.flatMap((locale) => {
+        const entry = draft[locale]
+        if (!entry?.name.trim()) return []
+
+        return [{ locale, name: entry.name.trim(), description: entry.description.trim() || null }]
+    })
+}
+
+/** Name + description per non-default locale. Empty rows fall back to the base. */
+function TranslationsFields({
+    value,
+    onChange,
+}: {
+    value: TranslationDraft
+    onChange: (locale: string, patch: Partial<{ name: string; description: string }>) => void
+}) {
+    const t = useTranslations('admin')
+
+    return (
+        <div className="space-y-4">
+            <p className="text-xs text-text-faint">{t('planTranslationsHint')}</p>
+            {TRANSLATION_LOCALES.map((locale) => (
+                <div key={locale} className="space-y-3 rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
+                    <p className="font-mono text-eyebrow uppercase text-text-faint">
+                        {t(`localeName.${locale}` as 'localeName.es')}
+                    </p>
+                    <Field label={t('planName')}>
+                        <Input
+                            value={value[locale]?.name ?? ''}
+                            onChange={(event) => onChange(locale, { name: event.target.value })}
+                            maxLength={60}
+                        />
+                    </Field>
+                    <Field label={t('planDescription')}>
+                        <Textarea
+                            value={value[locale]?.description ?? ''}
+                            onChange={(event) => onChange(locale, { description: event.target.value })}
+                            maxLength={500}
+                        />
+                    </Field>
+                </div>
+            ))}
         </div>
     )
 }

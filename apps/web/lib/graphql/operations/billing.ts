@@ -33,6 +33,11 @@ export const AdminPlansDocument = graphql(`
                 stripePriceId
                 paypalPlanId
             }
+            translations {
+                locale
+                name
+                description
+            }
         }
     }
 `)

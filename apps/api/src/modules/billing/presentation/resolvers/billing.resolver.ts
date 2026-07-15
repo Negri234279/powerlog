@@ -26,6 +26,7 @@ import {
     MySubscriptionQuery,
 } from '../../application/queries/my-billing/my-billing.queries'
 import type { PaymentGateway } from '../../domain/entities/subscription.entity'
+import { toSupportedLocale } from '../../../../shared/i18n/locale'
 import { MyEntitlementsType, MyInvoicePageType, MySubscriptionType, PublicPlanType } from '../types/billing.types'
 
 const audienceArg = z.enum(['athlete', 'coach'])
@@ -65,8 +66,11 @@ export class BillingResolver {
     @Query(() => [PublicPlanType], { description: 'The plans on sale for an audience. Public — no session needed.' })
     async availablePlans(
         @Args('audience', { type: () => String }, new ZodValidationPipe(audienceArg)) audience: PlanAudience,
+        // Public page, so no session to read a locale from: the web sends the one it
+        // renders in. Any unsupported/absent tag falls back to the base (English).
+        @Args('locale', { type: () => String, nullable: true }) locale: string | null,
     ): Promise<PublicPlanView[]> {
-        const query = new AvailablePlansQuery(audience)
+        const query = new AvailablePlansQuery(audience, toSupportedLocale(locale))
 
         return this.queryBus.execute<AvailablePlansQuery, PublicPlanView[]>(query)
     }

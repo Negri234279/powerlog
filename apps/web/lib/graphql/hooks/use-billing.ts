@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocale } from 'next-intl'
 
 import type { AvailablePlansQuery, MyInvoicesQuery, MyPlanQuery } from '@/lib/graphql/__generated__/graphql'
 import { gqlRequest } from '@/lib/graphql/client'
@@ -9,6 +10,7 @@ import {
     ChangePlanDocument,
     MyInvoicesDocument,
     MyPlanDocument,
+    MyWorkoutUsageDocument,
     ResumeSubscriptionDocument,
     StartCheckoutDocument,
 } from '@/lib/graphql/operations/account-billing'
@@ -31,10 +33,22 @@ export function useMyPlan() {
     })
 }
 
-export function useAvailablePlans(audience: string) {
+/** How many templates/mesocycles/workouts the user has created, for the usage readout. */
+export function useMyWorkoutUsage() {
     return useQuery({
-        queryKey: ['availablePlans', audience],
-        queryFn: () => gqlRequest(AvailablePlansDocument, { audience }).then((r) => r.availablePlans),
+        queryKey: ['myWorkoutUsage'],
+        queryFn: () => gqlRequest(MyWorkoutUsageDocument).then((r) => r.myWorkoutUsage),
+        staleTime: 30_000,
+    })
+}
+
+export function useAvailablePlans(audience: string) {
+    // The plan names/descriptions come localized to whatever the app is showing.
+    const locale = useLocale()
+
+    return useQuery({
+        queryKey: ['availablePlans', audience, locale],
+        queryFn: () => gqlRequest(AvailablePlansDocument, { audience, locale }).then((r) => r.availablePlans),
         staleTime: 5 * 60_000,
     })
 }

@@ -765,6 +765,11 @@
         "planEntitlements": "Qué incluye",
         "planEntitlementsLive": "Los suscriptores de este plan reciben estos cambios al instante.",
         "planTabInfo": "Plan",
+        "planTabTranslations": "Traducciones",
+        "planTranslationsHint": "Nombre y descripción en otros idiomas. Déjalo vacío para usar el texto por defecto de la pestaña Plan.",
+        "localeName": {
+            "es": "Español"
+        },
         "planCreateSubmit": "Crear plan",
         "planCreatePricesNext": "Configurarás los precios justo después de crear el plan.",
         "planSaved": "Guardado",
@@ -1119,6 +1124,14 @@
             "paid": "Pagada",
             "uncollectible": "Incobrable",
             "void": "Anulada"
+        },
+        "usage": {
+            "title": "Tu uso",
+            "workouts": "Entrenos",
+            "templates": "Plantillas",
+            "mesocycles": "Bloques de entrenamiento",
+            "ofLimit": "{used} / {limit}",
+            "unlimited": "{used} · ilimitado"
         },
         "features": {
             "templates": "Plantillas de entrenamiento",

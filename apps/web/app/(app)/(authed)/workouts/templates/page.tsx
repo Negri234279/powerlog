@@ -16,6 +16,7 @@ import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { TemplateBuilder } from '@/components/workouts/template-builder'
 import { ClearableSearch } from '@/components/ui/clearable-search'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
+import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
 import { Dumbbell, Plus } from '@/components/ui/icons'
 import { Menu } from '@/components/ui/menu'
@@ -106,6 +107,7 @@ export default function TemplatesPage() {
     const [deleting, setDeleting] = useState<WorkoutTemplateSummary | null>(null)
     const [deleteError, setDeleteError] = useState<string | null>(null)
     const [startError, setStartError] = useState<string | null>(null)
+    const [startRawError, setStartRawError] = useState<unknown>(null)
 
     if (view.mode !== 'list') {
         return (
@@ -120,6 +122,7 @@ export default function TemplatesPage() {
 
     function onStart(template: WorkoutTemplateSummary) {
         setStartError(null)
+        setStartRawError(null)
         startSession.mutate(
             { templateId: template.id },
             {
@@ -127,7 +130,10 @@ export default function TemplatesPage() {
                     track('session_created_from_template', {})
                     router.push(`/workouts/${r.createSessionFromTemplate.id}`)
                 },
-                onError: (err) => setStartError(errorMessage(err)),
+                onError: (err) => {
+                    setStartRawError(err)
+                    setStartError(errorMessage(err))
+                },
             },
         )
     }
@@ -172,7 +178,13 @@ export default function TemplatesPage() {
                 </TrackedButton>
             </div>
 
-            <FormError error={startError} className="mt-4" />
+            {isPlanRefusal(startRawError) ? (
+                <div className="mt-4">
+                    <UpgradeGate error={startRawError} />
+                </div>
+            ) : (
+                <FormError error={startError} className="mt-4" />
+            )}
 
             {(items.length > 0 || hasSearch) && !isLoading ? (
                 <div className="mt-6">

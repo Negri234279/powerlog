@@ -112,6 +112,13 @@ export function useAdminSubscriptions(filters: AdminSubscriptionFilters = {}, of
     })
 }
 
+/** One localized name/description for a non-default locale (e.g. `es`). */
+export interface PlanTranslationInput {
+    locale: string
+    name: string
+    description?: string | null
+}
+
 export interface CreatePlanInput {
     audience: string
     slug: string
@@ -121,6 +128,7 @@ export interface CreatePlanInput {
     status?: string
     isFree?: boolean
     sortOrder?: number
+    translations?: PlanTranslationInput[]
 }
 
 export function useCreatePlan() {
@@ -138,6 +146,7 @@ export interface UpdatePlanInput {
     description?: string | null
     entitlements?: unknown
     sortOrder?: number
+    translations?: PlanTranslationInput[]
 }
 
 export function useUpdatePlan() {

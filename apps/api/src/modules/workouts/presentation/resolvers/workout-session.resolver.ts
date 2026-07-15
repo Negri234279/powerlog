@@ -21,10 +21,13 @@ import { UpdateSetCommand } from '../../application/commands/update-set/update-s
 import { UpdateWorkoutSessionCommand } from '../../application/commands/update-workout-session/update-workout-session.command'
 import { GetWorkoutSessionQuery } from '../../application/queries/get-workout-session/get-workout-session.query'
 import type { WorkoutSessionView } from '../../application/queries/get-workout-session/get-workout-session.handler'
+import type { WorkoutUsageView } from '../../application/queries/get-workout-usage/get-workout-usage.handler'
+import { GetWorkoutUsageQuery } from '../../application/queries/get-workout-usage/get-workout-usage.query'
 import type { WorkoutHistoryPage } from '../../application/queries/list-workout-sessions/list-workout-sessions.handler'
 import { ListWorkoutSessionsQuery } from '../../application/queries/list-workout-sessions/list-workout-sessions.query'
 import { WORKOUT_STATUSES, type WorkoutStatus } from '../../domain/workout-status'
 import { WorkoutHistoryPageType } from '../types/workout-history.type'
+import { WorkoutUsageType } from '../types/workout-usage.type'
 import {
     AddExerciseEntryInput,
     CreateWorkoutSessionInput,
@@ -58,6 +61,14 @@ export class WorkoutSessionResolver {
         private readonly commandBus: CommandBus,
         private readonly queryBus: QueryBus,
     ) {}
+
+    @Query(() => WorkoutUsageType, {
+        description: "The caller's self-created counts (templates, mesocycles, workouts), for the plan usage readout.",
+    })
+    async myWorkoutUsage(@CurrentUser() user: AuthUser): Promise<WorkoutUsageView> {
+        const query = new GetWorkoutUsageQuery(user.userId)
+        return this.queryBus.execute(query)
+    }
 
     @Query(() => WorkoutSessionType, { description: 'A workout session owned by the caller, with its full tree.' })
     async workoutSession(

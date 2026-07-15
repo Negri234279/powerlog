@@ -15,6 +15,7 @@ import { InvoiceRepository } from './domain/repositories/invoice.repository'
 import { PlanOfferRepository } from './domain/repositories/plan-offer.repository'
 import { PlanPriceRepository } from './domain/repositories/plan-price.repository'
 import { PlanRepository } from './domain/repositories/plan.repository'
+import { PlanTranslationRepository } from './domain/repositories/plan-translation.repository'
 import { SubscriptionRepository } from './domain/repositories/subscription.repository'
 import { GatewayRegistry } from './infrastructure/gateways/gateway.registry'
 import { PayPalGateway } from './infrastructure/gateways/paypal.gateway'
@@ -32,6 +33,7 @@ import { DrizzleAdminBillingStatsReadModel } from './infrastructure/persistence/
 import { DrizzleAdminSubscriptionReadModel } from './infrastructure/persistence/read-models/drizzle-admin-subscription.read-model'
 import { DrizzlePlanPriceRepository } from './infrastructure/persistence/repositories/drizzle-plan-price.repository'
 import { DrizzlePlanRepository } from './infrastructure/persistence/repositories/drizzle-plan.repository'
+import { DrizzlePlanTranslationRepository } from './infrastructure/persistence/repositories/drizzle-plan-translation.repository'
 import { DrizzleSubscriptionRepository } from './infrastructure/persistence/repositories/drizzle-subscription.repository'
 import { SystemClock } from './infrastructure/time/system-clock'
 import { BILLING_CONTROLLERS, BILLING_RESOLVERS } from './presentation/billing.presentation'
@@ -39,6 +41,7 @@ import { BILLING_CONTROLLERS, BILLING_RESOLVERS } from './presentation/billing.p
 /** Binds billing ports to their infrastructure adapters. */
 const ADAPTERS: Provider[] = [
     { provide: PlanRepository, useClass: DrizzlePlanRepository },
+    { provide: PlanTranslationRepository, useClass: DrizzlePlanTranslationRepository },
     { provide: PlanPriceRepository, useClass: DrizzlePlanPriceRepository },
     { provide: PlanOfferRepository, useClass: DrizzlePlanOfferRepository },
     { provide: InvoiceRepository, useClass: DrizzleInvoiceRepository },

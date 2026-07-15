@@ -43,6 +43,7 @@ import {
     AddPlanPriceInput,
     AssignSubscriptionInput,
     CreatePlanInput,
+    type PlanTranslationInput,
     UpdatePlanInput,
     UpsertPlanOfferInput,
     addPlanPriceSchema,
@@ -62,6 +63,8 @@ import {
     upsertPlanOfferSchema,
     uuidArg,
 } from '../inputs/admin-billing.inputs'
+import type { PlanTranslation } from '../../domain/repositories/plan-translation.repository'
+import type { SupportedLocale } from '../../../../shared/i18n/locale'
 import { AdminBillingStatsType } from '../types/admin-billing-stats.type'
 import { BillingDriftType, BillingWebhookEventPageType, GatewayStatusType } from '../types/admin-gateway.type'
 import { AdminPlanType } from '../types/admin-plan.type'
@@ -189,6 +192,7 @@ export class AdminBillingResolver {
             (input.status as PlanStatus | null) ?? 'draft',
             input.isFree ?? false,
             input.sortOrder ?? 0,
+            planTranslationsOf(input.translations),
         )
 
         return this.commandBus.execute<CreatePlanCommand, string>(command)
@@ -200,11 +204,18 @@ export class AdminBillingResolver {
     async updatePlan(@Args('input', new ZodValidationPipe(updatePlanSchema)) input: UpdatePlanInput): Promise<boolean> {
         // A patch: an absent field is left alone. `description` is the one where an
         // explicit null is meaningful — it clears it.
-        const patch: { name?: string; description?: string | null; entitlements?: unknown; sortOrder?: number } = {}
+        const patch: {
+            name?: string
+            description?: string | null
+            entitlements?: unknown
+            sortOrder?: number
+            translations?: PlanTranslation[]
+        } = {}
         if (input.name != null) patch.name = input.name
         if (input.description !== undefined) patch.description = input.description
         if (input.entitlements !== undefined) patch.entitlements = input.entitlements
         if (input.sortOrder != null) patch.sortOrder = input.sortOrder
+        if (input.translations != null) patch.translations = planTranslationsOf(input.translations)
 
         const command = new UpdatePlanCommand(input.id, patch)
         await this.commandBus.execute<UpdatePlanCommand, void>(command)
@@ -305,4 +316,14 @@ export class AdminBillingResolver {
 
         return true
     }
+}
+
+/** The validated translations input as the domain rows the command carries. Zod has
+ *  already checked the locale is a supported non-default one, so the cast is safe. */
+function planTranslationsOf(input: PlanTranslationInput[] | null | undefined): PlanTranslation[] {
+    return (input ?? []).map((translation) => ({
+        locale: translation.locale as SupportedLocale,
+        name: translation.name,
+        description: translation.description ?? null,
+    }))
 }

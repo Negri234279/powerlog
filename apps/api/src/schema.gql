@@ -107,6 +107,9 @@ type AdminPlan {
   The Stripe Product this plan was published as. Null → never synced there.
   """
   stripeProductId: String
+
+  """Localized name/description per non-default locale."""
+  translations: [PlanTranslation!]!
   updatedAt: DateTime!
 }
 
@@ -494,6 +497,9 @@ input CreatePlanInput {
 
   """draft (default) | active | archived"""
   status: String
+
+  """Name/description in non-default locales."""
+  translations: [PlanTranslationInput!]
 }
 
 input CreateSessionFromTemplateInput {
@@ -1321,6 +1327,22 @@ input PlanSessionFromTemplateInput {
   templateId: ID!
 }
 
+type PlanTranslation {
+  description: String
+
+  """BCP-47 base locale, e.g. "es"."""
+  locale: String!
+  name: String!
+}
+
+input PlanTranslationInput {
+  description: String
+
+  """A non-default supported locale, e.g. "es"."""
+  locale: String!
+  name: String!
+}
+
 input PlanWorkoutSessionInput {
   """The athlete this session is planned for."""
   athleteId: ID!
@@ -1508,7 +1530,7 @@ type Query {
   athleteWorkoutSession(athleteId: ID!, id: ID!): WorkoutSession!
 
   """The plans on sale for an audience. Public — no session needed."""
-  availablePlans(audience: String!): [PublicPlan!]!
+  availablePlans(audience: String!, locale: String): [PublicPlan!]!
 
   """
   The gateway’s billing portal (card, invoices). Null when there is none — the button hides.
@@ -1582,6 +1604,11 @@ type Query {
 
   """Your subscription, or null when you are on the free plan."""
   mySubscription: MySubscription
+
+  """
+  The caller's self-created counts (templates, mesocycles, workouts), for the plan usage readout.
+  """
+  myWorkoutUsage: WorkoutUsage!
 
   """Pending invitations received by the caller."""
   pendingInvitations: [PendingInvitation!]!
@@ -1834,6 +1861,9 @@ input UpdatePlanInput {
   id: ID!
   name: String
   sortOrder: Int
+
+  """Absent leaves translations alone; present replaces the whole set."""
+  translations: [PlanTranslationInput!]
 }
 
 input UpdateProfileInput {
@@ -2021,4 +2051,10 @@ type WorkoutTemplateSummary {
   notes: String
   setCount: Int!
   updatedAt: DateTime!
+}
+
+type WorkoutUsage {
+  mesocycles: Int!
+  templates: Int!
+  workouts: Int!
 }

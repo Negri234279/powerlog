@@ -2,6 +2,35 @@ import { Field, ID, InputType, Int } from '@nestjs/graphql'
 import { z } from 'zod'
 
 import { JsonValue } from '../../../../graphql/json.scalar'
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type SupportedLocale } from '../../../../shared/i18n/locale'
+
+// Base name/description (default locale) live on the plan row; translations cover
+// only the other supported locales.
+const NON_DEFAULT_LOCALES = SUPPORTED_LOCALES.filter((locale) => locale !== DEFAULT_LOCALE)
+
+const planTranslation = z.object({
+    locale: z.enum(NON_DEFAULT_LOCALES as [SupportedLocale, ...SupportedLocale[]]),
+    name: z.string().trim().min(1).max(60),
+    description: z
+        .string()
+        .trim()
+        .max(500)
+        .nullish()
+        .transform((value) => value ?? null),
+})
+
+/** GraphQL shape for a single localized name/description the admin form submits. */
+@InputType()
+export class PlanTranslationInput {
+    @Field(() => String, { description: 'A non-default supported locale, e.g. "es".' })
+    locale!: string
+
+    @Field()
+    name!: string
+
+    @Field(() => String, { nullable: true })
+    description?: string | null
+}
 
 const audience = z.enum(['athlete', 'coach'])
 const status = z.enum(['draft', 'active', 'archived'])
@@ -55,6 +84,9 @@ export class CreatePlanInput {
 
     @Field(() => Int, { nullable: true })
     sortOrder?: number | null
+
+    @Field(() => [PlanTranslationInput], { nullable: true, description: 'Name/description in non-default locales.' })
+    translations?: PlanTranslationInput[] | null
 }
 
 export const createPlanSchema = z.object({
@@ -79,6 +111,11 @@ export const createPlanSchema = z.object({
         .max(999)
         .nullish()
         .transform((value) => value ?? 0),
+    translations: z
+        .array(planTranslation)
+        .max(NON_DEFAULT_LOCALES.length)
+        .nullish()
+        .transform((value) => value ?? []),
 })
 
 // ── update plan ─────────────────────────────────────────────────────────
@@ -98,11 +135,18 @@ export class UpdatePlanInput {
 
     @Field(() => Int, { nullable: true })
     sortOrder?: number | null
+
+    @Field(() => [PlanTranslationInput], {
+        nullable: true,
+        description: 'Absent leaves translations alone; present replaces the whole set.',
+    })
+    translations?: PlanTranslationInput[] | null
 }
 
 /**
  * A patch: an absent key is left alone. `description` is the one field where an
  * explicit null means "clear it", so it is kept (nullable, not nullish-stripped).
+ * `translations`, when present, replaces the whole set.
  */
 export const updatePlanSchema = z.object({
     id: uuid,
@@ -110,6 +154,7 @@ export const updatePlanSchema = z.object({
     description: z.string().trim().max(500).nullable().optional(),
     entitlements: entitlements.optional(),
     sortOrder: z.int().min(0).max(999).optional(),
+    translations: z.array(planTranslation).max(NON_DEFAULT_LOCALES.length).optional(),
 })
 
 // ── plan status ─────────────────────────────────────────────────────────

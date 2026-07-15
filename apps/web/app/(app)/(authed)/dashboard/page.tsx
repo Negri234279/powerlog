@@ -14,6 +14,7 @@ import {
     useWorkoutTemplates,
 } from '@/lib/graphql/hooks/use-workout-templates'
 import { formatWeight, type Units, unitsOf } from '@/lib/units'
+import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
 import { Calendar, ChartLine, Check, Dumbbell, Plus, Target } from '@/components/ui/icons'
 import { PlusMenuMorph } from '@/components/ui/plus-menu-morph'
@@ -304,10 +305,12 @@ function TemplatesCard() {
     const { data: templates, isLoading } = useWorkoutTemplates()
     const start = useCreateSessionFromTemplate()
     const [error, setError] = useState<string | null>(null)
+    const [rawError, setRawError] = useState<unknown>(null)
     const top = (templates ?? []).slice(0, 4)
 
     function onStart(template: WorkoutTemplateSummary) {
         setError(null)
+        setRawError(null)
         start.mutate(
             { templateId: template.id },
             {
@@ -315,7 +318,10 @@ function TemplatesCard() {
                     track('session_created_from_template', {})
                     router.push(`/workouts/${r.createSessionFromTemplate.id}`)
                 },
-                onError: (err) => setError(errorMessage(err)),
+                onError: (err) => {
+                    setRawError(err)
+                    setError(errorMessage(err))
+                },
             },
         )
     }
@@ -383,7 +389,13 @@ function TemplatesCard() {
                 </ul>
             )}
 
-            <FormError error={error} className="mt-3" />
+            {isPlanRefusal(rawError) ? (
+                <div className="mt-3">
+                    <UpgradeGate error={rawError} />
+                </div>
+            ) : (
+                <FormError error={error} className="mt-3" />
+            )}
         </Panel>
     )
 }

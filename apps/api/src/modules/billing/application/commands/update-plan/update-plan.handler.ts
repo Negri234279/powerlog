@@ -4,6 +4,7 @@ import { PinoLogger } from 'nestjs-pino'
 import { PlanCatalogChangedIntegrationEvent } from '../../../../../shared/integration-events/plan-catalog-changed.integration-event'
 import { PlanNotFoundError } from '../../../domain/errors/billing.errors'
 import { PlanRepository } from '../../../domain/repositories/plan.repository'
+import { PlanTranslationRepository } from '../../../domain/repositories/plan-translation.repository'
 import { Clock } from '../../ports/clock.port'
 import { UpdatePlanCommand } from './update-plan.command'
 
@@ -17,6 +18,7 @@ import { UpdatePlanCommand } from './update-plan.command'
 export class UpdatePlanHandler implements ICommandHandler<UpdatePlanCommand, void> {
     constructor(
         private readonly plans: PlanRepository,
+        private readonly translations: PlanTranslationRepository,
         private readonly clock: Clock,
         private readonly eventBus: EventBus,
         private readonly logger: PinoLogger,
@@ -30,6 +32,10 @@ export class UpdatePlanHandler implements ICommandHandler<UpdatePlanCommand, voi
 
         plan.update(command.patch, this.clock.now())
         await this.plans.save(plan)
+
+        if (command.patch.translations !== undefined) {
+            await this.translations.replace(plan.id, command.patch.translations)
+        }
 
         // Whoever is on this plan is now entitled to something different — anything
         // caching that answer has to forget it. This is what makes the change

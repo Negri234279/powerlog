@@ -8,6 +8,7 @@ import { InvoiceRepository } from '../../../domain/repositories/invoice.reposito
 import { PlanOfferRepository } from '../../../domain/repositories/plan-offer.repository'
 import { PlanPriceRepository } from '../../../domain/repositories/plan-price.repository'
 import { PlanRepository } from '../../../domain/repositories/plan.repository'
+import { PlanTranslationRepository } from '../../../domain/repositories/plan-translation.repository'
 import { SubscriptionRepository } from '../../../domain/repositories/subscription.repository'
 import type { SubscriptionStatus } from '../../../domain/subscription-status'
 import { BillingConfig } from '../../ports/billing-config.port'
@@ -94,6 +95,7 @@ export class AvailablePlansHandler implements IQueryHandler<AvailablePlansQuery,
         private readonly plans: PlanRepository,
         private readonly prices: PlanPriceRepository,
         private readonly offers: PlanOfferRepository,
+        private readonly translations: PlanTranslationRepository,
         private readonly gateways: GatewayProvider,
         private readonly clock: Clock,
     ) {}
@@ -103,6 +105,7 @@ export class AvailablePlansHandler implements IQueryHandler<AvailablePlansQuery,
         const planIds = plans.map((plan) => plan.id)
         const prices = (await this.prices.findByPlans(planIds)).filter((price) => price.active)
         const offers = await this.offers.findActiveByPlans(planIds)
+        const translations = await this.translations.findByPlans(planIds)
         const now = this.clock.now()
 
         // Which providers this deployment can charge with at all.
@@ -111,12 +114,14 @@ export class AvailablePlansHandler implements IQueryHandler<AvailablePlansQuery,
         return plans.map((plan) => {
             const snapshot = plan.entitlements.toSnapshot(plan.slug)
             const offer = offers.find((candidate) => candidate.planId === plan.id && candidate.isRedeemableAt(now))
+            // The name/description in the request locale, falling back to the base.
+            const translation = translations.find((t) => t.planId === plan.id && t.locale === query.locale)
 
             return {
                 id: plan.id,
                 slug: plan.slug,
-                name: plan.name,
-                description: plan.description,
+                name: translation?.name ?? plan.name,
+                description: translation?.description ?? plan.description,
                 isFree: plan.isFree,
                 sortOrder: plan.sortOrder,
                 maxTemplates: snapshot.maxTemplates,

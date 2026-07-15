@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
 import {
+    type MyEntitlements,
     type MySubscription,
     type PublicPlan,
     type PublicPrice,
@@ -12,6 +13,7 @@ import {
     useCancelSubscription,
     useChangePlan,
     useMyPlan,
+    useMyWorkoutUsage,
     useResumeSubscription,
     useStartCheckout,
 } from '@/lib/graphql/hooks/use-billing'
@@ -60,6 +62,8 @@ export default function PlanPage() {
             ) : (
                 <CurrentPlan subscription={subscription} planSlug={mine?.myEntitlements.plan ?? 'free'} />
             )}
+
+            {mine ? <UsageSummary entitlements={mine.myEntitlements} /> : null}
 
             <section>
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -115,6 +119,68 @@ function Banner({ tone, children }: { tone: 'ok' | 'muted'; children: React.Reac
         >
             {children}
         </p>
+    )
+}
+
+/** How much of each capped resource the user has spent, against their plan's caps.
+ *  Unlimited caps show the count with no bar; a cap of 0 (the plan doesn't offer it)
+ *  is dropped. Read-only — the server is what actually enforces the caps. */
+function UsageSummary({ entitlements }: { entitlements: MyEntitlements }) {
+    const t = useTranslations('billing.usage')
+    const { data: usage } = useMyWorkoutUsage()
+
+    const rows = [
+        { key: 'workouts' as const, label: t('workouts'), cap: entitlements.maxWorkouts, used: usage?.workouts ?? 0 },
+        {
+            key: 'templates' as const,
+            label: t('templates'),
+            cap: entitlements.maxTemplates,
+            used: usage?.templates ?? 0,
+        },
+        {
+            key: 'mesocycles' as const,
+            label: t('mesocycles'),
+            cap: entitlements.maxMesocycles,
+            used: usage?.mesocycles ?? 0,
+        },
+    ].filter((row) => row.cap !== 0)
+
+    if (rows.length === 0) return null
+
+    return (
+        <section className="rounded-2xl bg-surface p-6 ring-1 ring-hairline">
+            <p className="font-mono text-eyebrow uppercase text-text-faint">{t('title')}</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                {rows.map((row) => {
+                    const cap = row.cap
+                    const pct = cap === null ? 100 : Math.min(100, Math.round((row.used / Math.max(1, cap)) * 100))
+                    const atLimit = cap !== null && row.used >= cap
+                    const valueText =
+                        cap === null ? t('unlimited', { used: row.used }) : t('ofLimit', { used: row.used, limit: cap })
+
+                    return (
+                        <div key={row.key}>
+                            <div className="flex items-baseline justify-between gap-2">
+                                <span className="text-sm text-text-dim">{row.label}</span>
+                                <span
+                                    className={`font-mono text-sm tabular-nums ${atLimit ? 'text-ember' : 'text-text'}`}
+                                >
+                                    {valueText}
+                                </span>
+                            </div>
+                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                                <div
+                                    className={`h-full rounded-full transition-[width] duration-500 ease-spring ${
+                                        cap === null ? 'bg-white/15' : atLimit ? 'bg-ember' : 'bg-ember/60'
+                                    }`}
+                                    style={{ width: `${pct}%` }}
+                                />
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+        </section>
     )
 }
 

@@ -4,6 +4,7 @@ import { PinoLogger } from 'nestjs-pino'
 import { PlanAggregate } from '../../../domain/entities/plan.entity'
 import { FreePlanExistsError, PlanSlugTakenError } from '../../../domain/errors/billing.errors'
 import { PlanRepository } from '../../../domain/repositories/plan.repository'
+import { PlanTranslationRepository } from '../../../domain/repositories/plan-translation.repository'
 import { Clock } from '../../ports/clock.port'
 import { IdGenerator } from '../../ports/id-generator.port'
 import { CreatePlanCommand } from './create-plan.command'
@@ -12,6 +13,7 @@ import { CreatePlanCommand } from './create-plan.command'
 export class CreatePlanHandler implements ICommandHandler<CreatePlanCommand, string> {
     constructor(
         private readonly plans: PlanRepository,
+        private readonly translations: PlanTranslationRepository,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly logger: PinoLogger,
@@ -44,6 +46,7 @@ export class CreatePlanHandler implements ICommandHandler<CreatePlanCommand, str
         })
 
         await this.plans.save(plan)
+        await this.translations.replace(plan.id, command.translations)
         this.logger.info({ plan: plan.slug, audience: plan.audience, status: plan.status }, 'plan created')
 
         return plan.id

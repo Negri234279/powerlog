@@ -765,6 +765,11 @@
         "planEntitlements": "What it includes",
         "planEntitlementsLive": "Subscribers of this plan get these changes immediately.",
         "planTabInfo": "Plan",
+        "planTabTranslations": "Translations",
+        "planTranslationsHint": "Name & description in other languages. Leave blank to use the Plan-tab (default) text.",
+        "localeName": {
+            "es": "Spanish"
+        },
         "planCreateSubmit": "Create plan",
         "planCreatePricesNext": "You'll set prices right after creating the plan.",
         "planSaved": "Saved",
@@ -1119,6 +1124,14 @@
             "paid": "Paid",
             "uncollectible": "Uncollectible",
             "void": "Void"
+        },
+        "usage": {
+            "title": "Your usage",
+            "workouts": "Workouts",
+            "templates": "Templates",
+            "mesocycles": "Training blocks",
+            "ofLimit": "{used} / {limit}",
+            "unlimited": "{used} · unlimited"
         },
         "features": {
             "templates": "Workout templates",

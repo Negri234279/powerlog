@@ -83,11 +83,15 @@ function PropertyField({
         const nested = (value ?? {}) as EntitlementsValue
 
         return (
-            <fieldset className="rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
-                <legend className="px-1 font-mono text-eyebrow uppercase text-text-faint">
+            // A div + heading, not fieldset/legend: the box is drawn with a `ring`
+            // (box-shadow), which — unlike a real border — leaves no gap for a
+            // `<legend>`, so the legend text would sit across the line. This keeps
+            // the label cleanly inside, like the rest of the form.
+            <div className="rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
+                <p className="font-mono text-eyebrow uppercase text-text-faint">
                     <Label name={name} />
-                </legend>
-                <div className="mt-2 space-y-3">
+                </p>
+                <div className="mt-3 space-y-3">
                     {Object.entries(property.properties).map(([key, child]) => (
                         <PropertyField
                             key={key}
@@ -98,7 +102,7 @@ function PropertyField({
                         />
                     ))}
                 </div>
-            </fieldset>
+            </div>
         )
     }
 

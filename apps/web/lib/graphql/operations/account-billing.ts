@@ -2,8 +2,8 @@ import { graphql } from '@/lib/graphql/__generated__'
 
 /** The pricing page: what is on sale for my audience, and what each plan gives. */
 export const AvailablePlansDocument = graphql(`
-    query AvailablePlans($audience: String!) {
-        availablePlans(audience: $audience) {
+    query AvailablePlans($audience: String!, $locale: String) {
+        availablePlans(audience: $audience, locale: $locale) {
             id
             slug
             name
@@ -62,6 +62,17 @@ export const MyPlanDocument = graphql(`
             cancelAtPeriodEnd
             pendingPlanSlug
             canResume
+        }
+    }
+`)
+
+/** The caller's self-created counts, shown as "used / limit" against their plan caps. */
+export const MyWorkoutUsageDocument = graphql(`
+    query MyWorkoutUsage {
+        myWorkoutUsage {
+            templates
+            mesocycles
+            workouts
         }
     }
 `)
