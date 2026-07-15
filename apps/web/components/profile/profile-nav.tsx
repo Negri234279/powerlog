@@ -28,7 +28,7 @@ export function ProfileNav() {
     }
 
     return (
-        <nav className="flex items-center gap-1 overflow-x-auto">
+        <nav className="flex flex-wrap items-center gap-1.5">
             {TABS.map((tab) => (
                 <TrackedLink
                     analyticsId={`profile-nav-${tab.id}`}
