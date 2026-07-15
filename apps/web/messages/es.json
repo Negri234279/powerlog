@@ -856,7 +856,9 @@
         "webhooksNoneFailed": "Nada ha fallado. ",
         "webhookRetry": "Reprocesar",
         "planSync": "Publicar en {gateway}",
-        "planSynced": "{gateway} ✓ — republicar"
+        "planSynced": "{gateway} ✓ — republicar",
+        "cancel": "Cancelar",
+        "save": "Guardar"
     },
     "serverErrors": {
         "generic": "Algo salió mal. Inténtalo de nuevo.",

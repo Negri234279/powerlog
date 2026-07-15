@@ -856,7 +856,9 @@
         "webhooksNoneFailed": "Nothing failed. ",
         "webhookRetry": "Replay",
         "planSync": "Publish to {gateway}",
-        "planSynced": "{gateway} ✓ — re-publish"
+        "planSynced": "{gateway} ✓ — re-publish",
+        "cancel": "Cancel",
+        "save": "Save"
     },
     "serverErrors": {
         "generic": "Something went wrong. Please try again.",
