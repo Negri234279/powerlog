@@ -754,6 +754,8 @@
         "planCreateTitle": "Nuevo plan",
         "planEditTitle": "Editar plan",
         "planEdit": "Editar",
+        "planMoveUp": "Subir",
+        "planMoveDown": "Bajar",
         "planFree": "Gratis",
         "planStatus": "Estado",
         "planName": "Nombre",

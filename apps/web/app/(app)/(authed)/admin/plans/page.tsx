@@ -12,6 +12,7 @@ import {
     useCreatePlan,
     useDeactivatePlanPrice,
     useEntitlementsSchema,
+    useReorderPlans,
     useSetPlanStatus,
     useUpdatePlan,
 } from '@/lib/graphql/hooks/use-admin-billing'
@@ -22,7 +23,7 @@ import { type EntitlementsValue, EntitlementsForm, emptyEntitlements } from '@/c
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Field, Input, Select, Textarea } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
-import { Plus } from '@/components/ui/icons'
+import { ChevronDown, Plus } from '@/components/ui/icons'
 import { Modal } from '@/components/ui/modal'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
@@ -44,8 +45,26 @@ export default function AdminPlansPage() {
     const t = useTranslations('admin')
     const [audience, setAudience] = useState<(typeof AUDIENCES)[number]>('athlete')
     const { data: plans, isLoading } = useAdminPlans(audience)
+    const reorder = useReorderPlans(audience)
     const [editing, setEditing] = useState<AdminPlan | null>(null)
     const [creating, setCreating] = useState(false)
+
+    // Swap a card with its neighbour and persist the whole audience's order — this is
+    // the order the landing lays the plans out in.
+    const movePlan = (index: number, direction: -1 | 1) => {
+        if (!plans) return
+        const target = index + direction
+        if (target < 0 || target >= plans.length) return
+
+        const ids = plans.map((plan) => plan.id)
+        const from = ids[index]
+        const to = ids[target]
+        if (from === undefined || to === undefined) return
+
+        ids[index] = to
+        ids[target] = from
+        reorder.mutate(ids)
+    }
 
     return (
         <div>
@@ -80,7 +99,18 @@ export default function AdminPlansPage() {
                 {isLoading ? (
                     Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-32 rounded-2xl" />)
                 ) : plans?.length ? (
-                    plans.map((plan) => <PlanCard key={plan.id} plan={plan} onEdit={() => setEditing(plan)} />)
+                    plans.map((plan, index) => (
+                        <PlanCard
+                            key={plan.id}
+                            plan={plan}
+                            onEdit={() => setEditing(plan)}
+                            onMoveUp={() => movePlan(index, -1)}
+                            onMoveDown={() => movePlan(index, 1)}
+                            canMoveUp={index > 0}
+                            canMoveDown={index < plans.length - 1}
+                            reordering={reorder.isPending}
+                        />
+                    ))
                 ) : (
                     <p className="text-sm text-text-faint">{t('plansEmpty')}</p>
                 )}
@@ -94,7 +124,23 @@ export default function AdminPlansPage() {
     )
 }
 
-function PlanCard({ plan, onEdit }: { plan: AdminPlan; onEdit: () => void }) {
+function PlanCard({
+    plan,
+    onEdit,
+    onMoveUp,
+    onMoveDown,
+    canMoveUp,
+    canMoveDown,
+    reordering,
+}: {
+    plan: AdminPlan
+    onEdit: () => void
+    onMoveUp: () => void
+    onMoveDown: () => void
+    canMoveUp: boolean
+    canMoveDown: boolean
+    reordering: boolean
+}) {
     const t = useTranslations('admin')
     const setStatus = useSetPlanStatus()
     const toMessage = useErrorMessage()
@@ -125,6 +171,28 @@ function PlanCard({ plan, onEdit }: { plan: AdminPlan; onEdit: () => void }) {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                        <TrackedButton
+                            analyticsId="admin-plan-move-up"
+                            type="button"
+                            onClick={onMoveUp}
+                            disabled={!canMoveUp || reordering}
+                            aria-label={t('planMoveUp')}
+                            className="grid size-9 place-items-center rounded-full text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text disabled:opacity-30"
+                        >
+                            <ChevronDown className="size-4 rotate-180" />
+                        </TrackedButton>
+                        <TrackedButton
+                            analyticsId="admin-plan-move-down"
+                            type="button"
+                            onClick={onMoveDown}
+                            disabled={!canMoveDown || reordering}
+                            aria-label={t('planMoveDown')}
+                            className="grid size-9 place-items-center rounded-full text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text disabled:opacity-30"
+                        >
+                            <ChevronDown className="size-4" />
+                        </TrackedButton>
+                    </div>
                     <Select
                         aria-label={t('planStatus')}
                         value={plan.status}

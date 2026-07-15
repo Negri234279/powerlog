@@ -149,6 +149,46 @@ export function useUpdatePlan() {
     })
 }
 
+/**
+ * Reorder an audience's plans — the order the landing shows them in. Takes the full
+ * list of plan ids in the wanted order and persists it as contiguous `sortOrder`s.
+ * Optimistic: the cards jump at once, and the success invalidation reconciles with
+ * the server (and revalidates the landing's cached catalog).
+ */
+export function useReorderPlans(audience: string) {
+    const queryClient = useQueryClient()
+    const onSuccess = useCatalogChange()
+    const key = [...PLANS_KEY, audience]
+
+    return useMutation({
+        mutationFn: (orderedIds: string[]) =>
+            Promise.all(
+                orderedIds.map((id, index) => gqlRequest(UpdatePlanDocument, { input: { id, sortOrder: index } })),
+            ),
+        onMutate: async (orderedIds: string[]) => {
+            await queryClient.cancelQueries({ queryKey: key })
+            const previous = queryClient.getQueryData<AdminPlan[]>(key)
+
+            if (previous) {
+                const byId = new Map(previous.map((plan) => [plan.id, plan]))
+                const next = orderedIds
+                    .map((id, index) => {
+                        const plan = byId.get(id)
+                        return plan ? { ...plan, sortOrder: index } : null
+                    })
+                    .filter((plan): plan is AdminPlan => plan !== null)
+                queryClient.setQueryData(key, next)
+            }
+
+            return { previous }
+        },
+        onError: (_error, _orderedIds, context) => {
+            if (context?.previous) queryClient.setQueryData(key, context.previous)
+        },
+        onSuccess,
+    })
+}
+
 export function useSetPlanStatus() {
     const onSuccess = useCatalogChange()
 
