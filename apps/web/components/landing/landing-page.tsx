@@ -8,7 +8,13 @@ import { Proof } from '@/components/landing/proof'
 import { SiteFooter } from '@/components/landing/site-footer'
 import { SiteNav } from '@/components/landing/site-nav'
 
-export default function LandingPage() {
+/**
+ * The marketing landing, shared by both locale routes (`/` → en, `/es` → es). The
+ * active locale comes from the surrounding root layout, so this tree is
+ * locale-agnostic: translations resolve through next-intl and the pricing currency
+ * follows the locale.
+ */
+export function LandingPage() {
     return (
         <>
             <SiteNav />

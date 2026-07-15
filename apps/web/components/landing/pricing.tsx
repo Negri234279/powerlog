@@ -1,4 +1,4 @@
-import { getLocale } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 
 import type { PublicPlan } from '@/lib/graphql/hooks/use-billing'
 import { AvailablePlansDocument } from '@/lib/graphql/operations/account-billing'
@@ -9,11 +9,11 @@ import { Reveal } from '@/components/ui/reveal'
 import { PricingPlans } from './pricing-plans'
 
 /**
- * The page itself can't be prerendered — the root layout reads the locale from the
- * cookie, so every route renders per request. What keeps this section cheap is the
- * fetch cache: the catalog is fetched once per window and reused across visitors, so
- * a crawl or a traffic spike doesn't hammer the API. The cost is that a price edited
- * in /admin/plans takes up to this long to appear.
+ * The catalog fetch is cached for this window, so the price is baked into the
+ * prerendered HTML (crawler-visible, no skeleton) and the API is hit once per window
+ * rather than once per visitor. The cost is that a price edited in /admin/plans takes
+ * up to this long to appear, and a build run while the API is unreachable ships the
+ * fallback CTA until the first revalidation.
  */
 const REVALIDATE_SECONDS = 300
 
@@ -35,6 +35,7 @@ async function loadPlans(audience: string): Promise<PublicPlan[]> {
  */
 export async function Pricing() {
     const locale = await getLocale()
+    const t = await getTranslations('landing.pricing')
     const currency = currencyFor(locale)
 
     // The API being down must cost us the price cards, not the whole landing page.
@@ -51,18 +52,15 @@ export async function Pricing() {
                     narrow, centred grid, so a left-aligned heading leaves a hole beside
                     it. Same reasoning as the CTA section. */}
                 <Reveal className="mx-auto max-w-2xl text-center">
-                    <Eyebrow>Pricing</Eyebrow>
-                    <h2 className="mt-6 font-display text-display">Free to lift. Pay to go further.</h2>
-                    <p className="mt-5 text-body-lg text-text-dim">
-                        Logging, PRs and progress are free, forever. The paid plans add the work that saves you time —
-                        mesocycle planning, the AI assistant, and coaching a roster.
-                    </p>
+                    <Eyebrow>{t('eyebrow')}</Eyebrow>
+                    <h2 className="mt-6 font-display text-display">{t('title')}</h2>
+                    <p className="mt-5 text-body-lg text-text-dim">{t('body')}</p>
                 </Reveal>
 
                 {unavailable ? (
                     <Reveal className="mt-12 flex justify-center">
                         <PrimaryCta href="/register" analyticsId="pricing-register-fallback">
-                            Create your free account
+                            {t('fallbackCta')}
                         </PrimaryCta>
                     </Reveal>
                 ) : (

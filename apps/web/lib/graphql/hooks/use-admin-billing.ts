@@ -36,6 +36,28 @@ function useBillingInvalidator() {
     }
 }
 
+/**
+ * On-demand ISR trigger for the public landing. A catalog edit only reaches the
+ * marketing pages' cached plan snapshot once we tell the server to drop it; this
+ * fire-and-forget POST to the admin-gated revalidate route does that, so the change
+ * shows publicly in ~ms instead of waiting out the time-based window. Best-effort:
+ * if it fails, the time-based revalidate is the backstop.
+ */
+function revalidateLandingCatalog() {
+    void fetch('/api/revalidate/plans', { method: 'POST' }).catch(() => undefined)
+}
+
+/** onSuccess for mutations that change what the public landing shows: invalidate the
+ *  admin's own queries and revalidate the landing's cached catalog. */
+function useCatalogChange() {
+    const invalidate = useBillingInvalidator()
+
+    return () => {
+        invalidate()
+        revalidateLandingCatalog()
+    }
+}
+
 export function useAdminPlans(audience?: string) {
     return useQuery({
         queryKey: [...PLANS_KEY, audience ?? 'all'],
@@ -102,11 +124,11 @@ export interface CreatePlanInput {
 }
 
 export function useCreatePlan() {
-    const invalidate = useBillingInvalidator()
+    const onSuccess = useCatalogChange()
 
     return useMutation({
         mutationFn: (input: CreatePlanInput) => gqlRequest(CreatePlanDocument, { input }).then((r) => r.createPlan),
-        onSuccess: invalidate,
+        onSuccess,
     })
 }
 
@@ -119,40 +141,40 @@ export interface UpdatePlanInput {
 }
 
 export function useUpdatePlan() {
-    const invalidate = useBillingInvalidator()
+    const onSuccess = useCatalogChange()
 
     return useMutation({
         mutationFn: (input: UpdatePlanInput) => gqlRequest(UpdatePlanDocument, { input }).then((r) => r.updatePlan),
-        onSuccess: invalidate,
+        onSuccess,
     })
 }
 
 export function useSetPlanStatus() {
-    const invalidate = useBillingInvalidator()
+    const onSuccess = useCatalogChange()
 
     return useMutation({
         mutationFn: (vars: { id: string; status: string }) =>
             gqlRequest(SetPlanStatusDocument, vars).then((r) => r.setPlanStatus),
-        onSuccess: invalidate,
+        onSuccess,
     })
 }
 
 export function useAddPlanPrice() {
-    const invalidate = useBillingInvalidator()
+    const onSuccess = useCatalogChange()
 
     return useMutation({
         mutationFn: (input: { planId: string; interval: string; currency: string; amountCents: number }) =>
             gqlRequest(AddPlanPriceDocument, { input }).then((r) => r.addPlanPrice),
-        onSuccess: invalidate,
+        onSuccess,
     })
 }
 
 export function useDeactivatePlanPrice() {
-    const invalidate = useBillingInvalidator()
+    const onSuccess = useCatalogChange()
 
     return useMutation({
         mutationFn: (id: string) => gqlRequest(DeactivatePlanPriceDocument, { id }).then((r) => r.deactivatePlanPrice),
-        onSuccess: invalidate,
+        onSuccess,
     })
 }
 

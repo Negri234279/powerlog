@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { getTranslations } from 'next-intl/server'
 
 import { Eyebrow } from '@/components/ui/eyebrow'
 import { Reveal } from '@/components/ui/reveal'
@@ -36,28 +37,26 @@ function RoleCard({
     )
 }
 
-export function Coaching() {
+export async function Coaching() {
+    const t = await getTranslations('landing.coaching')
+
     return (
         <section id="coaching" className="relative px-6 py-28 md:px-8 md:py-40">
             <div className="mx-auto max-w-[80rem]">
                 <Reveal className="max-w-2xl">
-                    <Eyebrow>Coach &amp; athlete</Eyebrow>
-                    <h2 className="mt-6 font-display text-display">Two roles. One source of truth.</h2>
-                    <p className="mt-5 text-body-lg text-text-dim">
-                        Invite by username, accept in a tap, and you&rsquo;re linked. Coaches program; athletes execute.
-                        Everyone sees the same numbers — no exported sheets, no version drift.
-                    </p>
+                    <Eyebrow>{t('eyebrow')}</Eyebrow>
+                    <h2 className="mt-6 font-display text-display">{t('title')}</h2>
+                    <p className="mt-5 text-body-lg text-text-dim">{t('body')}</p>
                 </Reveal>
 
                 <div className="relative mt-14 grid gap-4 md:grid-cols-2 md:gap-6">
                     <Reveal delay={0}>
                         <RoleCard
-                            tag="The coach"
-                            title="Plans the work"
-                            lines={['Invite athlete by @username', 'Assign a planned session', 'Set targets per set']}
+                            tag={t('coach.tag')}
+                            title={t('coach.title')}
+                            lines={t.raw('coach.lines') as string[]}
                         >
-                            Build the session straight into your athlete&rsquo;s log — authorized only for the lifters
-                            you actually coach.
+                            {t('coach.body')}
                         </RoleCard>
                     </Reveal>
 
@@ -81,16 +80,11 @@ export function Coaching() {
 
                     <Reveal delay={120}>
                         <RoleCard
-                            tag="The athlete"
-                            title="Logs the truth"
-                            lines={[
-                                'See planned sessions in the bell',
-                                'Log the real weight × reps',
-                                'PRs surface automatically',
-                            ]}
+                            tag={t('athlete.tag')}
+                            title={t('athlete.title')}
+                            lines={t.raw('athlete.lines') as string[]}
                         >
-                            Open what your coach planned, train it, and record what actually moved. The history is yours
-                            forever.
+                            {t('athlete.body')}
                         </RoleCard>
                     </Reveal>
                 </div>

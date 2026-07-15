@@ -17,7 +17,9 @@ import { serverEnv } from '@/lib/env.server'
  * `revalidate` is why this exists at all. Next caches the fetch, so the price on the
  * landing is baked into the HTML (a crawler and a cold visitor both see it, with no
  * skeleton) and the API is hit once per window rather than once per visit — at the
- * cost of a catalog edit taking up to that long to show up.
+ * cost of a catalog edit taking up to that long to show up. On-demand invalidation
+ * (a catalog edit) is handled at the page level via `revalidatePath` in the admin
+ * revalidate route, not here.
  */
 export async function gqlServerRequest<TResult, TVariables>(
     document: TypedDocumentNode<TResult, TVariables>,

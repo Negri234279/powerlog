@@ -1126,5 +1126,184 @@
             "stripe": "tarjeta",
             "paypal": "PayPal"
         }
+    },
+    "landing": {
+        "nav": {
+            "features": "Características",
+            "analytics": "Analíticas",
+            "coaching": "Entrenamiento",
+            "pricing": "Precios",
+            "login": "Iniciar sesión",
+            "startFree": "Empieza gratis",
+            "openMenu": "Abrir menú",
+            "closeMenu": "Cerrar menú"
+        },
+        "hero": {
+            "eyebrow": "Para quienes se toman la barra en serio",
+            "title": "Entrena como si quedara <em>registrado.</em>",
+            "subtitle": "powerlog es un instrumento de precisión para la fuerza. Registra cada serie, mira cómo tu 1RM estimado y tus PRs se mueven en tiempo real, y lee el progreso que de verdad existe, no el que te cuentas a ti mismo.",
+            "ctaPrimary": "Empieza gratis",
+            "ctaSecondary": "Ver los datos",
+            "noCard": "Gratis para siempre en solitario · Sin tarjeta",
+            "panel": {
+                "lift": "Sentadilla",
+                "week": "Semana 4 · Single pesado",
+                "completed": "Completado",
+                "est1rm": "1RM est. · 12 sem",
+                "newPr": "Nuevo PR sentadilla",
+                "streak": "Racha",
+                "streakValue": "14 semanas"
+            }
+        },
+        "proof": {
+            "setsLogged": "Series registradas",
+            "prsDetected": "PRs detectados",
+            "categories": "Categorías de levantamiento",
+            "units": "Tus unidades, siempre",
+            "terms": [
+                "Sentadilla",
+                "Press banca",
+                "Peso muerto",
+                "Press militar",
+                "Remo",
+                "RPE",
+                "RIR",
+                "e1RM",
+                "Periodización por bloques",
+                "Volumen",
+                "Series top",
+                "Back-off"
+            ]
+        },
+        "features": {
+            "eyebrow": "El instrumento",
+            "title": "Todo lo que la barra merece. Nada que no.",
+            "subtitle": "Un catálogo fijo de ejercicios, un registro limpio y las matemáticas que convierten las reps en un veredicto.",
+            "planned": "Planificado",
+            "logged": "Registrado",
+            "bestE1rm": "Mejor e1RM",
+            "planActual": {
+                "title": "Plan vs. realidad, en cada serie",
+                "body": "Programa los objetivos —peso, reps, RPE o RIR— y registra al lado lo que de verdad pasó. powerlog mantiene intención y realidad en la misma línea, así la honestidad es lo natural."
+            },
+            "e1rm": {
+                "title": "e1RM y PRs automáticos",
+                "body": "Estimaciones de Epley a partir de tus series top reales, con récords personales que aparecen en el momento en que los consigues."
+            },
+            "honest": {
+                "title": "Analíticas que no mienten",
+                "body": "Volumen, intensidad y tendencias de 1RM por ejercicio, agrupados directamente desde la base de datos y solo tuyos."
+            },
+            "units": {
+                "title": "kg o lb, canónico",
+                "body": "Registra en la unidad que quieras. Los pesos se guardan de forma canónica y se muestran en tu preferencia, sin redondeos erróneos."
+            },
+            "history": {
+                "title": "Historial y rachas",
+                "body": "Cada sesión, paginada por keyset y rápida, con las rachas que te mantienen bajo la barra."
+            },
+            "roles": {
+                "title": "Hecho para entrenadores y atletas",
+                "body": "Los entrenadores planifican sesiones directamente en el registro del atleta; los atletas entrenan y anotan los números reales. Un enlace, dos vistas, cero hojas de cálculo."
+            }
+        },
+        "analytics": {
+            "eyebrow": "Lee tu progreso",
+            "title": "La verdad, agrupada por ejercicio.",
+            "body": "Volumen total, peso más alto, mejor e1RM y PRs, calculados en una sola pasada sobre tus series registradas y solo para ti. Filtra por fecha, compara bloques y deja que la tendencia decida si el programa funciona.",
+            "bullets": [
+                "Volumen e intensidad por ejercicio",
+                "Mejor 1RM estimado e historial de PRs",
+                "Comparativas por rango de fechas y bloques"
+            ],
+            "weeklyVolume": "Volumen semanal · toneladas",
+            "badge": "+15% vs. bloque 1",
+            "wkFirst": "Sem 1",
+            "wkLast": "Sem 12"
+        },
+        "coaching": {
+            "eyebrow": "Entrenador y atleta",
+            "title": "Dos roles. Una única fuente de verdad.",
+            "body": "Invita por nombre de usuario, acepta con un toque y quedáis vinculados. Los entrenadores programan; los atletas ejecutan. Todos ven los mismos números: sin hojas exportadas, sin versiones que se desincronizan.",
+            "coach": {
+                "tag": "El entrenador",
+                "title": "Planifica el trabajo",
+                "body": "Construye la sesión directamente en el registro de tu atleta, con permiso solo para los levantadores que de verdad entrenas.",
+                "lines": ["Invita al atleta por @usuario", "Asigna una sesión planificada", "Fija objetivos por serie"]
+            },
+            "athlete": {
+                "tag": "El atleta",
+                "title": "Registra la verdad",
+                "body": "Abre lo que planificó tu entrenador, entrénalo y anota lo que de verdad moviste. El historial es tuyo para siempre.",
+                "lines": [
+                    "Ve las sesiones planificadas en la campana",
+                    "Registra el peso × reps real",
+                    "Los PRs aparecen automáticamente"
+                ]
+            }
+        },
+        "cta": {
+            "title": "A la barra le da igual cómo te sientas. <em>Regístralo.</em>",
+            "body": "Únete a los levantadores que cambiaron la app de notas por un instrumento. Gratis para empezar, tuyo para siempre.",
+            "ctaPrimary": "Empieza gratis",
+            "ctaSecondary": "Comparar planes"
+        },
+        "pricing": {
+            "eyebrow": "Precios",
+            "title": "Gratis para levantar. Paga para ir más lejos.",
+            "body": "Registrar, PRs y progreso son gratis, para siempre. Los planes de pago añaden el trabajo que te ahorra tiempo: planificación de mesociclos, el asistente de IA y la gestión de un roster.",
+            "fallbackCta": "Crea tu cuenta gratis"
+        },
+        "plans": {
+            "audienceAthlete": "Para levantadores",
+            "audienceCoach": "Para entrenadores",
+            "monthly": "Mensual",
+            "yearly": "Anual",
+            "yearlySave": "Anual · ahorra {percent}%",
+            "mostPopular": "Más popular",
+            "free": "Gratis",
+            "forever": "para siempre",
+            "perMonth": "/mes",
+            "perYear": "/año",
+            "notSoldMonthly": "No disponible mensual en {currency}",
+            "notSoldYearly": "No disponible anual en {currency}",
+            "billedYearly": "{price} al mes, facturado anualmente",
+            "featureUnlimited": "Sesiones, series y PRs ilimitados",
+            "featureTemplates": "Plantillas de entrenamiento reutilizables",
+            "featureMesocycles": "Planificación de mesociclos",
+            "featureAi": "Asistente de IA (con tu propia clave)",
+            "featurePlanSessions": "Planifica sesiones en los registros de tus atletas",
+            "rosterUnlimited": "Atletas ilimitados",
+            "rosterLimited": "{count, plural, one {Hasta # atleta} other {Hasta # atletas}}",
+            "offerTrial": "{days, plural, one {# día gratis} other {# días gratis}}",
+            "offerIntro": "{percent}% de descuento en tu primer {cycles, plural, one {periodo} other {# periodos}}",
+            "ctaStartWith": "Empieza con {plan}",
+            "ctaChoose": "Elige {plan}",
+            "ctaStartFree": "Empieza gratis"
+        },
+        "footer": {
+            "tagline": "Un instrumento de precisión para levantadores serios. Entrena como si quedara registrado.",
+            "colProduct": "Producto",
+            "colCompany": "Empresa",
+            "colLegal": "Legal",
+            "product": {
+                "features": "Características",
+                "analytics": "Analíticas",
+                "coaching": "Entrenamiento",
+                "pricing": "Precios"
+            },
+            "company": {
+                "about": "Sobre nosotros",
+                "changelog": "Novedades",
+                "careers": "Empleo",
+                "contact": "Contacto"
+            },
+            "legal": {
+                "privacy": "Privacidad",
+                "terms": "Términos",
+                "security": "Seguridad"
+            },
+            "builtForBar": "Hecho para la barra"
+        }
     }
 }

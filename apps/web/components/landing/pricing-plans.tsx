@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 import type { PublicPlan } from '@/lib/graphql/hooks/use-billing'
 import { cn } from '@/lib/cn'
@@ -15,8 +16,6 @@ const INTERVALS = ['month', 'year'] as const
 type Audience = (typeof AUDIENCES)[number]
 type Interval = (typeof INTERVALS)[number]
 
-const AUDIENCE_LABEL: Record<Audience, string> = { athlete: 'For lifters', coach: 'For coaches' }
-
 function money(amountCents: number, currency: string, locale: string): string {
     return new Intl.NumberFormat(locale, {
         style: 'currency',
@@ -28,50 +27,6 @@ function money(amountCents: number, currency: string, locale: string): string {
 
 function priceOf(plan: PublicPlan, interval: Interval, currency: string) {
     return plan.prices.find((price) => price.interval === interval && price.currency === currency) ?? null
-}
-
-/**
- * What the plan gives, read off the entitlements the admin actually saved — not a
- * marketing list kept in sync by hand. Add a check to the catalog and it shows up
- * here; take one away and it disappears, so the landing cannot promise what the
- * server will refuse to grant.
- */
-function featuresOf(plan: PublicPlan): string[] {
-    const features = ['Unlimited sessions, sets & PRs']
-
-    if (plan.templates) features.push('Reusable workout templates')
-    if (plan.mesocycles) features.push('Mesocycle planning')
-    if (plan.ai) features.push('AI assistant (bring your own key)')
-    if (plan.planSessions) features.push('Plan sessions into your athletes’ logs')
-
-    // Only coaching plans have a roster. On an athlete plan the collapsed snapshot
-    // still carries maxAthletes: 0 — that means "the limit doesn't apply to you", not
-    // "you may coach zero athletes", and printing it would read as an insult.
-    if (plan.planSessions) {
-        const roster =
-            plan.maxAthletes === null
-                ? 'Unlimited athletes'
-                : `Up to ${plan.maxAthletes} athlete${plan.maxAthletes === 1 ? '' : 's'}`
-
-        features.push(roster)
-    }
-
-    return features
-}
-
-/** The opening offer, said in one line. Null when the plan has none. */
-function offerLabel(plan: PublicPlan): string | null {
-    const offer = plan.offer
-    if (!offer) return null
-
-    if (offer.trialDays) return `${offer.trialDays} days free`
-    if (offer.introPhase) {
-        const { cycles, percentOff } = offer.introPhase
-
-        return `${percentOff}% off your first ${cycles === 1 ? 'period' : `${cycles} periods`}`
-    }
-
-    return offer.name
 }
 
 /**
@@ -104,9 +59,14 @@ export function PricingPlans({
     currency: string
     locale: string
 }) {
+    const t = useTranslations('landing.plans')
     const [audience, setAudience] = useState<Audience>('athlete')
     const [interval, setInterval] = useState<Interval>('month')
 
+    const audienceLabel: Record<Audience, string> = {
+        athlete: t('audienceAthlete'),
+        coach: t('audienceCoach'),
+    }
     const plans = catalog[audience]
     const saving = yearlySavingPercent(plans, currency)
     // The paid plan the eye should land on: the cheapest one that costs money.
@@ -117,15 +77,15 @@ export function PricingPlans({
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
                 <SlidingTabs
                     analyticsId="pricing-audience"
-                    items={AUDIENCES.map((value) => ({ value, label: AUDIENCE_LABEL[value] }))}
+                    items={AUDIENCES.map((value) => ({ value, label: audienceLabel[value] }))}
                     value={audience}
                     onChange={(value) => setAudience(value as Audience)}
                 />
                 <SlidingTabs
                     analyticsId="pricing-interval"
                     items={[
-                        { value: 'month', label: 'Monthly' },
-                        { value: 'year', label: saving ? `Yearly · save ${saving}%` : 'Yearly' },
+                        { value: 'month', label: t('monthly') },
+                        { value: 'year', label: saving ? t('yearlySave', { percent: saving }) : t('yearly') },
                     ]}
                     value={interval}
                     onChange={(value) => setInterval(value as Interval)}
@@ -167,8 +127,52 @@ function PlanCard({
     locale: string
     featured: boolean
 }) {
+    const t = useTranslations('landing.plans')
+
+    /**
+     * What the plan gives, read off the entitlements the admin actually saved — not a
+     * marketing list kept in sync by hand. Add a check to the catalog and it shows up
+     * here; take one away and it disappears, so the landing cannot promise what the
+     * server will refuse to grant.
+     */
+    function featuresOf(): string[] {
+        const features = [t('featureUnlimited')]
+
+        if (plan.templates) features.push(t('featureTemplates'))
+        if (plan.mesocycles) features.push(t('featureMesocycles'))
+        if (plan.ai) features.push(t('featureAi'))
+        if (plan.planSessions) features.push(t('featurePlanSessions'))
+
+        // Only coaching plans have a roster. On an athlete plan the collapsed snapshot
+        // still carries maxAthletes: 0 — that means "the limit doesn't apply to you", not
+        // "you may coach zero athletes", and printing it would read as an insult.
+        if (plan.planSessions) {
+            const roster =
+                plan.maxAthletes === null ? t('rosterUnlimited') : t('rosterLimited', { count: plan.maxAthletes })
+
+            features.push(roster)
+        }
+
+        return features
+    }
+
+    /** The opening offer, said in one line. Null when the plan has none. */
+    function offerLabel(): string | null {
+        const offer = plan.offer
+        if (!offer) return null
+
+        if (offer.trialDays) return t('offerTrial', { days: offer.trialDays })
+        if (offer.introPhase) {
+            const { cycles, percentOff } = offer.introPhase
+
+            return t('offerIntro', { percent: percentOff, cycles })
+        }
+
+        return offer.name
+    }
+
     const price = plan.isFree ? null : priceOf(plan, interval, currency)
-    const offer = offerLabel(plan)
+    const offer = offerLabel()
 
     return (
         <div
@@ -182,7 +186,7 @@ function PlanCard({
                     <h3 className="font-display text-h3">{plan.name}</h3>
                     {featured ? (
                         <span className="rounded-full bg-ember/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-ember">
-                            Most popular
+                            {t('mostPopular')}
                         </span>
                     ) : null}
                 </div>
@@ -190,8 +194,8 @@ function PlanCard({
                 <div className="mt-5 flex items-baseline gap-2">
                     {plan.isFree ? (
                         <>
-                            <span className="font-display text-5xl font-semibold tracking-tight">Free</span>
-                            <span className="font-mono text-sm text-text-faint">forever</span>
+                            <span className="font-display text-5xl font-semibold tracking-tight">{t('free')}</span>
+                            <span className="font-mono text-sm text-text-faint">{t('forever')}</span>
                         </>
                     ) : price ? (
                         <>
@@ -199,21 +203,25 @@ function PlanCard({
                                 {money(price.amountCents, price.currency, locale)}
                             </span>
                             <span className="font-mono text-sm text-text-faint">
-                                {interval === 'month' ? '/month' : '/year'}
+                                {interval === 'month' ? t('perMonth') : t('perYear')}
                             </span>
                         </>
                     ) : (
                         // The plan is on sale but not at this interval/currency. Saying
                         // nothing beats inventing a number.
                         <span className="font-display text-2xl font-semibold tracking-tight text-text-faint">
-                            Not sold {interval === 'month' ? 'monthly' : 'yearly'} in {currency}
+                            {interval === 'month'
+                                ? t('notSoldMonthly', { currency })
+                                : t('notSoldYearly', { currency })}
                         </span>
                     )}
                 </div>
 
                 {price && interval === 'year' ? (
                     <p className="mt-1 font-mono text-xs text-text-faint">
-                        {money(Math.round(price.amountCents / 12), price.currency, locale)} per month, billed yearly
+                        {t('billedYearly', {
+                            price: money(Math.round(price.amountCents / 12), price.currency, locale),
+                        })}
                     </p>
                 ) : null}
 
@@ -226,7 +234,7 @@ function PlanCard({
                 {plan.description ? <p className="mt-3 text-body text-text-dim">{plan.description}</p> : null}
 
                 <ul className="mt-7 flex-1 space-y-3">
-                    {featuresOf(plan).map((feature) => (
+                    {featuresOf().map((feature) => (
                         <li key={feature} className="flex items-start gap-3 text-body text-text-dim">
                             <Check className="mt-0.5 size-4 shrink-0 text-ember" />
                             {feature}
@@ -241,7 +249,7 @@ function PlanCard({
                             className="w-full justify-between"
                             analyticsId={`pricing-register-${plan.slug}`}
                         >
-                            Start with {plan.name}
+                            {t('ctaStartWith', { plan: plan.name })}
                         </PrimaryCta>
                     ) : (
                         <SecondaryCta
@@ -249,7 +257,7 @@ function PlanCard({
                             className="w-full justify-center"
                             analyticsId={`pricing-register-${plan.slug}`}
                         >
-                            {plan.isFree ? 'Start free' : `Choose ${plan.name}`}
+                            {plan.isFree ? t('ctaStartFree') : t('ctaChoose', { plan: plan.name })}
                         </SecondaryCta>
                     )}
                 </div>

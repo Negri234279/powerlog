@@ -5,8 +5,33 @@ import { type NextRequest, NextResponse } from 'next/server'
 // cookie is first-party here, so the proxy can read it.
 const REFRESH_COOKIE = 'pl_rt'
 
+// The explicit locale choice (set by the marketing LocaleSwitcher and the app's
+// LanguageSwitcher). Not HTTPOnly, so the switcher can write it from the client.
+const LOCALE_COOKIE = 'NEXT_LOCALE'
+
 const PROTECTED = ['/dashboard', '/profile', '/admin']
-const AUTH_PAGES = ['/login', '/register']
+
+// Pages a signed-in user has no reason to land on: both marketing homes and the
+// auth forms. `/` and `/es` are gated here rather than in their pages because the
+// refresh cookie is the only marker that survives the short access window — a
+// `getSession()` check in the page would show the landing to a logged-in user
+// whose access token merely expired — and because the redirect then happens
+// before the landing tree renders at all.
+const SIGNED_IN_ELSEWHERE = ['/', '/es', '/login', '/register']
+
+/**
+ * Whether to serve the visitor Spanish. An explicit `NEXT_LOCALE` choice wins;
+ * absent that, the browser's top `Accept-Language` is sniffed. Crawlers send no
+ * cookie and (Googlebot) an English Accept-Language, so they get `/` and reach
+ * `/es` through the hreflang alternates rather than being redirected away.
+ */
+function prefersSpanish(req: NextRequest): boolean {
+    const choice = req.cookies.get(LOCALE_COOKIE)?.value
+    if (choice) return choice.toLowerCase().startsWith('es')
+
+    const accept = req.headers.get('accept-language') ?? ''
+    return accept.trim().toLowerCase().startsWith('es')
+}
 
 export function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl
@@ -23,9 +48,21 @@ export function proxy(req: NextRequest) {
         return NextResponse.redirect(url)
     }
 
-    if (AUTH_PAGES.includes(pathname) && hasSession) {
+    // A stale-but-present cookie (revoked / expired / reuse-detected) doesn't trap
+    // the user: /dashboard's gate fails the refresh, which clears both cookies and
+    // drops them on /login — from where the landing is reachable again.
+    if (SIGNED_IN_ELSEWHERE.includes(pathname) && hasSession) {
         const url = req.nextUrl.clone()
         url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+    }
+
+    // Anonymous visitor on the English landing who prefers Spanish → `/es`. Only `/`
+    // auto-detects; `/es` is the explicit Spanish URL and never redirects away, so a
+    // shared /es link always works and there's no redirect loop.
+    if (pathname === '/' && prefersSpanish(req)) {
+        const url = req.nextUrl.clone()
+        url.pathname = '/es'
         return NextResponse.redirect(url)
     }
 
@@ -33,5 +70,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/dashboard/:path*', '/profile/:path*', '/admin/:path*', '/login', '/register'],
+    matcher: ['/', '/es', '/dashboard/:path*', '/profile/:path*', '/admin/:path*', '/login', '/register'],
 }

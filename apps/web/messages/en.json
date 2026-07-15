@@ -1126,5 +1126,180 @@
             "stripe": "card",
             "paypal": "PayPal"
         }
+    },
+    "landing": {
+        "nav": {
+            "features": "Features",
+            "analytics": "Analytics",
+            "coaching": "Coaching",
+            "pricing": "Pricing",
+            "login": "Log in",
+            "startFree": "Start free",
+            "openMenu": "Open menu",
+            "closeMenu": "Close menu"
+        },
+        "hero": {
+            "eyebrow": "For people who take the bar seriously",
+            "title": "Train like it’s <em>logged.</em>",
+            "subtitle": "powerlog is a precision instrument for strength. Log every set, watch your estimated 1RM and PRs move in real time, and read the progress that’s actually there — not the story you tell yourself.",
+            "ctaPrimary": "Start training free",
+            "ctaSecondary": "See the data",
+            "noCard": "Free forever for solo lifters · No card required",
+            "panel": {
+                "lift": "Back Squat",
+                "week": "Week 4 · Heavy single",
+                "completed": "Completed",
+                "est1rm": "Est. 1RM · 12 wk",
+                "newPr": "New squat PR",
+                "streak": "Streak",
+                "streakValue": "14 weeks"
+            }
+        },
+        "proof": {
+            "setsLogged": "Sets logged",
+            "prsDetected": "PRs detected",
+            "categories": "Lift categories",
+            "units": "Your units, always",
+            "terms": [
+                "Squat",
+                "Bench",
+                "Deadlift",
+                "Overhead Press",
+                "Row",
+                "RPE",
+                "RIR",
+                "e1RM",
+                "Block Periodization",
+                "Volume",
+                "Top Sets",
+                "Back-off"
+            ]
+        },
+        "features": {
+            "eyebrow": "The instrument",
+            "title": "Everything the bar deserves. Nothing it doesn’t.",
+            "subtitle": "A fixed exercise catalog, a clean log, and the math that turns reps into a verdict.",
+            "planned": "Planned",
+            "logged": "Logged",
+            "bestE1rm": "Best e1RM",
+            "planActual": {
+                "title": "Plan vs. actual, every set",
+                "body": "Program targets — weight, reps, RPE or RIR — then log what really happened beside them. powerlog keeps intent and reality on the same line, so honesty is the default."
+            },
+            "e1rm": {
+                "title": "e1RM & automatic PRs",
+                "body": "Epley estimates from your real top sets, with personal records surfaced the moment you hit them."
+            },
+            "honest": {
+                "title": "Analytics that don’t lie",
+                "body": "Volume, intensity and 1RM trends per lift — grouped straight from the database, scoped to you."
+            },
+            "units": {
+                "title": "kg or lb, canonical",
+                "body": "Log in either unit. Weights are stored canonically and shown in your preference, never rounded wrong."
+            },
+            "history": {
+                "title": "History & streaks",
+                "body": "Every session, keyset-paginated and fast — with the streaks that keep you under the bar."
+            },
+            "roles": {
+                "title": "Built for coaches and athletes",
+                "body": "Coaches plan sessions straight into an athlete’s log; athletes train and record the real numbers. One link, two views, zero spreadsheets."
+            }
+        },
+        "analytics": {
+            "eyebrow": "Read your progress",
+            "title": "The truth, grouped by lift.",
+            "body": "Total volume, heaviest weight, best e1RM and PRs — computed in a single pass over your logged sets and scoped to you. Filter by date, compare blocks, and let the trend make the call on whether the program is working.",
+            "bullets": [
+                "Per-exercise volume & intensity",
+                "Best estimated 1RM and PR history",
+                "Date-range and block comparisons"
+            ],
+            "weeklyVolume": "Weekly volume · tonnes",
+            "badge": "+15% vs. block 1",
+            "wkFirst": "Wk 1",
+            "wkLast": "Wk 12"
+        },
+        "coaching": {
+            "eyebrow": "Coach & athlete",
+            "title": "Two roles. One source of truth.",
+            "body": "Invite by username, accept in a tap, and you’re linked. Coaches program; athletes execute. Everyone sees the same numbers — no exported sheets, no version drift.",
+            "coach": {
+                "tag": "The coach",
+                "title": "Plans the work",
+                "body": "Build the session straight into your athlete’s log — authorized only for the lifters you actually coach.",
+                "lines": ["Invite athlete by @username", "Assign a planned session", "Set targets per set"]
+            },
+            "athlete": {
+                "tag": "The athlete",
+                "title": "Logs the truth",
+                "body": "Open what your coach planned, train it, and record what actually moved. The history is yours forever.",
+                "lines": ["See planned sessions in the bell", "Log the real weight × reps", "PRs surface automatically"]
+            }
+        },
+        "cta": {
+            "title": "The bar doesn’t care how you feel. <em>Log it.</em>",
+            "body": "Join the lifters who replaced the notes app with an instrument. Free to start, yours to keep.",
+            "ctaPrimary": "Start training free",
+            "ctaSecondary": "Compare plans"
+        },
+        "pricing": {
+            "eyebrow": "Pricing",
+            "title": "Free to lift. Pay to go further.",
+            "body": "Logging, PRs and progress are free, forever. The paid plans add the work that saves you time — mesocycle planning, the AI assistant, and coaching a roster.",
+            "fallbackCta": "Create your free account"
+        },
+        "plans": {
+            "audienceAthlete": "For lifters",
+            "audienceCoach": "For coaches",
+            "monthly": "Monthly",
+            "yearly": "Yearly",
+            "yearlySave": "Yearly · save {percent}%",
+            "mostPopular": "Most popular",
+            "free": "Free",
+            "forever": "forever",
+            "perMonth": "/month",
+            "perYear": "/year",
+            "notSoldMonthly": "Not sold monthly in {currency}",
+            "notSoldYearly": "Not sold yearly in {currency}",
+            "billedYearly": "{price} per month, billed yearly",
+            "featureUnlimited": "Unlimited sessions, sets & PRs",
+            "featureTemplates": "Reusable workout templates",
+            "featureMesocycles": "Mesocycle planning",
+            "featureAi": "AI assistant (bring your own key)",
+            "featurePlanSessions": "Plan sessions into your athletes’ logs",
+            "rosterUnlimited": "Unlimited athletes",
+            "rosterLimited": "{count, plural, one {Up to # athlete} other {Up to # athletes}}",
+            "offerTrial": "{days, plural, one {# day free} other {# days free}}",
+            "offerIntro": "{percent}% off your first {cycles, plural, one {period} other {# periods}}",
+            "ctaStartWith": "Start with {plan}",
+            "ctaChoose": "Choose {plan}",
+            "ctaStartFree": "Start free"
+        },
+        "footer": {
+            "tagline": "A precision instrument for serious lifters. Train like it’s logged.",
+            "colProduct": "Product",
+            "colCompany": "Company",
+            "colLegal": "Legal",
+            "product": {
+                "features": "Features",
+                "analytics": "Analytics",
+                "coaching": "Coaching",
+                "pricing": "Pricing"
+            },
+            "company": {
+                "about": "About",
+                "changelog": "Changelog",
+                "careers": "Careers",
+                "contact": "Contact"
+            },
+            "legal": {
+                "privacy": "Privacy",
+                "terms": "Terms",
+                "security": "Security"
+            },
+            "builtForBar": "Built for the bar"
+        }
     }
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 import { cn } from '@/lib/cn'
 import { PrimaryCta } from '@/components/ui/cta'
@@ -8,11 +9,11 @@ import { Mark } from '@/components/ui/icons'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 const LINKS = [
-    { id: 'features', label: 'Features', href: '#features' },
-    { id: 'analytics', label: 'Analytics', href: '#analytics' },
-    { id: 'coaching', label: 'Coaching', href: '#coaching' },
-    { id: 'pricing', label: 'Pricing', href: '#pricing' },
-]
+    { id: 'features', href: '#features' },
+    { id: 'analytics', href: '#analytics' },
+    { id: 'coaching', href: '#coaching' },
+    { id: 'pricing', href: '#pricing' },
+] as const
 
 function Wordmark() {
     return (
@@ -26,6 +27,7 @@ function Wordmark() {
 }
 
 export function SiteNav() {
+    const t = useTranslations('landing.nav')
     const [open, setOpen] = useState(false)
 
     // Lock body scroll while the full-screen menu is open.
@@ -49,7 +51,7 @@ export function SiteNav() {
                             href={l.href}
                             className="text-sm text-text-dim transition-colors duration-300 hover:text-text"
                         >
-                            {l.label}
+                            {t(l.id)}
                         </TrackedLink>
                     ))}
                 </div>
@@ -60,10 +62,10 @@ export function SiteNav() {
                         href="/login"
                         className="rounded-full px-4 py-2 text-sm text-text-dim transition-colors hover:text-text"
                     >
-                        Log in
+                        {t('login')}
                     </TrackedLink>
                     <PrimaryCta href="/register" analyticsId="nav-register">
-                        Start free
+                        {t('startFree')}
                     </PrimaryCta>
                 </div>
 
@@ -71,7 +73,7 @@ export function SiteNav() {
                 <TrackedButton
                     analyticsId="nav-menu-toggle"
                     type="button"
-                    aria-label={open ? 'Close menu' : 'Open menu'}
+                    aria-label={open ? t('closeMenu') : t('openMenu')}
                     aria-expanded={open}
                     onClick={() => setOpen((v) => !v)}
                     className="relative grid size-10 place-items-center rounded-full ring-1 ring-hairline md:hidden"
@@ -111,12 +113,12 @@ export function SiteNav() {
                                 open ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0',
                             )}
                         >
-                            {l.label}
+                            {t(l.id)}
                         </TrackedLink>
                     ))}
                     <div className="mt-10 flex flex-col gap-3">
                         <PrimaryCta href="/register" className="justify-between" analyticsId="nav-mobile-register">
-                            Start free
+                            {t('startFree')}
                         </PrimaryCta>
                         <TrackedLink
                             analyticsId="nav-mobile-login"
@@ -124,7 +126,7 @@ export function SiteNav() {
                             onClick={() => setOpen(false)}
                             className="rounded-full px-6 py-3 text-center text-sm text-text-dim ring-1 ring-hairline"
                         >
-                            Log in
+                            {t('login')}
                         </TrackedLink>
                     </div>
                 </div>

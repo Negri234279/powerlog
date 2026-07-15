@@ -61,9 +61,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG API_INTERNAL_URL=http://powerlog-api:4000
 ARG FARO_INTERNAL_URL=http://powerlog-alloy:12347
 ARG APP_ENV=prod
+# Canonical public origin baked into the statically rendered marketing pages'
+# SEO metadata (canonical + hreflang), sitemap.xml and robots.txt. Read at build
+# time only, so it lives here rather than in the runtime env file. Override the
+# ARG to build for another domain.
+ARG SITE_URL=https://powerlog.negri.es
 ENV API_INTERNAL_URL=${API_INTERNAL_URL} \
     FARO_INTERNAL_URL=${FARO_INTERNAL_URL} \
-    APP_ENV=${APP_ENV}
+    APP_ENV=${APP_ENV} \
+    SITE_URL=${SITE_URL}
 COPY . .
 RUN pnpm --filter @powerlog/web build
 

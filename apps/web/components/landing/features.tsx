@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { getTranslations } from 'next-intl/server'
 
 import { cn } from '@/lib/cn'
 import { Bolt, Calendar, ChartLine, Scale, Target, Users } from '@/components/ui/icons'
@@ -33,7 +34,7 @@ function Card({
 }
 
 /** Mini planned-vs-actual bars for the headline feature card. */
-function PlanVsActual() {
+function PlanVsActual({ plannedLabel, loggedLabel }: { plannedLabel: string; loggedLabel: string }) {
     const rows = [
         { label: 'Set 1', plan: 55, actual: 60 },
         { label: 'Set 2', plan: 70, actual: 72 },
@@ -42,8 +43,8 @@ function PlanVsActual() {
     return (
         <div className="space-y-3 rounded-2xl bg-bg/60 p-5 ring-1 ring-hairline">
             <div className="flex justify-between font-mono text-eyebrow uppercase text-text-faint">
-                <span>Planned</span>
-                <span className="text-ember">Logged</span>
+                <span>{plannedLabel}</span>
+                <span className="text-ember">{loggedLabel}</span>
             </div>
             {rows.map((r) => (
                 <div key={r.label} className="space-y-1.5">
@@ -63,18 +64,16 @@ function PlanVsActual() {
     )
 }
 
-export function Features() {
+export async function Features() {
+    const t = await getTranslations('landing.features')
+
     return (
         <section id="features" className="relative px-6 py-28 md:px-8 md:py-40">
             <div className="mx-auto max-w-[80rem]">
                 <Reveal>
-                    <Eyebrow>The instrument</Eyebrow>
-                    <h2 className="mt-6 max-w-2xl font-display text-display">
-                        Everything the bar deserves. Nothing it doesn&rsquo;t.
-                    </h2>
-                    <p className="mt-5 max-w-xl text-body-lg text-text-dim">
-                        A fixed exercise catalog, a clean log, and the math that turns reps into a verdict.
-                    </p>
+                    <Eyebrow>{t('eyebrow')}</Eyebrow>
+                    <h2 className="mt-6 max-w-2xl font-display text-display">{t('title')}</h2>
+                    <p className="mt-5 max-w-xl text-body-lg text-text-dim">{t('subtitle')}</p>
                 </Reveal>
 
                 <div className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-12">
@@ -82,11 +81,10 @@ export function Features() {
                         <Card
                             className="h-full"
                             icon={<Bolt className="size-5" />}
-                            title="Plan vs. actual, every set"
-                            visual={<PlanVsActual />}
+                            title={t('planActual.title')}
+                            visual={<PlanVsActual plannedLabel={t('planned')} loggedLabel={t('logged')} />}
                         >
-                            Program targets — weight, reps, RPE or RIR — then log what really happened beside them.
-                            powerlog keeps intent and reality on the same line, so honesty is the default.
+                            {t('planActual.body')}
                         </Card>
                     </Reveal>
 
@@ -94,46 +92,44 @@ export function Features() {
                         <Card
                             className="h-full"
                             icon={<Target className="size-5" />}
-                            title="e1RM & automatic PRs"
+                            title={t('e1rm.title')}
                             visual={
                                 <div className="flex items-end justify-between rounded-2xl bg-bg/60 p-5 ring-1 ring-hairline">
                                     <div>
-                                        <p className="font-mono text-eyebrow uppercase text-text-faint">Best e1RM</p>
+                                        <p className="font-mono text-eyebrow uppercase text-text-faint">
+                                            {t('bestE1rm')}
+                                        </p>
                                         <p className="font-mono text-3xl tabular-nums text-text">207.5</p>
                                     </div>
                                     <span className="font-mono text-sm tabular-nums text-pr">+8.0kg ★</span>
                                 </div>
                             }
                         >
-                            Epley estimates from your real top sets, with personal records surfaced the moment you hit
-                            them.
+                            {t('e1rm.body')}
                         </Card>
                     </Reveal>
 
                     <Reveal className="md:col-span-4" delay={0}>
-                        <Card icon={<ChartLine className="size-5" />} title="Analytics that don't lie">
-                            Volume, intensity and 1RM trends per lift — grouped straight from the database, scoped to
-                            you.
+                        <Card icon={<ChartLine className="size-5" />} title={t('honest.title')}>
+                            {t('honest.body')}
                         </Card>
                     </Reveal>
 
                     <Reveal className="md:col-span-4" delay={80}>
-                        <Card icon={<Scale className="size-5" />} title="kg or lb, canonical">
-                            Log in either unit. Weights are stored canonically and shown in your preference, never
-                            rounded wrong.
+                        <Card icon={<Scale className="size-5" />} title={t('units.title')}>
+                            {t('units.body')}
                         </Card>
                     </Reveal>
 
                     <Reveal className="md:col-span-4" delay={160}>
-                        <Card icon={<Calendar className="size-5" />} title="History & streaks">
-                            Every session, keyset-paginated and fast — with the streaks that keep you under the bar.
+                        <Card icon={<Calendar className="size-5" />} title={t('history.title')}>
+                            {t('history.body')}
                         </Card>
                     </Reveal>
 
                     <Reveal className="md:col-span-12" delay={0}>
-                        <Card icon={<Users className="size-5" />} title="Built for coaches and athletes">
-                            Coaches plan sessions straight into an athlete&rsquo;s log; athletes train and record the
-                            real numbers. One link, two views, zero spreadsheets.
+                        <Card icon={<Users className="size-5" />} title={t('roles.title')}>
+                            {t('roles.body')}
                         </Card>
                     </Reveal>
                 </div>

@@ -15,6 +15,13 @@ import { z } from 'zod'
 const schema = z.object({
     /** Proxy target used by next.config rewrites (also validated here for app use). */
     API_INTERNAL_URL: z.url().default('http://localhost:4000'),
+    /**
+     * Public canonical origin (scheme + host, no trailing slash), e.g.
+     * `https://powerlog.negri.es`. Used only server-side to build SEO metadata
+     * (canonical + hreflang), the sitemap and robots.txt. Read at BUILD time for the
+     * statically rendered marketing pages, so prod bakes it via the Dockerfile ARG.
+     */
+    SITE_URL: z.url().default('http://localhost:3000'),
     /** RS256 public key as an inline PEM (preferred; supports multiline in .env). */
     JWT_PUBLIC_KEY: z.string().default(''),
     /** Fallback path to the public key, relative to the app root (cwd). */
@@ -29,6 +36,7 @@ const schema = z.object({
 
 const parsed = schema.safeParse({
     API_INTERNAL_URL: process.env['API_INTERNAL_URL'],
+    SITE_URL: process.env['SITE_URL'],
     JWT_PUBLIC_KEY: process.env['JWT_PUBLIC_KEY'],
     JWT_PUBLIC_KEY_PATH: process.env['JWT_PUBLIC_KEY_PATH'],
     JWT_ISSUER: process.env['JWT_ISSUER'],
@@ -81,6 +89,8 @@ function readPublicKeyPem(): string {
 
 export const serverEnv = {
     apiInternalUrl: data.API_INTERNAL_URL,
+    /** Canonical origin for SEO metadata, sitemap and robots (no trailing slash). */
+    siteUrl: data.SITE_URL.replace(/\/$/, ''),
     jwtPublicKeyPath: data.JWT_PUBLIC_KEY_PATH,
     jwtIssuer: data.JWT_ISSUER,
     jwtAudience: data.JWT_AUDIENCE,
