@@ -1082,6 +1082,9 @@
     "billing": {
         "checkoutSuccess": "Payment received — we’re finishing setting up your plan. This page updates itself.",
         "checkoutCancelled": "Checkout cancelled. Nothing was charged.",
+        "activatedTitle": "Plan activated!",
+        "activatedBody": "Your {plan} plan is now active. Enjoy!",
+        "activatedClose": "Got it",
         "currentPlan": "Your plan",
         "freePlan": "Free",
         "freePlanBody": "You’re on the free plan. Upgrade any time.",

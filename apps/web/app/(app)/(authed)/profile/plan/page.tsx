@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 
 import {
     type MyEntitlements,
@@ -22,12 +22,17 @@ import { useMe } from '@/lib/graphql/hooks/use-auth'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { FormError } from '@/components/ui/form-error'
 import { Check } from '@/components/ui/icons'
+import { Modal } from '@/components/ui/modal'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
 import { TrackedButton } from '@/components/ui/tracked'
 
 const INTERVALS = ['month', 'year'] as const
 const CURRENCIES = ['EUR', 'USD'] as const
+
+// The subscription statuses that actually grant the plan — mirrors the API's
+// ENTITLING_STATUSES. Reaching one of these is what turns "finishing up" into "done".
+const ENTITLING_STATUSES = ['active', 'trialing', 'past_due']
 
 function formatAmount(amountCents: number, currency: string): string {
     return new Intl.NumberFormat('en', { style: 'currency', currency }).format(amountCents / 100)
@@ -49,12 +54,31 @@ export default function PlanPage() {
     const checkout = searchParams.get('checkout')
     const subscription = mine?.mySubscription ?? null
 
+    // The redirect only means "the gateway sent us back". The plan is really live
+    // once the webhook has written a subscription in an entitling status, and the
+    // realtime event has refetched us into it.
+    const isActivated = subscription !== null && ENTITLING_STATUSES.includes(subscription.status)
+    // Show the "finishing up" banner only while we are still waiting for that.
+    const awaitingActivation = checkout === 'success' && !isActivated
+
+    // Confirm the activation once, on the pending → active transition.
+    const [activatedOpen, setActivatedOpen] = useState(false)
+    const celebratedRef = useRef(false)
+
+    useEffect(() => {
+        if (checkout === 'success' && isActivated && !celebratedRef.current) {
+            celebratedRef.current = true
+            setActivatedOpen(true)
+        }
+    }, [checkout, isActivated])
+
     return (
         <div className="space-y-8">
             {/* The redirect is not the truth: the subscription is created by the
                 webhook, and this page is told to refetch by the realtime event. So the
-                banner says "we're finishing up", not "you're in". */}
-            {checkout === 'success' ? <Banner tone="ok">{t('checkoutSuccess')}</Banner> : null}
+                banner says "we're finishing up", and disappears the moment the plan is
+                actually live. */}
+            {awaitingActivation ? <Banner tone="ok">{t('checkoutSuccess')}</Banner> : null}
             {checkout === 'cancelled' ? <Banner tone="muted">{t('checkoutCancelled')}</Banner> : null}
 
             {loadingMine ? (
@@ -106,7 +130,41 @@ export default function PlanPage() {
                               ))}
                 </div>
             </section>
+
+            <ActivatedModal
+                open={activatedOpen}
+                onClose={() => setActivatedOpen(false)}
+                planName={subscription?.planName ?? ''}
+            />
         </div>
+    )
+}
+
+/** A one-time confirmation that the paid plan is now live. */
+function ActivatedModal({ open, onClose, planName }: { open: boolean; onClose: () => void; planName: string }) {
+    const t = useTranslations('billing')
+    const titleId = useId()
+
+    return (
+        <Modal open={open} onClose={onClose} labelledBy={titleId}>
+            <div className="flex flex-col items-center text-center">
+                <span className="grid size-12 place-items-center rounded-full bg-ember/15 text-ember">
+                    <Check className="size-6" />
+                </span>
+                <h2 id={titleId} className="mt-4 font-display text-h3 tracking-tight">
+                    {t('activatedTitle')}
+                </h2>
+                <p className="mt-2 text-sm text-text-dim">{t('activatedBody', { plan: planName })}</p>
+                <TrackedButton
+                    analyticsId="billing-activated-ack"
+                    type="button"
+                    onClick={onClose}
+                    className="mt-6 rounded-full bg-ember-gradient px-6 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
+                >
+                    {t('activatedClose')}
+                </TrackedButton>
+            </div>
+        </Modal>
     )
 }
 
