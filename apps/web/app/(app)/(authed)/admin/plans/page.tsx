@@ -1,11 +1,12 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, Fragment, useEffect, useId, useMemo, useState } from 'react'
 
 import {
     type AdminPlan,
     type AdminPlanPrice,
+    type EntitlementsJsonSchema,
     useAddPlanPrice,
     useAdminPlans,
     useCreatePlan,
@@ -21,7 +22,7 @@ import { type EntitlementsValue, EntitlementsForm, emptyEntitlements } from '@/c
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Field, Input, Select, Textarea } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
-import { Plus, Trash } from '@/components/ui/icons'
+import { Plus } from '@/components/ui/icons'
 import { Modal } from '@/components/ui/modal'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
@@ -45,7 +46,6 @@ export default function AdminPlansPage() {
     const { data: plans, isLoading } = useAdminPlans(audience)
     const [editing, setEditing] = useState<AdminPlan | null>(null)
     const [creating, setCreating] = useState(false)
-    const [pricing, setPricing] = useState<AdminPlan | null>(null)
 
     return (
         <div>
@@ -80,27 +80,21 @@ export default function AdminPlansPage() {
                 {isLoading ? (
                     Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-32 rounded-2xl" />)
                 ) : plans?.length ? (
-                    plans.map((plan) => (
-                        <PlanCard
-                            key={plan.id}
-                            plan={plan}
-                            onEdit={() => setEditing(plan)}
-                            onPrices={() => setPricing(plan)}
-                        />
-                    ))
+                    plans.map((plan) => <PlanCard key={plan.id} plan={plan} onEdit={() => setEditing(plan)} />)
                 ) : (
                     <p className="text-sm text-text-faint">{t('plansEmpty')}</p>
                 )}
             </div>
 
-            {creating ? <PlanModal audience={audience} onClose={() => setCreating(false)} /> : null}
-            {editing ? <PlanModal audience={audience} plan={editing} onClose={() => setEditing(null)} /> : null}
-            {pricing ? <PricesModal plan={pricing} onClose={() => setPricing(null)} /> : null}
+            {creating ? <PlanModal audience={audience} plans={plans ?? []} onClose={() => setCreating(false)} /> : null}
+            {editing ? (
+                <PlanModal audience={audience} plans={plans ?? []} initial={editing} onClose={() => setEditing(null)} />
+            ) : null}
         </div>
     )
 }
 
-function PlanCard({ plan, onEdit, onPrices }: { plan: AdminPlan; onEdit: () => void; onPrices: () => void }) {
+function PlanCard({ plan, onEdit }: { plan: AdminPlan; onEdit: () => void }) {
     const t = useTranslations('admin')
     const setStatus = useSetPlanStatus()
     const toMessage = useErrorMessage()
@@ -180,14 +174,6 @@ function PlanCard({ plan, onEdit, onPrices }: { plan: AdminPlan; onEdit: () => v
                         {plan.isFree ? t('planNoPriceFree') : t('planNoPrice')}
                     </span>
                 )}
-                <TrackedButton
-                    analyticsId="admin-plan-prices-open"
-                    type="button"
-                    onClick={onPrices}
-                    className="ml-auto rounded-full px-3 py-1.5 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
-                >
-                    {t('planPrices')}
-                </TrackedButton>
 
                 {/* Without this the catalog never reaches the providers, and a checkout
                     has nothing to point at. Re-running it IS the retry. */}
@@ -206,7 +192,7 @@ function SyncButtons({ plan }: { plan: AdminPlan }) {
 
     return (
         <>
-            {(['stripe', 'paypal'] as const).map((gateway) => {
+            {(['stripe', 'paypal'] as const).map((gateway, index) => {
                 const published = gateway === 'stripe' ? plan.stripeProductId !== null : plan.paypalProductId !== null
 
                 return (
@@ -219,7 +205,7 @@ function SyncButtons({ plan }: { plan: AdminPlan }) {
                             setError(null)
                             sync.mutate({ planId: plan.id, gateway }, { onError: (err) => setError(toMessage(err)) })
                         }}
-                        className={`rounded-full px-3 py-1.5 text-xs ring-1 transition-colors duration-300 disabled:opacity-50 ${
+                        className={`${index === 0 ? 'ml-auto' : ''} rounded-full px-3 py-1.5 text-xs ring-1 transition-colors duration-300 disabled:opacity-50 ${
                             published
                                 ? 'text-ember ring-ember/30 hover:text-ember'
                                 : 'text-text-dim ring-hairline hover:text-text'
@@ -273,261 +259,608 @@ function PricePill({ price }: { price: AdminPlanPrice }) {
     )
 }
 
-/** Create or edit a plan. The entitlements editor builds itself from the API's schema. */
-function PlanModal({ audience, plan, onClose }: { audience: string; plan?: AdminPlan; onClose: () => void }) {
+/**
+ * Create or edit a plan — base info and prices in one place, split into two tabs.
+ *
+ * A price needs a plan to hang on (`addPlanPrice` takes a `planId`), so a brand-new
+ * plan can't have prices until it exists. The create path handles that seam: the
+ * prices tab only appears once the plan is saved, and creating it advances straight
+ * there. The entitlements editor builds itself from the API's schema.
+ */
+function PlanModal({
+    audience,
+    plans,
+    initial,
+    onClose,
+}: {
+    audience: string
+    plans: AdminPlan[]
+    initial?: AdminPlan
+    onClose: () => void
+}) {
     const t = useTranslations('admin')
     const toMessage = useErrorMessage()
-    const { data: schema } = useEntitlementsSchema(plan?.audience ?? audience)
+    const { data: schema } = useEntitlementsSchema(initial?.audience ?? audience)
     const create = useCreatePlan()
     const update = useUpdatePlan()
+    const addPrice = useAddPlanPrice()
 
-    const [name, setName] = useState(plan?.name ?? '')
-    const [slug, setSlug] = useState(plan?.slug ?? '')
-    const [description, setDescription] = useState(plan?.description ?? '')
+    // Null until the plan exists. Set on create, so a price publish (and later edits)
+    // can hang on the freshly-minted plan without closing the modal.
+    const [planId, setPlanId] = useState<string | null>(initial?.id ?? null)
+    const [tab, setTab] = useState<'info' | 'prices'>('info')
+
+    const [name, setName] = useState(initial?.name ?? '')
+    const [slug, setSlug] = useState(initial?.slug ?? '')
+    const [description, setDescription] = useState(initial?.description ?? '')
     const [entitlements, setEntitlements] = useState<EntitlementsValue>(
-        (plan?.entitlements as EntitlementsValue | undefined) ?? {},
+        (initial?.entitlements as EntitlementsValue | undefined) ?? {},
     )
+    // The price matrix while creating — there's no plan to hang prices on yet, so they
+    // ride along and get published right after the plan is born.
+    const [priceDraft, setPriceDraft] = useState<Record<string, string>>({})
+    // Explicit intent for a plan with no prices. Without this an empty matrix would slip
+    // through as a free plan by accident; ticking it is what unlocks a priceless create.
+    const [free, setFree] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [saved, setSaved] = useState(false)
 
     // A fresh plan starts from the schema's own empty shape; an existing one from
     // whatever it already grants.
     useEffect(() => {
-        if (!schema || plan) return
+        if (!schema || initial) return
         setEntitlements(emptyEntitlements(schema))
-    }, [schema, plan])
+    }, [schema, initial])
 
-    const pending = create.isPending || update.isPending
+    // Any edit clears the "saved" confirmation; a successful save unchanged fields
+    // won't refire this, so the tick stays until the admin actually touches something.
+    useEffect(() => {
+        setSaved(false)
+    }, [name, description, entitlements])
 
-    const onSubmit = (event: FormEvent) => {
+    // The prices tab reads the plan live from the refreshed catalog by id, so a price
+    // added moments ago shows without reopening — and the just-created plan appears
+    // the instant the list refetches.
+    const plan = planId ? (plans.find((p) => p.id === planId) ?? initial ?? null) : null
+
+    const onUpdate = (event: FormEvent) => {
         event.preventDefault()
         setError(null)
-        const onError = (err: unknown) => setError(toMessage(err))
+        if (!planId) return
 
-        if (plan) {
-            update.mutate(
-                { id: plan.id, name, description: description || null, entitlements },
-                { onSuccess: onClose, onError },
-            )
-            return
-        }
-
-        create.mutate(
-            { audience, slug, name, description: description || null, entitlements },
-            { onSuccess: onClose, onError },
+        update.mutate(
+            { id: planId, name, description: description || null, entitlements },
+            { onSuccess: () => setSaved(true), onError: (err) => setError(toMessage(err)) },
         )
     }
 
+    // Create the plan, then publish whatever the price matrix was filled with. If a
+    // price fails, the plan already exists (planId is set) so the modal flips to edit
+    // mode on the prices tab, where the live table lets the admin finish.
+    const onCreate = async (event: FormEvent) => {
+        event.preventDefault()
+        setError(null)
+
+        if (!name.trim() || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length < 3) {
+            setTab('info')
+            setError(t('planBaseInvalid'))
+            return
+        }
+
+        const prices = free ? [] : filledPrices(priceDraft)
+
+        // A paid plan with nothing filled is almost always a forgotten price, not an
+        // intended free plan — make the admin say which by ticking the box.
+        if (!free && prices.length === 0) {
+            setTab('prices')
+            setError(t('planNeedsPrice'))
+            return
+        }
+        if (!free && hasInvalidAmount(priceDraft)) {
+            setTab('prices')
+            setError(t('planPriceInvalid'))
+            return
+        }
+
+        let created = false
+        try {
+            const newId = await create.mutateAsync({
+                audience,
+                slug,
+                name,
+                description: description || null,
+                entitlements,
+                isFree: free,
+            })
+            created = true
+            setPlanId(newId)
+
+            for (const price of prices) await addPrice.mutateAsync({ planId: newId, ...price })
+
+            onClose()
+        } catch (err) {
+            setError(toMessage(err))
+            if (created) setTab('prices')
+        }
+    }
+
+    const creating = create.isPending || addPrice.isPending
+
     return (
-        <Modal open onClose={onClose} className="max-w-lg">
-            <form onSubmit={onSubmit} className="space-y-4">
+        <Modal open onClose={onClose} className="max-w-xl">
+            <div className="space-y-4">
                 <h2 className="font-display text-h4 tracking-tight">
-                    {plan ? t('planEditTitle') : t('planCreateTitle')}
+                    {planId ? t('planEditTitle') : t('planCreateTitle')}
                 </h2>
 
-                <Field label={t('planName')}>
-                    <Input value={name} onChange={(event) => setName(event.target.value)} required maxLength={60} />
-                </Field>
+                <SlidingTabs
+                    analyticsId="admin-plan-tab"
+                    items={[
+                        { value: 'info', label: t('planTabInfo') },
+                        { value: 'prices', label: t('planPrices') },
+                    ]}
+                    value={tab}
+                    onChange={(value) => setTab(value as 'info' | 'prices')}
+                />
 
-                {plan ? null : (
-                    <Field label={t('planSlug')} hint={t('planSlugHint')}>
-                        <Input
-                            value={slug}
-                            onChange={(event) => setSlug(event.target.value)}
-                            required
-                            pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                            minLength={3}
-                            maxLength={40}
-                        />
-                    </Field>
-                )}
+                {planId ? (
+                    // Existing plan: base info and the live price table are saved
+                    // independently, each on its own tab.
+                    tab === 'info' ? (
+                        <form onSubmit={onUpdate} className="space-y-4">
+                            <PlanBaseFields
+                                schema={schema}
+                                name={name}
+                                setName={setName}
+                                slug={slug}
+                                setSlug={setSlug}
+                                showSlug={false}
+                                description={description}
+                                setDescription={setDescription}
+                                entitlements={entitlements}
+                                setEntitlements={setEntitlements}
+                                liveNote={initial?.status === 'active'}
+                            />
 
-                <Field label={t('planDescription')}>
-                    <Textarea
-                        value={description}
-                        onChange={(event) => setDescription(event.target.value)}
-                        maxLength={500}
-                    />
-                </Field>
+                            <FormError error={error} />
 
-                <div className="space-y-2">
-                    <p className="font-mono text-eyebrow uppercase text-text-dim">{t('planEntitlements')}</p>
-                    {schema ? (
-                        <EntitlementsForm schema={schema} value={entitlements} onChange={setEntitlements} />
+                            <div className="flex items-center gap-2">
+                                <TrackedButton
+                                    analyticsId="admin-plan-cancel"
+                                    type="button"
+                                    onClick={onClose}
+                                    className="w-full rounded-full px-6 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
+                                >
+                                    {t('cancel')}
+                                </TrackedButton>
+                                <div className="flex w-full items-center justify-end gap-3">
+                                    {saved ? (
+                                        <span
+                                            className="font-mono text-eyebrow uppercase text-ember"
+                                            aria-live="polite"
+                                        >
+                                            {t('planSaved')}
+                                        </span>
+                                    ) : null}
+                                    <SubmitButton
+                                        analyticsId="admin-plan-save"
+                                        loading={update.isPending}
+                                        disabled={!schema}
+                                    >
+                                        {t('save')}
+                                    </SubmitButton>
+                                </div>
+                            </div>
+                        </form>
+                    ) : plan ? (
+                        <PricesPanel plan={plan} onClose={onClose} />
                     ) : (
-                        <Skeleton className="h-24 rounded-2xl" />
-                    )}
-                    {plan?.status === 'active' ? (
-                        <p className="text-xs text-text-faint">{t('planEntitlementsLive')}</p>
-                    ) : null}
-                </div>
+                        <Skeleton className="h-40 rounded-2xl" />
+                    )
+                ) : (
+                    // New plan: base info and prices are filled together, then created
+                    // and published in one submit. One form, the tabs swap which half shows.
+                    // The inactive half is unmounted (not just hidden) so a `required` field
+                    // it holds can't silently block a submit fired from the other tab.
+                    <form onSubmit={onCreate} className="space-y-4">
+                        {tab === 'info' ? (
+                            <PlanBaseFields
+                                schema={schema}
+                                name={name}
+                                setName={setName}
+                                slug={slug}
+                                setSlug={setSlug}
+                                showSlug
+                                description={description}
+                                setDescription={setDescription}
+                                entitlements={entitlements}
+                                setEntitlements={setEntitlements}
+                                liveNote={false}
+                            />
+                        ) : (
+                            <div className="space-y-3">
+                                <FreeToggle checked={free} onChange={setFree} />
+                                {free ? (
+                                    <p className="text-xs text-text-faint">{t('planNoPriceFree')}</p>
+                                ) : (
+                                    <>
+                                        <p className="text-xs text-text-faint">{t('planPricesHint')}</p>
+                                        <PriceMatrix
+                                            draft={priceDraft}
+                                            onChange={(key, value) =>
+                                                setPriceDraft((current) => ({ ...current, [key]: value }))
+                                            }
+                                        />
+                                    </>
+                                )}
+                            </div>
+                        )}
 
-                <FormError error={error} />
+                        <FormError error={error} />
 
-                <div className="flex gap-2">
-                    <TrackedButton
-                        analyticsId="admin-plan-cancel"
-                        type="button"
-                        onClick={onClose}
-                        className="w-full rounded-full px-6 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
-                    >
-                        {t('cancel')}
-                    </TrackedButton>
-                    <SubmitButton analyticsId="admin-plan-save" loading={pending} disabled={!schema}>
-                        {t('save')}
-                    </SubmitButton>
-                </div>
-            </form>
+                        <div className="flex items-center gap-2">
+                            <TrackedButton
+                                analyticsId="admin-plan-cancel"
+                                type="button"
+                                onClick={onClose}
+                                className="w-full rounded-full px-6 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
+                            >
+                                {t('cancel')}
+                            </TrackedButton>
+                            <SubmitButton analyticsId="admin-plan-save" loading={creating} disabled={!schema}>
+                                {t('planCreateSubmit')}
+                            </SubmitButton>
+                        </div>
+                    </form>
+                )}
+            </div>
         </Modal>
     )
 }
 
-/** The plan's price versions: publish a new one, withdraw one, read the history. */
-function PricesModal({ plan, onClose }: { plan: AdminPlan; onClose: () => void }) {
+/** The plan's base info: name, (optional) slug, description and the schema-driven grants. */
+function PlanBaseFields({
+    schema,
+    name,
+    setName,
+    slug,
+    setSlug,
+    showSlug,
+    description,
+    setDescription,
+    entitlements,
+    setEntitlements,
+    liveNote,
+}: {
+    schema?: EntitlementsJsonSchema
+    name: string
+    setName: (value: string) => void
+    slug: string
+    setSlug: (value: string) => void
+    showSlug: boolean
+    description: string
+    setDescription: (value: string) => void
+    entitlements: EntitlementsValue
+    setEntitlements: (value: EntitlementsValue) => void
+    liveNote: boolean
+}) {
+    const t = useTranslations('admin')
+
+    return (
+        <div className="space-y-4">
+            <Field label={t('planName')}>
+                <Input value={name} onChange={(event) => setName(event.target.value)} required maxLength={60} />
+            </Field>
+
+            {showSlug ? (
+                <Field label={t('planSlug')} hint={t('planSlugHint')}>
+                    <Input
+                        value={slug}
+                        onChange={(event) => setSlug(event.target.value)}
+                        required
+                        pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                        minLength={3}
+                        maxLength={40}
+                    />
+                </Field>
+            ) : null}
+
+            <Field label={t('planDescription')}>
+                <Textarea
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    maxLength={500}
+                />
+            </Field>
+
+            <div className="space-y-2">
+                <p className="font-mono text-eyebrow uppercase text-text-dim">{t('planEntitlements')}</p>
+                {schema ? (
+                    <EntitlementsForm schema={schema} value={entitlements} onChange={setEntitlements} />
+                ) : (
+                    <Skeleton className="h-24 rounded-2xl" />
+                )}
+                {liveNote ? <p className="text-xs text-text-faint">{t('planEntitlementsLive')}</p> : null}
+            </div>
+        </div>
+    )
+}
+
+/** The editable interval × currency price grid (major units). Purely presentational. */
+function PriceMatrix({
+    draft,
+    onChange,
+}: {
+    draft: Record<string, string>
+    onChange: (key: string, value: string) => void
+}) {
+    const t = useTranslations('admin')
+
+    return (
+        <div className="overflow-x-auto">
+            <div className="grid min-w-[19rem] grid-cols-[4.5rem_1fr_1fr] items-center gap-2">
+                <span />
+                {CURRENCIES.map((currency) => (
+                    <span key={currency} className="px-1 text-center font-mono text-eyebrow uppercase text-text-dim">
+                        {currency}
+                    </span>
+                ))}
+
+                {INTERVALS.map((interval) => (
+                    <Fragment key={interval}>
+                        <span className="font-mono text-eyebrow uppercase text-text-faint">
+                            {t(`interval.${interval}` as 'interval.month')}
+                        </span>
+                        {CURRENCIES.map((currency) => {
+                            const key = `${interval}-${currency}`
+
+                            return (
+                                <Input
+                                    key={currency}
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    inputMode="decimal"
+                                    placeholder="—"
+                                    aria-label={`${t(`interval.${interval}` as 'interval.month')} ${currency}`}
+                                    value={draft[key] ?? ''}
+                                    onChange={(event) => onChange(key, event.target.value)}
+                                    className="px-3 py-2 text-center text-sm"
+                                />
+                            )
+                        })}
+                    </Fragment>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+/** The prices filled into a matrix draft, as publishable rows (empty cells skipped). */
+function filledPrices(draft: Record<string, string>): { interval: string; currency: string; amountCents: number }[] {
+    const rows: { interval: string; currency: string; amountCents: number }[] = []
+
+    for (const interval of INTERVALS)
+        for (const currency of CURRENCIES) {
+            const raw = (draft[`${interval}-${currency}`] ?? '').trim()
+            if (raw === '') continue
+
+            rows.push({ interval, currency, amountCents: Math.round(Number(raw) * 100) })
+        }
+
+    return rows
+}
+
+/** True if any non-empty cell isn't a valid amount above zero. */
+function hasInvalidAmount(draft: Record<string, string>): boolean {
+    for (const interval of INTERVALS)
+        for (const currency of CURRENCIES) {
+            const raw = (draft[`${interval}-${currency}`] ?? '').trim()
+            if (raw === '') continue
+            if (!Number.isFinite(Number(raw)) || Math.round(Number(raw) * 100) < 1) return true
+        }
+
+    return false
+}
+
+/**
+ * "This plan has no prices" confirmation. Editable while creating (it sets `isFree`);
+ * a plan's free status is fixed at birth, so it shows locked when editing.
+ */
+function FreeToggle({
+    checked,
+    onChange,
+    disabled = false,
+}: {
+    checked: boolean
+    onChange?: (checked: boolean) => void
+    disabled?: boolean
+}) {
+    const t = useTranslations('admin')
+    const id = useId()
+
+    return (
+        <div className="rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
+            <div className="flex items-center gap-3">
+                <input
+                    id={id}
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={(event) => onChange?.(event.target.checked)}
+                    className="size-4 accent-ember disabled:opacity-50"
+                />
+                <label htmlFor={id} className="text-sm text-text-dim">
+                    {t('planFreeConfirm')}
+                </label>
+            </div>
+            {disabled ? <p className="mt-1.5 pl-7 text-xs text-text-faint">{t('planFreeLocked')}</p> : null}
+        </div>
+    )
+}
+
+/** One cell's intent when the admin saves the price table. */
+type PriceChange =
+    | { type: 'publish'; interval: string; currency: string; amountCents: number }
+    | { type: 'withdraw'; interval: string; currency: string; priceId: string }
+
+/**
+ * Every price at a glance: a matrix of interval × currency, each cell pre-filled
+ * with what's on sale. Editing a cell and saving publishes a new version (which
+ * withdraws the one it replaces); clearing a cell withdraws it — subscribers on it
+ * keep their price, so that case is confirmed. Everything applies in one save.
+ */
+function PricesPanel({ plan, onClose }: { plan: AdminPlan; onClose: () => void }) {
     const t = useTranslations('admin')
     const toMessage = useErrorMessage()
     const addPrice = useAddPlanPrice()
     const deactivate = useDeactivatePlanPrice()
 
-    const [interval, setInterval] = useState<string>('month')
-    const [currency, setCurrency] = useState<string>('EUR')
-    const [amount, setAmount] = useState('')
+    const activeFor = (interval: string, currency: string) =>
+        plan.prices.find((price) => price.active && price.interval === interval && price.currency === currency)
+
+    // The editable matrix, seeded from what's on sale (major units). After a save the
+    // catalog refetches, but the draft already mirrors what was submitted, so it stays
+    // in sync without re-seeding.
+    const [draft, setDraft] = useState<Record<string, string>>(() => {
+        const seed: Record<string, string> = {}
+        for (const interval of INTERVALS)
+            for (const currency of CURRENCIES) {
+                const price = activeFor(interval, currency)
+                seed[`${interval}-${currency}`] = price ? String(price.amountCents / 100) : ''
+            }
+        return seed
+    })
     const [error, setError] = useState<string | null>(null)
-    const [withdrawing, setWithdrawing] = useState<AdminPlanPrice | null>(null)
+    const [confirming, setConfirming] = useState(false)
 
-    const [active, withdrawn] = useMemo(
-        () => [plan.prices.filter((price) => price.active), plan.prices.filter((price) => !price.active)],
-        [plan.prices],
-    )
+    const withdrawn = useMemo(() => plan.prices.filter((price) => !price.active), [plan.prices])
+    const pending = addPrice.isPending || deactivate.isPending
 
-    // The plan in the cache is refreshed by the mutation; the modal reads it live.
-    const replaces = active.find((price) => price.interval === interval && price.currency === currency)
+    // What the table would change vs. what's on sale now.
+    const changes = useMemo<PriceChange[]>(() => {
+        const list: PriceChange[] = []
+        for (const interval of INTERVALS)
+            for (const currency of CURRENCIES) {
+                const current = plan.prices.find(
+                    (price) => price.active && price.interval === interval && price.currency === currency,
+                )
+                const raw = (draft[`${interval}-${currency}`] ?? '').trim()
+
+                if (raw === '') {
+                    if (current) list.push({ type: 'withdraw', interval, currency, priceId: current.id })
+                    continue
+                }
+
+                const amountCents = Math.round(Number(raw) * 100)
+                if (!current || current.amountCents !== amountCents)
+                    list.push({ type: 'publish', interval, currency, amountCents })
+            }
+        return list
+    }, [draft, plan.prices])
+
+    const withdrawals = changes.filter((change) => change.type === 'withdraw')
+
+    // Publishing withdraws the prior version for that interval+currency on its own; a
+    // cleared cell is the only truly destructive move, so that's the one we confirm.
+    const apply = async () => {
+        setError(null)
+        try {
+            for (const change of changes) {
+                if (change.type === 'publish')
+                    await addPrice.mutateAsync({
+                        planId: plan.id,
+                        interval: change.interval,
+                        currency: change.currency,
+                        amountCents: change.amountCents,
+                    })
+                else await deactivate.mutateAsync(change.priceId)
+            }
+            setConfirming(false)
+        } catch (err) {
+            setError(toMessage(err))
+            setConfirming(false)
+        }
+    }
 
     const onSubmit = (event: FormEvent) => {
         event.preventDefault()
         setError(null)
-        const amountCents = Math.round(Number(amount) * 100)
+        if (!changes.length) return
 
-        addPrice.mutate(
-            { planId: plan.id, interval, currency, amountCents },
-            { onSuccess: () => setAmount(''), onError: (err) => setError(toMessage(err)) },
-        )
+        if (hasInvalidAmount(draft)) {
+            setError(t('planPriceInvalid'))
+            return
+        }
+
+        if (withdrawals.length) {
+            setConfirming(true)
+            return
+        }
+
+        void apply()
     }
 
     return (
-        <Modal open onClose={onClose} className="max-w-lg">
-            <div className="space-y-5">
-                <div>
-                    <h2 className="font-display text-h4 tracking-tight">{t('planPricesTitle', { name: plan.name })}</h2>
-                    <p className="mt-1 text-xs text-text-faint">{t('planPricesHint')}</p>
-                </div>
+        <div className="space-y-5">
+            <FreeToggle checked={plan.isFree} disabled />
 
-                <ul className="space-y-2">
-                    {active.map((price) => (
-                        <li
-                            key={price.id}
-                            className="flex items-center justify-between rounded-2xl bg-bg/40 px-4 py-3 ring-1 ring-hairline"
-                        >
-                            <span className="font-mono text-sm text-text">
-                                {formatAmount(price.amountCents, price.currency, 'en')}
-                                <span className="text-text-faint">
-                                    {' '}
-                                    / {t(`interval.${price.interval}` as 'interval.month')}
-                                </span>
-                            </span>
-                            <TrackedButton
-                                analyticsId="admin-price-withdraw-open"
-                                type="button"
-                                onClick={() => setWithdrawing(price)}
-                                aria-label={t('planPriceWithdraw')}
-                                className="grid size-8 place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
-                            >
-                                <Trash className="size-4" />
-                            </TrackedButton>
-                        </li>
-                    ))}
-                    {active.length === 0 ? <li className="text-sm text-text-faint">{t('planNoPrice')}</li> : null}
-                </ul>
+            {plan.isFree ? (
+                <p className="text-sm text-text-faint">{t('planNoPriceFree')}</p>
+            ) : (
+                <>
+                    <p className="text-xs text-text-faint">{t('planPricesHint')}</p>
 
-                <form onSubmit={onSubmit} className="space-y-3 border-t border-hairline pt-5">
-                    <div className="grid grid-cols-3 gap-2">
-                        <Field label={t('planPriceInterval')}>
-                            <Select value={interval} onChange={(event) => setInterval(event.target.value)}>
-                                {INTERVALS.map((value) => (
-                                    <option key={value} value={value}>
-                                        {t(`interval.${value}` as 'interval.month')}
-                                    </option>
+                    <form onSubmit={onSubmit} className="space-y-4">
+                        <PriceMatrix
+                            draft={draft}
+                            onChange={(key, value) => setDraft((current) => ({ ...current, [key]: value }))}
+                        />
+
+                        <FormError error={error} />
+
+                        <SubmitButton analyticsId="admin-prices-save" loading={pending} disabled={changes.length === 0}>
+                            {t('planPricesSave')}
+                        </SubmitButton>
+                    </form>
+
+                    {withdrawn.length ? (
+                        <div className="border-t border-hairline pt-5">
+                            <p className="font-mono text-eyebrow uppercase text-text-dim">{t('planPriceHistory')}</p>
+                            <ul className="mt-2 space-y-1">
+                                {withdrawn.map((price) => (
+                                    <li key={price.id} className="font-mono text-xs text-text-faint line-through">
+                                        {formatAmount(price.amountCents, price.currency, 'en')} /{' '}
+                                        {t(`interval.${price.interval}` as 'interval.month')}
+                                    </li>
                                 ))}
-                            </Select>
-                        </Field>
-                        <Field label={t('planPriceCurrency')}>
-                            <Select value={currency} onChange={(event) => setCurrency(event.target.value)}>
-                                {CURRENCIES.map((value) => (
-                                    <option key={value} value={value}>
-                                        {value}
-                                    </option>
-                                ))}
-                            </Select>
-                        </Field>
-                        <Field label={t('planPriceAmount')}>
-                            <Input
-                                type="number"
-                                min="0.01"
-                                step="0.01"
-                                value={amount}
-                                onChange={(event) => setAmount(event.target.value)}
-                                required
-                            />
-                        </Field>
-                    </div>
-
-                    {replaces ? (
-                        <p className="text-xs text-text-faint">
-                            {t('planPriceReplaces', {
-                                amount: formatAmount(replaces.amountCents, replaces.currency, 'en'),
-                            })}
-                        </p>
+                            </ul>
+                        </div>
                     ) : null}
+                </>
+            )}
 
-                    <FormError error={error} />
-
-                    <SubmitButton analyticsId="admin-price-add" loading={addPrice.isPending}>
-                        {t('planPriceAdd')}
-                    </SubmitButton>
-                </form>
-
-                {withdrawn.length ? (
-                    <div className="border-t border-hairline pt-5">
-                        <p className="font-mono text-eyebrow uppercase text-text-dim">{t('planPriceHistory')}</p>
-                        <ul className="mt-2 space-y-1">
-                            {withdrawn.map((price) => (
-                                <li key={price.id} className="font-mono text-xs text-text-faint line-through">
-                                    {formatAmount(price.amountCents, price.currency, 'en')} /{' '}
-                                    {t(`interval.${price.interval}` as 'interval.month')}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                ) : null}
-            </div>
+            <TrackedButton
+                analyticsId="admin-plan-done"
+                type="button"
+                onClick={onClose}
+                className="w-full rounded-full px-6 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
+            >
+                {t('planDone')}
+            </TrackedButton>
 
             <ConfirmModal
-                open={Boolean(withdrawing)}
-                onClose={() => setWithdrawing(null)}
-                onConfirm={() => {
-                    if (!withdrawing) return
-                    deactivate.mutate(withdrawing.id, {
-                        onSuccess: () => setWithdrawing(null),
-                        onError: (err) => setError(toMessage(err)),
-                    })
-                }}
+                open={confirming}
+                onClose={() => setConfirming(false)}
+                onConfirm={() => void apply()}
                 title={t('planPriceWithdrawTitle')}
                 description={t('planPriceWithdrawBody')}
-                confirmLabel={t('planPriceWithdraw')}
+                confirmLabel={t('planPricesSave')}
                 cancelLabel={t('cancel')}
                 destructive
-                pending={deactivate.isPending}
+                pending={pending}
                 analyticsId="admin-price-withdraw"
             />
-        </Modal>
+        </div>
     )
 }
