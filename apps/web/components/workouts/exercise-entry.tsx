@@ -13,7 +13,9 @@ import {
     useRemoveSet,
     useUpdateSet,
 } from '@/lib/graphql/hooks/use-workouts'
+import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { formatWeight, kgTo, type Units } from '@/lib/units'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Check, Close, Pencil, Plus } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
 import { CompleteSetModal } from './complete-set-modal'
@@ -207,10 +209,25 @@ export function ExerciseEntry({
     athleteId?: string
 }) {
     const t = useTranslations('workouts')
+    const errorMessage = useErrorMessage()
     const log = useLogSet()
     const removeEntry = useRemoveExerciseEntry()
     const [adding, setAdding] = useState(false)
+    const [confirmingRemove, setConfirmingRemove] = useState(false)
+    const [removeError, setRemoveError] = useState<string | null>(null)
     const progress = entryProgress(entry)
+
+    // Removing the exercise takes its sets down with it (the API cascades), so the
+    // dialog says how many are about to go — that count is the actual stake.
+    async function onRemoveEntry() {
+        setRemoveError(null)
+        try {
+            await removeEntry.mutateAsync({ sessionId, entryId: entry.id })
+            setConfirmingRemove(false)
+        } catch (error) {
+            setRemoveError(errorMessage(error))
+        }
+    }
 
     // A new set is always pending — `logSet` has no outcome to send: you mark it
     // done once you've done it.
@@ -261,11 +278,10 @@ export function ExerciseEntry({
                         ) : null}
                     </div>
                     <TrackedButton
-                        analyticsId="exercise-entry-remove"
+                        analyticsId="exercise-entry-remove-open"
                         type="button"
-                        onClick={() => removeEntry.mutate({ sessionId, entryId: entry.id })}
-                        disabled={removeEntry.isPending}
-                        className="rounded-full px-3 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember disabled:opacity-50"
+                        onClick={() => setConfirmingRemove(true)}
+                        className="rounded-full px-3 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember"
                     >
                         {t('entryRemove')}
                     </TrackedButton>
@@ -316,6 +332,23 @@ export function ExerciseEntry({
                     sessionId={sessionId}
                     units={units}
                     athleteId={athleteId}
+                />
+
+                <ConfirmModal
+                    analyticsId="exercise-entry-remove"
+                    open={confirmingRemove}
+                    onClose={() => {
+                        setRemoveError(null)
+                        setConfirmingRemove(false)
+                    }}
+                    onConfirm={onRemoveEntry}
+                    title={t('entryRemoveTitle', { name: exerciseName })}
+                    description={t('entryRemoveBody', { sets: entry.sets.length })}
+                    confirmLabel={t('entryRemove')}
+                    cancelLabel={t('cancel')}
+                    destructive
+                    pending={removeEntry.isPending}
+                    error={removeError}
                 />
             </div>
         </div>
