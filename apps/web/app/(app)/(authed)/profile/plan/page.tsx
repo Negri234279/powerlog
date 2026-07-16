@@ -1,8 +1,8 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { useSearchParams } from 'next/navigation'
-import { useEffect, useId, useRef, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
 import {
     type MyEntitlements,
@@ -41,6 +41,8 @@ function formatAmount(amountCents: number, currency: string): string {
 export default function PlanPage() {
     const t = useTranslations('billing')
     const searchParams = useSearchParams()
+    const router = useRouter()
+    const pathname = usePathname()
     const { data: me } = useMe()
     const { data: mine, isLoading: loadingMine } = useMyPlan()
     // The audience decides which catalog they see. It comes from their plan (a coach
@@ -71,6 +73,29 @@ export default function PlanPage() {
             setActivatedOpen(true)
         }
     }, [checkout, isActivated])
+
+    /**
+     * Dismissing the confirmation also drops `?checkout=success` from the URL.
+     *
+     * The param's whole job was to say "the gateway just sent them back", and it is
+     * done the moment they acknowledge it. Left there it outlives its meaning: a
+     * refresh — or a shared/bookmarked link — re-runs the effect above on a fresh
+     * mount (`celebratedRef` starts false again) and celebrates a plan they bought
+     * days ago. `replace` rather than `push` so Back does not walk into it either.
+     *
+     * Every way out of the modal lands here: the button, Escape and the backdrop all
+     * go through `Modal`'s single `onClose`.
+     */
+    const dismissActivated = useCallback(() => {
+        setActivatedOpen(false)
+
+        // Only `checkout` goes: anything else on the URL belongs to somebody else.
+        const params = new URLSearchParams(searchParams)
+        params.delete('checkout')
+        const query = params.toString()
+
+        router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    }, [router, pathname, searchParams])
 
     return (
         <div className="space-y-8">
@@ -131,11 +156,7 @@ export default function PlanPage() {
                 </div>
             </section>
 
-            <ActivatedModal
-                open={activatedOpen}
-                onClose={() => setActivatedOpen(false)}
-                planName={subscription?.planName ?? ''}
-            />
+            <ActivatedModal open={activatedOpen} onClose={dismissActivated} planName={subscription?.planName ?? ''} />
         </div>
     )
 }
