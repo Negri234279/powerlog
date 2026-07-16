@@ -25,8 +25,8 @@ export interface ProgrammedExercise {
 
 /**
  * Copy programmed exercises and their sets into a (fresh) session: each set
- * becomes a session set with only its `planned*`/intensity/notes filled in —
- * performed values stay empty until the athlete logs them. Reused by template and
+ * becomes a session set with only its `planned*`/notes filled in — performed
+ * values stay empty until the athlete logs them. Reused by template and
  * mesocycle materialization.
  */
 export function materializeProgrammedExercises(
@@ -45,8 +45,11 @@ export function materializeProgrammedExercises(
                     id: ids.uuid(),
                     plannedWeight: set.plannedWeight,
                     plannedReps: set.plannedReps,
-                    rpe: set.rpe,
-                    rir: set.rir,
+                    // A programmed set's rpe/rir IS the target, so it lands in the
+                    // session's planned_* fields — the performed ones stay empty
+                    // until the athlete marks the set done.
+                    plannedRpe: set.rpe,
+                    plannedRir: set.rir,
                     notes: set.notes,
                 },
                 now,

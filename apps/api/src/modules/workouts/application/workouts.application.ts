@@ -1,5 +1,6 @@
 import { AddExerciseEntryHandler } from './commands/add-exercise-entry/add-exercise-entry.handler'
 import { AssignMesocycleToAthleteHandler } from './commands/assign-mesocycle-to-athlete/assign-mesocycle-to-athlete.handler'
+import { CompleteSetHandler } from './commands/complete-set/complete-set.handler'
 import { CompleteWorkoutSessionHandler } from './commands/complete-workout-session/complete-workout-session.handler'
 import { CreateExerciseHandler } from './commands/create-exercise/create-exercise.handler'
 import { CreateMesocycleHandler } from './commands/create-mesocycle/create-mesocycle.handler'
@@ -50,6 +51,7 @@ export const WORKOUTS_COMMAND_HANDLERS = [
     RemoveExerciseEntryHandler,
     LogSetHandler,
     UpdateSetHandler,
+    CompleteSetHandler,
     ApplySessionPlanHandler,
     RemoveSetHandler,
     CompleteWorkoutSessionHandler,

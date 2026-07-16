@@ -23,11 +23,14 @@ export const WorkoutSessionFieldsFragment = graphql(`
                 order
                 plannedWeightKg
                 plannedReps
+                plannedRpe
+                plannedRir
                 weightKg
                 reps
                 rpe
                 rir
                 e1rmKg
+                outcome
                 notes
             }
         }
@@ -240,6 +243,14 @@ export const LogSetDocument = graphql(`
 export const UpdateSetDocument = graphql(`
     mutation UpdateSet($input: UpdateSetInput!) {
         updateSet(input: $input) {
+            ...WorkoutSessionFields
+        }
+    }
+`)
+
+export const CompleteSetDocument = graphql(`
+    mutation CompleteSet($input: CompleteSetInput!) {
+        completeSet(input: $input) {
             ...WorkoutSessionFields
         }
     }

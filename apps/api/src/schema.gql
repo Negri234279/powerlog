@@ -459,6 +459,27 @@ type CoachUser {
   username: String!
 }
 
+input CompleteSetInput {
+  entryId: ID!
+  notes: String
+
+  """success | failed"""
+  outcome: String!
+  reps: Int
+
+  """Reps in reserve (alternative to RPE)."""
+  rir: Int
+
+  """RPE 0–10 in half-point steps."""
+  rpe: Float
+  sessionId: ID!
+  setId: ID!
+
+  """Weight unit of the inputs: kg | lb (default kg)."""
+  unit: String
+  weight: Float
+}
+
 input CreateExerciseInput {
   """
   squat | bench | deadlift | chest | back | shoulders | legs | arms | core
@@ -683,6 +704,12 @@ input LogSetInput {
   entryId: ID!
   notes: String
   plannedReps: Int
+
+  """Target reps in reserve (alternative to planned RPE)."""
+  plannedRir: Int
+
+  """Target RPE 0–10 in half-point steps."""
+  plannedRpe: Float
   plannedWeight: Float
   reps: Int
 
@@ -913,6 +940,11 @@ type Mutation {
   Move to another plan. An upgrade is charged now, pro-rated; a downgrade lands when the period you paid for ends. Returns a URL when the provider needs you to approve it again (PayPal), null when it just applied it (Stripe).
   """
   changePlan(planPriceId: ID!): String
+
+  """
+  Mark a set done (success | failed), logging what was actually performed.
+  """
+  completeSet(input: CompleteSetInput!): WorkoutSession!
 
   """Mark a session as completed."""
   completeWorkoutSession(id: ID!): WorkoutSession!
@@ -1899,7 +1931,18 @@ input UpdateProfileInput {
 input UpdateSetInput {
   entryId: ID!
   notes: String
+
+  """
+  success | failed; null sends the set back to pending. Absent leaves it as it is.
+  """
+  outcome: String
   plannedReps: Int
+
+  """Target reps in reserve (alternative to planned RPE)."""
+  plannedRir: Int
+
+  """Target RPE 0–10 in half-point steps."""
+  plannedRpe: Float
   plannedWeight: Float
   reps: Int
 
@@ -2007,7 +2050,16 @@ type WorkoutSet {
   id: ID!
   notes: String
   order: Int!
+
+  """success | failed; null while the set is still pending."""
+  outcome: String
   plannedReps: Int
+
+  """Target RIR, if the set was programmed with one."""
+  plannedRir: Int
+
+  """Target RPE, if the set was programmed with one."""
+  plannedRpe: Float
   plannedWeightKg: Float
   reps: Int
   rir: Int

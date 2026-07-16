@@ -19,6 +19,7 @@ export const METRIC = {
     r2Up: 'powerlog_r2_up',
     r2ProbeDuration: 'powerlog_r2_probe_seconds',
     notificationsCreated: 'powerlog_notifications_created_total',
+    setsCompleted: 'powerlog_sets_completed_total',
     mesocycleStatusTransitions: 'powerlog_mesocycle_status_transitions_total',
     mesocycleSessionsGenerated: 'powerlog_mesocycle_sessions_generated_total',
     llmRequests: 'powerlog_llm_requests_total',
@@ -176,6 +177,13 @@ export const metricsProviders = [
     // Mesocycle lifecycle signals — dimensions the CQRS command name can't carry.
     // Status transitions by target status (draft/active/completed/archived): the
     // meso lifecycle funnel (set by PrometheusMesocycleMetrics).
+    // Sets marked done by the athlete. `outcome` is the point: a rising share of
+    // `failed` is a programme prescribing more than the athlete can lift.
+    makeCounterProvider({
+        name: METRIC.setsCompleted,
+        help: 'Count of workout sets marked done, by outcome.',
+        labelNames: ['outcome'],
+    }),
     makeCounterProvider({
         name: METRIC.mesocycleStatusTransitions,
         help: 'Count of mesocycle status transitions, by target status.',

@@ -17,6 +17,7 @@ import { unitsOf } from '@/lib/units'
 import { AddExercise } from '@/components/workouts/add-exercise'
 import { AiPlanPanel } from '@/components/workouts/ai-plan-panel'
 import { ExerciseEntry } from '@/components/workouts/exercise-entry'
+import { SessionProgress } from '@/components/workouts/session-progress'
 import { FormError } from '@/components/ui/form-error'
 import { Check } from '@/components/ui/icons'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
@@ -178,6 +179,10 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
             </div>
 
             <FormError error={actionError} className="mt-4" />
+
+            <div className="mt-6 max-w-xl">
+                <SessionProgress session={session} />
+            </div>
 
             {/* Only a planned session has targets left to program. */}
             {completed ? null : (

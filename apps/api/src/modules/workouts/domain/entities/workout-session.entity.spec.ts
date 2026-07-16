@@ -20,6 +20,97 @@ function newSession() {
     return WorkoutSessionAggregate.create({ id: randomUUID(), userId: 'u-1', performedAt: NOW, now: NOW })
 }
 
+describe('WorkoutSessionAggregate — marking sets done', () => {
+    function sessionWithProgrammedSet() {
+        const session = newSession()
+        const entry = session.addEntry({ id: 'e-1', exerciseId: 'x-1' }, NOW)
+        const set = session.addSet(
+            entry.id,
+            {
+                id: 's-1',
+                plannedWeight: WeightVO.create(100),
+                plannedReps: RepsVO.create(5),
+                plannedRpe: RpeVO.create(8),
+            },
+            NOW,
+        )
+        return { session, entryId: entry.id, setId: set.id }
+    }
+
+    it('starts pending', () => {
+        const { session } = sessionWithProgrammedSet()
+        expect(session.entries[0]!.sets[0]!.outcome).toBeNull()
+    })
+
+    it('records what was performed without touching the targets it deviates from', () => {
+        const { session, entryId, setId } = sessionWithProgrammedSet()
+
+        // Told 100×5 @8; managed 95×5 and it felt like a 9.5.
+        session.completeSet(
+            entryId,
+            setId,
+            'failed',
+            { weight: WeightVO.create(95), reps: RepsVO.create(5), rpe: RpeVO.create(9.5) },
+            LATER,
+        )
+
+        const set = session.entries[0]!.sets[0]!
+        expect(set.outcome).toBe('failed')
+        expect(set.weight?.value).toBe(95)
+        expect(set.rpe?.value).toBe(9.5)
+        expect(set.plannedWeight?.value).toBe(100)
+        expect(set.plannedRpe?.value).toBe(8)
+        expect(set.e1rmKg).toBeCloseTo(110.83, 2)
+        expect(session.updatedAt).toEqual(LATER)
+    })
+
+    it('marks a set failed with nothing logged — failing can mean it never went up', () => {
+        const { session, entryId, setId } = sessionWithProgrammedSet()
+
+        session.completeSet(entryId, setId, 'failed', {}, LATER)
+
+        const set = session.entries[0]!.sets[0]!
+        expect(set.outcome).toBe('failed')
+        expect(set.weight).toBeNull()
+        expect(set.e1rmKg).toBeNull()
+    })
+
+    it('sends a set back to pending through an edit, keeping its logged numbers', () => {
+        const { session, entryId, setId } = sessionWithProgrammedSet()
+        session.completeSet(entryId, setId, 'success', { weight: WeightVO.create(100), reps: RepsVO.create(5) }, NOW)
+
+        session.updateSet(entryId, setId, { outcome: null }, LATER)
+
+        const set = session.entries[0]!.sets[0]!
+        expect(set.outcome).toBeNull()
+        expect(set.weight?.value).toBe(100)
+        expect(session.updatedAt).toEqual(LATER)
+    })
+
+    it('leaves the outcome alone when an edit does not name it', () => {
+        const { session, entryId, setId } = sessionWithProgrammedSet()
+        session.completeSet(entryId, setId, 'success', { weight: WeightVO.create(100), reps: RepsVO.create(5) }, NOW)
+
+        session.updateSet(entryId, setId, { weight: WeightVO.create(102.5) }, LATER)
+
+        expect(session.entries[0]!.sets[0]!.outcome).toBe('success')
+    })
+
+    it('rejects a target carrying both RPE and RIR', () => {
+        const session = newSession()
+        const entry = session.addEntry({ id: 'e-1', exerciseId: 'x-1' }, NOW)
+
+        expect(() =>
+            session.addSet(entry.id, { id: 's-1', plannedRpe: RpeVO.create(8), plannedRir: RirVO.create(2) }, NOW),
+        ).toThrow(ConflictingIntensityError)
+    })
+
+    it('reports a missing set rather than silently marking nothing', () => {
+        const { session, entryId } = sessionWithProgrammedSet()
+        expect(() => session.completeSet(entryId, 'nope', 'success', {}, NOW)).toThrow(WorkoutSetNotFoundError)
+    })
+})
+
 describe('WorkoutSessionAggregate', () => {
     it('starts planned with no entries', () => {
         const session = newSession()

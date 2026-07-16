@@ -10,6 +10,7 @@ import { Roles } from '../../../../auth/roles.decorator'
 import { RolesGuard } from '../../../../auth/roles.guard'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import { AddExerciseEntryCommand } from '../../application/commands/add-exercise-entry/add-exercise-entry.command'
+import { CompleteSetCommand } from '../../application/commands/complete-set/complete-set.command'
 import { CompleteWorkoutSessionCommand } from '../../application/commands/complete-workout-session/complete-workout-session.command'
 import { CreateWorkoutSessionCommand } from '../../application/commands/create-workout-session/create-workout-session.command'
 import { DeleteWorkoutSessionCommand } from '../../application/commands/delete-workout-session/delete-workout-session.command'
@@ -17,7 +18,7 @@ import { LogSetCommand } from '../../application/commands/log-set/log-set.comman
 import { PlanWorkoutSessionCommand } from '../../application/commands/plan-workout-session/plan-workout-session.command'
 import { RemoveExerciseEntryCommand } from '../../application/commands/remove-exercise-entry/remove-exercise-entry.command'
 import { RemoveSetCommand } from '../../application/commands/remove-set/remove-set.command'
-import { UpdateSetCommand } from '../../application/commands/update-set/update-set.command'
+import { UpdateSetCommand, type EditableSetRaw } from '../../application/commands/update-set/update-set.command'
 import { UpdateWorkoutSessionCommand } from '../../application/commands/update-workout-session/update-workout-session.command'
 import { GetWorkoutSessionQuery } from '../../application/queries/get-workout-session/get-workout-session.query'
 import type { WorkoutSessionView } from '../../application/queries/get-workout-session/get-workout-session.handler'
@@ -25,17 +26,20 @@ import type { WorkoutUsageView } from '../../application/queries/get-workout-usa
 import { GetWorkoutUsageQuery } from '../../application/queries/get-workout-usage/get-workout-usage.query'
 import type { WorkoutHistoryPage } from '../../application/queries/list-workout-sessions/list-workout-sessions.handler'
 import { ListWorkoutSessionsQuery } from '../../application/queries/list-workout-sessions/list-workout-sessions.query'
+import type { SetOutcome } from '../../domain/set-outcome'
 import { WORKOUT_STATUSES, type WorkoutStatus } from '../../domain/workout-status'
 import { WorkoutHistoryPageType } from '../types/workout-history.type'
 import { WorkoutUsageType } from '../types/workout-usage.type'
 import {
     AddExerciseEntryInput,
+    CompleteSetInput,
     CreateWorkoutSessionInput,
     LogSetInput,
     PlanWorkoutSessionInput,
     UpdateSetInput,
     UpdateWorkoutSessionInput,
     addExerciseEntrySchema,
+    completeSetSchema,
     createWorkoutSessionSchema,
     logSetSchema,
     planWorkoutSessionSchema,
@@ -169,8 +173,25 @@ export class WorkoutSessionResolver {
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(updateSetSchema)) input: UpdateSetInput,
     ): Promise<WorkoutSessionView> {
-        const { sessionId, entryId, setId, ...fields } = input
+        const { sessionId, entryId, setId, outcome, ...rest } = input
+        // GraphQL types the enum as String; the zod schema is what has already
+        // rejected anything that isn't a SetOutcome (or an explicit null).
+        const fields: EditableSetRaw = { ...rest }
+        if (outcome !== undefined) fields.outcome = outcome as SetOutcome | null
+
         const command = new UpdateSetCommand(user.userId, sessionId, entryId, setId, fields)
+        return this.commandBus.execute(command)
+    }
+
+    @Mutation(() => WorkoutSessionType, {
+        description: 'Mark a set done (success | failed), logging what was actually performed.',
+    })
+    async completeSet(
+        @CurrentUser() user: AuthUser,
+        @Args('input', new ZodValidationPipe(completeSetSchema)) input: CompleteSetInput,
+    ): Promise<WorkoutSessionView> {
+        const { sessionId, entryId, setId, outcome, ...performed } = input
+        const command = new CompleteSetCommand(user.userId, sessionId, entryId, setId, outcome as SetOutcome, performed)
         return this.commandBus.execute(command)
     }
 

@@ -351,6 +351,13 @@
       "when": 1784137889063,
       "tag": "0049_plan_translations",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1784208504114,
+      "tag": "0050_nifty_mongu",
+      "breakpoints": true
     }
   ]
 }

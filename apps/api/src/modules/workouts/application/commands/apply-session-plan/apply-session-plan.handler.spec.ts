@@ -69,7 +69,10 @@ describe('ApplySessionPlanHandler', () => {
         expect(sets).toHaveLength(2)
         expect(sets[0]!.plannedWeight?.value).toBe(100)
         expect(sets[1]!.plannedWeight?.value).toBe(90)
-        expect(sets[1]!.rir?.value).toBe(2)
+        // A prescription is a target: it lands in plannedRir, never in the rir
+        // the athlete will report once they've actually done the set.
+        expect(sets[1]!.plannedRir?.value).toBe(2)
+        expect(sets[1]!.rir).toBeNull()
     })
 
     it('creates the sets the plan proposes beyond what the session has', async () => {

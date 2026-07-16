@@ -1,6 +1,7 @@
 export { FakeClock } from './fake-clock'
 export { FakeIdGenerator } from './fake-id-generator'
 export { FakeMesocycleMetrics } from './fake-mesocycle-metrics'
+export { FakeSetMetrics } from './fake-set-metrics'
 export { InMemoryExerciseRepository } from './in-memory-exercise.repository'
 export { InMemoryMesocycleRepository } from './in-memory-mesocycle.repository'
 export { InMemoryWorkoutSessionRepository } from './in-memory-workout-session.repository'

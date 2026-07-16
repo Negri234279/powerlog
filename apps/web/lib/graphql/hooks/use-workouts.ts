@@ -9,6 +9,7 @@ import {
 
 import type {
     AddExerciseEntryInput,
+    CompleteSetInput,
     CreateWorkoutSessionInput,
     ExercisesQuery,
     ExerciseSessionHistoryQuery,
@@ -26,6 +27,7 @@ import type {
 import { gqlRequest } from '@/lib/graphql/client'
 import {
     AddExerciseEntryDocument,
+    CompleteSetDocument,
     CompleteWorkoutSessionDocument,
     CreateWorkoutSessionDocument,
     DeleteWorkoutSessionDocument,
@@ -219,6 +221,14 @@ export function useUpdateSet() {
     return useMutation({
         mutationFn: (input: UpdateSetInput) => gqlRequest(UpdateSetDocument, { input }),
         onSuccess: (r) => cacheSession(qc, r.updateSet),
+    })
+}
+
+export function useCompleteSet() {
+    const qc = useQueryClient()
+    return useMutation({
+        mutationFn: (input: CompleteSetInput) => gqlRequest(CompleteSetDocument, { input }),
+        onSuccess: (r) => cacheSession(qc, r.completeSet),
     })
 }
 

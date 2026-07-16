@@ -93,8 +93,10 @@ function fieldsOf(prescribed: PrescribedSet): WorkoutSetFields {
     const fields: WorkoutSetFields = {
         plannedWeight: prescribed.plannedWeightKg === null ? null : WeightVO.create(prescribed.plannedWeightKg),
         plannedReps: prescribed.plannedReps === null ? null : RepsVO.create(prescribed.plannedReps),
-        rpe: prescribed.rpe === null ? null : RpeVO.create(prescribed.rpe),
-        rir: prescribed.rir === null ? null : RirVO.create(prescribed.rir),
+        // The model prescribes a target intensity — it cannot know what the
+        // athlete will feel, so this never touches the performed rpe/rir.
+        plannedRpe: prescribed.rpe === null ? null : RpeVO.create(prescribed.rpe),
+        plannedRir: prescribed.rir === null ? null : RirVO.create(prescribed.rir),
     }
     // `undefined` leaves the athlete's own note alone; a string replaces it.
     if (prescribed.notes !== null) fields.notes = prescribed.notes

@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
+import { cn } from '@/lib/cn'
 import {
     type ExerciseEntryData,
     type WorkoutSetData,
@@ -13,15 +14,30 @@ import {
     useUpdateSet,
 } from '@/lib/graphql/hooks/use-workouts'
 import { formatWeight, kgTo, type Units } from '@/lib/units'
-import { Close, Plus } from '@/components/ui/icons'
+import { Check, Close, Pencil, Plus } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
+import { CompleteSetModal } from './complete-set-modal'
 import { ExerciseHistory } from './exercise-history'
-import { SetForm, type SetValues } from './set-form'
+import { SetForm, type OutcomeValue, type SetValues } from './set-form'
+import { entryProgress } from './session-progress'
 
 function intensitySuffix(set: WorkoutSetData): string {
     if (set.rpe !== null) return ` @${set.rpe}`
     if (set.rir !== null) return ` · ${set.rir} RIR`
     return ''
+}
+
+function plannedIntensitySuffix(set: WorkoutSetData): string {
+    if (set.plannedRpe !== null) return ` @${set.plannedRpe}`
+    if (set.plannedRir !== null) return ` · ${set.plannedRir} RIR`
+    return ''
+}
+
+/** How the set reads at a glance: green for done, red for failed, plain for pending. */
+function outcomeTone(outcome: string | null): string {
+    if (outcome === 'success') return 'text-pr'
+    if (outcome === 'failed') return 'text-ember'
+    return 'text-text'
 }
 
 function SetRow({
@@ -41,6 +57,7 @@ function SetRow({
     const update = useUpdateSet()
     const remove = useRemoveSet()
     const [editing, setEditing] = useState(false)
+    const [marking, setMarking] = useState(false)
 
     if (editing) {
         return (
@@ -50,13 +67,17 @@ function SetRow({
                     units={units}
                     submitLabel={update.isPending ? t('saving') : t('save')}
                     pending={update.isPending}
+                    showOutcome
                     initial={{
                         plannedWeight: set.plannedWeightKg === null ? null : kgTo(units, set.plannedWeightKg),
                         plannedReps: set.plannedReps,
+                        plannedRpe: set.plannedRpe,
+                        plannedRir: set.plannedRir,
                         weight: set.weightKg === null ? null : kgTo(units, set.weightKg),
                         reps: set.reps,
                         rpe: set.rpe,
                         rir: set.rir,
+                        outcome: (set.outcome ?? 'pending') as OutcomeValue,
                     }}
                     onCancel={() => setEditing(false)}
                     onSubmit={(v) =>
@@ -67,10 +88,15 @@ function SetRow({
                                 setId: set.id,
                                 plannedWeight: v.plannedWeight,
                                 plannedReps: v.plannedReps,
+                                plannedRpe: v.plannedRpe,
+                                plannedRir: v.plannedRir,
                                 weight: v.weight,
                                 reps: v.reps,
                                 rpe: v.rpe,
                                 rir: v.rir,
+                                // `pending` is the API's null: the edit is where a
+                                // set goes back to unmarked.
+                                outcome: v.outcome === 'pending' ? null : v.outcome,
                                 unit: units,
                             },
                             { onSuccess: () => setEditing(false) },
@@ -81,33 +107,58 @@ function SetRow({
         )
     }
 
-    const hasPlanned = set.plannedWeightKg !== null || set.plannedReps !== null
+    const hasPlanned =
+        set.plannedWeightKg !== null || set.plannedReps !== null || set.plannedRpe !== null || set.plannedRir !== null
+    const done = set.outcome !== null
 
     return (
         <li className="flex items-center gap-3 py-2.5 font-mono text-sm tabular-nums">
-            <span className="w-5 text-text-faint">{index + 1}</span>
-            <div className="min-w-0 flex-1">
-                <span className="text-text">
+            <span className="w-5 self-start pt-0.5 text-text-faint">{index + 1}</span>
+            {/* Done on top, planned under it — never the same line: at a glance the
+                question is what happened, and the plan is what it's measured against. */}
+            <div className="min-w-0 flex-1 space-y-0.5">
+                <div className={outcomeTone(set.outcome)}>
                     {formatWeight(set.weightKg, units)}
-                    <span className="text-text-faint"> × {set.reps ?? '—'}</span>
-                    <span className="text-text-dim">{intensitySuffix(set)}</span>
-                </span>
+                    <span className={done ? 'opacity-70' : 'text-text-faint'}> × {set.reps ?? '—'}</span>
+                    <span className={done ? 'opacity-70' : 'text-text-dim'}>{intensitySuffix(set)}</span>
+                </div>
                 {hasPlanned ? (
-                    <span className="ml-2 text-xs text-text-faint">
-                        {t('planPrefix')} {formatWeight(set.plannedWeightKg, units)} × {set.plannedReps ?? '—'}
-                    </span>
+                    <div className="text-xs text-text-faint">
+                        <span className="mr-1.5 text-[10px] uppercase tracking-widest">{t('planPrefix')}</span>
+                        {formatWeight(set.plannedWeightKg, units)} × {set.plannedReps ?? '—'}
+                        {plannedIntensitySuffix(set)}
+                    </div>
                 ) : null}
             </div>
             {set.e1rmKg !== null ? (
-                <span className="hidden text-right text-text-dim sm:block">e1RM {formatWeight(set.e1rmKg, units)}</span>
+                <span className="hidden self-start text-right text-text-dim sm:block">
+                    e1RM {formatWeight(set.e1rmKg, units)}
+                </span>
             ) : null}
+
+            {done ? null : (
+                <TrackedButton
+                    analyticsId="set-complete-open"
+                    type="button"
+                    onClick={() => setMarking(true)}
+                    className="inline-flex items-center gap-1 self-start rounded-full px-2.5 py-1 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-pr/10 hover:text-pr"
+                >
+                    <Check className="size-3" /> {t('markDone')}
+                </TrackedButton>
+            )}
+
+            {/* A pencil on phones, the word from sm up: the row already carries two
+                stacked lines and up to three controls, and "edit" is the one whose
+                icon needs no explaining. `aria-label` keeps the name either way. */}
             <TrackedButton
                 analyticsId="set-edit"
                 type="button"
+                aria-label={t('edit')}
                 onClick={() => setEditing(true)}
-                className="rounded-full px-2.5 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                className="grid size-7 shrink-0 self-start place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-text sm:size-auto sm:px-2.5 sm:py-1"
             >
-                {t('edit')}
+                <Pencil className="size-3.5 sm:hidden" />
+                <span className="hidden text-xs sm:inline">{t('edit')}</span>
             </TrackedButton>
             <TrackedButton
                 analyticsId="set-remove"
@@ -115,16 +166,31 @@ function SetRow({
                 aria-label={t('removeSet')}
                 onClick={() => remove.mutate({ sessionId, entryId, setId: set.id })}
                 disabled={remove.isPending}
-                className="grid size-7 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember disabled:opacity-50"
+                className="grid size-7 shrink-0 self-start place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember disabled:opacity-50"
             >
                 <Close className="size-3.5" />
             </TrackedButton>
+
+            {/* Mounted only while open so the form always seeds from the set as it
+                is right now, rather than from whatever it was on first render. */}
+            {marking ? (
+                <CompleteSetModal
+                    open
+                    onClose={() => setMarking(false)}
+                    sessionId={sessionId}
+                    entryId={entryId}
+                    set={set}
+                    index={index}
+                    units={units}
+                />
+            ) : null}
         </li>
     )
 }
 
 /** One exercise in a session: its set list + an inline add-set form, plus the
- *  control to remove the whole exercise. */
+ *  control to remove the whole exercise. The card's ring tracks whether every
+ *  set in it has been marked done. */
 export function ExerciseEntry({
     sessionId,
     entry,
@@ -144,7 +210,10 @@ export function ExerciseEntry({
     const log = useLogSet()
     const removeEntry = useRemoveExerciseEntry()
     const [adding, setAdding] = useState(false)
+    const progress = entryProgress(entry)
 
+    // A new set is always pending — `logSet` has no outcome to send: you mark it
+    // done once you've done it.
     function onAddSet(values: SetValues) {
         log.mutate(
             {
@@ -152,6 +221,8 @@ export function ExerciseEntry({
                 entryId: entry.id,
                 plannedWeight: values.plannedWeight,
                 plannedReps: values.plannedReps,
+                plannedRpe: values.plannedRpe,
+                plannedRir: values.plannedRir,
                 weight: values.weight,
                 reps: values.reps,
                 rpe: values.rpe,
@@ -168,10 +239,27 @@ export function ExerciseEntry({
     }
 
     return (
-        <div className="rounded-2xl bg-shell p-1.5 ring-1 ring-hairline">
+        <div
+            className={cn(
+                'rounded-2xl bg-shell p-1.5 ring-1 transition-colors duration-500',
+                progress.done ? 'ring-pr/40' : progress.total > 0 ? 'ring-amber/40' : 'ring-hairline',
+            )}
+        >
             <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface p-5">
                 <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-display text-h3 tracking-tight">{exerciseName}</h3>
+                    <div className="flex items-center gap-2.5">
+                        <h3 className="font-display text-h3 tracking-tight">{exerciseName}</h3>
+                        {progress.total > 0 ? (
+                            <span
+                                className={cn(
+                                    'rounded-full px-2 py-0.5 font-mono text-[10px] tabular-nums',
+                                    progress.done ? 'bg-pr/10 text-pr' : 'bg-amber/10 text-amber',
+                                )}
+                            >
+                                {progress.completed}/{progress.total}
+                            </span>
+                        ) : null}
+                    </div>
                     <TrackedButton
                         analyticsId="exercise-entry-remove"
                         type="button"

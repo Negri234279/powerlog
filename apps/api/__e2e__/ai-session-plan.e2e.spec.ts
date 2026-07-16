@@ -196,14 +196,17 @@ describe('AI session plan — a coach programming for an athlete', () => {
         expect(accepted.body.errors).toBeUndefined()
 
         const session = await gql(
-            `query { athleteWorkoutSession(athleteId: "${athlete.userId}", id: "${sessionId}") { userId entries { sets { plannedWeightKg plannedReps rpe } } } }`,
+            `query { athleteWorkoutSession(athleteId: "${athlete.userId}", id: "${sessionId}") { userId entries { sets { plannedWeightKg plannedReps plannedRpe rpe outcome } } } }`,
             coachAccess,
         )
         expect(session.body.data.athleteWorkoutSession.userId).toBe(athlete.userId)
         expect(session.body.data.athleteWorkoutSession.entries[0].sets[0]).toMatchObject({
             plannedWeightKg: 105,
             plannedReps: 5,
-            rpe: 8,
+            // The whole set is a target the athlete has yet to attempt.
+            plannedRpe: 8,
+            rpe: null,
+            outcome: null,
         })
     })
 

@@ -15,6 +15,12 @@ export class WorkoutSetType {
     @Field(() => Int, { nullable: true })
     plannedReps?: number | null
 
+    @Field(() => Float, { nullable: true, description: 'Target RPE, if the set was programmed with one.' })
+    plannedRpe?: number | null
+
+    @Field(() => Int, { nullable: true, description: 'Target RIR, if the set was programmed with one.' })
+    plannedRir?: number | null
+
     @Field(() => Float, { nullable: true })
     weightKg?: number | null
 
@@ -29,6 +35,9 @@ export class WorkoutSetType {
 
     @Field(() => Float, { nullable: true, description: 'Estimated 1RM (kg) from the actual set (Epley).' })
     e1rmKg?: number | null
+
+    @Field(() => String, { nullable: true, description: 'success | failed; null while the set is still pending.' })
+    outcome?: string | null
 
     @Field(() => String, { nullable: true })
     notes?: string | null

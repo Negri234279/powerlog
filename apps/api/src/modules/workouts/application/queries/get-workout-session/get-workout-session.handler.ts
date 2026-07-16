@@ -3,6 +3,7 @@ import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import type { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
+import type { SetOutcome } from '../../../domain/set-outcome'
 import type { WorkoutStatus } from '../../../domain/workout-status'
 import { requireManageableSession } from '../../require-manageable-session'
 import { GetWorkoutSessionQuery } from './get-workout-session.query'
@@ -13,11 +14,14 @@ export interface WorkoutSetView {
     order: number
     plannedWeightKg: number | null
     plannedReps: number | null
+    plannedRpe: number | null
+    plannedRir: number | null
     weightKg: number | null
     reps: number | null
     rpe: number | null
     rir: number | null
     e1rmKg: number | null
+    outcome: SetOutcome | null
     notes: string | null
 }
 
@@ -65,11 +69,14 @@ export function toWorkoutSessionView(session: WorkoutSessionAggregate): WorkoutS
                 order: set.order,
                 plannedWeightKg: set.plannedWeight?.value ?? null,
                 plannedReps: set.plannedReps?.value ?? null,
+                plannedRpe: set.plannedRpe?.value ?? null,
+                plannedRir: set.plannedRir?.value ?? null,
                 weightKg: set.weight?.value ?? null,
                 reps: set.reps?.value ?? null,
                 rpe: set.rpe?.value ?? null,
                 rir: set.rir?.value ?? null,
                 e1rmKg: set.e1rmKg,
+                outcome: set.outcome,
                 notes: set.notes,
             })),
         })),
