@@ -9,6 +9,11 @@ import type { PaymentGateway } from '../../../src/modules/billing/domain/entitie
  * In-memory webhook journal. `record` refuses a second write of the same
  * (gateway, eventId), exactly like the unique index does — which is the behaviour
  * the whole pipeline's idempotency rests on.
+ *
+ * The payload goes through a JSON round-trip **on purpose**: the real journal is a
+ * JSONB column, so what comes back out has strings where the event had `Date`s.
+ * Keeping the live object here made every replay test pass against a journal that
+ * does not exist, and the `.toISOString()` that blew up in production was invisible.
  */
 export class InMemoryWebhookEventStore extends WebhookEventStore {
     private readonly byKey = new Map<string, WebhookEventRecord>()
@@ -31,7 +36,7 @@ export class InMemoryWebhookEventStore extends WebhookEventStore {
             error: null,
             receivedAt: new Date(),
             processedAt: null,
-            payload: input.payload,
+            payload: JSON.parse(JSON.stringify(input.payload)) as unknown,
         })
 
         return true

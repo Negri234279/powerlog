@@ -132,6 +132,47 @@ const checkoutCompleted = (input: { userId: string; planId: string; priceId: str
     },
 })
 
+/**
+ * What Stripe actually sends first for a checkout that pays on the spot: the
+ * subscription is born `active`, a second before `checkout.session.completed`, and
+ * **no `customer.subscription.updated` ever follows**. The `userId` rides on
+ * `subscription_data.metadata`, which is what lets this event open the row alone.
+ */
+const subscriptionCreated = (input: {
+    userId: string
+    planId: string
+    priceId: string
+    subscriptionId: string
+    periodEnd: number
+}) => ({
+    id: `evt_${input.subscriptionId}_created`,
+    object: 'event',
+    type: 'customer.subscription.created',
+    data: {
+        object: {
+            id: input.subscriptionId,
+            object: 'subscription',
+            status: 'active',
+            cancel_at_period_end: false,
+            canceled_at: null,
+            customer: 'cus_test_1',
+            metadata: { userId: input.userId, planId: input.planId, priceId: input.priceId },
+            items: {
+                object: 'list',
+                data: [
+                    {
+                        id: 'si_test_1',
+                        object: 'subscription_item',
+                        current_period_start: Math.floor(Date.now() / 1000),
+                        current_period_end: input.periodEnd,
+                        price: { id: 'px_test_1', object: 'price' },
+                    },
+                ],
+            },
+        },
+    },
+})
+
 /** `current_period_*` live on the ITEM in this API version — that is the point. */
 const subscriptionUpdated = (input: {
     subscriptionId: string
@@ -225,6 +266,47 @@ describe('the Stripe webhook', () => {
             gateway: 'stripe',
             cancelAtPeriodEnd: false,
         })
+    })
+
+    it('activates a checkout that pays immediately, where Stripe only sends `created`', async () => {
+        // The bug this fixes: acting only on `customer.subscription.updated` left a
+        // paid user `incomplete` forever, because for an immediate payment Stripe
+        // never sends one — it sends `created`, already active, before the checkout.
+        const user = await register('instant@example.com')
+        const { planId, priceId } = await planIds('athlete-pro')
+        // Published to Stripe, exactly as `syncPlanToGateway` leaves it — a checkout
+        // for an unsynced price is refused, so a real subscription always has this.
+        await pool.query('UPDATE plan_prices SET stripe_price_id = $1 WHERE id = $2', ['px_test_1', priceId])
+
+        await deliver(
+            subscriptionCreated({
+                userId: user.userId,
+                planId,
+                priceId,
+                subscriptionId: 'sub_test_instant',
+                periodEnd: inThirtyDays(),
+            }),
+        ).expect(200)
+        await deliver(
+            checkoutCompleted({ userId: user.userId, planId, priceId, subscriptionId: 'sub_test_instant' }),
+        ).expect(200)
+
+        const mine = await gql(`query { mySubscription { planSlug status } }`, user.access)
+        expect(mine.body.data.mySubscription).toMatchObject({ planSlug: 'athlete-pro', status: 'active' })
+
+        // The plan is not a label: it has to actually unlock the thing they paid for.
+        const after = await gql(
+            `mutation { generateMesocycleDraft(input: { weeks: 4, trainingDays: [0, 3] }) { id } }`,
+            user.access,
+        )
+        expect(after.body.errors[0].extensions.code).not.toBe('FEATURE_NOT_IN_PLAN')
+
+        // One row, and the customer the portal is opened against survived the race.
+        const { rows } = await pool.query('SELECT gateway_customer_id FROM subscriptions WHERE user_id = $1', [
+            user.userId,
+        ])
+        expect(rows).toHaveLength(1)
+        expect(rows[0]).toMatchObject({ gateway_customer_id: 'cus_test_1' })
     })
 
     it('is idempotent: the same event twice leaves one subscription', async () => {

@@ -2,7 +2,7 @@ import { CommandBus, CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
 import { WebhookEventNotFoundError } from '../../../domain/errors/billing.errors'
-import type { GatewayEvent } from '../../ports/gateway-event'
+import { reviveGatewayEvent } from '../../ports/gateway-event'
 import { WebhookEventStore } from '../../ports/webhook-event.store'
 import { HandleGatewayEventCommand } from '../handle-gateway-event/handle-gateway-event.command'
 import { RetryWebhookEventCommand } from './retry-webhook-event.command'
@@ -37,7 +37,7 @@ export class RetryWebhookEventHandler implements ICommandHandler<RetryWebhookEve
 
         this.logger.info({ eventId: record.eventId, type: record.type }, 'replaying a failed billing webhook')
 
-        const replay = new HandleGatewayEventCommand(record.payload as GatewayEvent)
+        const replay = new HandleGatewayEventCommand(reviveGatewayEvent(record.payload))
         await this.commandBus.execute<HandleGatewayEventCommand, void>(replay)
     }
 }

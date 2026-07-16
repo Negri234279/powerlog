@@ -245,6 +245,64 @@ describe('the webhook pipeline', () => {
         })
     })
 
+    describe('a checkout that pays immediately (Stripe)', () => {
+        /** What Stripe really sends first: born active, one second before the checkout. */
+        const subscriptionCreated = (overrides: Partial<SubscriptionChangedEvent> = {}) =>
+            subscriptionChanged({
+                eventId: 'evt_sub_created',
+                type: 'customer.subscription.created',
+                userId: USER,
+                gatewayCustomerId: 'cus_1',
+                status: 'active',
+                ...overrides,
+            })
+
+        it('activates from `customer.subscription.created` — no `updated` is ever sent', async () => {
+            // The subscription is born `active` and Stripe never follows up with an
+            // `updated`. Acting only on `updated` left the user paid-up and locked out,
+            // staring at "we're finishing setting up your plan" forever.
+            await deliver(subscriptionCreated())
+
+            const live = await subscriptions.findLiveByUser(USER)
+            expect(live?.status).toBe('active')
+            expect(live?.isEntitledAt(NOW)).toBe(true)
+            expect(live?.currentPeriodEnd).toEqual(PERIOD_END)
+        })
+
+        it('ends up with one active subscription when the creation beats the checkout', async () => {
+            // The real order on Stripe: `created` (12:31:12) then `completed` (12:31:13).
+            await deliver(subscriptionCreated())
+            await deliver(checkoutCompleted())
+
+            expect(subscriptions.all()).toHaveLength(1)
+
+            const live = await subscriptions.findLiveByUser(USER)
+            expect(live?.status).toBe('active')
+            // The checkout is the one that knows the customer when the creation did not:
+            // without it the billing portal has nothing to open.
+            expect(live?.gatewayCustomerId).toBe('cus_1')
+        })
+
+        it('keeps the customer the subscription was opened with', async () => {
+            // A later checkout must not re-point the portal at a different customer.
+            await deliver(subscriptionCreated({ gatewayCustomerId: 'cus_original' }))
+            await deliver(checkoutCompleted({ gatewayCustomerId: 'cus_other' }))
+
+            const live = await subscriptions.findLiveByUser(USER)
+            expect(live?.gatewayCustomerId).toBe('cus_original')
+        })
+
+        it('still activates when the checkout happens to land first', async () => {
+            await deliver(checkoutCompleted())
+
+            await deliver(subscriptionCreated())
+
+            const live = await subscriptions.findLiveByUser(USER)
+            expect(live?.status).toBe('active')
+            expect(subscriptions.all()).toHaveLength(1)
+        })
+    })
+
     describe('out-of-order delivery', () => {
         it('ignores a subscription event for a subscription it has never seen', async () => {
             // The checkout event is simply late; it will create the row.

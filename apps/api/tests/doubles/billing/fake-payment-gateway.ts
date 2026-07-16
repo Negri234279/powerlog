@@ -1,4 +1,4 @@
-import type { GatewayEvent } from '../../../src/modules/billing/application/ports/gateway-event'
+import { type GatewayEvent, reviveGatewayEvent } from '../../../src/modules/billing/application/ports/gateway-event'
 import { GatewayProvider } from '../../../src/modules/billing/application/ports/gateway-provider.port'
 import {
     type CheckoutRequest,
@@ -131,11 +131,15 @@ export class FakePaymentGateway extends PaymentGatewayPort {
      * The fake "signature" is the JSON body itself: a test builds the event it wants
      * to deliver and passes it as the raw body. Verifying a real signature is the
      * StripeGateway's job, and the e2e signs a payload for real with the test secret.
+     *
+     * It revives the dates for the same reason the journal does: JSON has no `Date`,
+     * and a double that hands the pipeline strings where the real adapter hands it
+     * dates is testing a system that does not exist.
      */
     async verifyWebhook(rawBody: Buffer): Promise<GatewayEvent> {
         this.guard()
 
-        return JSON.parse(rawBody.toString('utf8')) as GatewayEvent
+        return reviveGatewayEvent(JSON.parse(rawBody.toString('utf8')))
     }
 
     /** What the fake provider claims is live. Tests set it to model drift. */

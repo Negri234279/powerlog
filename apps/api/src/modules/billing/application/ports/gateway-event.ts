@@ -40,12 +40,16 @@ export interface SubscriptionChangedEvent extends BaseEvent {
     /**
      * Who it belongs to, when the provider tells us.
      *
-     * Stripe leaves this null: its `checkout.session.completed` already created the
-     * row. **PayPal has no such event** — its `BILLING.SUBSCRIPTION.ACTIVATED` is the
-     * first we ever hear of the subscription — so it carries the user id and the
-     * handler creates the row from this event instead.
+     * **Both providers fill this in on the event that opens a subscription**, because
+     * neither guarantees we hear about the checkout first. PayPal has no checkout
+     * event at all (`BILLING.SUBSCRIPTION.ACTIVATED` is the first we ever hear), and
+     * Stripe emits `customer.subscription.created` *before*
+     * `checkout.session.completed` — so the handler must be able to create the row
+     * from this event alone, whichever one wins the race.
      */
     userId?: string | null
+    /** The provider-side customer, when this event opens the subscription. */
+    gatewayCustomerId?: string | null
     status: SubscriptionStatus
     currentPeriodStart: Date
     currentPeriodEnd: Date
@@ -94,3 +98,40 @@ export type GatewayEvent =
     | InvoiceEvent
     | CheckoutExpiredEvent
     | UnhandledEvent
+
+/**
+ * A journal payload, back as the event the adapter translated.
+ *
+ * **The journal is JSONB.** Writing it turned every `Date` into a string, and
+ * reading it back gives that string — so `payload as GatewayEvent` is a lie whose
+ * shape typechecks and whose dates are not dates. It costs nothing until something
+ * downstream calls `.toISOString()` on one, which is precisely what replaying a
+ * subscription event does.
+ *
+ * Every path out of the journal comes through here, so a replayed event is
+ * indistinguishable from a freshly translated one — the property the replay
+ * depends on to be "the same code the live path runs".
+ */
+export function reviveGatewayEvent(payload: unknown): GatewayEvent {
+    const event = payload as GatewayEvent
+
+    switch (event.kind) {
+        case 'subscription_changed':
+            return {
+                ...event,
+                currentPeriodStart: new Date(event.currentPeriodStart),
+                currentPeriodEnd: new Date(event.currentPeriodEnd),
+                canceledAt: event.canceledAt ? new Date(event.canceledAt) : null,
+            }
+
+        case 'invoice':
+            return {
+                ...event,
+                issuedAt: new Date(event.issuedAt),
+                paidAt: event.paidAt ? new Date(event.paidAt) : null,
+            }
+
+        default:
+            return event
+    }
+}

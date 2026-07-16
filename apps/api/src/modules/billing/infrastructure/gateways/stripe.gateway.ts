@@ -327,6 +327,12 @@ export class StripeGateway extends PaymentGatewayPort {
                 return { ...base, kind: 'checkout_expired', planSlug: session.metadata?.['planSlug'] ?? null }
             }
 
+            // `created` is not a nicety: a checkout that pays immediately is born
+            // `active` and Stripe never sends `updated` for it. Without this case the
+            // subscription would sit `incomplete` forever, waiting for an event that
+            // is never coming — and it arrives BEFORE `checkout.session.completed`,
+            // so it also has to be able to open the row on its own.
+            case 'customer.subscription.created':
             case 'customer.subscription.updated':
             case 'customer.subscription.deleted': {
                 const subscription = event.data.object
@@ -336,6 +342,10 @@ export class StripeGateway extends PaymentGatewayPort {
                     ...base,
                     kind: 'subscription_changed',
                     gatewaySubscriptionId: subscription.id,
+                    // Put there by `createCheckout` via `subscription_data.metadata`,
+                    // for exactly this: whichever event lands first knows the owner.
+                    userId: subscription.metadata?.['userId'] ?? null,
+                    gatewayCustomerId: idOf(subscription.customer),
                     status: statusOf(subscription.status),
                     // The period lives on the ITEM in this API version, not on the
                     // subscription — see the class comment. Reading it off the

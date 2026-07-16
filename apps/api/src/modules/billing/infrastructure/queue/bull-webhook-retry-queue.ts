@@ -63,11 +63,14 @@ export class BullWebhookRetryQueue extends WebhookRetryQueue {
     async enqueue(gateway: PaymentGateway, eventId: string): Promise<void> {
         // `jobId` is the dedupe: while a retry for this event is still pending, a
         // second enqueue (a gateway resend, another replica) collapses into it.
+        // The separator is NOT `:` — BullMQ builds its Redis keys with colons and
+        // rejects a custom id containing one, which turned every scheduled retry
+        // into a second error on top of the one being retried.
         await this.queue.add(
             'retry',
             { gateway, eventId },
             {
-                jobId: `${gateway}:${eventId}`,
+                jobId: `${gateway}-${eventId}`,
                 attempts: RETRY_ATTEMPTS,
                 backoff: { type: 'exponential', delay: RETRY_BACKOFF_MS },
                 // Bounded so a `noeviction` Redis never grows without limit.

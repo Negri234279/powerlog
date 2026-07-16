@@ -13,11 +13,12 @@ import { InvoiceRepository } from '../../../domain/repositories/invoice.reposito
 import { SubscriptionRepository } from '../../../domain/repositories/subscription.repository'
 import { BillingMetrics } from '../../ports/billing-metrics.port'
 import { Clock } from '../../ports/clock.port'
-import type {
-    CheckoutCompletedEvent,
-    GatewayEvent,
-    InvoiceEvent,
-    SubscriptionChangedEvent,
+import {
+    type CheckoutCompletedEvent,
+    type GatewayEvent,
+    type InvoiceEvent,
+    reviveGatewayEvent,
+    type SubscriptionChangedEvent,
 } from '../../ports/gateway-event'
 import { IdGenerator } from '../../ports/id-generator.port'
 import { WebhookEventStore } from '../../ports/webhook-event.store'
@@ -137,8 +138,19 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
     private async onCheckoutCompleted(event: CheckoutCompletedEvent): Promise<void> {
         const now = this.clock.now()
 
+        // The `customer.subscription.created` for it beat us here — the normal order
+        // on Stripe, not the exception. It already opened the row and set the status
+        // the gateway reported; the only thing it may not have brought is the
+        // customer, and the portal needs it.
         const existing = await this.subscriptions.findByGatewayId(event.gatewaySubscriptionId)
-        if (existing) return // The `subscription.updated` for it beat us here.
+        if (existing) {
+            if (event.gatewayCustomerId) {
+                existing.attachGatewayCustomer(event.gatewayCustomerId, now)
+                await this.subscriptions.save(existing)
+            }
+
+            return
+        }
 
         const plan = await this.plans.findById(event.planId)
         if (!plan) throw new Error(`checkout completed for unknown plan ${event.planId}`)
@@ -243,10 +255,12 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
     }
 
     /**
-     * PayPal has no "checkout completed" event: its `BILLING.SUBSCRIPTION.ACTIVATED`
-     * is the first we hear of the subscription, and it carries the user. So when an
-     * event brings a user id and points at a price we published, it may create the
-     * row itself — the same row a Stripe checkout would have created.
+     * **Neither provider promises we hear about the checkout first.** PayPal has no
+     * checkout event at all (`BILLING.SUBSCRIPTION.ACTIVATED` is the first we hear),
+     * and Stripe sends `customer.subscription.created` a second *before*
+     * `checkout.session.completed`. So when an event brings a user id and points at a
+     * price we published, it may open the row itself — the same row the checkout
+     * would have created, which then finds it and only fills in what it knows.
      */
     private async createFromSubscriptionEvent(event: SubscriptionChangedEvent): Promise<SubscriptionAggregate | null> {
         if (!event.userId || !event.gatewayPriceId) return null
@@ -261,6 +275,7 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
             planId: price.planId,
             planPriceId: price.id,
             gateway: event.gateway,
+            gatewayCustomerId: event.gatewayCustomerId ?? null,
             gatewaySubscriptionId: event.gatewaySubscriptionId,
             status: 'incomplete',
             currentPeriodStart: now,
@@ -298,7 +313,7 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
 
         const pending = await this.events.findFailedInvoiceEvents(subscription.gateway, gatewaySubscriptionId)
         for (const record of pending) {
-            const event = record.payload as GatewayEvent
+            const event = reviveGatewayEvent(record.payload)
             try {
                 await this.apply(event)
                 await this.events.markProcessed(event.gateway, event.eventId, this.clock.now())

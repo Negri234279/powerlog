@@ -113,6 +113,21 @@ export class SubscriptionAggregate {
         this.props.updatedAt = now
     }
 
+    /**
+     * Learn the provider-side customer, if we did not already know it.
+     *
+     * The events that open a subscription race each other, and they do not all carry
+     * the customer. Whichever one brings it wins; a later one **must not overwrite**
+     * it, because the billing portal is opened against this id and re-pointing it at
+     * another customer would show one user another user's invoices.
+     */
+    attachGatewayCustomer(gatewayCustomerId: string, now: Date): void {
+        if (this.props.gatewayCustomerId) return
+
+        this.props.gatewayCustomerId = gatewayCustomerId
+        this.props.updatedAt = now
+    }
+
     /** A downgrade that is paid for but not yet applied; it lands on renewal. */
     schedulePlanChange(planPriceId: string, now: Date): void {
         this.props.pendingPlanPriceId = planPriceId
