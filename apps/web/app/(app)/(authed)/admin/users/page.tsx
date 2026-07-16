@@ -59,15 +59,21 @@ function RoleControl({ user, onChange }: { user: AdminUser; onChange: (role: str
     const tc = useTranslations('common.role')
 
     return (
-        <Select
-            value={user.role}
-            disabled={user.status === 'deleted'}
-            onChange={(e) => onChange(e.target.value)}
-            className="py-1.5 text-xs"
-        >
-            <option value="athlete">{tc('athlete')}</option>
-            <option value="coach">{tc('coach')}</option>
-        </Select>
+        // The shared Select is `w-full`, so it needs a sized parent to push back
+        // against — `w-fit` gives it exactly its widest option, no more. Only from
+        // `md`, which is exactly where the table takes over from the phone cards:
+        // in a card the select is a tap target and should stay full width.
+        <div className="w-full md:w-fit">
+            <Select
+                value={user.role}
+                disabled={user.status === 'deleted'}
+                onChange={(e) => onChange(e.target.value)}
+                className="py-1.5 text-xs"
+            >
+                <option value="athlete">{tc('athlete')}</option>
+                <option value="coach">{tc('coach')}</option>
+            </Select>
+        </div>
     )
 }
 
@@ -87,9 +93,8 @@ function PlanBadge({ plan }: { plan: string | null }) {
 
     return (
         <span
-            title={plan}
             className={cn(
-                'inline-block max-w-full truncate rounded-full px-2.5 py-0.5 font-mono text-xs',
+                'inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 font-mono text-xs w-full text-center',
                 free ? 'text-text-dim ring-1 ring-hairline' : 'bg-ember/10 text-ember ring-1 ring-ember/30',
             )}
         >
@@ -112,7 +117,7 @@ function StatusControl({ user, isSelf, onToggle }: { user: AdminUser; isSelf: bo
             disabled={isSelf}
             onClick={onToggle}
             className={cn(
-                'rounded-full px-2.5 py-0.5 text-xs ring-1 transition-colors duration-300 disabled:opacity-40',
+                'rounded-full px-2.5 py-0.5 text-xs ring-1 transition-colors duration-300 disabled:opacity-40 w-full',
                 user.status === 'active'
                     ? 'bg-pr/10 text-pr ring-pr/30 hover:bg-pr/20'
                     : 'bg-amber/10 text-amber ring-amber/30 hover:bg-amber/20',
@@ -136,7 +141,7 @@ function AdminControl({ user, isSelf, onToggle }: { user: AdminUser; isSelf: boo
             disabled={isSelf && user.isAdmin}
             onClick={onToggle}
             className={cn(
-                'min-w-[7rem] rounded-full px-3 py-1 text-center text-xs ring-1 transition-colors duration-300 disabled:opacity-40',
+                'whitespace-nowrap rounded-full px-3 py-1 text-center text-xs ring-1 transition-colors duration-300 disabled:opacity-40 w-full',
                 user.isAdmin
                     ? 'bg-ember/10 text-ember ring-ember/30 hover:bg-ember/20'
                     : 'text-text-dim ring-hairline hover:bg-white/[0.04] hover:text-text',
@@ -346,7 +351,7 @@ export default function AdminUsersPage() {
                                                 <p className="font-mono text-eyebrow uppercase text-text-faint">
                                                     {t('colAdmin')}
                                                 </p>
-                                                <div className="mt-1.5">
+                                                <div>
                                                     <AdminControl
                                                         user={user}
                                                         isSelf={isSelf}
@@ -370,16 +375,23 @@ export default function AdminUsersPage() {
                     )}
                 </div>
 
-                {/* md and up: a real table keeps header/body columns + vertical padding aligned. */}
+                {/* md and up: a real table keeps header/body columns + vertical padding aligned.
+                    Auto layout, not fixed: every control column sizes to its content
+                    (`w-px` + `nowrap` collapses a cell onto exactly what it holds), and the
+                    identity column takes whatever is left — it's the one with something to
+                    say. `max-w-0` there is what lets a long email ellipsize instead of
+                    stretching the table. */}
                 <div className="hidden overflow-x-auto md:block">
-                    <table className="w-full min-w-[44rem] table-fixed border-collapse text-sm">
+                    <table className="w-full min-w-[44rem] border-collapse text-sm">
                         <thead>
                             <tr className="bg-white/[0.02] text-left font-mono text-eyebrow uppercase text-text-faint">
-                                <th className="px-5 py-3 font-normal">{t('colUser')}</th>
-                                <th className="w-40 px-5 py-3 font-normal">{t('colRole')}</th>
-                                <th className="w-36 px-5 py-3 font-normal">{t('colPlan')}</th>
-                                <th className="w-36 px-5 py-3 font-normal">{t('colStatus')}</th>
-                                <th className="w-44 px-5 py-3 text-right font-normal">{t('colAdmin')}</th>
+                                <th className="w-full px-5 py-3 font-normal">{t('colUser')}</th>
+                                <th className="w-px whitespace-nowrap px-5 py-3 font-normal">{t('colRole')}</th>
+                                <th className="w-px whitespace-nowrap px-5 py-3 font-normal">{t('colPlan')}</th>
+                                <th className="w-px whitespace-nowrap px-5 py-3 font-normal">{t('colStatus')}</th>
+                                <th className="w-px whitespace-nowrap px-5 py-3 text-right font-normal">
+                                    {t('colAdmin')}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -405,19 +417,19 @@ export default function AdminUsersPage() {
                                         const isSelf = user.id === me?.id
                                         return (
                                             <tr key={user.id} className="border-t border-hairline">
-                                                <td className="px-5 py-3">
+                                                <td className="w-full max-w-0 px-5 py-3">
                                                     <UserIdentity user={user} />
                                                 </td>
-                                                <td className="px-5 py-3">
+                                                <td className="w-px whitespace-nowrap px-5 py-3">
                                                     <RoleControl
                                                         user={user}
                                                         onChange={(role) => changeRole(user, role)}
                                                     />
                                                 </td>
-                                                <td className="px-5 py-3">
+                                                <td className="w-px whitespace-nowrap px-5 py-3">
                                                     <PlanBadge plan={user.plan} />
                                                 </td>
-                                                <td className="px-5 py-3">
+                                                <td className="w-px whitespace-nowrap px-5 py-3">
                                                     <StatusControl
                                                         user={user}
                                                         isSelf={isSelf}
@@ -429,7 +441,7 @@ export default function AdminUsersPage() {
                                                         }
                                                     />
                                                 </td>
-                                                <td className="px-5 py-3 text-right">
+                                                <td className="w-px whitespace-nowrap px-5 py-3 text-right">
                                                     <AdminControl
                                                         user={user}
                                                         isSelf={isSelf}
