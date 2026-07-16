@@ -180,7 +180,7 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
 
             <FormError error={actionError} className="mt-4" />
 
-            <div className="mt-6 max-w-xl">
+            <div className="mt-6">
                 <SessionProgress session={session} />
             </div>
 

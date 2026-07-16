@@ -15,7 +15,12 @@ function progressOf(sets: readonly { outcome: string | null }[]): Progress {
     // Success or failed both count: the question is whether the athlete has been
     // through the set, not whether it went well.
     const completed = sets.filter((set) => set.outcome !== null).length
-    return { completed, total: sets.length, done: sets.length > 0 && completed === sets.length }
+    
+    return {
+        completed,
+        total: sets.length,
+        done: sets.length > 0 && completed === sets.length,
+    }
 }
 
 /** How far through one exercise the athlete is. */
