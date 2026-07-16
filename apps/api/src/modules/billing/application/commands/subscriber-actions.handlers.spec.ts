@@ -40,11 +40,12 @@ import { StartCheckoutHandler } from './start-checkout/start-checkout.handler'
 const NOW = new Date('2026-07-15T00:00:00.000Z')
 const USER = 'user-1'
 const PRO = PlanMother.athletePro()
+const COACH_PRO = PlanMother.coachPro()
 
-function aPrice(id: string, amountCents: number, synced = true): PlanPriceEntity {
+function aPrice(id: string, amountCents: number, synced = true, planId = PRO.id): PlanPriceEntity {
     const price = PlanPriceEntity.create({
         id,
-        planId: PRO.id,
+        planId,
         interval: 'month',
         currency: 'EUR',
         amountCents,
@@ -67,8 +68,11 @@ describe('what a subscriber can do', () => {
 
     beforeEach(() => {
         subscriptions = new InMemorySubscriptionRepository()
-        plans = new InMemoryPlanRepository([PlanMother.athletePro(), PlanMother.athleteFree()])
-        prices = new InMemoryPlanPriceRepository([aPrice('price-pro', 799)])
+        plans = new InMemoryPlanRepository([PlanMother.athletePro(), PlanMother.athleteFree(), PlanMother.coachPro()])
+        prices = new InMemoryPlanPriceRepository([
+            aPrice('price-pro', 799),
+            aPrice('price-coach-pro', 1999, true, COACH_PRO.id),
+        ])
         offers = new InMemoryPlanOfferRepository()
         gateway = new FakePaymentGateway()
         users = new FakeUserDirectory().seed(USER, { email: 'u@example.com', username: 'u' })
@@ -122,6 +126,26 @@ describe('what a subscriber can do', () => {
             await expect(
                 checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', null)),
             ).rejects.toBeInstanceOf(SubscriptionAlreadyActiveError)
+        })
+
+        it('refuses to sell an athlete a coach plan — without asking the gateway for a URL', async () => {
+            // `availablePlans` is public, so a coach price id is obtainable by anyone.
+            // Their entitlements would say coach-pro and every coach surface would
+            // still answer FORBIDDEN: real money for features that stay locked.
+            await expect(
+                checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null)),
+            ).rejects.toMatchObject({ code: 'PLAN_AUDIENCE_MISMATCH', audience: 'coach', role: 'athlete' })
+
+            expect(gateway.calls).toEqual([])
+            expect(metrics.checkouts).toEqual([])
+        })
+
+        it('sells the coach plan to a coach', async () => {
+            users.seedRole(USER, 'coach')
+
+            const url = await checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null))
+
+            expect(url).toBe('https://gateway.test/checkout/price-coach-pro')
         })
 
         it('refuses an offer that is over — holding on to its id is not a discount', async () => {

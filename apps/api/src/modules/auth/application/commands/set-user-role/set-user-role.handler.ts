@@ -26,13 +26,19 @@ export class SetUserRoleHandler implements ICommandHandler<SetUserRoleCommand, A
             throw new UserNotFoundError()
         }
 
-        user.setRole(UserRoleVO.create(command.role), this.clock.now())
+        const role = UserRoleVO.create(command.role)
+        const changed = !user.role.equals(role)
+        user.setRole(role, this.clock.now())
         await this.users.save(user)
 
         // With no live subscription the role IS the plan (each role falls back to
         // its own free plan), so this has just changed what the user may do. Told
         // before reading the plan back, or we'd report the one they no longer have.
-        this.eventBus.publish(new UserRoleChangedIntegrationEvent(user.id, user.role.value))
+        // Only when it really moved: `setRole` is idempotent, and an event saying
+        // "changed" about a no-op would be a lie to every future consumer.
+        if (changed) {
+            this.eventBus.publish(new UserRoleChangedIntegrationEvent(user.id, user.role.value))
+        }
 
         const snapshot = await this.profiles.read(user.id)
         const entitlements = await this.entitlements.forUser(user.id).catch(() => null)

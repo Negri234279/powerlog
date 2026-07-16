@@ -9,8 +9,9 @@ import {
     InMemoryRefreshTokenRepository,
     InMemoryUserRepository,
 } from '../../../../../../tests/doubles/auth'
-import { FakeProfiles } from '../../../../../../tests/doubles/shared'
+import { FakeProfiles, RecordingEventBus } from '../../../../../../tests/doubles/shared'
 import { UserMother } from '../../../../../../tests/mothers/auth'
+import { UserRoleChangedIntegrationEvent } from '../../../../../shared/integration-events/user-role-changed.integration-event'
 import { UserNotFoundError } from '../../../domain/errors/auth.errors'
 import { SessionIssuer } from '../../services/session-issuer.service'
 import { BecomeCoachCommand } from './become-coach.command'
@@ -32,8 +33,9 @@ function setup(seed = [] as ReturnType<UserMother['buildExisting']>[]) {
         new FakeIdGenerator(['family-1']),
         profiles,
     )
-    const handler = new BecomeCoachHandler(users, new FakeClock(NOW), sessions)
-    return { handler, users, signer }
+    const events = new RecordingEventBus()
+    const handler = new BecomeCoachHandler(users, new FakeClock(NOW), sessions, events.asEventBus())
+    return { handler, users, signer, events }
 }
 
 describe('BecomeCoachHandler', () => {
@@ -44,6 +46,24 @@ describe('BecomeCoachHandler', () => {
 
         expect((await ctx.users.findById('u-1'))?.role.value).toBe('coach')
         expect(await ctx.signer.verifyAccessToken(result.accessToken)).toMatchObject({ userId: 'u-1', role: 'coach' })
+    })
+
+    it('announces the new role so the entitlements cache can forget the athlete plan', async () => {
+        const ctx = setup([UserMother.athlete().withId('u-1').withEmail('lifter@example.com').buildExisting()])
+
+        await ctx.handler.execute(new BecomeCoachCommand('u-1'))
+
+        // Without it, a brand-new coach spends up to a minute being told they may
+        // not take on athletes, on the authority of the plan they just left.
+        expect(ctx.events.published).toContainEqual(new UserRoleChangedIntegrationEvent('u-1', 'coach'))
+    })
+
+    it('announces nothing when they were already a coach', async () => {
+        const ctx = setup([UserMother.coach().withId('u-1').withEmail('coach@example.com').buildExisting()])
+
+        await ctx.handler.execute(new BecomeCoachCommand('u-1'))
+
+        expect(ctx.events.published).toEqual([])
     })
 
     it('throws when the user does not exist', async () => {

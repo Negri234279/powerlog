@@ -4,6 +4,7 @@ import { PinoLogger } from 'nestjs-pino'
 import { UserDirectory } from '../../../../../shared/contracts/user-directory'
 import {
     OfferNotRedeemableError,
+    PlanAudienceMismatchError,
     PlanNotAvailableError,
     PlanNotFoundError,
     PlanPriceNotFoundError,
@@ -54,6 +55,13 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
         const plan = await this.plans.findById(price.planId)
         if (!plan) throw new PlanNotFoundError()
         if (!plan.acceptsSignups()) throw new PlanNotAvailableError()
+
+        // Checked BEFORE the gateway is touched: `availablePlans` is public, so a
+        // coach price id is obtainable by anyone, and the guards that open coach
+        // surfaces read the role — not the plan. Selling a coach plan to an athlete
+        // would take real money for features that stay locked behind FORBIDDEN.
+        const role = (await this.users.getRole(command.userId)) ?? 'athlete'
+        if (plan.audience !== role) throw new PlanAudienceMismatchError(plan.audience, role)
 
         const offer = await this.resolveOffer(command.offerId, plan.id)
         const gateway = this.gateways.get(command.gateway)

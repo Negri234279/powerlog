@@ -113,6 +113,36 @@ export class PlanNotAvailableError extends BillingError {
     }
 }
 
+/**
+ * The plan belongs to a catalog the user isn't in — an athlete on a coach plan,
+ * or the reverse. Refused rather than sold: the plan would resolve entitlements
+ * fine, but every coach-gated surface reads the ROLE, so the buyer would pay for
+ * features that stay locked.
+ *
+ * Not a promotion in disguise, deliberately: becoming a coach is free and one
+ * click (`becomeCoach`), and it re-issues the session so the role lands in the
+ * JWT the guards read. Paying must never be what changes who you are.
+ *
+ * Carries both sides so the web can offer that click instead of a dead end.
+ */
+export class PlanAudienceMismatchError extends BillingError {
+    readonly code = 'PLAN_AUDIENCE_MISMATCH'
+
+    constructor(
+        readonly audience: PlanAudience,
+        readonly role: string,
+    ) {
+        super(`This plan is for the ${audience} catalog; the user is a ${role}.`)
+    }
+
+    override get details(): Record<string, unknown> {
+        return {
+            audience: this.audience,
+            role: this.role,
+        }
+    }
+}
+
 /** The user already has a live subscription; end it before granting another. */
 export class SubscriptionAlreadyActiveError extends BillingError {
     readonly code = 'SUBSCRIPTION_ALREADY_ACTIVE'

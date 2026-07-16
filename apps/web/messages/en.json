@@ -972,6 +972,7 @@
         "INVALID_PLAN_PRICE": "The amount must be greater than zero.",
         "PLAN_PRICE_NOT_FOUND": "Price not found.",
         "PLAN_NOT_AVAILABLE": "That plan is not available.",
+        "PLAN_AUDIENCE_MISMATCH": "That plan is for coaches. Become a coach first — it's free — and you can subscribe to it.",
         "SUBSCRIPTION_ALREADY_ACTIVE": "This user already has an active subscription.",
         "SUBSCRIPTION_NOT_FOUND": "Subscription not found.",
         "NOT_A_MANUAL_SUBSCRIPTION": "This subscription is billed by a payment gateway; end it there.",

@@ -1,9 +1,11 @@
 import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
+import { UserDirectory } from '../../../../../shared/contracts/user-directory'
 import { SubscriptionChangedIntegrationEvent } from '../../../../../shared/integration-events/subscription-changed.integration-event'
 import { SubscriptionAggregate } from '../../../domain/entities/subscription.entity'
 import {
+    PlanAudienceMismatchError,
     PlanNotAvailableError,
     PlanNotFoundError,
     SubscriptionAlreadyActiveError,
@@ -28,6 +30,7 @@ export class AssignSubscriptionHandler implements ICommandHandler<AssignSubscrip
     constructor(
         private readonly subscriptions: SubscriptionRepository,
         private readonly plans: PlanRepository,
+        private readonly users: UserDirectory,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly eventBus: EventBus,
@@ -40,6 +43,13 @@ export class AssignSubscriptionHandler implements ICommandHandler<AssignSubscrip
         const plan = await this.plans.findById(command.planId)
         if (!plan) throw new PlanNotFoundError()
         if (!plan.acceptsSignups()) throw new PlanNotAvailableError()
+
+        // A comp is a subscription like any other, so it can miss the same way a
+        // sale can: the entitlements would say coach while every coach-gated
+        // surface reads the role and says athlete. Better to tell the admin than
+        // to hand someone a plan that does nothing.
+        const role = (await this.users.getRole(command.userId)) ?? 'athlete'
+        if (plan.audience !== role) throw new PlanAudienceMismatchError(plan.audience, role)
 
         // One live subscription per user. Refusing here (rather than letting the
         // partial unique index do it) also stops an admin from silently shadowing a

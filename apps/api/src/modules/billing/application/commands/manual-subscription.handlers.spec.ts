@@ -6,7 +6,7 @@ import {
     InMemoryPlanRepository,
     InMemorySubscriptionRepository,
 } from '../../../../../tests/doubles/billing'
-import { RecordingEventBus, silentLogger } from '../../../../../tests/doubles/shared'
+import { FakeUserDirectory, RecordingEventBus, silentLogger } from '../../../../../tests/doubles/shared'
 import { PlanMother, SubscriptionMother } from '../../../../../tests/mothers/billing'
 import { PlanAggregate } from '../../domain/entities/plan.entity'
 import {
@@ -30,17 +30,19 @@ describe('manual subscriptions (admin)', () => {
     let clock: FakeClock
     let ids: FakeIdGenerator
     let bus: RecordingEventBus
+    let users: FakeUserDirectory
 
     beforeEach(() => {
         bus = new RecordingEventBus()
-        plans = new InMemoryPlanRepository([PlanMother.athleteFree(), PlanMother.athletePro()])
+        plans = new InMemoryPlanRepository([PlanMother.athleteFree(), PlanMother.athletePro(), PlanMother.coachPro()])
         subscriptions = new InMemorySubscriptionRepository()
         clock = new FakeClock(NOW)
         ids = new FakeIdGenerator(['sub-1'])
+        users = new FakeUserDirectory().seed(USER, { email: 'u@example.com', username: 'u' })
     })
 
     const assign = () =>
-        new AssignSubscriptionHandler(subscriptions, plans, clock, ids, bus.asEventBus(), silentLogger())
+        new AssignSubscriptionHandler(subscriptions, plans, users, clock, ids, bus.asEventBus(), silentLogger())
     const revoke = () => new RevokeSubscriptionHandler(subscriptions, plans, clock, bus.asEventBus(), silentLogger())
 
     it('grants a plan with no gateway and nothing charged', async () => {
@@ -98,6 +100,28 @@ describe('manual subscriptions (admin)', () => {
         await expect(assign().execute(new AssignSubscriptionCommand(USER, 'nope', null))).rejects.toBeInstanceOf(
             PlanNotFoundError,
         )
+    })
+
+    it('refuses to grant a coach plan to an athlete', async () => {
+        // The entitlements would happily say coach-pro — and every coach-gated
+        // surface would still answer FORBIDDEN, because those read the role.
+        await expect(
+            assign().execute(new AssignSubscriptionCommand(USER, 'plan-coach-pro', null)),
+        ).rejects.toMatchObject({
+            code: 'PLAN_AUDIENCE_MISMATCH',
+            audience: 'coach',
+            role: 'athlete',
+        })
+        expect(await subscriptions.findLiveByUser(USER)).toBeNull()
+        expect(bus.published).toEqual([])
+    })
+
+    it('grants a coach plan once the user is actually a coach', async () => {
+        users.seedRole(USER, 'coach')
+
+        const id = await assign().execute(new AssignSubscriptionCommand(USER, 'plan-coach-pro', null))
+
+        expect((await subscriptions.findLiveByUser(USER))?.id).toBe(id)
     })
 
     it('revoking a grant drops the user back to free right away', async () => {

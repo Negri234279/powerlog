@@ -972,6 +972,7 @@
         "INVALID_PLAN_PRICE": "El importe tiene que ser mayor que cero.",
         "PLAN_PRICE_NOT_FOUND": "Precio no encontrado.",
         "PLAN_NOT_AVAILABLE": "Ese plan no está disponible.",
+        "PLAN_AUDIENCE_MISMATCH": "Ese plan es para entrenadores. Hazte entrenador primero (es gratis) y podrás contratarlo.",
         "SUBSCRIPTION_ALREADY_ACTIVE": "Este usuario ya tiene una suscripción activa.",
         "SUBSCRIPTION_NOT_FOUND": "Suscripción no encontrada.",
         "NOT_A_MANUAL_SUBSCRIPTION": "Esta suscripción la cobra una pasarela; termínala allí.",

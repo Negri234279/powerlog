@@ -44,6 +44,15 @@ describe('SetUserRoleHandler', () => {
         expect(events.published).toContainEqual(new UserRoleChangedIntegrationEvent('u1', 'coach'))
     })
 
+    it('announces nothing when the role is already the one asked for', async () => {
+        const user = UserMother.coach().withId('u1').withEmail('u1@example.com').buildExisting()
+        const { handler, events } = setup(new InMemoryUserRepository([user]))
+
+        await handler.execute(new SetUserRoleCommand('u1', 'coach'))
+
+        expect(events.published).toEqual([])
+    })
+
     it('rejects an unknown user, announcing nothing', async () => {
         const { handler, events } = setup(new InMemoryUserRepository())
 
