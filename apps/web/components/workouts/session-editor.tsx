@@ -17,9 +17,10 @@ import { unitsOf } from '@/lib/units'
 import { AddExercise } from '@/components/workouts/add-exercise'
 import { AiPlanPanel } from '@/components/workouts/ai-plan-panel'
 import { ExerciseEntry } from '@/components/workouts/exercise-entry'
-import { SessionProgress } from '@/components/workouts/session-progress'
+import { SessionProgress, entryProgress } from '@/components/workouts/session-progress'
 import { FormError } from '@/components/ui/form-error'
 import { Check } from '@/components/ui/icons'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import type { BackLink } from '@/components/workouts/back-link'
 
@@ -52,12 +53,30 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
     const del = useDeleteWorkoutSession()
     const [confirmingDelete, setConfirmingDelete] = useState(false)
     const [actionError, setActionError] = useState<string | null>(null)
+    const [statusFilter, setStatusFilter] = useState<string[]>([])
 
     const nameById = useMemo(() => {
         const map = new Map<string, string>()
         for (const exercise of exercises ?? []) map.set(exercise.id, exercise.name)
         return map
     }, [exercises])
+
+    const statusOptions = useMemo(
+        () => [
+            { value: 'pending', label: t('statusPending') },
+            { value: 'completed', label: t('statusCompleted') },
+        ],
+        [t],
+    )
+
+    // Nothing picked = no filter, the same as every other filter in the app.
+    // An exercise counts as completed once every set in it has been marked.
+    const visibleEntries = useMemo(() => {
+        const entries = session?.entries ?? []
+        if (statusFilter.length === 0) return entries
+
+        return entries.filter((entry) => statusFilter.includes(entryProgress(entry).done ? 'completed' : 'pending'))
+    }, [session, statusFilter])
 
     async function onComplete() {
         setActionError(null)
@@ -184,16 +203,42 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
                 <SessionProgress session={session} />
             </div>
 
-            {/* Only a planned session has targets left to program. */}
-            {completed ? null : (
-                <div className="mt-8">
-                    <AiPlanPanel sessionId={session.id} entries={session.entries} nameById={nameById} units={units} />
+            {/* `items-start` + a growing AI slot so this row holds up in both of the
+                panel's shapes: a pill next to the filter when closed, and a
+                full-width card with the filter still at its top-right when open. */}
+            <div className="mt-8 flex flex-wrap items-start gap-3">
+                <div className="min-w-0 flex-1">
+                    {/* Only a planned session has targets left to program. */}
+                    {completed ? null : (
+                        <AiPlanPanel
+                            sessionId={session.id}
+                            entries={session.entries}
+                            nameById={nameById}
+                            units={units}
+                        />
+                    )}
                 </div>
-            )}
+
+                {session.entries.length > 0 ? (
+                    <div className="shrink-0">
+                        <MultiSelect
+                            analyticsId="session-entries-filter-status"
+                            label={t('filterStatus')}
+                            options={statusOptions}
+                            selected={statusFilter}
+                            onChange={setStatusFilter}
+                        />
+                    </div>
+                ) : null}
+            </div>
 
             <div className="mt-10 space-y-4">
-                {session.entries.length > 0 ? (
-                    session.entries.map((entry) => (
+                {session.entries.length === 0 ? (
+                    <p className="text-body text-text-dim">{t('noExercisesYet')}</p>
+                ) : visibleEntries.length === 0 ? (
+                    <p className="text-body text-text-dim">{t('noMatchingExercises')}</p>
+                ) : (
+                    visibleEntries.map((entry) => (
                         <ExerciseEntry
                             key={entry.id}
                             sessionId={session.id}
@@ -203,8 +248,6 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
                             athleteId={athleteId}
                         />
                     ))
-                ) : (
-                    <p className="text-body text-text-dim">{t('noExercisesYet')}</p>
                 )}
 
                 <div className="pt-2">

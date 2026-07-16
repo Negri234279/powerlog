@@ -16,7 +16,7 @@ import {
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { formatWeight, kgTo, type Units } from '@/lib/units'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
-import { Check, Close, Pencil, Plus } from '@/components/ui/icons'
+import { Check, ChevronDown, Close, Pencil, Plus } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
 import { CompleteSetModal } from './complete-set-modal'
 import { ExerciseHistory } from './exercise-history'
@@ -213,6 +213,7 @@ export function ExerciseEntry({
     const log = useLogSet()
     const removeEntry = useRemoveExerciseEntry()
     const [adding, setAdding] = useState(false)
+    const [collapsed, setCollapsed] = useState(false)
     const [confirmingRemove, setConfirmingRemove] = useState(false)
     const [removeError, setRemoveError] = useState<string | null>(null)
     const progress = entryProgress(entry)
@@ -264,76 +265,97 @@ export function ExerciseEntry({
         >
             <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface p-5">
                 <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                        <h3 className="font-display text-h3 tracking-tight">{exerciseName}</h3>
+                    {/* The whole title is the toggle: a long session is mostly
+                        scrolling, and the counter stays readable while collapsed. */}
+                    <TrackedButton
+                        analyticsId="exercise-entry-toggle"
+                        type="button"
+                        aria-expanded={!collapsed}
+                        onClick={() => setCollapsed((value) => !value)}
+                        className="flex min-w-0 items-center gap-2.5 text-left"
+                    >
+                        <ChevronDown
+                            className={cn(
+                                'size-4 shrink-0 text-text-faint transition-transform duration-300',
+                                collapsed && '-rotate-90',
+                            )}
+                        />
+                        <h3 className="truncate font-display text-h3 tracking-tight">{exerciseName}</h3>
                         {progress.total > 0 ? (
                             <span
                                 className={cn(
-                                    'rounded-full px-2 py-0.5 font-mono text-[10px] tabular-nums',
+                                    'shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] tabular-nums',
                                     progress.done ? 'bg-pr/10 text-pr' : 'bg-amber/10 text-amber',
                                 )}
                             >
                                 {progress.completed}/{progress.total}
                             </span>
                         ) : null}
-                    </div>
+                    </TrackedButton>
                     <TrackedButton
                         analyticsId="exercise-entry-remove-open"
                         type="button"
                         onClick={() => setConfirmingRemove(true)}
-                        className="rounded-full px-3 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember"
+                        className="shrink-0 rounded-full px-3 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember"
                     >
                         {t('entryRemove')}
                     </TrackedButton>
                 </div>
-                {entry.notes ? <p className="mt-1 text-sm text-text-dim">{entry.notes}</p> : null}
 
-                {entry.sets.length > 0 ? (
-                    <ul className="mt-3 divide-y divide-hairline">
-                        {entry.sets.map((set, i) => (
-                            <SetRow
-                                key={set.id}
-                                sessionId={sessionId}
-                                entryId={entry.id}
-                                set={set}
-                                index={i}
-                                units={units}
-                            />
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="mt-3 text-sm text-text-faint">{t('noSetsYet')}</p>
+                {collapsed ? null : (
+                    <>
+                        {entry.notes ? <p className="mt-1 text-sm text-text-dim">{entry.notes}</p> : null}
+
+                        {entry.sets.length > 0 ? (
+                            <ul className="mt-3 divide-y divide-hairline">
+                                {entry.sets.map((set, i) => (
+                                    <SetRow
+                                        key={set.id}
+                                        sessionId={sessionId}
+                                        entryId={entry.id}
+                                        set={set}
+                                        index={i}
+                                        units={units}
+                                    />
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="mt-3 text-sm text-text-faint">{t('noSetsYet')}</p>
+                        )}
+
+                        <div className="mt-4">
+                            {adding ? (
+                                <SetForm
+                                    analyticsId="set-log"
+                                    units={units}
+                                    submitLabel={log.isPending ? t('adding') : t('addSet')}
+                                    pending={log.isPending}
+                                    onSubmit={onAddSet}
+                                    onCancel={() => setAdding(false)}
+                                />
+                            ) : (
+                                <TrackedButton
+                                    analyticsId="set-add-open"
+                                    type="button"
+                                    onClick={() => setAdding(true)}
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                                >
+                                    <Plus className="size-4" /> {t('addSet')}
+                                </TrackedButton>
+                            )}
+                        </div>
+
+                        <ExerciseHistory
+                            exerciseId={entry.exerciseId}
+                            sessionId={sessionId}
+                            units={units}
+                            athleteId={athleteId}
+                        />
+                    </>
                 )}
 
-                <div className="mt-4">
-                    {adding ? (
-                        <SetForm
-                            analyticsId="set-log"
-                            units={units}
-                            submitLabel={log.isPending ? t('adding') : t('addSet')}
-                            pending={log.isPending}
-                            onSubmit={onAddSet}
-                            onCancel={() => setAdding(false)}
-                        />
-                    ) : (
-                        <TrackedButton
-                            analyticsId="set-add-open"
-                            type="button"
-                            onClick={() => setAdding(true)}
-                            className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
-                        >
-                            <Plus className="size-4" /> {t('addSet')}
-                        </TrackedButton>
-                    )}
-                </div>
-
-                <ExerciseHistory
-                    exerciseId={entry.exerciseId}
-                    sessionId={sessionId}
-                    units={units}
-                    athleteId={athleteId}
-                />
-
+                {/* Outside the collapse: a dialog the user opened must not vanish
+                    because the card it lives in got folded. */}
                 <ConfirmModal
                     analyticsId="exercise-entry-remove"
                     open={confirmingRemove}
