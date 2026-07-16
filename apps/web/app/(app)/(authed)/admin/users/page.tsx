@@ -59,11 +59,7 @@ function RoleControl({ user, onChange }: { user: AdminUser; onChange: (role: str
     const tc = useTranslations('common.role')
 
     return (
-        // The shared Select is `w-full`, so it needs a sized parent to push back
-        // against — `w-fit` gives it exactly its widest option, no more. Only from
-        // `md`, which is exactly where the table takes over from the phone cards:
-        // in a card the select is a tap target and should stay full width.
-        <div className="w-full md:w-fit">
+        <div className="w-full md:w-32">
             <Select
                 value={user.role}
                 disabled={user.status === 'deleted'}
