@@ -730,6 +730,7 @@
         "searchEmail": "Buscar email…",
         "filterRole": "Rol",
         "filterStatus": "Estado",
+        "filterPlan": "Plan",
         "adminsOnly": "Solo admins",
         "statusActive": "Activo",
         "statusDisabled": "Deshabilitado",

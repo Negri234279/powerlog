@@ -1,3 +1,4 @@
+import type { PlanMembership } from '../../../../shared/contracts/plan-membership'
 import type { AccountStatus } from '../../domain/entities/user.entity'
 import type { UserRoleValue } from '../../domain/value-objects/user-role.vo'
 
@@ -9,6 +10,15 @@ export interface AdminUserFilter {
     statuses?: AccountStatus[]
     /** Case-insensitive match on email. */
     search?: string
+    /**
+     * Restrict to the users on a set of plans, already resolved by billing into
+     * sets this module can match against `users` — the plan itself lives in
+     * billing, which auth may not join to. Present means the admin picked plans,
+     * so an all-empty membership matches NO rows (nobody is on them) rather than
+     * meaning "no filter"; the query handler leaves it undefined when nothing is
+     * picked.
+     */
+    planMembership?: PlanMembership
 }
 
 /** One row of the admin user listing (auth-owned fields only). */

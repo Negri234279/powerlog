@@ -25,6 +25,7 @@ import {
 import { AdminPlansHandler } from './queries/admin-plans/admin-plans.handler'
 import { AdminSubscriptionsHandler } from './queries/admin-subscriptions/admin-subscriptions.handler'
 import { GetInvoiceReceiptHandler } from './queries/get-invoice-receipt/get-invoice-receipt.handler'
+import { GetPlanMembershipHandler } from './queries/get-plan-membership/get-plan-membership.handler'
 import { GetUserEntitlementsHandler } from './queries/get-user-entitlements/get-user-entitlements.handler'
 import {
     AvailablePlansHandler,
@@ -56,6 +57,7 @@ export const BILLING_COMMAND_HANDLERS = [
 /** CQRS query handlers for the billing module. */
 export const BILLING_QUERY_HANDLERS = [
     GetUserEntitlementsHandler,
+    GetPlanMembershipHandler,
     AdminPlansHandler,
     AdminSubscriptionsHandler,
     AdminBillingStatsHandler,

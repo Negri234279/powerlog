@@ -1508,7 +1508,20 @@ type Query {
   adminUserStats: AdminUserStats!
 
   """List users with filters + offset pagination (admin only)."""
-  adminUsers(isAdmin: Boolean, limit: Int, offset: Int, roles: [String!], search: String, statuses: [String!], verified: Boolean): AdminUserPage!
+  adminUsers(
+    isAdmin: Boolean
+    limit: Int
+    offset: Int
+
+    """
+    Plan slugs — the plan in force, so a free slug matches whoever falls back to it.
+    """
+    plans: [String!]
+    roles: [String!]
+    search: String
+    statuses: [String!]
+    verified: Boolean
+  ): AdminUserPage!
 
   """The webhook journal — what came in and what failed."""
   adminWebhookEvents(gateway: String, limit: Int, offset: Int, status: String): BillingWebhookEventPage!

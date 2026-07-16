@@ -23,6 +23,7 @@ import {
     isAdminArg,
     limitArg,
     offsetArg,
+    plansArg,
     rolesArg,
     searchArg,
     setUserAdminSchema,
@@ -55,12 +56,27 @@ export class AdminUserResolver {
         @Args('verified', { type: () => Boolean, nullable: true }, new ZodValidationPipe(verifiedArg))
         verified?: boolean,
         @Args('search', { type: () => String, nullable: true }, new ZodValidationPipe(searchArg)) search?: string,
+        @Args(
+            'plans',
+            {
+                type: () => [String],
+                nullable: true,
+                description: 'Plan slugs — the plan in force, so a free slug matches whoever falls back to it.',
+            },
+            new ZodValidationPipe(plansArg),
+        )
+        plans?: string[],
         @Args('limit', { type: () => Int, nullable: true }, new ZodValidationPipe(limitArg)) limit?: number,
         @Args('offset', { type: () => Int, nullable: true }, new ZodValidationPipe(offsetArg)) offset?: number,
     ): Promise<AdminUsersPageView> {
-        return this.queryBus.execute<AdminUsersQuery, AdminUsersPageView>(
-            new AdminUsersQuery({ roles, statuses, isAdmin, verified, search }, limit ?? DEFAULT_LIMIT, offset ?? 0),
+        const query = new AdminUsersQuery(
+            { roles, statuses, isAdmin, verified, search },
+            limit ?? DEFAULT_LIMIT,
+            offset ?? 0,
+            plans,
         )
+
+        return this.queryBus.execute<AdminUsersQuery, AdminUsersPageView>(query)
     }
 
     @Query(() => AdminUserStatsType, { description: 'Aggregate user counts for the admin dashboard.' })

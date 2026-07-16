@@ -1,6 +1,7 @@
 import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 
 import { Entitlements } from '../../../../../shared/contracts/entitlements'
+import { PlanDirectory } from '../../../../../shared/contracts/plan-membership'
 import { ProfileSnapshotReader } from '../../../../../shared/contracts/profile-snapshot-reader'
 import type { AccountStatus } from '../../../domain/entities/user.entity'
 import type { UserRoleValue } from '../../../domain/value-objects/user-role.vo'
@@ -37,10 +38,17 @@ export class AdminUsersHandler implements IQueryHandler<AdminUsersQuery, AdminUs
         private readonly readModel: AdminUserReadModel,
         private readonly profiles: ProfileSnapshotReader,
         private readonly entitlements: Entitlements,
+        private readonly planDirectory: PlanDirectory,
     ) {}
 
     async execute(query: AdminUsersQuery): Promise<AdminUsersPageView> {
-        const page = await this.readModel.list(query.filter, { limit: query.limit, offset: query.offset })
+        // The plan filter has to reach the SQL: resolving each row's plan below and
+        // filtering afterwards would filter the page rather than the listing, and
+        // `total` would count users the admin never asked to see. So billing turns
+        // the picked slugs into sets first, and the read model matches on them.
+        const planMembership = query.plans?.length ? await this.planDirectory.membership(query.plans) : undefined
+        const filter = { ...query.filter, planMembership }
+        const page = await this.readModel.list(filter, { limit: query.limit, offset: query.offset })
 
         // The handle lives in the profile module and the plan in billing; both are
         // resolved per row (bounded by the page size) through their shared ports,

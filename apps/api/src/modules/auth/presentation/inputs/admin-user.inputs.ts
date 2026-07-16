@@ -11,6 +11,9 @@ const optionalArg = <T extends z.ZodTypeAny>(schema: T) => schema.nullish().tran
 
 export const rolesArg = optionalArg(z.array(role))
 export const statusesArg = optionalArg(z.array(status))
+// Slugs, not an enum: the plan catalog is admin-editable, so what is valid is a
+// runtime question. An unknown slug matches nobody rather than being rejected.
+export const plansArg = optionalArg(z.array(z.string().trim().min(1).max(80)))
 export const isAdminArg = optionalArg(z.boolean())
 export const verifiedArg = optionalArg(z.boolean())
 export const searchArg = optionalArg(z.string().trim().min(1).max(100))

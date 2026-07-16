@@ -13,6 +13,7 @@ import {
     useSetUserRole,
     useSetUserStatus,
 } from '@/lib/graphql/hooks/use-admin-users'
+import { useAdminPlans } from '@/lib/graphql/hooks/use-admin-billing'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { AdminTabs } from '@/components/admin/admin-tabs'
 import { ClearableSearch } from '@/components/ui/clearable-search'
@@ -169,7 +170,15 @@ export default function AdminUsersPage() {
     const search = useDebouncedValue(rawSearch, 250)
     const [roles, setRoles] = useState<string[]>([])
     const [statuses, setStatuses] = useState<string[]>([])
+    const [plans, setPlans] = useState<string[]>([])
     const [adminsOnly, setAdminsOnly] = useState(false)
+
+    // The whole catalog, drafts included: a draft plan has no subscribers, but an
+    // archived one still has the users who signed up while it was live — and they
+    // are exactly the ones an admin comes here to find. Filtering by slug, the same
+    // value the Plan column shows.
+    const { data: catalog } = useAdminPlans()
+    const planOptions = (catalog ?? []).map((plan) => ({ value: plan.slug, label: plan.name }))
 
     const [error, setError] = useState<string | null>(null)
     const [adminTarget, setAdminTarget] = useState<{ user: AdminUser; next: boolean } | null>(null)
@@ -179,6 +188,7 @@ export default function AdminUsersPage() {
         search,
         roles,
         statuses,
+        plans,
         isAdmin: adminsOnly ? true : null,
     })
     const rows = data?.pages.flatMap((p) => p.rows) ?? []
@@ -270,6 +280,15 @@ export default function AdminUsersPage() {
                     selected={statuses}
                     onChange={setStatuses}
                 />
+                {planOptions.length > 0 ? (
+                    <MultiSelect
+                        analyticsId="admin-users-filter-plan"
+                        label={t('filterPlan')}
+                        options={planOptions}
+                        selected={plans}
+                        onChange={setPlans}
+                    />
+                ) : null}
                 <TrackedButton
                     analyticsId="admin-users-filter-admins"
                     type="button"

@@ -17,6 +17,8 @@ export interface AdminUsersFilters {
     isAdmin?: boolean | null
     verified?: boolean | null
     search?: string
+    /** Plan slugs — matches the plan in force, free plans included. */
+    plans?: string[]
 }
 
 const USERS_KEY = ['adminUsers']
@@ -33,6 +35,7 @@ export function useAdminUsers(filters: AdminUsersFilters = {}) {
                 isAdmin: filters.isAdmin ?? null,
                 verified: filters.verified ?? null,
                 search: filters.search?.trim() ? filters.search.trim() : null,
+                plans: filters.plans?.length ? filters.plans : null,
                 limit: PAGE_SIZE,
                 offset: pageParam,
             }).then((r) => r.adminUsers),

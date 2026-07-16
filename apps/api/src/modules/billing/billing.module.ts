@@ -13,6 +13,7 @@ import { BillingMetrics } from './application/ports/billing-metrics.port'
 import { Clock } from './application/ports/clock.port'
 import { GatewayProvider } from './application/ports/gateway-provider.port'
 import { IdGenerator } from './application/ports/id-generator.port'
+import { PlanMembershipReadModel } from './application/ports/plan-membership.read-model'
 import { ReceiptRenderer } from './application/ports/receipt-renderer.port'
 import { WebhookEventStore } from './application/ports/webhook-event.store'
 import { WebhookRetryQueue } from './application/ports/webhook-retry-queue.port'
@@ -39,6 +40,7 @@ import { DrizzlePlanOfferRepository } from './infrastructure/persistence/reposit
 import { DrizzleWebhookEventStore } from './infrastructure/persistence/repositories/drizzle-webhook-event.store'
 import { DrizzleAdminBillingStatsReadModel } from './infrastructure/persistence/read-models/drizzle-admin-billing-stats.read-model'
 import { DrizzleAdminSubscriptionReadModel } from './infrastructure/persistence/read-models/drizzle-admin-subscription.read-model'
+import { DrizzlePlanMembershipReadModel } from './infrastructure/persistence/read-models/drizzle-plan-membership.read-model'
 import { DrizzlePlanPriceRepository } from './infrastructure/persistence/repositories/drizzle-plan-price.repository'
 import { DrizzlePlanRepository } from './infrastructure/persistence/repositories/drizzle-plan.repository'
 import { DrizzlePlanTranslationRepository } from './infrastructure/persistence/repositories/drizzle-plan-translation.repository'
@@ -58,6 +60,7 @@ const ADAPTERS: Provider[] = [
     { provide: SubscriptionRepository, useClass: DrizzleSubscriptionRepository },
     { provide: AdminBillingStatsReadModel, useClass: DrizzleAdminBillingStatsReadModel },
     { provide: AdminSubscriptionReadModel, useClass: DrizzleAdminSubscriptionReadModel },
+    { provide: PlanMembershipReadModel, useClass: DrizzlePlanMembershipReadModel },
     { provide: BillingMetrics, useClass: PrometheusBillingMetrics },
     // The gateways. StripeGateway is a concrete provider because the registry needs
     // it by class; nothing else in the app may inject it.
@@ -91,8 +94,9 @@ const RETRY_QUEUE: Provider = {
  * module knows Stripe or PayPal exists.
  *
  * It exports no provider: the rest of the app reaches it through the QueryBus
- * (`GetUserEntitlementsQuery`, dispatched by the `Entitlements` adapter in
- * `src/entitlements/`), never by importing it.
+ * (`GetUserEntitlementsQuery` and `GetPlanMembershipQuery`, dispatched by the
+ * `Entitlements` / `PlanDirectory` adapters in `src/entitlements/`), never by
+ * importing it.
  */
 @Module({
     // AuthModule for the shared JwtCookieGuard + the exported UserDirectory (the

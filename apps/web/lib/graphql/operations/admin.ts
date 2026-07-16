@@ -109,6 +109,7 @@ export const AdminUsersDocument = graphql(`
         $isAdmin: Boolean
         $verified: Boolean
         $search: String
+        $plans: [String!]
         $limit: Int
         $offset: Int
     ) {
@@ -118,6 +119,7 @@ export const AdminUsersDocument = graphql(`
             isAdmin: $isAdmin
             verified: $verified
             search: $search
+            plans: $plans
             limit: $limit
             offset: $offset
         ) {

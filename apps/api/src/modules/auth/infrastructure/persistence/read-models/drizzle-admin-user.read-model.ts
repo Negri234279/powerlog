@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, ne, type SQL, sql } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, ne, notInArray, or, type SQL, sql } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
+import type { PlanMembership } from '../../../../../shared/contracts/plan-membership'
 import {
     type AdminUserFilter,
     type AdminUserPage,
@@ -101,7 +102,38 @@ export class DrizzleAdminUserReadModel extends AdminUserReadModel {
         if (filter.search) {
             conditions.push(ilike(users.email, `%${filter.search}%`))
         }
+        if (filter.planMembership) {
+            conditions.push(this.onPlans(filter.planMembership))
+        }
 
         return conditions.length ? and(...conditions) : undefined
+    }
+
+    /**
+     * "Is on one of the selected plans", as SQL over `users` alone — billing
+     * resolved the plans into these sets precisely so this stays a predicate and
+     * not a join, which keeps `total` and the pagination honest.
+     *
+     * The second half is the free-plan fallback: someone of that role with no
+     * entitling subscription is on the free plan of their audience.
+     */
+    private onPlans(membership: PlanMembership): SQL {
+        const matches: SQL[] = []
+
+        if (membership.subscriberIds.length) {
+            matches.push(inArray(users.id, membership.subscriberIds))
+        }
+        if (membership.freeAudiences.length) {
+            const free = [
+                inArray(users.role, membership.freeAudiences),
+                membership.entitledUserIds.length ? notInArray(users.id, membership.entitledUserIds) : undefined,
+            ].filter((condition) => condition !== undefined)
+
+            matches.push(and(...free) as SQL)
+        }
+
+        // Plans nobody is on. Without this the filter would collapse to `undefined`
+        // and quietly list every user — the one wrong answer available here.
+        return matches.length ? (or(...matches) as SQL) : sql`false`
     }
 }
