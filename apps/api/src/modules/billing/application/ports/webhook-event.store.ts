@@ -54,6 +54,13 @@ export abstract class WebhookEventStore {
     abstract findById(id: string): Promise<WebhookEventRecord | null>
 
     /**
+     * The current journal row for a `(gateway, eventId)`. A replay deletes and
+     * re-inserts the row, so its `id` changes between attempts — this is how a
+     * backoff retry finds the row again by the identity that does not move.
+     */
+    abstract findByGatewayEvent(gateway: PaymentGateway, eventId: string): Promise<WebhookEventRecord | null>
+
+    /**
      * The `failed` invoice events that belong to a subscription — the ones that blew
      * up because they arrived before the subscription they pay for existed. Read the
      * moment that subscription is created, so those invoices can be re-driven at

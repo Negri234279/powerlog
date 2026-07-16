@@ -155,6 +155,12 @@ export class MyInvoiceType {
     @Field(() => String, { nullable: true, description: 'Null for gateways that issue no PDF (PayPal).' })
     pdfUrl!: string | null
 
+    @Field(() => String, {
+        nullable: true,
+        description: 'Our own generated receipt PDF, for invoices with no gateway document (PayPal).',
+    })
+    receiptUrl!: string | null
+
     @Field(() => Date)
     issuedAt!: Date
 }

@@ -68,6 +68,10 @@ export class InMemoryWebhookEventStore extends WebhookEventStore {
         return this.byKey.get(id) ?? null
     }
 
+    async findByGatewayEvent(gateway: PaymentGateway, eventId: string): Promise<WebhookEventRecord | null> {
+        return this.byKey.get(`${gateway}:${eventId}`) ?? null
+    }
+
     async findFailedInvoiceEvents(
         gateway: PaymentGateway,
         gatewaySubscriptionId: string,

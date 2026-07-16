@@ -80,6 +80,9 @@ export interface MyInvoiceView {
     currency: Currency
     hostedUrl: string | null
     pdfUrl: string | null
+    /** Our generated receipt PDF, for invoices the gateway issues no document for
+     *  (PayPal). Null when the gateway already gives a `pdfUrl`/`hostedUrl`. */
+    receiptUrl: string | null
     issuedAt: Date
 }
 
@@ -210,7 +213,10 @@ export class MySubscriptionHandler implements IQueryHandler<MySubscriptionQuery,
 
 @QueryHandler(MyInvoicesQuery)
 export class MyInvoicesHandler implements IQueryHandler<MyInvoicesQuery, { rows: MyInvoiceView[]; total: number }> {
-    constructor(private readonly invoices: InvoiceRepository) {}
+    constructor(
+        private readonly invoices: InvoiceRepository,
+        private readonly config: BillingConfig,
+    ) {}
 
     async execute(query: MyInvoicesQuery): Promise<{ rows: MyInvoiceView[]; total: number }> {
         const page = await this.invoices.listByUser(query.userId, query.limit, query.offset)
@@ -225,6 +231,12 @@ export class MyInvoicesHandler implements IQueryHandler<MyInvoicesQuery, { rows:
                 currency: invoice.currency,
                 hostedUrl: invoice.hostedUrl,
                 pdfUrl: invoice.pdfUrl,
+                // Offer our own receipt only where the gateway hands back no document;
+                // Stripe's own hosted PDF is preferred where it exists.
+                receiptUrl:
+                    invoice.pdfUrl || invoice.hostedUrl
+                        ? null
+                        : `${this.config.apiPublicUrl}/invoices/${invoice.id}/receipt.pdf`,
                 issuedAt: invoice.issuedAt,
             })),
             total: page.total,

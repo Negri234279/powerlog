@@ -60,9 +60,9 @@ export default function BillingPage() {
 
 function InvoiceRow({ invoice }: { invoice: MyInvoice }) {
     const t = useTranslations('billing')
-    // The PDF is the document; the hosted page is the fallback for gateways that
-    // issue no PDF (PayPal).
-    const link = invoice.pdfUrl ?? invoice.hostedUrl
+    // The gateway's own PDF is preferred, then its hosted page; for gateways that
+    // issue neither (PayPal), our own generated receipt.
+    const link = invoice.pdfUrl ?? invoice.hostedUrl ?? invoice.receiptUrl
 
     return (
         <article className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface p-4 ring-1 ring-hairline">

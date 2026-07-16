@@ -9,6 +9,7 @@ import {
     type CheckoutStatus,
     type GatewayOperation,
     type SubscriptionEvent,
+    type WebhookRetryOutcome,
     type WebhookStatus,
 } from '../../application/ports/billing-metrics.port'
 import type { PaymentGateway } from '../../domain/entities/subscription.entity'
@@ -23,6 +24,7 @@ export class PrometheusBillingMetrics extends BillingMetrics {
         @InjectMetric(METRIC.subscriptionEvents) private readonly subscriptionEvents: Counter<string>,
         @InjectMetric(METRIC.offerRedemptions) private readonly offers: Counter<string>,
         @InjectMetric(METRIC.billingWebhooks) private readonly webhooks: Counter<string>,
+        @InjectMetric(METRIC.billingWebhookRetries) private readonly webhookRetries: Counter<string>,
     ) {
         super()
     }
@@ -49,5 +51,9 @@ export class PrometheusBillingMetrics extends BillingMetrics {
 
     recordWebhook(gateway: PaymentGateway, type: string, status: WebhookStatus): void {
         this.webhooks.inc({ gateway, type, status })
+    }
+
+    recordWebhookRetry(gateway: PaymentGateway, outcome: WebhookRetryOutcome): void {
+        this.webhookRetries.inc({ gateway, outcome })
     }
 }

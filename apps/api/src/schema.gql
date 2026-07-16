@@ -1196,6 +1196,11 @@ type MyInvoice {
 
   """Null for gateways that issue no PDF (PayPal)."""
   pdfUrl: String
+
+  """
+  Our own generated receipt PDF, for invoices with no gateway document (PayPal).
+  """
+  receiptUrl: String
   status: String!
 }
 

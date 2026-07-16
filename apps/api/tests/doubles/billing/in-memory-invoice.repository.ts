@@ -10,6 +10,10 @@ export class InMemoryInvoiceRepository extends InvoiceRepository {
         this.byGatewayId.set(`${invoice.gateway}:${invoice.gatewayInvoiceId}`, invoice)
     }
 
+    async findById(id: string): Promise<InvoiceEntity | null> {
+        return [...this.byGatewayId.values()].find((invoice) => invoice.id === id) ?? null
+    }
+
     async findByGatewayId(gateway: PaymentGateway, gatewayInvoiceId: string): Promise<InvoiceEntity | null> {
         return this.byGatewayId.get(`${gateway}:${gatewayInvoiceId}`) ?? null
     }

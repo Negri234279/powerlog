@@ -49,6 +49,7 @@ export const METRIC = {
     subscriptionEvents: 'powerlog_subscription_events_total',
     offerRedemptions: 'powerlog_offer_redemptions_total',
     billingWebhooks: 'powerlog_billing_webhooks_total',
+    billingWebhookRetries: 'powerlog_billing_webhook_retries_total',
     billingDrift: 'powerlog_billing_drift',
 } as const
 
@@ -357,6 +358,12 @@ export const metricsProviders = [
         name: METRIC.billingWebhooks,
         help: 'Inbound billing webhooks, by outcome.',
         labelNames: ['gateway', 'type', 'status'],
+    }),
+    // Backoff retries of failed webhooks. `exhausted` is the alertable one.
+    makeCounterProvider({
+        name: METRIC.billingWebhookRetries,
+        help: 'Backoff retries of failed billing webhooks, by outcome.',
+        labelNames: ['gateway', 'outcome'],
     }),
     // Subscriptions the gateway thinks are live but we do not (a webhook we never
     // got), plus the reverse. **It should always be zero** — which is exactly what

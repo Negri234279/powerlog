@@ -7,6 +7,7 @@ import {
     InMemoryInvoiceRepository,
     InMemoryPlanPriceRepository,
     InMemoryPlanRepository,
+    FakeWebhookRetryQueue,
     InMemorySubscriptionRepository,
     InMemoryWebhookEventStore,
 } from '../../../../../../tests/doubles/billing'
@@ -96,6 +97,7 @@ describe('the webhook pipeline', () => {
     let prices: InMemoryPlanPriceRepository
     let invoices: InMemoryInvoiceRepository
     let events: InMemoryWebhookEventStore
+    let retries: FakeWebhookRetryQueue
     let metrics: FakeBillingMetrics
     let bus: RecordingEventBus
 
@@ -105,6 +107,7 @@ describe('the webhook pipeline', () => {
         prices = new InMemoryPlanPriceRepository([aPrice('price-eur', 799, 'px_eur')])
         invoices = new InMemoryInvoiceRepository()
         events = new InMemoryWebhookEventStore()
+        retries = new FakeWebhookRetryQueue()
         metrics = new FakeBillingMetrics()
         bus = new RecordingEventBus()
     })
@@ -116,6 +119,7 @@ describe('the webhook pipeline', () => {
             prices,
             invoices,
             events,
+            retries,
             metrics,
             new FakeClock(NOW),
             new FakeIdGenerator(),
@@ -203,6 +207,14 @@ describe('the webhook pipeline', () => {
             expect(record?.status).toBe('failed')
             expect(record?.payload).toBeDefined()
             expect(metrics.webhooks).toEqual([{ type: 'checkout.session.completed', status: 'failed' }])
+        })
+
+        it('schedules a backoff retry for a failed event', async () => {
+            // The gateway resending would only dedupe to a no-op, so the retry queue is
+            // what actually gets the event re-run once the transient cause clears.
+            await expect(deliver(checkoutCompleted({ planId: 'plan-gone' }))).rejects.toThrow()
+
+            expect(retries.scheduled).toEqual([{ gateway: 'stripe', eventId: 'evt_checkout_1' }])
         })
     })
 

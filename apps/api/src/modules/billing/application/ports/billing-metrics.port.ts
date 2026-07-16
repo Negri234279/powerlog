@@ -22,6 +22,9 @@ export type SubscriptionEvent =
 /** What became of an inbound webhook. `duplicate` proves the idempotency works. */
 export type WebhookStatus = 'processed' | 'failed' | 'duplicate'
 
+/** A backoff retry was `scheduled`, or gave up after the last attempt (`exhausted`). */
+export type WebhookRetryOutcome = 'scheduled' | 'exhausted'
+
 /**
  * Billing observability, behind a port so the handlers stay free of prom-client.
  * Deliberately narrow: everything the CQRS histograms already count (rate and
@@ -54,4 +57,8 @@ export abstract class BillingMetrics {
 
     /** Health of the channel everything else depends on. */
     abstract recordWebhook(gateway: PaymentGateway, type: string, status: WebhookStatus): void
+
+    /** Backoff retries of failed webhooks. `exhausted` is the one to alert on: a
+     *  webhook that never recovered on its own and is waiting for a human. */
+    abstract recordWebhookRetry(gateway: PaymentGateway, outcome: WebhookRetryOutcome): void
 }

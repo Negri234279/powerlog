@@ -14,6 +14,7 @@ import { StartCheckoutHandler } from './commands/start-checkout/start-checkout.h
 import { SyncPlanHandler } from './commands/sync-plan/sync-plan.handler'
 import { UpdatePlanHandler } from './commands/update-plan/update-plan.handler'
 import { UpsertPlanOfferHandler } from './commands/upsert-plan-offer/upsert-plan-offer.handler'
+import { RetryFailedWebhookHandler } from './commands/retry-failed-webhook/retry-failed-webhook.handler'
 import { RetryWebhookEventHandler } from './commands/retry-webhook-event/retry-webhook-event.handler'
 import { AdminBillingStatsHandler } from './queries/admin-billing-stats/admin-billing-stats.handler'
 import {
@@ -23,6 +24,7 @@ import {
 } from './queries/admin-gateways/admin-gateways.handlers'
 import { AdminPlansHandler } from './queries/admin-plans/admin-plans.handler'
 import { AdminSubscriptionsHandler } from './queries/admin-subscriptions/admin-subscriptions.handler'
+import { GetInvoiceReceiptHandler } from './queries/get-invoice-receipt/get-invoice-receipt.handler'
 import { GetUserEntitlementsHandler } from './queries/get-user-entitlements/get-user-entitlements.handler'
 import {
     AvailablePlansHandler,
@@ -48,6 +50,7 @@ export const BILLING_COMMAND_HANDLERS = [
     ChangePlanHandler,
     HandleGatewayEventHandler,
     RetryWebhookEventHandler,
+    RetryFailedWebhookHandler,
 ]
 
 /** CQRS query handlers for the billing module. */
@@ -63,4 +66,5 @@ export const BILLING_QUERY_HANDLERS = [
     AdminGatewayStatusHandler,
     AdminWebhookEventsHandler,
     AdminBillingDriftHandler,
+    GetInvoiceReceiptHandler,
 ]

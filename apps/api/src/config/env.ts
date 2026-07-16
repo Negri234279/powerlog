@@ -70,6 +70,10 @@ export const envSchema = z.object({
     // Web origin: post-OAuth redirect target, CORS allow-list, email links.
     WEB_ORIGIN: z.url().default('http://localhost:3000'),
 
+    // The API's own public base URL, for links back to its REST endpoints (today:
+    // the generated invoice receipt PDF). No trailing slash.
+    API_PUBLIC_URL: z.url().default('http://localhost:4000'),
+
     // ── Mail (transactional email) ─────────────────────────────────
     // smtp → Mailpit in dev; resend in staging/prod.
     MAIL_TRANSPORT: z.enum(['smtp', 'resend']).default('smtp'),

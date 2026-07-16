@@ -1,6 +1,9 @@
 import { Module, type Provider } from '@nestjs/common'
+import { CommandBus } from '@nestjs/cqrs'
+import { PinoLogger } from 'nestjs-pino'
 
 import { AdminGuard } from '../../auth/admin.guard'
+import { BullQueueFactory } from '../../queue/bull-queue.factory'
 import { AuthModule } from '../auth/auth.module'
 import { BILLING_COMMAND_HANDLERS, BILLING_QUERY_HANDLERS } from './application/billing.application'
 import { BillingConfig } from './application/ports/billing-config.port'
@@ -10,7 +13,9 @@ import { BillingMetrics } from './application/ports/billing-metrics.port'
 import { Clock } from './application/ports/clock.port'
 import { GatewayProvider } from './application/ports/gateway-provider.port'
 import { IdGenerator } from './application/ports/id-generator.port'
+import { ReceiptRenderer } from './application/ports/receipt-renderer.port'
 import { WebhookEventStore } from './application/ports/webhook-event.store'
+import { WebhookRetryQueue } from './application/ports/webhook-retry-queue.port'
 import { InvoiceRepository } from './domain/repositories/invoice.repository'
 import { PlanOfferRepository } from './domain/repositories/plan-offer.repository'
 import { PlanPriceRepository } from './domain/repositories/plan-price.repository'
@@ -21,6 +26,9 @@ import { GatewayRegistry } from './infrastructure/gateways/gateway.registry'
 import { PayPalGateway } from './infrastructure/gateways/paypal.gateway'
 import { StripeGateway } from './infrastructure/gateways/stripe.gateway'
 import { UuidGenerator } from './infrastructure/id/uuid-generator'
+import { PdfKitReceiptRenderer } from './infrastructure/receipts/pdfkit-receipt-renderer'
+import { BullWebhookRetryQueue } from './infrastructure/queue/bull-webhook-retry-queue'
+import { InProcessWebhookRetryQueue } from './infrastructure/queue/in-process-webhook-retry-queue'
 import { ReconcileSubscriptions } from './application/services/reconcile-subscriptions.service'
 import { BillingDriftProbe } from './infrastructure/metrics/billing-drift-probe'
 import { BillingStateMetrics } from './infrastructure/metrics/billing-state-metrics'
@@ -58,7 +66,25 @@ const ADAPTERS: Provider[] = [
     { provide: GatewayProvider, useClass: GatewayRegistry },
     { provide: Clock, useClass: SystemClock },
     { provide: IdGenerator, useClass: UuidGenerator },
+    { provide: ReceiptRenderer, useClass: PdfKitReceiptRenderer },
 ]
+
+/** BullMQ when Redis is configured, in-process timers otherwise — see
+ *  WebhookRetryQueue. The shared BullQueueFactory owns the connections and their
+ *  shutdown; `available` mirrors whether Redis is set. */
+const RETRY_QUEUE: Provider = {
+    provide: WebhookRetryQueue,
+    inject: [BullQueueFactory, CommandBus, BillingMetrics, PinoLogger],
+    useFactory: (
+        queues: BullQueueFactory,
+        commandBus: CommandBus,
+        metrics: BillingMetrics,
+        logger: PinoLogger,
+    ): WebhookRetryQueue =>
+        queues.available
+            ? new BullWebhookRetryQueue(queues, commandBus, metrics, logger)
+            : new InProcessWebhookRetryQueue(commandBus, metrics, logger),
+}
 
 /**
  * Owns plans, subscriptions and (from 9.3) the gateways. Nothing outside this
@@ -76,6 +102,7 @@ const ADAPTERS: Provider[] = [
     controllers: [...BILLING_CONTROLLERS],
     providers: [
         ...ADAPTERS,
+        RETRY_QUEUE,
         AdminGuard,
         // Instantiated for its side effect: it attaches the scrape-time `collect` to
         // the billing state gauges.

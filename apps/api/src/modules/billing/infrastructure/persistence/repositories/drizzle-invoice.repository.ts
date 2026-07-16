@@ -75,6 +75,12 @@ export class DrizzleInvoiceRepository extends InvoiceRepository {
             })
     }
 
+    async findById(id: string): Promise<InvoiceEntity | null> {
+        const [row] = await this.db.select().from(invoices).where(eq(invoices.id, id)).limit(1)
+
+        return row ? toEntity(row) : null
+    }
+
     async findByGatewayId(gateway: PaymentGateway, gatewayInvoiceId: string): Promise<InvoiceEntity | null> {
         const [row] = await this.db
             .select()

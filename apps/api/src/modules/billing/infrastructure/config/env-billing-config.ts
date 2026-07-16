@@ -13,4 +13,8 @@ export class EnvBillingConfig extends BillingConfig {
     get webOrigin(): string {
         return this.config.get('WEB_ORIGIN', { infer: true })
     }
+
+    get apiPublicUrl(): string {
+        return this.config.get('API_PUBLIC_URL', { infer: true })
+    }
 }

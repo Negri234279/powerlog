@@ -5,4 +5,8 @@
 export abstract class BillingConfig {
     /** Where the browser comes back to after paying, cancelling or the portal. */
     abstract get webOrigin(): string
+
+    /** The API's own public base URL — used to build the receipt-PDF link for
+     *  invoices a gateway issues no document for (PayPal). No trailing slash. */
+    abstract get apiPublicUrl(): string
 }

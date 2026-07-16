@@ -21,6 +21,7 @@ import type {
 } from '../../ports/gateway-event'
 import { IdGenerator } from '../../ports/id-generator.port'
 import { WebhookEventStore } from '../../ports/webhook-event.store'
+import { WebhookRetryQueue } from '../../ports/webhook-retry-queue.port'
 import { HandleGatewayEventCommand } from './handle-gateway-event.command'
 
 /**
@@ -52,6 +53,7 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
         private readonly prices: PlanPriceRepository,
         private readonly invoices: InvoiceRepository,
         private readonly events: WebhookEventStore,
+        private readonly retries: WebhookRetryQueue,
         private readonly metrics: BillingMetrics,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
@@ -90,7 +92,21 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
             // The event id, never the payload: it can carry the customer's details.
             this.logger.error({ eventId: event.eventId, type: event.type, err: error }, 'billing webhook failed')
 
+            // A transient fault heals itself on backoff instead of waiting for a human.
+            // The gateway resending the webhook would only dedupe to a no-op (the row
+            // is on the journal), so this queue is the retry that actually re-runs it.
+            await this.scheduleRetry(event.gateway, event.eventId)
+
             throw error
+        }
+    }
+
+    /** Best-effort: a scheduling failure must not replace the error we are reporting. */
+    private async scheduleRetry(gateway: GatewayEvent['gateway'], eventId: string): Promise<void> {
+        try {
+            await this.retries.enqueue(gateway, eventId)
+        } catch (error) {
+            this.logger.error({ eventId, err: error }, 'could not schedule a billing webhook retry')
         }
     }
 

@@ -102,6 +102,16 @@ export class DrizzleWebhookEventStore extends WebhookEventStore {
         return row ? toRecord(row) : null
     }
 
+    async findByGatewayEvent(gateway: PaymentGateway, eventId: string): Promise<WebhookEventRecord | null> {
+        const [row] = await this.db
+            .select()
+            .from(billingWebhookEvents)
+            .where(and(eq(billingWebhookEvents.gateway, gateway), eq(billingWebhookEvents.eventId, eventId)))
+            .limit(1)
+
+        return row ? toRecord(row) : null
+    }
+
     async findFailedInvoiceEvents(
         gateway: PaymentGateway,
         gatewaySubscriptionId: string,

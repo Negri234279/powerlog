@@ -90,6 +90,7 @@ export const MyInvoicesDocument = graphql(`
                 currency
                 hostedUrl
                 pdfUrl
+                receiptUrl
                 issuedAt
             }
         }

@@ -4,6 +4,7 @@ import {
     type CheckoutStatus,
     type GatewayOperation,
     type SubscriptionEvent,
+    type WebhookRetryOutcome,
     type WebhookStatus,
 } from '../../../src/modules/billing/application/ports/billing-metrics.port'
 import type { PaymentGateway } from '../../../src/modules/billing/domain/entities/subscription.entity'
@@ -16,6 +17,7 @@ export class FakeBillingMetrics extends BillingMetrics {
     readonly subscriptionEvents: SubscriptionEvent[] = []
     readonly offerRedemptions: string[] = []
     readonly webhooks: { type: string; status: WebhookStatus }[] = []
+    readonly webhookRetries: { gateway: PaymentGateway; outcome: WebhookRetryOutcome }[] = []
 
     recordGatewayCall(
         _gateway: PaymentGateway,
@@ -44,5 +46,9 @@ export class FakeBillingMetrics extends BillingMetrics {
 
     recordWebhook(_gateway: PaymentGateway, type: string, status: WebhookStatus): void {
         this.webhooks.push({ type, status })
+    }
+
+    recordWebhookRetry(gateway: PaymentGateway, outcome: WebhookRetryOutcome): void {
+        this.webhookRetries.push({ gateway, outcome })
     }
 }
