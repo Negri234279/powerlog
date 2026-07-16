@@ -736,6 +736,7 @@
         "statusDeleted": "Eliminado",
         "colUser": "Usuario",
         "colRole": "Rol",
+        "colPlan": "Plan",
         "colStatus": "Estado",
         "colAdmin": "Admin",
         "noUsersMatch": "Ningún usuario coincide con estos filtros.",

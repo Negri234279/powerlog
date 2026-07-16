@@ -736,6 +736,7 @@
         "statusDeleted": "Deleted",
         "colUser": "User",
         "colRole": "Role",
+        "colPlan": "Plan",
         "colStatus": "Status",
         "colAdmin": "Admin",
         "noUsersMatch": "No users match these filters.",

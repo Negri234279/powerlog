@@ -24,6 +24,12 @@ export class AdminUserType {
     @Field()
     emailVerified!: boolean
 
+    @Field(() => String, {
+        nullable: true,
+        description: 'Slug of the plan in force (the free plan of their role when they don’t pay); null if unresolved.',
+    })
+    plan!: string | null
+
     @Field()
     createdAt!: Date
 }

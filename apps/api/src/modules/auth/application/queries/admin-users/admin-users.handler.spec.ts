@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { FakeProfiles } from '../../../../../../tests/doubles/shared'
+import { FakeEntitlements, FakeProfiles } from '../../../../../../tests/doubles/shared'
 import {
     type AdminUserFilter,
     type AdminUserPage,
@@ -46,11 +46,11 @@ class StubAdminUserReadModel extends AdminUserReadModel {
 }
 
 describe('AdminUsersHandler', () => {
-    it('passes the filter + pagination through and enriches rows with the handle', async () => {
+    it('passes the filter + pagination through and enriches rows with the handle and plan', async () => {
         const readModel = new StubAdminUserReadModel()
         const profiles = new FakeProfiles().set('u1', { username: 'alpha', avatarUrl: null, locale: null })
         // u2 has no profile snapshot → username falls back to null.
-        const handler = new AdminUsersHandler(readModel, profiles)
+        const handler = new AdminUsersHandler(readModel, profiles, new FakeEntitlements().on({ plan: 'athlete-pro' }))
 
         const page = await handler.execute(new AdminUsersQuery({ roles: ['coach'], search: 'a' }, 10, 20))
 
@@ -59,7 +59,19 @@ describe('AdminUsersHandler', () => {
             pagination: { limit: 10, offset: 20 },
         })
         expect(page).toMatchObject({ total: 2, limit: 10, offset: 20 })
-        expect(page.rows[0]).toMatchObject({ id: 'u1', username: 'alpha' })
-        expect(page.rows[1]).toMatchObject({ id: 'u2', username: null, isAdmin: true })
+        expect(page.rows[0]).toMatchObject({ id: 'u1', username: 'alpha', plan: 'athlete-pro' })
+        expect(page.rows[1]).toMatchObject({ id: 'u2', username: null, isAdmin: true, plan: 'athlete-pro' })
+    })
+
+    it('still lists the users when the plan cannot be resolved', async () => {
+        const broken = new FakeEntitlements()
+        broken.forUser = () => Promise.reject(new Error('free plan missing for athlete'))
+        const handler = new AdminUsersHandler(new StubAdminUserReadModel(), new FakeProfiles(), broken)
+
+        const page = await handler.execute(new AdminUsersQuery({}, 10, 0))
+
+        // A broken catalog is exactly when an admin needs this page to open.
+        expect(page.rows.map((row) => row.id)).toEqual(['u1', 'u2'])
+        expect(page.rows[0]).toMatchObject({ plan: null })
     })
 })

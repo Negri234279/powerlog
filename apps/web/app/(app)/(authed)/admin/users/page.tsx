@@ -71,6 +71,33 @@ function RoleControl({ user, onChange }: { user: AdminUser; onChange: (role: str
     )
 }
 
+/**
+ * The plan in force, as a read-only pill — read-only because this is not where a
+ * plan is granted: that lives in `/admin/subscriptions`, which can also revoke it
+ * and knows whether a gateway is charging for it.
+ *
+ * A free plan is muted and a paid one is highlighted, so a page of users shows at
+ * a glance who is paying. `null` means billing couldn't answer (a broken catalog),
+ * which is not the same as "no plan" and must not read like it.
+ */
+function PlanBadge({ plan }: { plan: string | null }) {
+    if (plan === null) return <span className="text-text-faint">—</span>
+
+    const free = plan.endsWith('-free')
+
+    return (
+        <span
+            title={plan}
+            className={cn(
+                'inline-block max-w-full truncate rounded-full px-2.5 py-0.5 font-mono text-xs',
+                free ? 'text-text-dim ring-1 ring-hairline' : 'bg-ember/10 text-ember ring-1 ring-ember/30',
+            )}
+        >
+            {plan}
+        </span>
+    )
+}
+
 /** Active/disabled status pill (or a plain label for deleted accounts). */
 function StatusControl({ user, isSelf, onToggle }: { user: AdminUser; isSelf: boolean; onToggle: () => void }) {
     const t = useTranslations('admin')
@@ -292,6 +319,14 @@ export default function AdminUsersPage() {
                                             </div>
                                             <div>
                                                 <p className="font-mono text-eyebrow uppercase text-text-faint">
+                                                    {t('colPlan')}
+                                                </p>
+                                                <div className="mt-1.5">
+                                                    <PlanBadge plan={user.plan} />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="font-mono text-eyebrow uppercase text-text-faint">
                                                     {t('colStatus')}
                                                 </p>
                                                 <div className="mt-1.5">
@@ -342,6 +377,7 @@ export default function AdminUsersPage() {
                             <tr className="bg-white/[0.02] text-left font-mono text-eyebrow uppercase text-text-faint">
                                 <th className="px-5 py-3 font-normal">{t('colUser')}</th>
                                 <th className="w-40 px-5 py-3 font-normal">{t('colRole')}</th>
+                                <th className="w-36 px-5 py-3 font-normal">{t('colPlan')}</th>
                                 <th className="w-36 px-5 py-3 font-normal">{t('colStatus')}</th>
                                 <th className="w-44 px-5 py-3 text-right font-normal">{t('colAdmin')}</th>
                             </tr>
@@ -349,7 +385,7 @@ export default function AdminUsersPage() {
                         <tbody>
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={4} className="p-3">
+                                    <td colSpan={5} className="p-3">
                                         <div className="space-y-2">
                                             {Array.from({ length: 6 }).map((_, i) => (
                                                 <Skeleton key={i} className="h-12" />
@@ -359,7 +395,7 @@ export default function AdminUsersPage() {
                                 </tr>
                             ) : rows.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="px-5 py-8 text-text-dim">
+                                    <td colSpan={5} className="px-5 py-8 text-text-dim">
                                         {t('noUsersMatch')}
                                     </td>
                                 </tr>
@@ -377,6 +413,9 @@ export default function AdminUsersPage() {
                                                         user={user}
                                                         onChange={(role) => changeRole(user, role)}
                                                     />
+                                                </td>
+                                                <td className="px-5 py-3">
+                                                    <PlanBadge plan={user.plan} />
                                                 </td>
                                                 <td className="px-5 py-3">
                                                     <StatusControl

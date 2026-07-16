@@ -129,6 +129,7 @@ export const AdminUsersDocument = graphql(`
                 isAdmin
                 status
                 emailVerified
+                plan
                 createdAt
             }
             total

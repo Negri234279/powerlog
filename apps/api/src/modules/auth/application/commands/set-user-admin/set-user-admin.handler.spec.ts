@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { FakeClock, InMemoryUserRepository } from '../../../../../../tests/doubles/auth'
-import { FakeProfiles } from '../../../../../../tests/doubles/shared'
+import { FakeEntitlements, FakeProfiles } from '../../../../../../tests/doubles/shared'
 import { UserMother } from '../../../../../../tests/mothers/auth'
 import { CannotRevokeOwnAdminError, UserNotFoundError } from '../../../domain/errors/auth.errors'
 import { SetUserAdminCommand } from './set-user-admin.command'
@@ -12,7 +12,12 @@ function setup() {
     const target = UserMother.athlete().withId('target-id').withEmail('target@example.com').buildExisting()
     const repo = new InMemoryUserRepository([admin, target])
     const profiles = new FakeProfiles().set('target-id', { username: 'targetuser', avatarUrl: null, locale: null })
-    const handler = new SetUserAdminHandler(repo, new FakeClock(), profiles)
+    const handler = new SetUserAdminHandler(
+        repo,
+        new FakeClock(),
+        profiles,
+        new FakeEntitlements().on({ plan: 'athlete-free' }),
+    )
     return { repo, handler }
 }
 
@@ -22,7 +27,13 @@ describe('SetUserAdminHandler', () => {
 
         const view = await handler.execute(new SetUserAdminCommand('admin-id', 'target-id', true))
 
-        expect(view).toMatchObject({ id: 'target-id', isAdmin: true, username: 'targetuser' })
+        expect(view).toMatchObject({
+            id: 'target-id',
+            isAdmin: true,
+            username: 'targetuser',
+            // Admin is orthogonal to billing: granting it leaves the plan alone.
+            plan: 'athlete-free',
+        })
         expect((await repo.findById('target-id'))?.isAdmin).toBe(true)
     })
 

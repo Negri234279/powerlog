@@ -4,6 +4,7 @@ import { Entitlements } from '../shared/contracts/entitlements'
 import { EntitlementsCache } from './entitlements.cache'
 import { FlushEntitlementsOnPlanCatalogChanged } from './flush-on-plan-catalog-changed.handler'
 import { InvalidateEntitlementsOnSubscriptionChanged } from './invalidate-on-subscription-changed.handler'
+import { InvalidateEntitlementsOnUserRoleChanged } from './invalidate-on-user-role-changed.handler'
 import { PlanAwareEntitlements } from './plan-aware-entitlements'
 
 /**
@@ -24,6 +25,8 @@ import { PlanAwareEntitlements } from './plan-aware-entitlements'
         InvalidateEntitlementsOnSubscriptionChanged,
         // A plan edit is retroactive by design, so the whole cache goes with it.
         FlushEntitlementsOnPlanCatalogChanged,
+        // The role picks the free plan, so changing it changes the answer too.
+        InvalidateEntitlementsOnUserRoleChanged,
         { provide: Entitlements, useClass: PlanAwareEntitlements },
     ],
     exports: [Entitlements],
