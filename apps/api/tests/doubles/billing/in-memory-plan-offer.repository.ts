@@ -26,6 +26,10 @@ export class InMemoryPlanOfferRepository extends PlanOfferRepository {
         return [...this.byId.values()].filter((offer) => planIds.includes(offer.planId) && offer.active)
     }
 
+    async findByPlans(planIds: string[]): Promise<PlanOfferEntity[]> {
+        return [...this.byId.values()].filter((offer) => planIds.includes(offer.planId))
+    }
+
     all(): PlanOfferEntity[] {
         return [...this.byId.values()]
     }

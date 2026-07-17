@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { PinoLogger } from 'nestjs-pino'
 
 import type { PaymentGateway } from '../../domain/entities/subscription.entity'
+import { PlanOfferRepository } from '../../domain/repositories/plan-offer.repository'
 import { PlanPriceRepository } from '../../domain/repositories/plan-price.repository'
 import { PlanRepository } from '../../domain/repositories/plan.repository'
 import { SubscriptionRepository } from '../../domain/repositories/subscription.repository'
@@ -37,6 +38,7 @@ export class ReconcileSubscriptions {
         private readonly subscriptions: SubscriptionRepository,
         private readonly plans: PlanRepository,
         private readonly prices: PlanPriceRepository,
+        private readonly offers: PlanOfferRepository,
         private readonly gateways: GatewayProvider,
         private readonly logger: PinoLogger,
     ) {
@@ -63,7 +65,14 @@ export class ReconcileSubscriptions {
             .map((price) => price.externalIdOn(name))
             .filter((id): id is string => id !== null)
 
-        const remote = await gateway.listLiveSubscriptionIds(publishedPlans)
+        // An offer is its own PayPal plan, and whoever signed on it LIVES there —
+        // also after the offer is retired. Leaving these out would report every
+        // offer subscriber as drift.
+        const offerPlans = (await this.offers.findByPlans(planIds)).flatMap((offer) =>
+            Object.values(offer.paypalPlanIds ?? {}),
+        )
+
+        const remote = await gateway.listLiveSubscriptionIds([...publishedPlans, ...offerPlans])
         if (remote === null) {
             // No signal. Reporting zero drift here would be a lie that silences the alert.
             return { gateway: name, missingLocally: [], staleLocally: [], total: null }

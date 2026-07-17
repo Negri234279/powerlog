@@ -169,6 +169,26 @@ describe('PayPalGateway', () => {
             })
         })
 
+        it('reads a failed payment as the dunning signal, not as a status change', async () => {
+            // PayPal still says ACTIVE at this point — SUSPENDED comes later, on its
+            // own, if the retries keep failing. What this event carries is the same
+            // signal Stripe puts on `invoice.payment_failed`: tell the user, count it.
+            stubFetch({ verification_status: 'SUCCESS' })
+
+            const event = await paypal.verifyWebhook(
+                Buffer.from(
+                    JSON.stringify({
+                        id: 'WH-3',
+                        event_type: 'BILLING.SUBSCRIPTION.PAYMENT.FAILED',
+                        resource: { id: 'I-SUB-1', status: 'ACTIVE' },
+                    }),
+                ),
+                {},
+            )
+
+            expect(event).toMatchObject({ kind: 'payment_failed', gatewaySubscriptionId: 'I-SUB-1' })
+        })
+
         it('records an event it does not act on instead of dropping it', async () => {
             stubFetch({ verification_status: 'SUCCESS' })
 
@@ -178,6 +198,21 @@ describe('PayPalGateway', () => {
             )
 
             expect(event.kind).toBe('unhandled')
+        })
+    })
+
+    describe('listing what PayPal is still billing', () => {
+        it('pages through every live subscription instead of stopping at the first hundred', async () => {
+            // Truncating here fabricates drift: everyone past the first page would be
+            // reported as "live here but not there".
+            stubFetch(
+                { subscriptions: [{ id: 'I-1', status: 'ACTIVE' }], total_pages: 2 },
+                { subscriptions: [{ id: 'I-2', status: 'ACTIVE' }], total_pages: 2 },
+            )
+
+            const ids = await paypal.listLiveSubscriptionIds(['P-PLAN-1'])
+
+            expect(ids).toEqual(['I-1', 'I-2'])
         })
     })
 })

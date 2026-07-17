@@ -90,4 +90,12 @@ export class DrizzlePlanOfferRepository extends PlanOfferRepository {
 
         return rows.map(toEntity)
     }
+
+    async findByPlans(planIds: string[]): Promise<PlanOfferEntity[]> {
+        if (planIds.length === 0) return []
+
+        const rows = await this.db.select().from(planOffers).where(inArray(planOffers.planId, planIds))
+
+        return rows.map(toEntity)
+    }
 }

@@ -106,11 +106,17 @@ export class StripeGateway extends PaymentGatewayPort {
                           name: plan.name,
                           ...(plan.description ? { description: plan.description } : {}),
                       })
-                    : await stripe.products.create({
-                          name: plan.name,
-                          ...(plan.description ? { description: plan.description } : {}),
-                          metadata: { plan: plan.slug },
-                      })
+                    : await stripe.products.create(
+                          {
+                              name: plan.name,
+                              ...(plan.description ? { description: plan.description } : {}),
+                              metadata: { plan: plan.slug },
+                          },
+                          // A sync that created the object but died before recording
+                          // its id must not mint a twin on the retry: the key makes
+                          // Stripe replay the first answer. Same on every create below.
+                          { idempotencyKey: `powerlog-product-${plan.id}` },
+                      )
 
                 const priceIds: Record<string, string> = {}
                 for (const price of prices) {
@@ -122,13 +128,16 @@ export class StripeGateway extends PaymentGatewayPort {
                         continue
                     }
 
-                    const created = await stripe.prices.create({
-                        product: product.id,
-                        currency: price.currency.toLowerCase(),
-                        unit_amount: price.amountCents,
-                        recurring: recurring(price.interval),
-                        metadata: { plan: plan.slug, priceId: price.id },
-                    })
+                    const created = await stripe.prices.create(
+                        {
+                            product: product.id,
+                            currency: price.currency.toLowerCase(),
+                            unit_amount: price.amountCents,
+                            recurring: recurring(price.interval),
+                            metadata: { plan: plan.slug, priceId: price.id },
+                        },
+                        { idempotencyKey: `powerlog-price-${price.id}` },
+                    )
                     priceIds[price.id] = created.id
                 }
 
@@ -163,13 +172,16 @@ export class StripeGateway extends PaymentGatewayPort {
         if (!intro) return null
         if (offer.stripeCouponId) return offer.stripeCouponId
 
-        const coupon = await stripe.coupons.create({
-            name: offer.name,
-            duration: 'repeating',
-            duration_in_months: intro.cycles,
-            percent_off: intro.percentOff,
-            metadata: { plan: plan.slug, offerId: offer.id },
-        })
+        const coupon = await stripe.coupons.create(
+            {
+                name: offer.name,
+                duration: 'repeating',
+                duration_in_months: intro.cycles,
+                percent_off: intro.percentOff,
+                metadata: { plan: plan.slug, offerId: offer.id },
+            },
+            { idempotencyKey: `powerlog-coupon-${offer.id}` },
+        )
 
         return coupon.id
     }
@@ -338,6 +350,14 @@ export class StripeGateway extends PaymentGatewayPort {
                 const subscription = event.data.object
                 const item = subscription.items.data[0]
 
+                // Cannot happen on a subscription we started — but if it ever does, the
+                // period below quietly becomes 1970 and the row loses its entitlement.
+                // A wrong date that was WARNED about is a five-minute fix; a silent one
+                // is a support ticket.
+                if (!item) {
+                    this.logger.warn({ type: event.type }, 'stripe subscription event has no items')
+                }
+
                 return {
                     ...base,
                     kind: 'subscription_changed',
@@ -361,7 +381,6 @@ export class StripeGateway extends PaymentGatewayPort {
             case 'invoice.paid':
             case 'invoice.payment_failed': {
                 const invoice = event.data.object
-                const currency = invoice.currency.toUpperCase()
 
                 return {
                     ...base,
@@ -375,11 +394,16 @@ export class StripeGateway extends PaymentGatewayPort {
                     status: (invoice.status ?? 'open') as InvoiceStatus,
                     amountDueCents: invoice.amount_due,
                     amountPaidCents: invoice.amount_paid,
-                    currency: (currency === 'USD' ? 'USD' : 'EUR') as Currency,
+                    currency: this.currencyOf(invoice.currency),
                     hostedUrl: invoice.hosted_invoice_url ?? null,
                     pdfUrl: invoice.invoice_pdf ?? null,
                     issuedAt: secondsToDate(invoice.created),
-                    paidAt: event.type === 'invoice.paid' ? secondsToDate(invoice.created) : null,
+                    // When it was actually paid — issuing and paying can be days apart
+                    // (a renewal invoice is finalized before the charge lands).
+                    paidAt:
+                        event.type === 'invoice.paid'
+                            ? secondsToDate(invoice.status_transitions?.paid_at ?? invoice.created)
+                            : null,
                     paymentFailed: event.type === 'invoice.payment_failed',
                 }
             }
@@ -418,6 +442,16 @@ export class StripeGateway extends PaymentGatewayPort {
         if (!id) throw new GatewayRequestFailedError('stripe', 'subscription is not linked to Stripe')
 
         return id
+    }
+
+    /** We only sell EUR and USD. Anything else is worth a warning, not a silent EUR. */
+    private currencyOf(code: string): Currency {
+        const upper = code.toUpperCase()
+        if (upper !== 'EUR' && upper !== 'USD') {
+            this.logger.warn({ currency: upper }, 'unexpected stripe currency — recorded as EUR')
+        }
+
+        return upper === 'USD' ? 'USD' : 'EUR'
     }
 
     /** Times the call and turns any Stripe failure into a domain error. */

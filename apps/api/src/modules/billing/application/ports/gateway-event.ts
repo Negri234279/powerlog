@@ -85,6 +85,19 @@ export interface CheckoutExpiredEvent extends BaseEvent {
 }
 
 /**
+ * A charge failed and the provider is retrying — dunning has begun. Stripe
+ * reports this on the invoice (`InvoiceEvent.paymentFailed`); PayPal has no
+ * invoice to hang it on, so it arrives as its own event. It changes no local
+ * state: the provider still considers the subscription active, and says so
+ * itself (SUSPENDED) if it gives up. The metric and the "your card failed"
+ * notification are the point.
+ */
+export interface PaymentFailedEvent extends BaseEvent {
+    kind: 'payment_failed'
+    gatewaySubscriptionId: string
+}
+
+/**
  * Signed, valid, and about something we do not act on. It is still recorded and
  * counted: a provider quietly starting to send a new event type is worth seeing.
  */
@@ -97,6 +110,7 @@ export type GatewayEvent =
     | SubscriptionChangedEvent
     | InvoiceEvent
     | CheckoutExpiredEvent
+    | PaymentFailedEvent
     | UnhandledEvent
 
 /**

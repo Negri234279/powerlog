@@ -143,12 +143,18 @@ export class PayPalGateway extends PaymentGatewayPort {
     }
 
     private async createProduct(paypal: PayPalClient, plan: PlanAggregate): Promise<string> {
-        const product = await paypal.post<{ id: string }>('/v1/catalogs/products', {
-            name: plan.name,
-            ...(plan.description ? { description: plan.description } : {}),
-            type: 'SERVICE',
-            category: 'SOFTWARE',
-        })
+        const product = await paypal.post<{ id: string }>(
+            '/v1/catalogs/products',
+            {
+                name: plan.name,
+                ...(plan.description ? { description: plan.description } : {}),
+                type: 'SERVICE',
+                category: 'SOFTWARE',
+            },
+            // A sync that created the product but died before recording its id must
+            // not mint a second one on the retry: PayPal replays the first answer.
+            { 'PayPal-Request-Id': `powerlog-product-${plan.id}` },
+        )
 
         return product.id
     }
@@ -200,15 +206,21 @@ export class PayPalGateway extends PaymentGatewayPort {
             pricing_scheme: { fixed_price: amount(price.amountCents, price.currency) },
         })
 
-        const created = await paypal.post<{ id: string }>('/v1/billing/plans', {
-            product_id: productId,
-            name: offer
-                ? `${plan.name} — ${offer.name} (${price.currency}/${price.interval})`
-                : `${plan.name} (${price.currency}/${price.interval})`,
-            status: 'ACTIVE',
-            billing_cycles: cycles,
-            payment_preferences: { auto_bill_outstanding: true },
-        })
+        const created = await paypal.post<{ id: string }>(
+            '/v1/billing/plans',
+            {
+                product_id: productId,
+                name: offer
+                    ? `${plan.name} — ${offer.name} (${price.currency}/${price.interval})`
+                    : `${plan.name} (${price.currency}/${price.interval})`,
+                status: 'ACTIVE',
+                billing_cycles: cycles,
+                payment_preferences: { auto_bill_outstanding: true },
+            },
+            // Same insurance as the product: someone is billed on this plan, so a
+            // retried sync must get the one already created, never a twin.
+            { 'PayPal-Request-Id': `powerlog-plan-${offer ? `${offer.id}-` : ''}${price.id}` },
+        )
 
         return created.id
     }
@@ -358,6 +370,16 @@ export class PayPalGateway extends PaymentGatewayPort {
                 }
             }
 
+            case 'BILLING.SUBSCRIPTION.PAYMENT.FAILED': {
+                const resource = event.resource as PayPalSubscription
+
+                // Dunning began. The subscription itself still says ACTIVE — PayPal
+                // only moves it to SUSPENDED after giving up — so no status rides
+                // along: this is the signal Stripe carries on `invoice.payment_failed`,
+                // which PayPal has no invoice to hang on.
+                return { ...base, kind: 'payment_failed', gatewaySubscriptionId: resource.id }
+            }
+
             case 'PAYMENT.SALE.COMPLETED': {
                 const sale = event.resource as PayPalSale
                 const cents = Math.round(Number(sale.amount?.total ?? '0') * 100)
@@ -375,7 +397,7 @@ export class PayPalGateway extends PaymentGatewayPort {
                     status: 'paid',
                     amountDueCents: cents,
                     amountPaidCents: cents,
-                    currency: (sale.amount?.currency === 'USD' ? 'USD' : 'EUR') as Currency,
+                    currency: this.currencyOf(sale.amount?.currency ?? 'EUR'),
                     hostedUrl: null,
                     pdfUrl: null,
                     issuedAt: dateOf(sale.create_time),
@@ -401,10 +423,24 @@ export class PayPalGateway extends PaymentGatewayPort {
         const ids: string[] = []
         for (const planId of planExternalIds) {
             try {
-                const page = await paypal.get<{ subscriptions?: { id: string; status: string }[] }>(
-                    `/v1/billing/subscriptions?plan_ids=${planId}&statuses=ACTIVE,SUSPENDED&page_size=100`,
-                )
-                for (const subscription of page.subscriptions ?? []) ids.push(subscription.id)
+                // Paged through in full: a plan with more than one page of live
+                // subscriptions is exactly the moment truncation would fabricate
+                // drift out of everyone past the first page.
+                let page = 1
+                let totalPages = 1
+                do {
+                    const result = await paypal.get<{
+                        subscriptions?: { id: string; status: string }[]
+                        total_pages?: number
+                    }>(
+                        `/v1/billing/subscriptions?plan_ids=${planId}&statuses=ACTIVE,SUSPENDED` +
+                            `&page_size=100&page=${page}&total_required=true`,
+                    )
+                    for (const subscription of result.subscriptions ?? []) ids.push(subscription.id)
+
+                    totalPages = result.total_pages ?? 1
+                    page += 1
+                } while (page <= totalPages)
             } catch (error) {
                 // One plan failing must not turn the whole reconciliation into a false
                 // "everything drifted": say "no signal" instead.
@@ -428,6 +464,16 @@ export class PayPalGateway extends PaymentGatewayPort {
         if (!id) throw new GatewayRequestFailedError('paypal', 'subscription is not linked to PayPal')
 
         return id
+    }
+
+    /** We only sell EUR and USD. Anything else is worth a warning, not a silent EUR. */
+    private currencyOf(code: string): Currency {
+        const upper = code.toUpperCase()
+        if (upper !== 'EUR' && upper !== 'USD') {
+            this.logger.warn({ currency: upper }, 'unexpected paypal currency — recorded as EUR')
+        }
+
+        return upper === 'USD' ? 'USD' : 'EUR'
     }
 
     private async call<T>(operation: GatewayOperation, run: () => Promise<T>): Promise<T> {

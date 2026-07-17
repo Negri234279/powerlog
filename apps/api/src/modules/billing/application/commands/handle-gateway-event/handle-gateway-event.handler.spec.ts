@@ -16,7 +16,12 @@ import { PlanMother, SubscriptionMother } from '../../../../../../tests/mothers/
 import { SubscriptionChangedIntegrationEvent } from '../../../../../shared/integration-events/subscription-changed.integration-event'
 import { PlanPriceEntity } from '../../../domain/entities/plan-price.entity'
 import type { SubscriptionStatus } from '../../../domain/subscription-status'
-import type { CheckoutCompletedEvent, InvoiceEvent, SubscriptionChangedEvent } from '../../ports/gateway-event'
+import type {
+    CheckoutCompletedEvent,
+    InvoiceEvent,
+    PaymentFailedEvent,
+    SubscriptionChangedEvent,
+} from '../../ports/gateway-event'
 import { HandleGatewayEventCommand } from './handle-gateway-event.command'
 import { HandleGatewayEventHandler } from './handle-gateway-event.handler'
 
@@ -127,7 +132,7 @@ describe('the webhook pipeline', () => {
             silentLogger(),
         )
 
-    const deliver = (event: CheckoutCompletedEvent | SubscriptionChangedEvent | InvoiceEvent) =>
+    const deliver = (event: CheckoutCompletedEvent | SubscriptionChangedEvent | InvoiceEvent | PaymentFailedEvent) =>
         handler().execute(new HandleGatewayEventCommand(event))
 
     /** A subscription already mirrored from the gateway, the way a checkout leaves it. */
@@ -435,6 +440,44 @@ describe('the webhook pipeline', () => {
             const announced = bus.published.at(-1) as SubscriptionChangedIntegrationEvent
             expect(announced.reason).toBe('payment_failed')
             expect(metrics.subscriptionEvents).toContain('payment_failed')
+        })
+    })
+
+    describe('a failed payment reported without an invoice (PayPal)', () => {
+        const paymentFailed = (overrides: Partial<PaymentFailedEvent> = {}): PaymentFailedEvent => ({
+            kind: 'payment_failed',
+            gateway: 'paypal',
+            eventId: 'evt_pp_failed',
+            type: 'BILLING.SUBSCRIPTION.PAYMENT.FAILED',
+            gatewaySubscriptionId: GATEWAY_SUB,
+            ...overrides,
+        })
+
+        it('tells the user and counts it, exactly like a failed Stripe invoice', async () => {
+            await subscriptions.save(aMirroredSubscription())
+
+            await deliver(paymentFailed())
+
+            const announced = bus.published.at(-1) as SubscriptionChangedIntegrationEvent
+            expect(announced.reason).toBe('payment_failed')
+            expect(metrics.subscriptionEvents).toContain('payment_failed')
+        })
+
+        it('moves no local state — PayPal still considers the subscription active', async () => {
+            await subscriptions.save(aMirroredSubscription())
+
+            await deliver(paymentFailed())
+
+            const untouched = await subscriptions.findByGatewayId(GATEWAY_SUB)
+            expect(untouched?.status).toBe('active')
+            expect(untouched?.isEntitledAt(NOW)).toBe(true)
+        })
+
+        it('stays quiet about a subscription we do not mirror', async () => {
+            await deliver(paymentFailed({ gatewaySubscriptionId: 'sub_unknown' }))
+
+            expect(bus.published).toHaveLength(0)
+            expect(metrics.subscriptionEvents).toHaveLength(0)
         })
     })
 })

@@ -17,6 +17,7 @@ import {
     type CheckoutCompletedEvent,
     type GatewayEvent,
     type InvoiceEvent,
+    type PaymentFailedEvent,
     reviveGatewayEvent,
     type SubscriptionChangedEvent,
 } from '../../ports/gateway-event'
@@ -119,6 +120,8 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
                 return this.onSubscriptionChanged(event)
             case 'invoice':
                 return this.onInvoice(event)
+            case 'payment_failed':
+                return this.onPaymentFailed(event)
             case 'checkout_expired':
                 this.metrics.recordCheckout(event.gateway, event.planSlug ?? 'unknown', 'expired')
 
@@ -334,6 +337,38 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
                 )
             }
         }
+    }
+
+    /**
+     * Dunning began, reported without an invoice (PayPal). No local state moves —
+     * the provider still says the subscription is active, and sends SUSPENDED on
+     * its own if it gives up — but the user has to be told their card failed, and
+     * the metric is how dunning is watched.
+     */
+    private async onPaymentFailed(event: PaymentFailedEvent): Promise<void> {
+        const subscription = await this.subscriptions.findByGatewayId(event.gatewaySubscriptionId)
+
+        // One we do not mirror (yet): nothing to attribute it to. The journal keeps
+        // the record either way.
+        if (!subscription) {
+            this.logger.debug({ eventId: event.eventId }, 'payment failed for a subscription we do not mirror')
+
+            return
+        }
+
+        const plan = await this.plans.findById(subscription.planId)
+        this.metrics.recordSubscriptionEvent('payment_failed', event.gateway)
+        this.logger.info({ subscriptionId: subscription.id, plan: plan?.slug ?? null }, 'payment failed — dunning')
+
+        this.eventBus.publish(
+            new SubscriptionChangedIntegrationEvent(
+                subscription.userId,
+                subscription.id,
+                plan?.slug ?? 'unknown',
+                'payment_failed',
+                subscription.currentPeriodEnd,
+            ),
+        )
     }
 
     /**

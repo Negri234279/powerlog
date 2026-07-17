@@ -144,6 +144,7 @@ export class FakePaymentGateway extends PaymentGatewayPort {
 
     /** What the fake provider claims is live. Tests set it to model drift. */
     private liveIds: string[] | null = []
+    private livePerPlan = new Map<string, string[]>()
 
     liveAtGateway(ids: string[] | null): this {
         this.liveIds = ids
@@ -151,10 +152,24 @@ export class FakePaymentGateway extends PaymentGatewayPort {
         return this
     }
 
-    async listLiveSubscriptionIds(): Promise<string[] | null> {
-        this.guard()
+    /**
+     * Live only when the listing asks about this plan — the way PayPal answers.
+     * Models the subscriptions that live on an offer's own plan: a reconciliation
+     * that forgets to ask about it does not see them, and reports drift.
+     */
+    liveAtGatewayOnPlan(planExternalId: string, ids: string[]): this {
+        this.livePerPlan.set(planExternalId, ids)
 
-        return this.liveIds
+        return this
+    }
+
+    async listLiveSubscriptionIds(planExternalIds: string[]): Promise<string[] | null> {
+        this.guard()
+        if (this.liveIds === null) return null
+
+        const perPlan = planExternalIds.flatMap((planId) => this.livePerPlan.get(planId) ?? [])
+
+        return [...this.liveIds, ...perPlan]
     }
 
     private guard(): void {

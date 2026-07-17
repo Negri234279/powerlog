@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
     FakeGatewayProvider,
     FakePaymentGateway,
+    InMemoryPlanOfferRepository,
     InMemoryPlanPriceRepository,
     InMemoryPlanRepository,
     InMemorySubscriptionRepository,
 } from '../../../../../tests/doubles/billing'
 import { silentLogger } from '../../../../../tests/doubles/shared'
 import { PlanMother, SubscriptionMother } from '../../../../../tests/mothers/billing'
+import { PlanOfferEntity } from '../../domain/entities/plan-offer.entity'
 import { PlanPriceEntity } from '../../domain/entities/plan-price.entity'
 import { ReconcileSubscriptions } from './reconcile-subscriptions.service'
 
@@ -50,17 +52,26 @@ describe('ReconcileSubscriptions', () => {
     let subscriptions: InMemorySubscriptionRepository
     let plans: InMemoryPlanRepository
     let prices: InMemoryPlanPriceRepository
+    let offers: InMemoryPlanOfferRepository
     let gateway: FakePaymentGateway
 
     beforeEach(() => {
         subscriptions = new InMemorySubscriptionRepository()
         plans = new InMemoryPlanRepository([PlanMother.athletePro()])
         prices = new InMemoryPlanPriceRepository([aSyncedPrice()])
+        offers = new InMemoryPlanOfferRepository()
         gateway = new FakePaymentGateway()
     })
 
     const reconcile = () =>
-        new ReconcileSubscriptions(subscriptions, plans, prices, new FakeGatewayProvider(gateway), silentLogger())
+        new ReconcileSubscriptions(
+            subscriptions,
+            plans,
+            prices,
+            offers,
+            new FakeGatewayProvider(gateway),
+            silentLogger(),
+        )
 
     it('reports no drift when both sides agree', async () => {
         await subscriptions.save(aSubscription('sub_1'))
@@ -113,6 +124,31 @@ describe('ReconcileSubscriptions', () => {
         // Free users have no subscription row at all, so there is nothing to compare.
         plans.seed(PlanMother.athleteFree())
         gateway.liveAtGateway([])
+
+        const [drift] = await reconcile().run()
+
+        expect(drift?.total).toBe(0)
+    })
+
+    it('asks about the offers’ own plans too — their subscribers live there, not on the price', async () => {
+        // On PayPal an offer is a billing plan of its own, and a subscriber who
+        // signed on it stays there for life — including after the offer is retired.
+        // A reconciliation that only asks about the prices' plans cannot see them,
+        // and would report every one of them as stale drift.
+        const offer = PlanOfferEntity.create({
+            id: 'offer-1',
+            planId: PRO.id,
+            name: 'Launch',
+            trialDays: 7,
+            startsAt: NOW,
+            now: NOW,
+        })
+        offer.syncedToPaypal({ 'price-eur': 'P-OFFER-EUR' }, NOW)
+        offer.deactivate(NOW)
+        await offers.save(offer)
+
+        await subscriptions.save(aSubscription('sub_on_offer'))
+        gateway.liveAtGatewayOnPlan('P-OFFER-EUR', ['sub_on_offer'])
 
         const [drift] = await reconcile().run()
 
