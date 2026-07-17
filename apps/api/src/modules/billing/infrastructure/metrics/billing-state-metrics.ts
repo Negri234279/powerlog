@@ -7,6 +7,7 @@ import {
     type AdminBillingStats,
     AdminBillingStatsReadModel,
 } from '../../application/ports/admin-billing-stats.read-model'
+import { WebhookEventStore } from '../../application/ports/webhook-event.store'
 
 /** prom-client calls a metric's `collect` when the metric is read; @types omits it. */
 type Sampled = Gauge<string> & { collect: () => Promise<void> }
@@ -24,10 +25,12 @@ type Sampled = Gauge<string> & { collect: () => Promise<void> }
 export class BillingStateMetrics {
     constructor(
         private readonly stats: AdminBillingStatsReadModel,
+        private readonly events: WebhookEventStore,
         @InjectMetric(METRIC.subscriptions) private readonly subscriptions: Gauge<string>,
         @InjectMetric(METRIC.subscriptionsByPlan) private readonly byPlan: Gauge<string>,
         @InjectMetric(METRIC.mrrCents) private readonly mrr: Gauge<string>,
         @InjectMetric(METRIC.subscriptionsCanceling) private readonly canceling: Gauge<string>,
+        @InjectMetric(METRIC.billingWebhooksPendingReplay) private readonly pendingReplay: Gauge<string>,
     ) {
         const sample = (gauge: Gauge<string>, apply: (snapshot: AdminBillingStats) => void): void => {
             ;(gauge as Sampled).collect = async () => {
@@ -61,6 +64,19 @@ export class BillingStateMetrics {
         })
 
         sample(this.canceling, (snapshot) => this.canceling.set(snapshot.canceling))
+
+        // Not part of the admin snapshot: the backlog comes from the webhook
+        // journal. Same contract as the others — a DB hiccup keeps the last value
+        // instead of failing the scrape.
+        ;(this.pendingReplay as Sampled).collect = async () => {
+            try {
+                const counts = await this.events.countFailed()
+                this.pendingReplay.reset()
+                for (const row of counts) this.pendingReplay.set({ gateway: row.gateway }, row.count)
+            } catch {
+                // Keep the last value; the DB being down is alerted on elsewhere.
+            }
+        }
     }
 
     private cached: { at: number; stats: AdminBillingStats } | null = null

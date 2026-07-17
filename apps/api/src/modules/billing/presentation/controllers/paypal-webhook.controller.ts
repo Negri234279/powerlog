@@ -4,6 +4,7 @@ import type { Request } from 'express'
 import { PinoLogger } from 'nestjs-pino'
 
 import { HandleGatewayEventCommand } from '../../application/commands/handle-gateway-event/handle-gateway-event.command'
+import { BillingMetrics } from '../../application/ports/billing-metrics.port'
 import { GatewayProvider } from '../../application/ports/gateway-provider.port'
 
 /**
@@ -22,6 +23,7 @@ export class PayPalWebhookController {
     constructor(
         private readonly gateways: GatewayProvider,
         private readonly commandBus: CommandBus,
+        private readonly metrics: BillingMetrics,
         private readonly logger: PinoLogger,
     ) {
         this.logger.setContext(PayPalWebhookController.name)
@@ -39,7 +41,9 @@ export class PayPalWebhookController {
         try {
             event = await gateway.verifyWebhook(rawBody, request.headers as Record<string, string | undefined>)
         } catch (error) {
-            // Never log the payload of something we could not authenticate.
+            // Never log the payload of something we could not authenticate — and the
+            // `type` label comes from that payload, so it is 'unknown' on purpose.
+            this.metrics.recordWebhook('paypal', 'unknown', 'rejected')
             this.logger.warn({ err: error }, 'rejected an unverifiable paypal webhook')
 
             throw new UnauthorizedException('Invalid signature.')

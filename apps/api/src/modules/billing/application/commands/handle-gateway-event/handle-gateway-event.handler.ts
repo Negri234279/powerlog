@@ -11,7 +11,7 @@ import { PlanPriceRepository } from '../../../domain/repositories/plan-price.rep
 import { PlanRepository } from '../../../domain/repositories/plan.repository'
 import { InvoiceRepository } from '../../../domain/repositories/invoice.repository'
 import { SubscriptionRepository } from '../../../domain/repositories/subscription.repository'
-import { BillingMetrics } from '../../ports/billing-metrics.port'
+import { BillingMetrics, type SubscriptionEvent } from '../../ports/billing-metrics.port'
 import { Clock } from '../../ports/clock.port'
 import {
     type CheckoutCompletedEvent,
@@ -233,12 +233,12 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
         // A plan change is an upgrade or a downgrade, and the difference is the whole
         // point of the metric — so compare what they will actually be billed a month.
         const previousPrice = previousPriceId ? await this.prices.findById(previousPriceId) : null
-        const metricEvent =
-            reason === 'plan_changed'
-                ? (newPrice?.monthlyAmountCents() ?? 0) >= (previousPrice?.monthlyAmountCents() ?? 0)
-                    ? 'upgraded'
-                    : 'downgraded'
-                : reason
+        const metricEvent = metricEventOf({
+            reason,
+            previousStatus,
+            status: subscription.status,
+            upgraded: (newPrice?.monthlyAmountCents() ?? 0) >= (previousPrice?.monthlyAmountCents() ?? 0),
+        })
 
         this.metrics.recordSubscriptionEvent(metricEvent, event.gateway)
         this.logger.info(
@@ -408,6 +408,18 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
 
         await this.invoices.upsert(invoice)
 
+        // Cash landed: count it. The journal already refused this event id once,
+        // so a provider retry cannot add it twice.
+        if (invoice.status === 'paid' && invoice.amountPaidCents > 0) {
+            const plan = subscription ? await this.plans.findById(subscription.planId) : null
+            this.metrics.recordRevenue(
+                event.gateway,
+                plan?.slug ?? 'unknown',
+                invoice.currency,
+                invoice.amountPaidCents,
+            )
+        }
+
         if (event.paymentFailed && subscription) {
             const plan = await this.plans.findById(subscription.planId)
             this.metrics.recordSubscriptionEvent('payment_failed', event.gateway)
@@ -453,4 +465,24 @@ function reasonOf(input: {
     if (input.periodEnd > input.previousPeriodEnd && input.previousStatus !== 'incomplete') return 'renewed'
 
     return 'activated'
+}
+
+/**
+ * The metric wants more nuance than the integration event: going active out of a
+ * trial is the trial converting (did the offer earn its keep?), and out of
+ * past_due it is the dunning succeeding. The event's consumers do not care — to
+ * the user both are just "you're in" — so `reason` stays coarse and only the
+ * counter refines.
+ */
+function metricEventOf(input: {
+    reason: SubscriptionChangeReason
+    previousStatus: string
+    status: string
+    upgraded: boolean
+}): SubscriptionEvent {
+    if (input.reason === 'plan_changed') return input.upgraded ? 'upgraded' : 'downgraded'
+    if (input.status === 'active' && input.previousStatus === 'trialing') return 'trial_converted'
+    if (input.status === 'active' && input.previousStatus === 'past_due') return 'recovered'
+
+    return input.reason
 }

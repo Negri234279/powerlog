@@ -4,6 +4,7 @@ import type { Request } from 'express'
 import { PinoLogger } from 'nestjs-pino'
 
 import { HandleGatewayEventCommand } from '../../application/commands/handle-gateway-event/handle-gateway-event.command'
+import { BillingMetrics } from '../../application/ports/billing-metrics.port'
 import { GatewayProvider } from '../../application/ports/gateway-provider.port'
 
 /**
@@ -26,6 +27,7 @@ export class StripeWebhookController {
     constructor(
         private readonly gateways: GatewayProvider,
         private readonly commandBus: CommandBus,
+        private readonly metrics: BillingMetrics,
         private readonly logger: PinoLogger,
     ) {
         this.logger.setContext(StripeWebhookController.name)
@@ -48,7 +50,10 @@ export class StripeWebhookController {
         try {
             event = await gateway.verifyWebhook(rawBody, request.headers as Record<string, string | undefined>)
         } catch (error) {
-            // Never log the payload of something we could not authenticate.
+            // Never log the payload of something we could not authenticate — and the
+            // `type` label comes from that payload, so it is 'unknown' on purpose.
+            // A burst of these right after a deploy is a rotated-wrong secret.
+            this.metrics.recordWebhook('stripe', 'unknown', 'rejected')
             this.logger.warn({ err: error }, 'rejected an unverifiable stripe webhook')
 
             throw new UnauthorizedException('Invalid signature.')

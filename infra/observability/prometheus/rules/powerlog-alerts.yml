@@ -146,3 +146,25 @@ groups:
         annotations:
           summary: "powerlog billing webhooks silent"
           description: "No billing webhook in 6h while subscriptions exist — the endpoint is probably unreachable from the gateway."
+
+      # WebhooksFailing says it happened; this says it is STILL not fixed. The gauge
+      # holds the alert open until a human actually replays the events, so a failure
+      # that outlived every backoff retry cannot slip by as a one-shot notification.
+      - alert: PowerlogBillingWebhookReplayBacklog
+        expr: sum(powerlog_billing_webhooks_pending_replay) > 0
+        for: 30m
+        labels: { app: powerlog, severity: warning }
+        annotations:
+          summary: "powerlog billing webhooks awaiting replay"
+          description: "Failed billing webhook events have sat unresolved for 30m — the backoff retries gave up. Replay them from /admin/billing."
+
+      # Rejected is different from failed: the payload never got in, because its
+      # signature did not verify. One or two are internet noise; a sustained stream
+      # right after a deploy is a webhook secret rotated wrong, and every real event
+      # is bouncing off while the provider quietly retries.
+      - alert: PowerlogBillingWebhooksRejected
+        expr: sum(increase(powerlog_billing_webhooks_total{status="rejected"}[30m])) > 3
+        labels: { app: powerlog, severity: warning }
+        annotations:
+          summary: "powerlog billing webhooks rejected"
+          description: "Several billing webhooks failed signature verification in 30m — check STRIPE_WEBHOOK_SECRET / PAYPAL_WEBHOOK_ID."

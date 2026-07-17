@@ -396,11 +396,52 @@ describe('the webhook pipeline', () => {
 
             expect(metrics.subscriptionEvents).toContain('renewed')
         })
+
+        it('counts a trial going active as the trial converting — the number the offer lives or dies by', async () => {
+            await subscriptions.save(aMirroredSubscription('trialing'))
+            const firstPaidPeriodEnd = new Date('2026-09-15T00:00:00.000Z')
+
+            await deliver(subscriptionChanged({ currentPeriodEnd: firstPaidPeriodEnd }))
+
+            expect(metrics.subscriptionEvents).toContain('trial_converted')
+            // The user is not told anything special — only the counter refines.
+            const announced = bus.published.at(-1) as SubscriptionChangedIntegrationEvent
+            expect(announced.reason).toBe('renewed')
+        })
+
+        it('counts past_due going active as a recovery — the dunning emails did their job', async () => {
+            await subscriptions.save(aMirroredSubscription('past_due'))
+
+            await deliver(subscriptionChanged())
+
+            expect(metrics.subscriptionEvents).toContain('recovered')
+        })
     })
 
     describe('invoices', () => {
         beforeEach(async () => {
             await subscriptions.save(aMirroredSubscription())
+        })
+
+        it('counts the cash a paid invoice brought in, attributed to its plan', async () => {
+            await deliver(invoiceEvent())
+
+            expect(metrics.revenues).toEqual([{ plan: 'athlete-pro', currency: 'EUR', amountCents: 799 }])
+        })
+
+        it('counts no revenue for a failed charge', async () => {
+            await deliver(
+                invoiceEvent({
+                    eventId: 'evt_open',
+                    type: 'invoice.payment_failed',
+                    status: 'open',
+                    amountPaidCents: 0,
+                    paidAt: null,
+                    paymentFailed: true,
+                }),
+            )
+
+            expect(metrics.revenues).toEqual([])
         })
 
         it('mirrors what the gateway issued, PDF link and all', async () => {

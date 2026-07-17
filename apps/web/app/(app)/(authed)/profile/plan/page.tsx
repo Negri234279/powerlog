@@ -17,6 +17,7 @@ import {
     useResumeSubscription,
     useStartCheckout,
 } from '@/lib/graphql/hooks/use-billing'
+import { track } from '@/lib/analytics/events'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -73,6 +74,28 @@ export default function PlanPage() {
             setActivatedOpen(true)
         }
     }, [checkout, isActivated])
+
+    // The gateway sent them back — the one step of the funnel only the client
+    // sees (PayPal never reports a walk-away). Once per landing.
+    const returnTrackedRef = useRef(false)
+
+    useEffect(() => {
+        if ((checkout === 'success' || checkout === 'cancelled') && !returnTrackedRef.current) {
+            returnTrackedRef.current = true
+            track('checkout_returned', { result: checkout })
+
+            // `success` keeps the param until the activation modal is dismissed;
+            // `cancelled` has no modal to clean the URL, so it is dropped here — a
+            // refresh must not count a second walk-away.
+            if (checkout === 'cancelled') {
+                const params = new URLSearchParams(searchParams)
+                params.delete('checkout')
+                const query = params.toString()
+
+                router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+            }
+        }
+    }, [checkout, searchParams, router, pathname])
 
     /**
      * Dismissing the confirmation also drops `?checkout=success` from the URL.

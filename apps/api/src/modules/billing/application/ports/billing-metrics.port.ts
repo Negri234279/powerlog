@@ -8,10 +8,17 @@ export type CallStatus = 'ok' | 'error'
 /** Where a checkout got to. `started` here, the rest by webhook. */
 export type CheckoutStatus = 'started' | 'completed' | 'expired'
 
-/** The lifecycle of a subscription, as it actually happened. */
+/**
+ * The lifecycle of a subscription, as it actually happened. Two of them are
+ * refinements the business asks about by name: `trial_converted` (a trial became
+ * a paying subscription — did the offer work?) and `recovered` (a past_due one
+ * paid up — the dunning emails did their job).
+ */
 export type SubscriptionEvent =
     | 'activated'
+    | 'trial_converted'
     | 'renewed'
+    | 'recovered'
     | 'upgraded'
     | 'downgraded'
     | 'canceled'
@@ -19,8 +26,12 @@ export type SubscriptionEvent =
     | 'payment_failed'
     | 'expired'
 
-/** What became of an inbound webhook. `duplicate` proves the idempotency works. */
-export type WebhookStatus = 'processed' | 'failed' | 'duplicate'
+/**
+ * What became of an inbound webhook. `duplicate` proves the idempotency works;
+ * `rejected` is one whose signature did not verify — a burst of those right
+ * after a deploy is a rotated-wrong secret, visible instead of a silent 401.
+ */
+export type WebhookStatus = 'processed' | 'failed' | 'duplicate' | 'rejected'
 
 /** A backoff retry was `scheduled`, or gave up after the last attempt (`exhausted`). */
 export type WebhookRetryOutcome = 'scheduled' | 'exhausted'
@@ -54,6 +65,13 @@ export abstract class BillingMetrics {
 
     /** Signups that came in through an offer: do the promos convert? */
     abstract recordOfferRedemption(plan: string): void
+
+    /**
+     * Cash actually collected — a paid invoice's amount, as it lands. MRR is a
+     * photograph of the book; this is the money that arrived, over time, and the
+     * one number Grafana cannot derive from the state gauges.
+     */
+    abstract recordRevenue(gateway: PaymentGateway, plan: string, currency: string, amountCents: number): void
 
     /** Health of the channel everything else depends on. */
     abstract recordWebhook(gateway: PaymentGateway, type: string, status: WebhookStatus): void

@@ -51,7 +51,9 @@ export const METRIC = {
     offerRedemptions: 'powerlog_offer_redemptions_total',
     billingWebhooks: 'powerlog_billing_webhooks_total',
     billingWebhookRetries: 'powerlog_billing_webhook_retries_total',
+    billingWebhooksPendingReplay: 'powerlog_billing_webhooks_pending_replay',
     billingDrift: 'powerlog_billing_drift',
+    revenueCents: 'powerlog_revenue_cents_total',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -372,6 +374,23 @@ export const metricsProviders = [
         name: METRIC.billingWebhookRetries,
         help: 'Backoff retries of failed billing webhooks, by outcome.',
         labelNames: ['gateway', 'outcome'],
+    }),
+    // The backlog the retries could not clear: journal rows sitting `failed`,
+    // waiting for a human to replay them from /admin/billing. Sampled at scrape
+    // time (set by BillingStateMetrics). The retry counter says it happened;
+    // this says it is STILL not fixed — which is what an alert can hold open.
+    makeGaugeProvider({
+        name: METRIC.billingWebhooksPendingReplay,
+        help: 'Failed billing webhook events awaiting a manual replay. Should be 0.',
+        labelNames: ['gateway'],
+    }),
+    // Cash actually collected (paid invoices as they land), vs the MRR gauge
+    // which is a photograph of the book. `plan` is a catalog slug; `unknown`
+    // marks an invoice that arrived before its subscription was mirrored.
+    makeCounterProvider({
+        name: METRIC.revenueCents,
+        help: 'Revenue collected in cents, from paid invoices, by gateway, plan and currency.',
+        labelNames: ['gateway', 'plan', 'currency'],
     }),
     // Subscriptions the gateway thinks are live but we do not (a webhook we never
     // got), plus the reverse. **It should always be zero** — which is exactly what

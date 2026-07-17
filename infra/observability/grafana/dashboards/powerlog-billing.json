@@ -4,7 +4,7 @@
     "tags": ["powerlog", "billing"],
     "timezone": "browser",
     "schemaVersion": 39,
-    "version": 1,
+    "version": 2,
     "refresh": "1m",
     "time": {
         "from": "now-24h",
@@ -346,6 +346,95 @@
             ]
         },
         {
+            "id": 24,
+            "type": "row",
+            "title": "Revenue — cash collected, not book value",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 13
+            }
+        },
+        {
+            "id": 25,
+            "type": "timeseries",
+            "title": "Revenue collected by currency (per day)",
+            "description": "What paid invoices actually brought in. MRR is the promise; this is the cash that landed.",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus-powerlog"
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 14
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "decimals": 2,
+                    "custom": {
+                        "fillOpacity": 20
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "sum by (currency) (increase(powerlog_revenue_cents_total[1d])) / 100",
+                    "legendFormat": "{{currency}}"
+                }
+            ]
+        },
+        {
+            "id": 26,
+            "type": "timeseries",
+            "title": "Revenue by plan (per day)",
+            "description": "Which plans earn. Amounts are in whatever currency they were paid — for exact accounting read the invoices.",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus-powerlog"
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 14
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "decimals": 2,
+                    "custom": {
+                        "fillOpacity": 20
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "sum by (plan) (increase(powerlog_revenue_cents_total[1d])) / 100",
+                    "legendFormat": "{{plan}}"
+                }
+            ]
+        },
+        {
             "id": 10,
             "type": "row",
             "title": "Checkout funnel",
@@ -353,7 +442,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 13
+                "y": 22
             }
         },
         {
@@ -369,7 +458,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 14
+                "y": 23
             },
             "fieldConfig": {
                 "defaults": {
@@ -420,7 +509,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 14
+                "y": 23
             },
             "fieldConfig": {
                 "defaults": {
@@ -456,7 +545,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 22
+                "y": 31
             }
         },
         {
@@ -472,7 +561,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 23
+                "y": 32
             },
             "fieldConfig": {
                 "defaults": {
@@ -513,7 +602,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 23
+                "y": 32
             },
             "fieldConfig": {
                 "defaults": {
@@ -539,7 +628,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 31
+                "y": 40
             }
         },
         {
@@ -553,9 +642,9 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 6,
+                "w": 4,
                 "x": 0,
-                "y": 32
+                "y": 41
             },
             "fieldConfig": {
                 "defaults": {
@@ -604,9 +693,9 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 6,
-                "x": 6,
-                "y": 32
+                "w": 4,
+                "x": 4,
+                "y": 41
             },
             "fieldConfig": {
                 "defaults": {
@@ -655,9 +744,9 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 6,
-                "x": 12,
-                "y": 32
+                "w": 4,
+                "x": 8,
+                "y": 41
             },
             "fieldConfig": {
                 "defaults": {
@@ -706,9 +795,9 @@
             },
             "gridPos": {
                 "h": 4,
-                "w": 6,
-                "x": 18,
-                "y": 32
+                "w": 4,
+                "x": 12,
+                "y": 41
             },
             "fieldConfig": {
                 "defaults": {
@@ -734,6 +823,108 @@
             ]
         },
         {
+            "id": 27,
+            "type": "stat",
+            "title": "Rejected (1h)",
+            "description": "Signature verification refused them. A stream of these right after a deploy is a webhook secret rotated wrong.",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus-powerlog"
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 16,
+                "y": 41
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "decimals": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 1
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                },
+                "colorMode": "value",
+                "graphMode": "area",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "sum(increase(powerlog_billing_webhooks_total{status=\"rejected\"}[1h]))",
+                    "instant": true
+                }
+            ]
+        },
+        {
+            "id": 28,
+            "type": "stat",
+            "title": "Awaiting replay — 0 is good",
+            "description": "Failed events the backoff retries could not clear, waiting for a human in /admin/billing.",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus-powerlog"
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 20,
+                "y": 41
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none",
+                    "decimals": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 1
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                },
+                "colorMode": "value",
+                "graphMode": "area",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "sum(powerlog_billing_webhooks_pending_replay)",
+                    "instant": true
+                }
+            ]
+        },
+        {
             "id": 21,
             "type": "timeseries",
             "title": "Webhooks by outcome",
@@ -746,7 +937,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 36
+                "y": 45
             },
             "fieldConfig": {
                 "defaults": {
@@ -787,7 +978,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 12,
-                "y": 36
+                "y": 45
             },
             "fieldConfig": {
                 "defaults": {
@@ -828,7 +1019,7 @@
                 "h": 6,
                 "w": 24,
                 "x": 0,
-                "y": 44
+                "y": 53
             },
             "fieldConfig": {
                 "defaults": {

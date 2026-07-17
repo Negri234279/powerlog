@@ -70,4 +70,11 @@ export abstract class WebhookEventStore {
         gateway: PaymentGateway,
         gatewaySubscriptionId: string,
     ): Promise<WebhookEventRecord[]>
+
+    /**
+     * How many rows sit `failed` right now, per gateway — the backlog the backoff
+     * retries could not clear, waiting for a human replay. Feeds the gauge the
+     * alert holds open until someone actually clears it.
+     */
+    abstract countFailed(): Promise<{ gateway: PaymentGateway; count: number }[]>
 }

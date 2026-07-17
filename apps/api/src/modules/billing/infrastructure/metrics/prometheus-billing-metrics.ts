@@ -23,6 +23,7 @@ export class PrometheusBillingMetrics extends BillingMetrics {
         @InjectMetric(METRIC.checkoutSessions) private readonly checkouts: Counter<string>,
         @InjectMetric(METRIC.subscriptionEvents) private readonly subscriptionEvents: Counter<string>,
         @InjectMetric(METRIC.offerRedemptions) private readonly offers: Counter<string>,
+        @InjectMetric(METRIC.revenueCents) private readonly revenue: Counter<string>,
         @InjectMetric(METRIC.billingWebhooks) private readonly webhooks: Counter<string>,
         @InjectMetric(METRIC.billingWebhookRetries) private readonly webhookRetries: Counter<string>,
     ) {
@@ -47,6 +48,10 @@ export class PrometheusBillingMetrics extends BillingMetrics {
 
     recordOfferRedemption(plan: string): void {
         this.offers.inc({ plan })
+    }
+
+    recordRevenue(gateway: PaymentGateway, plan: string, currency: string, amountCents: number): void {
+        this.revenue.inc({ gateway, plan, currency }, amountCents)
     }
 
     recordWebhook(gateway: PaymentGateway, type: string, status: WebhookStatus): void {

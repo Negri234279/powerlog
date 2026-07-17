@@ -16,6 +16,7 @@ export class FakeBillingMetrics extends BillingMetrics {
     readonly checkouts: { plan: string; status: CheckoutStatus }[] = []
     readonly subscriptionEvents: SubscriptionEvent[] = []
     readonly offerRedemptions: string[] = []
+    readonly revenues: { plan: string; currency: string; amountCents: number }[] = []
     readonly webhooks: { type: string; status: WebhookStatus }[] = []
     readonly webhookRetries: { gateway: PaymentGateway; outcome: WebhookRetryOutcome }[] = []
 
@@ -42,6 +43,10 @@ export class FakeBillingMetrics extends BillingMetrics {
 
     recordOfferRedemption(plan: string): void {
         this.offerRedemptions.push(plan)
+    }
+
+    recordRevenue(_gateway: PaymentGateway, plan: string, currency: string, amountCents: number): void {
+        this.revenues.push({ plan, currency, amountCents })
     }
 
     recordWebhook(_gateway: PaymentGateway, type: string, status: WebhookStatus): void {

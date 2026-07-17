@@ -93,6 +93,15 @@ export class InMemoryWebhookEventStore extends WebhookEventStore {
         })
     }
 
+    async countFailed(): Promise<{ gateway: PaymentGateway; count: number }[]> {
+        const counts = new Map<PaymentGateway, number>()
+        for (const record of this.byKey.values()) {
+            if (record.status === 'failed') counts.set(record.gateway, (counts.get(record.gateway) ?? 0) + 1)
+        }
+
+        return [...counts.entries()].map(([gateway, count]) => ({ gateway, count }))
+    }
+
     all(): WebhookEventRecord[] {
         return [...this.byKey.values()]
     }

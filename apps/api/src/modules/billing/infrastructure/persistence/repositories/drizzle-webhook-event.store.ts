@@ -134,4 +134,14 @@ export class DrizzleWebhookEventStore extends WebhookEventStore {
 
         return rows.map(toRecord)
     }
+
+    async countFailed(): Promise<{ gateway: PaymentGateway; count: number }[]> {
+        const rows = await this.db
+            .select({ gateway: billingWebhookEvents.gateway, count: count() })
+            .from(billingWebhookEvents)
+            .where(eq(billingWebhookEvents.status, 'failed'))
+            .groupBy(billingWebhookEvents.gateway)
+
+        return rows.map((row) => ({ gateway: row.gateway as PaymentGateway, count: Number(row.count) }))
+    }
 }
