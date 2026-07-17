@@ -56,6 +56,8 @@
         "becomeTitle": "Become a coach",
         "becomeBody": "Train other athletes: build their plans, templates and mesocycles, and follow their progress.",
         "become": "Become a coach",
+        "becomeModalSubtitle": "Pick a coaching plan to start training athletes.",
+        "becomeFree": "Start free",
         "athlete": "Athlete",
         "backToCoaching": "Back to coaching",
         "coachesOnly": "Only available to coaches.",

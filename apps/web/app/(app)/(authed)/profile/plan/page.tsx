@@ -1,9 +1,11 @@
 'use client'
 
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
+import { refreshSession } from '@/lib/graphql/client'
 import {
     type MyEntitlements,
     type MySubscription,
@@ -46,6 +48,7 @@ export default function PlanPage() {
     const pathname = usePathname()
     const { data: me } = useMe()
     const { data: mine, isLoading: loadingMine } = useMyPlan()
+    const queryClient = useQueryClient()
     // The audience decides which catalog they see. It comes from their plan (a coach
     // on a coach plan), falling back to their role while that loads.
     const audience = mine?.myEntitlements.audience ?? me?.role ?? 'athlete'
@@ -74,6 +77,21 @@ export default function PlanPage() {
             setActivatedOpen(true)
         }
     }, [checkout, isActivated])
+
+    // Coach onboarding, last step. When a coach plan activates here, the server has
+    // already flipped this user athlete → coach (the webhook promotes them). But this
+    // tab's JWT still says athlete, and the realtime push only refetches the plan —
+    // not `me`. So re-mint the session (the refresh reads the new DB role) and re-read
+    // `me`, so coach-gated API calls and SSR gates open without a re-login. Once.
+    const promotedRef = useRef(false)
+
+    useEffect(() => {
+        const activatedCoachPlan = checkout === 'success' && isActivated && mine?.myEntitlements.audience === 'coach'
+        if (activatedCoachPlan && !promotedRef.current) {
+            promotedRef.current = true
+            void refreshSession().then(() => queryClient.invalidateQueries({ queryKey: ['me'] }))
+        }
+    }, [checkout, isActivated, mine?.myEntitlements.audience, queryClient])
 
     // The gateway sent them back — the one step of the funnel only the client
     // sees (PayPal never reports a walk-away). Once per landing.

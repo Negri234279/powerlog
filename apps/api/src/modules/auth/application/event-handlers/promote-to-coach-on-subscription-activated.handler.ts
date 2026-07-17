@@ -25,12 +25,7 @@ import { Clock } from '../ports/clock.port'
  * realtime push tells the tab to refetch, and the plan page refreshes the session
  * so the JWT carries `role=coach` for the API's coach-gated surfaces.
  */
-const PROMOTING: ReadonlySet<SubscriptionChangeReason> = new Set([
-    'activated',
-    'renewed',
-    'resumed',
-    'plan_changed',
-])
+const PROMOTING: ReadonlySet<SubscriptionChangeReason> = new Set(['activated', 'renewed', 'resumed', 'plan_changed'])
 
 @EventsHandler(SubscriptionChangedIntegrationEvent)
 export class PromoteToCoachOnSubscriptionActivated implements IEventHandler<SubscriptionChangedIntegrationEvent> {

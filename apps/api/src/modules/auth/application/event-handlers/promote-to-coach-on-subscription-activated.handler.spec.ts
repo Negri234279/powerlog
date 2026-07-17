@@ -17,7 +17,12 @@ const PERIOD_END = new Date('2026-08-15T00:00:00.000Z')
 function setup(seed = [] as ReturnType<UserMother['buildExisting']>[]) {
     const users = new InMemoryUserRepository(seed)
     const events = new RecordingEventBus()
-    const handler = new PromoteToCoachOnSubscriptionActivated(users, new FakeClock(NOW), events.asEventBus(), silentLogger())
+    const handler = new PromoteToCoachOnSubscriptionActivated(
+        users,
+        new FakeClock(NOW),
+        events.asEventBus(),
+        silentLogger(),
+    )
 
     return { handler, users, events }
 }

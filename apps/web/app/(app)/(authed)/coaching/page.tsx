@@ -9,7 +9,6 @@ import {
     type CoachUser,
     type PendingInvitation,
     useAcceptInvitation,
-    useBecomeCoach,
     useDeclineInvitation,
     useInviteAthlete,
     useLeaveCoach,
@@ -18,6 +17,7 @@ import {
     usePendingInvitations,
 } from '@/lib/graphql/hooks/use-coaching'
 import { cn } from '@/lib/cn'
+import { BecomeCoachModal } from '@/components/coaching/become-coach-modal'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { FormError } from '@/components/ui/form-error'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -251,14 +251,7 @@ function InviteForm() {
 
 function BecomeCoachCard() {
     const t = useTranslations('coaching')
-    const errorMessage = useErrorMessage()
-    const become = useBecomeCoach()
-    const [error, setError] = useState<string | null>(null)
-
-    function onBecome() {
-        setError(null)
-        become.mutate(undefined, { onError: (err) => setError(errorMessage(err)) })
-    }
+    const [open, setOpen] = useState(false)
 
     return (
         <SectionShell>
@@ -269,18 +262,18 @@ function BecomeCoachCard() {
                     </div>
                     <h2 className="font-display text-h3">{t('becomeTitle')}</h2>
                     <p className="mt-2 text-body text-text-dim">{t('becomeBody')}</p>
-                    <FormError error={error} className="mt-3" />
                 </div>
                 <TrackedButton
                     analyticsId="coaching-become-coach"
                     type="button"
-                    disabled={become.isPending}
-                    onClick={onBecome}
-                    className="shrink-0 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:opacity-60"
+                    onClick={() => setOpen(true)}
+                    className="shrink-0 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
                 >
                     {t('become')}
                 </TrackedButton>
             </div>
+
+            <BecomeCoachModal open={open} onClose={() => setOpen(false)} />
         </SectionShell>
     )
 }
