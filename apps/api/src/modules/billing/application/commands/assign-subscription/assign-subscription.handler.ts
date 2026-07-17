@@ -80,6 +80,7 @@ export class AssignSubscriptionHandler implements ICommandHandler<AssignSubscrip
                 subscription.userId,
                 subscription.id,
                 plan.slug,
+                plan.audience,
                 'activated',
                 subscription.currentPeriodEnd,
             ),

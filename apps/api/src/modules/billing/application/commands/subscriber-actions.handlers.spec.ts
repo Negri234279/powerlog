@@ -128,16 +128,15 @@ describe('what a subscriber can do', () => {
             ).rejects.toBeInstanceOf(SubscriptionAlreadyActiveError)
         })
 
-        it('refuses to sell an athlete a coach plan — without asking the gateway for a URL', async () => {
-            // `availablePlans` is public, so a coach price id is obtainable by anyone.
-            // Their entitlements would say coach-pro and every coach surface would
-            // still answer FORBIDDEN: real money for features that stay locked.
-            await expect(
-                checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null)),
-            ).rejects.toMatchObject({ code: 'PLAN_AUDIENCE_MISMATCH', audience: 'coach', role: 'athlete' })
+        it('lets an athlete buy a coach plan — the coach-onboarding path', async () => {
+            // An athlete buying a coach plan is how you become a coach: they pay first,
+            // and it is the webhook's activation that promotes them (see
+            // PromoteToCoachOnSubscriptionActivated), not this call — so a user who
+            // pays and walks away stays an athlete.
+            const url = await checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null))
 
-            expect(gateway.calls).toEqual([])
-            expect(metrics.checkouts).toEqual([])
+            expect(url).toBe('https://gateway.test/checkout/price-coach-pro')
+            expect(metrics.checkouts).toEqual([{ plan: 'coach-pro', status: 'started' }])
         })
 
         it('sells the coach plan to a coach', async () => {
@@ -146,6 +145,19 @@ describe('what a subscriber can do', () => {
             const url = await checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null))
 
             expect(url).toBe('https://gateway.test/checkout/price-coach-pro')
+        })
+
+        it('still refuses to sell a coach an athlete plan — that mismatch is not onboarding', async () => {
+            // Only athlete→coach is the onboarding path. The reverse would take money
+            // for athlete features a coach surface never gates on — real money, no gain.
+            users.seedRole(USER, 'coach')
+
+            await expect(
+                checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', null)),
+            ).rejects.toMatchObject({ code: 'PLAN_AUDIENCE_MISMATCH', audience: 'athlete', role: 'coach' })
+
+            expect(gateway.calls).toEqual([])
+            expect(metrics.checkouts).toEqual([])
         })
 
         it('refuses an offer that is over — holding on to its id is not a discount', async () => {

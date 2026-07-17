@@ -57,11 +57,19 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
         if (!plan.acceptsSignups()) throw new PlanNotAvailableError()
 
         // Checked BEFORE the gateway is touched: `availablePlans` is public, so a
-        // coach price id is obtainable by anyone, and the guards that open coach
-        // surfaces read the role — not the plan. Selling a coach plan to an athlete
-        // would take real money for features that stay locked behind FORBIDDEN.
+        // price id for any audience is obtainable by anyone. Two mismatches, two
+        // different answers:
+        //  - An athlete buying a COACH plan is the coach-onboarding path: they pay
+        //    first and become a coach when the subscription activates. The webhook
+        //    publishes `audience: 'coach'` on the activation, and auth promotes them
+        //    then — not here, so a user who pays and walks stays an athlete.
+        //  - Any other mismatch (a coach buying an athlete plan) would take real
+        //    money for features that stay locked behind FORBIDDEN. Refused.
         const role = (await this.users.getRole(command.userId)) ?? 'athlete'
-        if (plan.audience !== role) throw new PlanAudienceMismatchError(plan.audience, role)
+        const onboardingToCoach = role === 'athlete' && plan.audience === 'coach'
+        if (plan.audience !== role && !onboardingToCoach) {
+            throw new PlanAudienceMismatchError(plan.audience, role)
+        }
 
         const offer = await this.resolveOffer(command.offerId, plan.id)
         const gateway = this.gateways.get(command.gateway)

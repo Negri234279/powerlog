@@ -45,6 +45,7 @@ export class RevokeSubscriptionHandler implements ICommandHandler<RevokeSubscrip
                 subscription.userId,
                 subscription.id,
                 plan?.slug ?? 'unknown',
+                plan?.audience ?? 'athlete',
                 'expired',
                 subscription.currentPeriodEnd,
             ),

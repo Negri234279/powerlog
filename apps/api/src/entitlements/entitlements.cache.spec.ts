@@ -49,7 +49,7 @@ describe('EntitlementsCache without Redis', () => {
         const handler = new InvalidateEntitlementsOnSubscriptionChanged(cache)
 
         await handler.handle(
-            new SubscriptionChangedIntegrationEvent('u-1', 'sub-1', 'athlete-pro', 'activated', new Date()),
+            new SubscriptionChangedIntegrationEvent('u-1', 'sub-1', 'athlete-pro', 'athlete', 'activated', new Date()),
         )
 
         expect(await cache.get('u-1')).toBeNull()
