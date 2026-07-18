@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/cn'
+import { formatNumericDate } from '@/lib/format-date'
 import { Bell, Calendar, Check, Close, CreditCard, Dumbbell, Users } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
 import {
@@ -238,10 +239,11 @@ function NotificationRow({
     onDelete: () => void
 }) {
     const t = useTranslations('notifications')
+    const locale = useLocale()
     const relative = useRelativeTime()
     const unread = notification.readAt === null
 
-    const { icon, message } = describe(notification, t)
+    const { icon, message } = describe(notification, t, locale)
 
     return (
         <li
@@ -290,6 +292,7 @@ function NotificationRow({
 function describe(
     notification: NotificationItem,
     t: ReturnType<typeof useTranslations<'notifications'>>,
+    locale: string,
 ): { icon: ReactNode; message: string } {
     const data = parseData(notification.data)
 
@@ -300,7 +303,7 @@ function describe(
     const sessions = typeof data['sessions'] === 'number' ? data['sessions'] : 0
     const plan = typeof data['plan'] === 'string' ? data['plan'] : '—'
     const until =
-        typeof data['currentPeriodEnd'] === 'string' ? new Date(data['currentPeriodEnd']).toLocaleDateString() : '—'
+        typeof data['currentPeriodEnd'] === 'string' ? formatNumericDate(data['currentPeriodEnd'], locale) : '—'
 
     switch (notification.type) {
         case 'coach_invitation':

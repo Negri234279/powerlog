@@ -1,0 +1,11 @@
+/**
+ * A numeric date with **2-digit day and month** and a 4-digit year — e.g.
+ * `18/07/2026`, not `18/7/2026`. The locale still decides field order and
+ * separators (so `en` renders `07/18/2026`); only the zero-padding is forced.
+ *
+ * For the billing/plan surfaces where dates read as plain numbers. Day-and-month
+ * spelled-out formats (`18 jul`) have their own options at their call sites.
+ */
+export function formatNumericDate(iso: string, locale: string): string {
+    return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
+}

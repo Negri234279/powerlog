@@ -1,7 +1,7 @@
 'use client'
 
 import { useQueryClient } from '@tanstack/react-query'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
@@ -23,6 +23,7 @@ import {
     useStartCheckout,
 } from '@/lib/graphql/hooks/use-billing'
 import { track } from '@/lib/analytics/events'
+import { formatNumericDate } from '@/lib/format-date'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -424,6 +425,7 @@ function CurrentPlan({
     audience: PlanAudience
 }) {
     const t = useTranslations('billing')
+    const locale = useLocale()
     const toMessage = useErrorMessage()
     const cancel = useCancelSubscription(audience)
     const resume = useResumeSubscription(audience)
@@ -436,7 +438,7 @@ function CurrentPlan({
     const isManageable = subscription != null && subscription.gateway !== 'manual'
     const { data: portalUrl } = useBillingPortalUrl(audience, isManageable)
 
-    const endsOn = subscription ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : null
+    const endsOn = subscription ? formatNumericDate(subscription.currentPeriodEnd, locale) : null
 
     return (
         <section className="rounded-2xl bg-surface p-6 ring-1 ring-hairline">

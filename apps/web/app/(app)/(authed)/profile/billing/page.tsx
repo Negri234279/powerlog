@@ -1,8 +1,9 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { type MyInvoice, useMyInvoices } from '@/lib/graphql/hooks/use-billing'
+import { formatNumericDate } from '@/lib/format-date'
 import { ArrowUpRight } from '@/components/ui/icons'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TrackedLink } from '@/components/ui/tracked'
@@ -44,6 +45,7 @@ export default function BillingPage() {
 
 function InvoiceRow({ invoice }: { invoice: MyInvoice }) {
     const t = useTranslations('billing')
+    const locale = useLocale()
     // The gateway's own PDF is preferred, then its hosted page; for gateways that
     // issue neither (PayPal), our own generated receipt.
     const link = invoice.pdfUrl ?? invoice.hostedUrl ?? invoice.receiptUrl
@@ -58,7 +60,7 @@ function InvoiceRow({ invoice }: { invoice: MyInvoice }) {
                         {t(`source.${invoice.gateway}` as 'source.stripe')}
                     </span>
                     <span className="text-hairline">·</span>
-                    <span className="text-text-dim">{new Date(invoice.issuedAt).toLocaleDateString()}</span>
+                    <span className="text-text-dim">{formatNumericDate(invoice.issuedAt, locale)}</span>
                 </p>
                 <p className="mt-0.5 font-mono text-xs text-text-faint">
                     {t(`invoiceStatus.${invoice.status}` as 'invoiceStatus.paid')}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { type FormEvent, useState } from 'react'
 
 import {
@@ -11,6 +11,7 @@ import {
     useRevokeSubscription,
 } from '@/lib/graphql/hooks/use-admin-billing'
 import { useAdminUsers } from '@/lib/graphql/hooks/use-admin-users'
+import { formatNumericDate } from '@/lib/format-date'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { AdminTabs } from '@/components/admin/admin-tabs'
@@ -128,6 +129,7 @@ export default function AdminSubscriptionsPage() {
 
 function SubscriptionRow({ subscription }: { subscription: AdminSubscription }) {
     const t = useTranslations('admin')
+    const locale = useLocale()
     const toMessage = useErrorMessage()
     const revoke = useRevokeSubscription()
     const [confirming, setConfirming] = useState(false)
@@ -156,7 +158,7 @@ function SubscriptionRow({ subscription }: { subscription: AdminSubscription }) 
                         </span>
                         <p className="mt-0.5 font-mono text-xs text-text-faint">
                             {subscription.cancelAtPeriodEnd ? t('subscriptionEndsOn') : t('subscriptionRenewsOn')}{' '}
-                            {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                            {formatNumericDate(subscription.currentPeriodEnd, locale)}
                         </p>
                     </div>
 
