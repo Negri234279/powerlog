@@ -1,4 +1,7 @@
-import type { WorkoutTemplateAggregate } from '../../../src/modules/workouts/domain/entities/workout-template.entity'
+import type {
+    TemplateScope,
+    WorkoutTemplateAggregate,
+} from '../../../src/modules/workouts/domain/entities/workout-template.entity'
 import { WorkoutTemplateRepository } from '../../../src/modules/workouts/domain/repositories/workout-template.repository'
 
 /** In-memory WorkoutTemplateRepository keyed by id; `save` upserts. */
@@ -18,9 +21,11 @@ export class InMemoryWorkoutTemplateRepository extends WorkoutTemplateRepository
         return this.store.get(id) ?? null
     }
 
-    async countByOwner(ownerId: string): Promise<number> {
+    async countByOwnerAndScope(ownerId: string, scope: TemplateScope): Promise<number> {
         let n = 0
-        for (const template of this.store.values()) if (template.ownerId === ownerId) n++
+        for (const template of this.store.values()) {
+            if (template.ownerId === ownerId && template.scope === scope) n++
+        }
 
         return n
     }

@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { asc, count, eq, inArray } from 'drizzle-orm'
+import { and, asc, count, eq, inArray } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
-import { WorkoutTemplateAggregate } from '../../../domain/entities/workout-template.entity'
+import { type TemplateScope, WorkoutTemplateAggregate } from '../../../domain/entities/workout-template.entity'
 import { WorkoutTemplateRepository } from '../../../domain/repositories/workout-template.repository'
 import { WorkoutTemplateMapper } from '../mappers/workout-template.mapper'
 import { workoutTemplateExercises } from '../schema/workout-template-exercises.schema'
@@ -60,11 +60,11 @@ export class DrizzleWorkoutTemplateRepository extends WorkoutTemplateRepository 
         return WorkoutTemplateMapper.toDomain(templateRow, exerciseRows, setRows)
     }
 
-    async countByOwner(ownerId: string): Promise<number> {
+    async countByOwnerAndScope(ownerId: string, scope: TemplateScope): Promise<number> {
         const [row] = await this.db
             .select({ value: count() })
             .from(workoutTemplates)
-            .where(eq(workoutTemplates.ownerId, ownerId))
+            .where(and(eq(workoutTemplates.ownerId, ownerId), eq(workoutTemplates.scope, scope)))
 
         return row?.value ?? 0
     }

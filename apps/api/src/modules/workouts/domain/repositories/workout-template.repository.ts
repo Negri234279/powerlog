@@ -1,4 +1,4 @@
-import type { WorkoutTemplateAggregate } from '../entities/workout-template.entity'
+import type { TemplateScope, WorkoutTemplateAggregate } from '../entities/workout-template.entity'
 
 /**
  * Persistence port for the WorkoutTemplate aggregate (template + exercises +
@@ -8,8 +8,9 @@ import type { WorkoutTemplateAggregate } from '../entities/workout-template.enti
 export abstract class WorkoutTemplateRepository {
     abstract save(template: WorkoutTemplateAggregate): Promise<void>
     abstract findById(id: string): Promise<WorkoutTemplateAggregate | null>
-    /** How many templates a user owns — for the plan's `maxTemplates` cap. */
-    abstract countByOwner(ownerId: string): Promise<number>
+    /** How many templates a user owns in a scope — for the matching plan's
+     *  `maxTemplates` cap (personal → athlete plan, coaching → coach plan). */
+    abstract countByOwnerAndScope(ownerId: string, scope: TemplateScope): Promise<number>
     abstract delete(id: string): Promise<void>
     /** Delete every template owned by a user (cascades to exercises + sets). Used
      *  to erase workout data on account deletion. */

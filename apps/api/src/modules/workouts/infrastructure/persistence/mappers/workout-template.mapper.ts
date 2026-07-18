@@ -1,6 +1,6 @@
 import { TemplateExerciseEntity } from '../../../domain/entities/template-exercise.entity'
 import { TemplateSetEntity } from '../../../domain/entities/template-set.entity'
-import { WorkoutTemplateAggregate } from '../../../domain/entities/workout-template.entity'
+import { type TemplateScope, WorkoutTemplateAggregate } from '../../../domain/entities/workout-template.entity'
 import { RepsVO } from '../../../domain/value-objects/reps.vo'
 import { RirVO } from '../../../domain/value-objects/rir.vo'
 import { RpeVO } from '../../../domain/value-objects/rpe.vo'
@@ -53,6 +53,7 @@ export const WorkoutTemplateMapper = {
             template: {
                 id: template.id,
                 ownerId: template.ownerId,
+                scope: template.scope,
                 name: template.name.value,
                 notes: template.notes,
                 createdAt: template.createdAt,
@@ -95,6 +96,7 @@ export const WorkoutTemplateMapper = {
         return WorkoutTemplateAggregate.rehydrate({
             id: templateRow.id,
             ownerId: templateRow.ownerId,
+            scope: templateRow.scope as TemplateScope,
             name: TemplateNameVO.create(templateRow.name),
             notes: templateRow.notes,
             createdAt: templateRow.createdAt,

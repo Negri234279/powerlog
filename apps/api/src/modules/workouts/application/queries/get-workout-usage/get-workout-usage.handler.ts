@@ -27,7 +27,9 @@ export class GetWorkoutUsageHandler implements IQueryHandler<GetWorkoutUsageQuer
 
     async execute(query: GetWorkoutUsageQuery): Promise<WorkoutUsageView> {
         const [templates, mesocycles, workouts] = await Promise.all([
-            this.templates.countByOwner(query.userId),
+            // The athlete-plan usage: personal templates only, mirroring the caps —
+            // coaching templates count against the coach plan, not this bar.
+            this.templates.countByOwnerAndScope(query.userId, 'personal'),
             this.mesocycles.countSelfCreatedBy(query.userId),
             this.sessions.countSelfCreatedBy(query.userId),
         ])

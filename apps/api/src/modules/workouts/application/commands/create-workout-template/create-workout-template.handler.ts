@@ -27,15 +27,18 @@ export class CreateWorkoutTemplateHandler implements ICommandHandler<
     ) {}
 
     async execute(command: CreateWorkoutTemplateCommand): Promise<WorkoutTemplateView> {
-        // Only creating is gated: a soft downgrade leaves what you already have
-        // readable and editable, it just stops you making more.
-        const owned = await this.templates.countByOwner(command.ownerId)
-        await this.entitlements.assertWithinLimit(command.ownerId, 'athlete', 'templates', owned)
+        // The scope decides which plan pays: a personal template counts against the
+        // athlete plan, a coaching one against the coach plan. Only creating is gated:
+        // a soft downgrade leaves what you already have, it just stops you making more.
+        const audience = command.scope === 'coaching' ? 'coach' : 'athlete'
+        const owned = await this.templates.countByOwnerAndScope(command.ownerId, command.scope)
+        await this.entitlements.assertWithinLimit(command.ownerId, audience, 'templates', owned)
 
         const content = await buildTemplateContent(command.content, this.exercises)
         const template = WorkoutTemplateAggregate.create({
             id: this.ids.uuid(),
             ownerId: command.ownerId,
+            scope: command.scope,
             content,
             idFactory: () => this.ids.uuid(),
             now: this.clock.now(),

@@ -976,8 +976,10 @@ type Mutation {
   """Create a workout session (status: planned)."""
   createWorkoutSession(input: CreateWorkoutSessionInput): WorkoutSession!
 
-  """Create a reusable workout template."""
-  createWorkoutTemplate(input: WorkoutTemplateInput!): WorkoutTemplate!
+  """
+  Create a reusable workout template. `scope` is personal (own training) or coaching (for athletes); each counts against a different plan.
+  """
+  createWorkoutTemplate(input: WorkoutTemplateInput!, scope: String): WorkoutTemplate!
 
   """Withdraw a price. Subscriptions on it keep running — they paid for it."""
   deactivatePlanPrice(id: ID!): Boolean!
