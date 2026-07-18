@@ -259,13 +259,21 @@ describe('the Stripe webhook', () => {
         // Past the plan gate; it stops at the missing provider key instead.
         expect(after.body.errors[0].extensions.code).not.toBe('FEATURE_NOT_IN_PLAN')
 
-        const mine = await gql(`query { mySubscription { planSlug status gateway cancelAtPeriodEnd } }`, user.access)
+        const mine = await gql(
+            `query { mySubscription(audience: "athlete") { planSlug status gateway cancelAtPeriodEnd } }`,
+            user.access,
+        )
         expect(mine.body.data.mySubscription).toMatchObject({
             planSlug: 'athlete-pro',
             status: 'active',
             gateway: 'stripe',
             cancelAtPeriodEnd: false,
         })
+
+        // The athlete plan does not leak into the coach audience: subscriptions are
+        // resolved per audience, so the coach side is empty (they do no coaching).
+        const coachSide = await gql(`query { mySubscription(audience: "coach") { planSlug } }`, user.access)
+        expect(coachSide.body.data.mySubscription).toBeNull()
     })
 
     it('activates a checkout that pays immediately, where Stripe only sends `created`', async () => {
@@ -291,7 +299,7 @@ describe('the Stripe webhook', () => {
             checkoutCompleted({ userId: user.userId, planId, priceId, subscriptionId: 'sub_test_instant' }),
         ).expect(200)
 
-        const mine = await gql(`query { mySubscription { planSlug status } }`, user.access)
+        const mine = await gql(`query { mySubscription(audience: "athlete") { planSlug status } }`, user.access)
         expect(mine.body.data.mySubscription).toMatchObject({ planSlug: 'athlete-pro', status: 'active' })
 
         // The plan is not a label: it has to actually unlock the thing they paid for.
@@ -345,7 +353,10 @@ describe('the Stripe webhook', () => {
         ).expect(200)
 
         // Cancelled, but the month is not over: the plan is still theirs.
-        const mine = await gql(`query { mySubscription { status cancelAtPeriodEnd } }`, user.access)
+        const mine = await gql(
+            `query { mySubscription(audience: "athlete") { status cancelAtPeriodEnd } }`,
+            user.access,
+        )
         expect(mine.body.data.mySubscription).toMatchObject({ status: 'canceled', cancelAtPeriodEnd: true })
 
         const entitlements = await gql(`query { myEntitlements { athlete { plan ai } } }`, user.access)

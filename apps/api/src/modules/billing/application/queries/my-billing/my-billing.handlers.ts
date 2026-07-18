@@ -170,7 +170,7 @@ export class MySubscriptionHandler implements IQueryHandler<MySubscriptionQuery,
     ) {}
 
     async execute(query: MySubscriptionQuery): Promise<MySubscriptionView | null> {
-        const subscription = await this.subscriptions.findLiveByUser(query.userId)
+        const subscription = await this.subscriptions.findLiveByUserAndAudience(query.userId, query.audience)
         // A subscription that no longer grants anything is history, not "yours": the
         // page shows the free plan instead.
         if (!subscription?.isEntitledAt(this.clock.now())) return null
@@ -259,8 +259,14 @@ export class BillingPortalUrlHandler implements IQueryHandler<BillingPortalUrlQu
     ) {}
 
     async execute(query: BillingPortalUrlQuery): Promise<string | null> {
-        const subscription = await this.subscriptions.findLiveByUser(query.userId)
-        if (!subscription?.isEntitledAt(this.clock.now()) || subscription.gateway === 'manual') return null
+        // The portal is per gateway customer and shows every subscription that
+        // customer has — so any of the user's live gateway subscriptions opens the
+        // same door, regardless of audience. Pick the first that a gateway bills
+        // (skip `manual` grants, which have no portal).
+        const now = this.clock.now()
+        const live = await this.subscriptions.findAllLiveByUser(query.userId)
+        const subscription = live.find((candidate) => candidate.isEntitledAt(now) && candidate.gateway !== 'manual')
+        if (!subscription) return null
 
         const gateway = this.gateways.get(subscription.gateway)
 

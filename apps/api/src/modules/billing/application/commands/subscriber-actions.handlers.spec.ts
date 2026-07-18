@@ -120,12 +120,21 @@ describe('what a subscriber can do', () => {
             expect(metrics.checkouts).toEqual([{ plan: 'athlete-pro', status: 'started' }])
         })
 
-        it('refuses when the user already pays for something', async () => {
+        it('refuses when the user already pays for a plan IN THIS AUDIENCE', async () => {
             await subscriptions.save(aLiveSubscription())
 
             await expect(
                 checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', null)),
             ).rejects.toBeInstanceOf(SubscriptionAlreadyActiveError)
+        })
+
+        it('lets a user with a live athlete plan buy a coach plan — a different audience', async () => {
+            // Independent subscriptions: the athlete plan does not block a coach one.
+            await subscriptions.save(aLiveSubscription())
+
+            const url = await checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null))
+
+            expect(url).toBe('https://gateway.test/checkout/price-coach-pro')
         })
 
         it('lets an athlete buy a coach plan — the coach-onboarding path', async () => {
@@ -147,17 +156,15 @@ describe('what a subscriber can do', () => {
             expect(url).toBe('https://gateway.test/checkout/price-coach-pro')
         })
 
-        it('still refuses to sell a coach an athlete plan — that mismatch is not onboarding', async () => {
-            // Only athlete→coach is the onboarding path. The reverse would take money
-            // for athlete features a coach surface never gates on — real money, no gain.
+        it('sells an athlete plan to a coach — they train too, and plans are independent', async () => {
+            // The old rule refused this as a "mismatch". Now a coach's own training is
+            // an athlete plan they hold alongside their coach one, so it must go through.
             users.seedRole(USER, 'coach')
 
-            await expect(
-                checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', null)),
-            ).rejects.toMatchObject({ code: 'PLAN_AUDIENCE_MISMATCH', audience: 'athlete', role: 'coach' })
+            const url = await checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', null))
 
-            expect(gateway.calls).toEqual([])
-            expect(metrics.checkouts).toEqual([])
+            expect(url).toBe('https://gateway.test/checkout/price-pro')
+            expect(metrics.checkouts).toEqual([{ plan: 'athlete-pro', status: 'started' }])
         })
 
         it('refuses an offer that is over — holding on to its id is not a discount', async () => {
@@ -190,7 +197,7 @@ describe('what a subscriber can do', () => {
         it('asks the gateway to stop the renewal, and changes nothing until it confirms', async () => {
             await subscriptions.save(aLiveSubscription())
 
-            await cancel().execute(new CancelSubscriptionCommand(USER))
+            await cancel().execute(new CancelSubscriptionCommand(USER, 'athlete'))
 
             expect(gateway.calls).toEqual([{ operation: 'cancel', subscriptionId: 'sub-1' }])
             // The row flips when the webhook says so — not here.
@@ -200,13 +207,13 @@ describe('what a subscriber can do', () => {
         it('refuses to manage a plan an admin granted — there is no gateway to ask', async () => {
             await subscriptions.save(SubscriptionMother.create({ userId: USER, planId: PRO.id, gateway: 'manual' }))
 
-            await expect(cancel().execute(new CancelSubscriptionCommand(USER))).rejects.toBeInstanceOf(
+            await expect(cancel().execute(new CancelSubscriptionCommand(USER, 'athlete'))).rejects.toBeInstanceOf(
                 NotAGatewaySubscriptionError,
             )
         })
 
         it('refuses when there is nothing to cancel', async () => {
-            await expect(cancel().execute(new CancelSubscriptionCommand(USER))).rejects.toBeInstanceOf(
+            await expect(cancel().execute(new CancelSubscriptionCommand(USER, 'athlete'))).rejects.toBeInstanceOf(
                 NoActiveSubscriptionError,
             )
         })
@@ -215,7 +222,7 @@ describe('what a subscriber can do', () => {
             gateway.withoutResume()
             await subscriptions.save(aLiveSubscription())
 
-            await expect(resume().execute(new ResumeSubscriptionCommand(USER))).rejects.toBeInstanceOf(
+            await expect(resume().execute(new ResumeSubscriptionCommand(USER, 'athlete'))).rejects.toBeInstanceOf(
                 ResumeNotSupportedError,
             )
             // And it never even asked the provider.
@@ -225,7 +232,7 @@ describe('what a subscriber can do', () => {
         it('resumes a subscription that was going to end', async () => {
             await subscriptions.save(aLiveSubscription())
 
-            await resume().execute(new ResumeSubscriptionCommand(USER))
+            await resume().execute(new ResumeSubscriptionCommand(USER, 'athlete'))
 
             expect(gateway.calls).toEqual([{ operation: 'resume', subscriptionId: 'sub-1' }])
         })

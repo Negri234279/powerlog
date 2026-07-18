@@ -85,11 +85,14 @@ export class BillingResolver {
 
     @Query(() => MySubscriptionType, {
         nullable: true,
-        description: 'Your subscription, or null when you are on the free plan.',
+        description: 'Your subscription in an audience (athlete | coach), or null when you are on that free plan.',
     })
     @UseGuards(JwtCookieGuard)
-    async mySubscription(@CurrentUser() user: AuthUser): Promise<MySubscriptionView | null> {
-        const query = new MySubscriptionQuery(user.userId)
+    async mySubscription(
+        @CurrentUser() user: AuthUser,
+        @Args('audience', { type: () => String }, new ZodValidationPipe(audienceArg)) audience: PlanAudience,
+    ): Promise<MySubscriptionView | null> {
+        const query = new MySubscriptionQuery(user.userId, audience)
 
         return this.queryBus.execute<MySubscriptionQuery, MySubscriptionView | null>(query)
     }
@@ -135,20 +138,29 @@ export class BillingResolver {
     }
 
     @Mutation(() => Boolean, {
-        description: 'Stop the subscription renewing. You keep the plan until the period you paid for ends.',
+        description:
+            'Stop a subscription renewing (athlete | coach). You keep the plan until the period you paid for ends.',
     })
     @UseGuards(JwtCookieGuard)
-    async cancelSubscription(@CurrentUser() user: AuthUser): Promise<boolean> {
-        const command = new CancelSubscriptionCommand(user.userId)
+    async cancelSubscription(
+        @CurrentUser() user: AuthUser,
+        @Args('audience', { type: () => String }, new ZodValidationPipe(audienceArg)) audience: PlanAudience,
+    ): Promise<boolean> {
+        const command = new CancelSubscriptionCommand(user.userId, audience)
         await this.commandBus.execute<CancelSubscriptionCommand, void>(command)
 
         return true
     }
 
-    @Mutation(() => Boolean, { description: 'Undo a scheduled cancellation, while the paid period is still running.' })
+    @Mutation(() => Boolean, {
+        description: 'Undo a scheduled cancellation (athlete | coach), while the paid period is still running.',
+    })
     @UseGuards(JwtCookieGuard)
-    async resumeSubscription(@CurrentUser() user: AuthUser): Promise<boolean> {
-        const command = new ResumeSubscriptionCommand(user.userId)
+    async resumeSubscription(
+        @CurrentUser() user: AuthUser,
+        @Args('audience', { type: () => String }, new ZodValidationPipe(audienceArg)) audience: PlanAudience,
+    ): Promise<boolean> {
+        const command = new ResumeSubscriptionCommand(user.userId, audience)
         await this.commandBus.execute<ResumeSubscriptionCommand, void>(command)
 
         return true

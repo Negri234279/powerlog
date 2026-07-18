@@ -10,9 +10,13 @@ export class AvailablePlansQuery {
     ) {}
 }
 
-/** The user's own subscription (null when they are on the free plan). */
+/** The user's own subscription in an audience (null when they are on that free
+ *  plan). Athlete and coach plans are independent, so the audience picks which. */
 export class MySubscriptionQuery {
-    constructor(readonly userId: string) {}
+    constructor(
+        readonly userId: string,
+        readonly audience: PlanAudience,
+    ) {}
 }
 
 /** The user's mirrored invoices, newest first. */

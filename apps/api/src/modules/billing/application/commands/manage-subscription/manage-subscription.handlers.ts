@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
+import type { PlanAudience } from '../../../../../shared/contracts/entitlements'
 import type { SubscriptionAggregate } from '../../../domain/entities/subscription.entity'
 import {
     NoActiveSubscriptionError,
@@ -35,9 +36,11 @@ abstract class SubscriberAction {
         protected readonly clock: Clock,
     ) {}
 
-    /** The user's live, gateway-billed subscription — or a clean refusal. */
-    protected async requireGatewaySubscription(userId: string): Promise<SubscriptionAggregate> {
-        const subscription = await this.subscriptions.findLiveByUser(userId)
+    /** The user's live, gateway-billed subscription in an audience — or a clean
+     *  refusal. Scoped by audience so cancelling the coach plan never touches the
+     *  athlete one. */
+    protected async requireGatewaySubscription(userId: string, audience: PlanAudience): Promise<SubscriptionAggregate> {
+        const subscription = await this.subscriptions.findLiveByUserAndAudience(userId, audience)
         if (!subscription?.isEntitledAt(this.clock.now())) throw new NoActiveSubscriptionError()
         if (subscription.gateway === 'manual') throw new NotAGatewaySubscriptionError()
 
@@ -58,7 +61,7 @@ export class CancelSubscriptionHandler extends SubscriberAction implements IComm
     }
 
     async execute(command: CancelSubscriptionCommand): Promise<void> {
-        const subscription = await this.requireGatewaySubscription(command.userId)
+        const subscription = await this.requireGatewaySubscription(command.userId, command.audience)
 
         // Cancel-at-period-end, always: the user paid for this month and they keep it.
         // The local row flips when the webhook says so.
@@ -81,7 +84,7 @@ export class ResumeSubscriptionHandler extends SubscriberAction implements IComm
     }
 
     async execute(command: ResumeSubscriptionCommand): Promise<void> {
-        const subscription = await this.requireGatewaySubscription(command.userId)
+        const subscription = await this.requireGatewaySubscription(command.userId, command.audience)
         const gateway = this.gateways.get(subscription.gateway)
 
         // PayPal's cancellation is terminal. The UI already hides the button; this is
@@ -109,15 +112,19 @@ export class ChangePlanHandler extends SubscriberAction implements ICommandHandl
     }
 
     async execute(command: ChangePlanCommand): Promise<string | null> {
-        const subscription = await this.requireGatewaySubscription(command.userId)
-        if (subscription.planPriceId === command.planPriceId) throw new SamePlanError()
-
         const target = await this.prices.findById(command.planPriceId)
         if (!target || !target.active) throw new PlanPriceNotFoundError()
 
         const plan = await this.plans.findById(target.planId)
         if (!plan) throw new PlanNotFoundError()
         if (!plan.acceptsSignups()) throw new PlanNotAvailableError()
+
+        // The target's audience is the subscription being changed — a plan change
+        // stays within an audience. So a coach-plan target changes the coach sub and
+        // leaves the athlete one untouched (and vice versa); with no sub in that
+        // audience there is nothing to change (they would check out instead).
+        const subscription = await this.requireGatewaySubscription(command.userId, plan.audience)
+        if (subscription.planPriceId === command.planPriceId) throw new SamePlanError()
 
         const current = subscription.planPriceId ? await this.prices.findById(subscription.planPriceId) : null
         const isUpgrade = target.monthlyAmountCents() >= (current?.monthlyAmountCents() ?? 0)

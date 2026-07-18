@@ -4,7 +4,6 @@ import { PinoLogger } from 'nestjs-pino'
 import { UserDirectory } from '../../../../../shared/contracts/user-directory'
 import {
     OfferNotRedeemableError,
-    PlanAudienceMismatchError,
     PlanNotAvailableError,
     PlanNotFoundError,
     PlanPriceNotFoundError,
@@ -44,11 +43,6 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
     }
 
     async execute(command: StartCheckoutCommand): Promise<string> {
-        // One live subscription per user. Someone who already pays changes plan; they
-        // do not buy a second one on top.
-        const live = await this.subscriptions.findLiveByUser(command.userId)
-        if (live?.isEntitledAt(this.clock.now())) throw new SubscriptionAlreadyActiveError()
-
         const price = await this.prices.findById(command.planPriceId)
         if (!price || !price.active) throw new PlanPriceNotFoundError()
 
@@ -56,33 +50,33 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
         if (!plan) throw new PlanNotFoundError()
         if (!plan.acceptsSignups()) throw new PlanNotAvailableError()
 
-        // Checked BEFORE the gateway is touched: `availablePlans` is public, so a
-        // price id for any audience is obtainable by anyone. Two mismatches, two
-        // different answers:
-        //  - An athlete buying a COACH plan is the coach-onboarding path: they pay
-        //    first and become a coach when the subscription activates. The webhook
-        //    publishes `audience: 'coach'` on the activation, and auth promotes them
-        //    then — not here, so a user who pays and walks stays an athlete.
-        //  - Any other mismatch (a coach buying an athlete plan) would take real
-        //    money for features that stay locked behind FORBIDDEN. Refused.
-        const role = (await this.users.getRole(command.userId)) ?? 'athlete'
-        const onboardingToCoach = role === 'athlete' && plan.audience === 'coach'
-        if (plan.audience !== role && !onboardingToCoach) {
-            throw new PlanAudienceMismatchError(plan.audience, role)
-        }
+        // Athlete and coach plans are independent subscriptions, so the guard is
+        // per audience: one live subscription per user PER AUDIENCE. Someone who
+        // already pays IN THIS AUDIENCE changes plan; they do not buy a second one
+        // on top — but a coach buying an athlete plan for their own training (or an
+        // athlete buying a coach plan, the onboarding path that promotes them when
+        // it activates) is a different audience and always allowed. No role check:
+        // every audience is buyable, and coach onboarding is the webhook's job.
+        const live = await this.subscriptions.findAllLiveByUser(command.userId)
+        const now = this.clock.now()
+        const sameAudience = live.find((subscription) => subscription.audience === plan.audience)
+        if (sameAudience?.isEntitledAt(now)) throw new SubscriptionAlreadyActiveError()
 
         const offer = await this.resolveOffer(command.offerId, plan.id)
         const gateway = this.gateways.get(command.gateway)
         const contact = await this.users.getContact(command.userId)
+
+        // Reuse a customer the gateway already knows for this user — from ANY of their
+        // live subscriptions — so a coach paying for their second (cross-audience)
+        // plan does not become a second Stripe customer with a second payment method.
+        const knownCustomerId = live.find((subscription) => subscription.gatewayCustomerId)?.gatewayCustomerId ?? null
 
         const url = await gateway.createCheckout({
             userId: command.userId,
             plan,
             price,
             offer,
-            // Reuse the customer the gateway already knows, so a returning subscriber
-            // does not end up as two customers with two payment methods.
-            customerId: live?.gatewayCustomerId ?? null,
+            customerId: knownCustomerId,
             email: contact?.email ?? '',
             // The web's account area lives under /profile. The redirect is only a
             // landing spot: the real state arrives by webhook, and the page is told to

@@ -934,9 +934,9 @@ type Mutation {
   cancelInvitation(id: ID!): CoachInvitation!
 
   """
-  Stop the subscription renewing. You keep the plan until the period you paid for ends.
+  Stop a subscription renewing (athlete | coach). You keep the plan until the period you paid for ends.
   """
-  cancelSubscription: Boolean!
+  cancelSubscription(audience: String!): Boolean!
 
   """Change (or set, for Google-only accounts) the password."""
   changePassword(input: ChangePasswordInput!): Boolean!
@@ -1103,8 +1103,10 @@ type Mutation {
   """Reset the password using the token from the reset email."""
   resetPassword(input: ResetPasswordInput!): Boolean!
 
-  """Undo a scheduled cancellation, while the paid period is still running."""
-  resumeSubscription: Boolean!
+  """
+  Undo a scheduled cancellation (athlete | coach), while the paid period is still running.
+  """
+  resumeSubscription(audience: String!): Boolean!
 
   """
   Re-process a webhook whose handler failed, from the payload the journal kept. It runs the same command the webhook does.
@@ -1679,8 +1681,10 @@ type Query {
   """The user’s active sessions (devices)."""
   mySessions: [Session!]!
 
-  """Your subscription, or null when you are on the free plan."""
-  mySubscription: MySubscription
+  """
+  Your subscription in an audience (athlete | coach), or null when you are on that free plan.
+  """
+  mySubscription(audience: String!): MySubscription
 
   """
   The caller's self-created counts (templates, mesocycles, workouts), for the plan usage readout.
