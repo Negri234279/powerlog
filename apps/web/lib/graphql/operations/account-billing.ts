@@ -37,19 +37,43 @@ export const AvailablePlansDocument = graphql(`
     }
 `)
 
+// Athlete and coach plans are independent subscriptions, so this fetches both
+// sections of the entitlements and both subscriptions (aliased by audience) in one
+// round-trip. `coach` is null for users who do no coaching.
 export const MyPlanDocument = graphql(`
     query MyPlan {
         myEntitlements {
-            plan
-            audience
-            maxTemplates
-            maxMesocycles
-            maxWorkouts
-            ai
-            planSessions
-            maxAthletes
+            athlete {
+                plan
+                maxTemplates
+                maxMesocycles
+                maxWorkouts
+                ai
+            }
+            coach {
+                plan
+                maxAthletes
+                planSessions
+                maxTemplates
+                maxMesocycles
+                ai
+            }
         }
-        mySubscription {
+        athleteSubscription: mySubscription(audience: "athlete") {
+            id
+            planSlug
+            planName
+            gateway
+            status
+            amountCents
+            currency
+            interval
+            currentPeriodEnd
+            cancelAtPeriodEnd
+            pendingPlanSlug
+            canResume
+        }
+        coachSubscription: mySubscription(audience: "coach") {
             id
             planSlug
             planName
@@ -110,14 +134,14 @@ export const StartCheckoutDocument = graphql(`
 `)
 
 export const CancelSubscriptionDocument = graphql(`
-    mutation CancelSubscription {
-        cancelSubscription
+    mutation CancelSubscription($audience: String!) {
+        cancelSubscription(audience: $audience)
     }
 `)
 
 export const ResumeSubscriptionDocument = graphql(`
-    mutation ResumeSubscription {
-        resumeSubscription
+    mutation ResumeSubscription($audience: String!) {
+        resumeSubscription(audience: $audience)
     }
 `)
 

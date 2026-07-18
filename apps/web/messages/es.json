@@ -1105,6 +1105,11 @@
         "activatedTitle": "¡Plan activado!",
         "activatedBody": "Tu plan {plan} ya está activo. ¡A darle!",
         "activatedClose": "Entendido",
+        "tabs": {
+            "athlete": "Entrenamiento",
+            "coach": "Coaching"
+        },
+        "coachPlanIncludes": "Tu plan de coach",
         "currentPlan": "Tu plan",
         "freePlan": "Gratis",
         "freePlanBody": "Estás en el plan gratuito. Puedes mejorarlo cuando quieras.",

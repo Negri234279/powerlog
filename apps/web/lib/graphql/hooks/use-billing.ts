@@ -17,9 +17,14 @@ import {
 
 export type PublicPlan = AvailablePlansQuery['availablePlans'][number]
 export type PublicPrice = PublicPlan['prices'][number]
-export type MySubscription = NonNullable<MyPlanQuery['mySubscription']>
+export type MySubscription = NonNullable<MyPlanQuery['athleteSubscription']>
 export type MyEntitlements = MyPlanQuery['myEntitlements']
+export type AthleteEntitlements = MyEntitlements['athlete']
+export type CoachEntitlements = NonNullable<MyEntitlements['coach']>
 export type MyInvoice = MyInvoicesQuery['myInvoices']['rows'][number]
+
+/** Which catalog / subscription an action targets. */
+export type PlanAudience = 'athlete' | 'coach'
 
 export const MY_PLAN_KEY = ['myPlan']
 const INVOICES_KEY = ['myInvoices']
@@ -105,12 +110,12 @@ function useSubscriptionAction<TVariables>(mutationFn: (variables: TVariables) =
     })
 }
 
-export function useCancelSubscription() {
-    return useSubscriptionAction(() => gqlRequest(CancelSubscriptionDocument))
+export function useCancelSubscription(audience: PlanAudience) {
+    return useSubscriptionAction(() => gqlRequest(CancelSubscriptionDocument, { audience }))
 }
 
-export function useResumeSubscription() {
-    return useSubscriptionAction(() => gqlRequest(ResumeSubscriptionDocument))
+export function useResumeSubscription(audience: PlanAudience) {
+    return useSubscriptionAction(() => gqlRequest(ResumeSubscriptionDocument, { audience }))
 }
 
 /**

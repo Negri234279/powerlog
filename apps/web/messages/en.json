@@ -1105,6 +1105,11 @@
         "activatedTitle": "Plan activated!",
         "activatedBody": "Your {plan} plan is now active. Enjoy!",
         "activatedClose": "Got it",
+        "tabs": {
+            "athlete": "Training",
+            "coach": "Coaching"
+        },
+        "coachPlanIncludes": "Your coaching plan",
         "currentPlan": "Your plan",
         "freePlan": "Free",
         "freePlanBody": "You’re on the free plan. Upgrade any time.",

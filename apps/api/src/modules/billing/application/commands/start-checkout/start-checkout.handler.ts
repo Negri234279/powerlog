@@ -80,8 +80,10 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
             email: contact?.email ?? '',
             // The web's account area lives under /profile. The redirect is only a
             // landing spot: the real state arrives by webhook, and the page is told to
-            // refetch by the realtime event — it never trusts these query params.
-            successUrl: `${this.config.webOrigin}/profile/plan?checkout=success`,
+            // refetch by the realtime event — it never trusts these query params. The
+            // audience tells the plan page which side (athlete/coach tab) just paid, so
+            // it waits on the right subscription and, for a coach plan, promotes.
+            successUrl: `${this.config.webOrigin}/profile/plan?checkout=success&audience=${plan.audience}`,
             cancelUrl: `${this.config.webOrigin}/profile/plan?checkout=cancelled`,
         })
 

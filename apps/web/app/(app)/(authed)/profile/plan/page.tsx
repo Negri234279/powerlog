@@ -7,8 +7,10 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
 import { refreshSession } from '@/lib/graphql/client'
 import {
-    type MyEntitlements,
+    type AthleteEntitlements,
+    type CoachEntitlements,
     type MySubscription,
+    type PlanAudience,
     type PublicPlan,
     type PublicPrice,
     useAvailablePlans,
@@ -41,6 +43,10 @@ function formatAmount(amountCents: number, currency: string): string {
     return new Intl.NumberFormat('en', { style: 'currency', currency }).format(amountCents / 100)
 }
 
+function isAudience(value: string | null): value is PlanAudience {
+    return value === 'athlete' || value === 'coach'
+}
+
 export default function PlanPage() {
     const t = useTranslations('billing')
     const searchParams = useSearchParams()
@@ -49,22 +55,37 @@ export default function PlanPage() {
     const { data: me } = useMe()
     const { data: mine, isLoading: loadingMine } = useMyPlan()
     const queryClient = useQueryClient()
-    // The audience decides which catalog they see. It comes from their plan (a coach
-    // on a coach plan), falling back to their role while that loads.
-    const audience = mine?.myEntitlements.audience ?? me?.role ?? 'athlete'
-    const { data: plans, isLoading: loadingPlans } = useAvailablePlans(audience)
+
+    // A user does coaching iff they have a coach entitlements section (coach role or
+    // a live coach subscription) — that is what puts the Coach tab on the page.
+    const showCoachTab = mine?.myEntitlements.coach != null
 
     const [interval, setInterval] = useState<(typeof INTERVALS)[number]>('month')
     const [currency, setCurrency] = useState<(typeof CURRENCIES)[number]>('EUR')
+    const [tab, setTab] = useState<PlanAudience>('athlete')
 
     const checkout = searchParams.get('checkout')
-    const subscription = mine?.mySubscription ?? null
+    // The audience the checkout was for (start-checkout writes it on the success URL):
+    // which tab just paid, so we wait on the right subscription and can focus its tab.
+    const returnAudienceParam = searchParams.get('audience')
+    const returnAudience: PlanAudience = isAudience(returnAudienceParam) ? returnAudienceParam : 'athlete'
 
-    // The redirect only means "the gateway sent us back". The plan is really live
-    // once the webhook has written a subscription in an entitling status, and the
-    // realtime event has refetched us into it.
-    const isActivated = subscription !== null && ENTITLING_STATUSES.includes(subscription.status)
-    // Show the "finishing up" banner only while we are still waiting for that.
+    // The tab that is actually shown: a non-coach only ever has the athlete one.
+    const activeAudience: PlanAudience = showCoachTab ? tab : 'athlete'
+
+    // Coming back from a coach-plan checkout, jump to the Coach tab once it exists.
+    useEffect(() => {
+        if (checkout === 'success' && returnAudience === 'coach' && showCoachTab) setTab('coach')
+    }, [checkout, returnAudience, showCoachTab])
+
+    const subscriptionFor = (audience: PlanAudience): MySubscription | null =>
+        (audience === 'coach' ? mine?.coachSubscription : mine?.athleteSubscription) ?? null
+
+    // The redirect only means "the gateway sent us back". The plan is really live once
+    // the webhook has written a subscription (in the audience that paid) in an
+    // entitling status, and the realtime event has refetched us into it.
+    const returnedSubscription = subscriptionFor(returnAudience)
+    const isActivated = returnedSubscription !== null && ENTITLING_STATUSES.includes(returnedSubscription.status)
     const awaitingActivation = checkout === 'success' && !isActivated
 
     // Confirm the activation once, on the pending → active transition.
@@ -78,7 +99,7 @@ export default function PlanPage() {
         }
     }, [checkout, isActivated])
 
-    // Coach onboarding, last step. When a coach plan activates here, the server has
+    // Coach onboarding, last step. When a COACH plan activates here, the server has
     // already flipped this user athlete → coach (the webhook promotes them). But this
     // tab's JWT still says athlete, and the realtime push only refetches the plan —
     // not `me`. So re-mint the session (the refresh reads the new DB role) and re-read
@@ -86,15 +107,15 @@ export default function PlanPage() {
     const promotedRef = useRef(false)
 
     useEffect(() => {
-        const activatedCoachPlan = checkout === 'success' && isActivated && mine?.myEntitlements.audience === 'coach'
-        if (activatedCoachPlan && !promotedRef.current) {
+        const activatedCoachPlan = checkout === 'success' && isActivated && returnAudience === 'coach'
+        if (activatedCoachPlan && me?.role !== 'coach' && !promotedRef.current) {
             promotedRef.current = true
             void refreshSession().then(() => queryClient.invalidateQueries({ queryKey: ['me'] }))
         }
-    }, [checkout, isActivated, mine?.myEntitlements.audience, queryClient])
+    }, [checkout, isActivated, returnAudience, me?.role, queryClient])
 
-    // The gateway sent them back — the one step of the funnel only the client
-    // sees (PayPal never reports a walk-away). Once per landing.
+    // The gateway sent them back — the one step of the funnel only the client sees
+    // (PayPal never reports a walk-away). Once per landing.
     const returnTrackedRef = useRef(false)
 
     useEffect(() => {
@@ -102,12 +123,13 @@ export default function PlanPage() {
             returnTrackedRef.current = true
             track('checkout_returned', { result: checkout })
 
-            // `success` keeps the param until the activation modal is dismissed;
+            // `success` keeps the params until the activation modal is dismissed;
             // `cancelled` has no modal to clean the URL, so it is dropped here — a
             // refresh must not count a second walk-away.
             if (checkout === 'cancelled') {
                 const params = new URLSearchParams(searchParams)
                 params.delete('checkout')
+                params.delete('audience')
                 const query = params.toString()
 
                 router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
@@ -116,23 +138,17 @@ export default function PlanPage() {
     }, [checkout, searchParams, router, pathname])
 
     /**
-     * Dismissing the confirmation also drops `?checkout=success` from the URL.
-     *
-     * The param's whole job was to say "the gateway just sent them back", and it is
-     * done the moment they acknowledge it. Left there it outlives its meaning: a
-     * refresh — or a shared/bookmarked link — re-runs the effect above on a fresh
-     * mount (`celebratedRef` starts false again) and celebrates a plan they bought
+     * Dismissing the confirmation also drops `?checkout=success&audience=…` from the
+     * URL. The params' whole job was "the gateway just sent them back", done the
+     * moment they acknowledge it; left there, a refresh re-celebrates a plan bought
      * days ago. `replace` rather than `push` so Back does not walk into it either.
-     *
-     * Every way out of the modal lands here: the button, Escape and the backdrop all
-     * go through `Modal`'s single `onClose`.
      */
     const dismissActivated = useCallback(() => {
         setActivatedOpen(false)
 
-        // Only `checkout` goes: anything else on the URL belongs to somebody else.
         const params = new URLSearchParams(searchParams)
         params.delete('checkout')
+        params.delete('audience')
         const query = params.toString()
 
         router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
@@ -147,13 +163,76 @@ export default function PlanPage() {
             {awaitingActivation ? <Banner tone="ok">{t('checkoutSuccess')}</Banner> : null}
             {checkout === 'cancelled' ? <Banner tone="muted">{t('checkoutCancelled')}</Banner> : null}
 
-            {loadingMine ? (
+            {showCoachTab ? (
+                <SlidingTabs
+                    analyticsId="plan-audience"
+                    items={(['athlete', 'coach'] as const).map((value) => ({
+                        value,
+                        label: t(`tabs.${value}`),
+                    }))}
+                    value={activeAudience}
+                    onChange={(value) => setTab(value as PlanAudience)}
+                />
+            ) : null}
+
+            {loadingMine || !mine ? (
                 <Skeleton className="h-32 rounded-2xl" />
             ) : (
-                <CurrentPlan subscription={subscription} planSlug={mine?.myEntitlements.plan ?? 'free'} />
+                <PlanAudienceSection
+                    audience={activeAudience}
+                    subscription={subscriptionFor(activeAudience)}
+                    athlete={mine.myEntitlements.athlete}
+                    coach={mine.myEntitlements.coach}
+                    interval={interval}
+                    currency={currency}
+                    onInterval={setInterval}
+                    onCurrency={setCurrency}
+                />
             )}
 
-            {mine ? <UsageSummary entitlements={mine.myEntitlements} /> : null}
+            <ActivatedModal
+                open={activatedOpen}
+                onClose={dismissActivated}
+                planName={returnedSubscription?.planName ?? ''}
+            />
+        </div>
+    )
+}
+
+/** Everything for one audience: the current plan, what it grants, and the catalog. */
+function PlanAudienceSection({
+    audience,
+    subscription,
+    athlete,
+    coach,
+    interval,
+    currency,
+    onInterval,
+    onCurrency,
+}: {
+    audience: PlanAudience
+    subscription: MySubscription | null
+    athlete: AthleteEntitlements
+    coach: CoachEntitlements | null
+    interval: (typeof INTERVALS)[number]
+    currency: (typeof CURRENCIES)[number]
+    onInterval: (value: (typeof INTERVALS)[number]) => void
+    onCurrency: (value: (typeof CURRENCIES)[number]) => void
+}) {
+    const t = useTranslations('billing')
+    const { data: plans, isLoading: loadingPlans } = useAvailablePlans(audience)
+
+    const currentPlanSlug = audience === 'coach' ? (coach?.plan ?? null) : athlete.plan
+
+    return (
+        <div className="space-y-8">
+            <CurrentPlan subscription={subscription} planSlug={currentPlanSlug ?? 'free'} audience={audience} />
+
+            {audience === 'coach' ? (
+                coach && <CoachPlanSummary coach={coach} />
+            ) : (
+                <AthleteUsageSummary entitlements={athlete} />
+            )}
 
             <section>
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -163,13 +242,13 @@ export default function PlanPage() {
                             analyticsId="billing-interval"
                             items={INTERVALS.map((value) => ({ value, label: t(`interval.${value}`) }))}
                             value={interval}
-                            onChange={(value) => setInterval(value as (typeof INTERVALS)[number])}
+                            onChange={(value) => onInterval(value as (typeof INTERVALS)[number])}
                         />
                         <SlidingTabs
                             analyticsId="billing-currency"
                             items={CURRENCIES.map((value) => ({ value, label: value }))}
                             value={currency}
-                            onChange={(value) => setCurrency(value as (typeof CURRENCIES)[number])}
+                            onChange={(value) => onCurrency(value as (typeof CURRENCIES)[number])}
                         />
                     </div>
                 </div>
@@ -191,13 +270,11 @@ export default function PlanPage() {
                                               candidate.interval === interval && candidate.currency === currency,
                                       )}
                                       subscription={subscription}
-                                      currentPlanSlug={mine?.myEntitlements.plan ?? null}
+                                      currentPlanSlug={currentPlanSlug}
                                   />
                               ))}
                 </div>
             </section>
-
-            <ActivatedModal open={activatedOpen} onClose={dismissActivated} planName={subscription?.planName ?? ''} />
         </div>
     )
 }
@@ -242,10 +319,10 @@ function Banner({ tone, children }: { tone: 'ok' | 'muted'; children: React.Reac
     )
 }
 
-/** How much of each capped resource the user has spent, against their plan's caps.
- *  Unlimited caps show the count with no bar; a cap of 0 (the plan doesn't offer it)
- *  is dropped. Read-only — the server is what actually enforces the caps. */
-function UsageSummary({ entitlements }: { entitlements: MyEntitlements }) {
+/** How much of each capped resource the user has spent, against their athlete plan's
+ *  caps. Unlimited caps show the count with no bar; a cap of 0 (the plan doesn't offer
+ *  it) is dropped. Read-only — the server is what actually enforces the caps. */
+function AthleteUsageSummary({ entitlements }: { entitlements: AthleteEntitlements }) {
     const t = useTranslations('billing.usage')
     const { data: usage } = useMyWorkoutUsage()
 
@@ -304,12 +381,51 @@ function UsageSummary({ entitlements }: { entitlements: MyEntitlements }) {
     )
 }
 
-/** What the user is on right now, and the two things they can do about it. */
-function CurrentPlan({ subscription, planSlug }: { subscription: MySubscription | null; planSlug: string }) {
+/** What the coach plan grants, as a read-only summary (the coach catalog below is
+ *  where they change tier). Coaching quotas are separate from the athlete plan's. */
+function CoachPlanSummary({ coach }: { coach: CoachEntitlements }) {
+    const t = useTranslations('billing')
+
+    return (
+        <section className="rounded-2xl bg-surface p-6 ring-1 ring-hairline">
+            <p className="font-mono text-eyebrow uppercase text-text-faint">{t('coachPlanIncludes')}</p>
+            <ul className="mt-4 space-y-1.5 text-sm text-text-dim">
+                <Feature on>
+                    {coach.maxAthletes === null
+                        ? t('features.athletesUnlimited')
+                        : t('features.athletes', { count: coach.maxAthletes })}
+                </Feature>
+                <Feature on={coach.planSessions}>{t('features.planSessions')}</Feature>
+                {coach.maxTemplates === null ? (
+                    <Feature on>{t('features.templatesUnlimited')}</Feature>
+                ) : coach.maxTemplates > 0 ? (
+                    <Feature on>{t('features.templatesLimited', { count: coach.maxTemplates })}</Feature>
+                ) : null}
+                {coach.maxMesocycles === null ? (
+                    <Feature on>{t('features.mesocyclesUnlimited')}</Feature>
+                ) : coach.maxMesocycles > 0 ? (
+                    <Feature on>{t('features.mesocyclesLimited', { count: coach.maxMesocycles })}</Feature>
+                ) : null}
+                <Feature on={coach.ai}>{t('features.ai')}</Feature>
+            </ul>
+        </section>
+    )
+}
+
+/** What the user is on right now in this audience, and the two things they can do. */
+function CurrentPlan({
+    subscription,
+    planSlug,
+    audience,
+}: {
+    subscription: MySubscription | null
+    planSlug: string
+    audience: PlanAudience
+}) {
     const t = useTranslations('billing')
     const toMessage = useErrorMessage()
-    const cancel = useCancelSubscription()
-    const resume = useResumeSubscription()
+    const cancel = useCancelSubscription(audience)
+    const resume = useResumeSubscription(audience)
     const [confirming, setConfirming] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -430,7 +546,8 @@ function PlanCard({
         setError(null)
         if (!price) return
 
-        // Someone who already pays switches plan; they do not buy a second one.
+        // Someone who already pays IN THIS AUDIENCE switches plan; they do not buy a
+        // second one. (The subscription passed in is this tab's audience.)
         if (subscription) {
             changePlan.mutate(price.id, { onError: (err) => setError(toMessage(err)) })
             return
