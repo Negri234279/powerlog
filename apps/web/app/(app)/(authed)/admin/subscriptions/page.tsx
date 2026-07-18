@@ -1,7 +1,7 @@
 'use client'
 
 import { useLocale, useTranslations } from 'next-intl'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
 import {
     type AdminSubscription,
@@ -222,7 +222,7 @@ function AssignModal({ onClose }: { onClose: () => void }) {
     // Only a plan that takes signups can be granted; a draft is not a plan yet.
     const grantable = plans?.filter((plan) => plan.status === 'active' && !plan.isFree) ?? []
 
-    const onSubmit = (event: FormEvent) => {
+    const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault()
         setError(null)
         if (!match) return

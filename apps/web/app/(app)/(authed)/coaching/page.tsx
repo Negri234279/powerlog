@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
@@ -206,7 +206,7 @@ function InviteForm() {
     const [error, setError] = useState<string | null>(null)
     const [sent, setSent] = useState<string | null>(null)
 
-    function onSubmit(event: FormEvent<HTMLFormElement>) {
+    function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const value = email.trim()
         if (value === '') return

@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { type SubmitEvent, useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { EXERCISE_CATEGORIES, EXERCISE_EQUIPMENT, EXERCISE_MUSCLES } from '@/lib/exercise-taxonomy'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
@@ -323,7 +323,7 @@ function ExerciseEditor({ exercise, onClose }: { exercise: AdminExercise | null;
 
     const pending = create.isPending || update.isPending
 
-    async function onSubmit(e: FormEvent) {
+    async function onSubmit(e: SubmitEvent<HTMLFormElement>) {
         e.preventDefault()
         setError(null)
         try {

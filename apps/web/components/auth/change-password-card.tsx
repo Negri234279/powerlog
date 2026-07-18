@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
@@ -27,7 +27,7 @@ export function ChangePasswordCard() {
 
     const hasPassword = me?.hasPassword ?? true
 
-    async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    async function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const form = event.currentTarget
         const data = new FormData(form)

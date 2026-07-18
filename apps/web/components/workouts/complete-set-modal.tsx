@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useId, useState } from 'react'
+import { type SubmitEvent, useId, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
@@ -113,7 +113,7 @@ export function CompleteSetModal({
     const [intensityValue, setIntensityValue] = useState(start.intensityValue)
     const [error, setError] = useState<string | null>(null)
 
-    async function submit(event: FormEvent<HTMLFormElement>) {
+    async function submit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         setError(null)
         const value = parseNum(intensityValue)

@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
 import { useAssignMesocycle, usePlanSessionFromTemplate, usePlanWorkoutSession } from '@/lib/graphql/hooks/use-athlete'
 import { useAthleteMesocycles } from '@/lib/graphql/hooks/use-athlete'
@@ -54,7 +54,7 @@ function PlanSessionCard({ athleteId }: { athleteId: string }) {
 
     const pending = plan.isPending || planFromTemplate.isPending
 
-    function onSubmit(event: FormEvent<HTMLFormElement>) {
+    function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         setError(null)
 
@@ -165,7 +165,7 @@ function AssignBlockCard({ athleteId }: { athleteId: string }) {
     // Blocks a coach already handed to someone are copies; only offer their own.
     const own = (mine ?? []).filter((mesocycle) => mesocycle.plannedByUserId === null)
 
-    function onSubmit(event: FormEvent<HTMLFormElement>) {
+    function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         if (mesocycleId === '') return
 

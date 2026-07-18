@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
@@ -22,7 +22,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
     const [formError, setFormError] = useState<string | null>(null)
     const [done, setDone] = useState(false)
 
-    async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    async function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         if (!token) return
         const data = new FormData(event.currentTarget)

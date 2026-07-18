@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useMemo, useState } from 'react'
+import { type SubmitEvent, useMemo, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 import { track } from '@/lib/analytics/events'
@@ -443,7 +443,7 @@ export default function WorkoutsPage() {
     // (keepPreviousData) — dim them slightly instead of flashing a loading state.
     const isFiltering = isPlaceholderData
 
-    async function onCreate(event: FormEvent<HTMLFormElement>) {
+    async function onCreate(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         setCreateError(null)
         setCreateRawError(null)

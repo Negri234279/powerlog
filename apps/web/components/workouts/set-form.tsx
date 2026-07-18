@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, type ReactNode, useState } from 'react'
+import { type SubmitEvent, type ReactNode, useState } from 'react'
 
 import type { Units } from '@/lib/units'
 import { Input, Select } from '@/components/ui/field'
@@ -165,7 +165,7 @@ export function SetForm({
     )
     const [outcome, setOutcome] = useState<OutcomeValue>(start.outcome ?? 'pending')
 
-    function submit(event: FormEvent<HTMLFormElement>) {
+    function submit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const value = parseNum(intensityValue)
         const plannedValue = parseNum(plannedIntensityValue)

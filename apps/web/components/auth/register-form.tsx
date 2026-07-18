@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useEffect, useState, useTransition } from 'react'
+import { type SubmitEvent, useEffect, useState, useTransition } from 'react'
 
 import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input, Select } from '@/components/ui/field'
@@ -58,7 +58,7 @@ export function RegisterForm() {
         })
     }
 
-    async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    async function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const data = new FormData(event.currentTarget)
         const parsed = registerSchema.safeParse({

@@ -1,7 +1,7 @@
 'use client'
 
 import { useLocale, useTranslations } from 'next-intl'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
@@ -106,7 +106,7 @@ export function MesocycleWeekAiPanel({
         )
     }
 
-    async function onRefine(event: FormEvent<HTMLFormElement>) {
+    async function onRefine(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         if (!draft) return
         const form = event.currentTarget

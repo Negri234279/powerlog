@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
 import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input } from '@/components/ui/field'
@@ -24,7 +24,7 @@ export function LoginForm() {
     const [errors, setErrors] = useState<Record<string, string>>({})
     const [formError, setFormError] = useState<string | null>(null)
 
-    async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    async function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const data = new FormData(event.currentTarget)
         const parsed = loginSchema.safeParse({

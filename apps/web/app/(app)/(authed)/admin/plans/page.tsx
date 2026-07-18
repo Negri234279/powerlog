@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, Fragment, useEffect, useId, useMemo, useState } from 'react'
+import { type SubmitEvent, Fragment, useEffect, useId, useMemo, useState } from 'react'
 
 import {
     type AdminPlan,
@@ -411,7 +411,7 @@ function PlanModal({
     // the instant the list refetches.
     const plan = planId ? (plans.find((p) => p.id === planId) ?? initial ?? null) : null
 
-    const onUpdate = (event: FormEvent) => {
+    const onUpdate = (event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault()
         setError(null)
         if (!planId) return
@@ -422,7 +422,7 @@ function PlanModal({
         )
     }
 
-    const onUpdateTranslations = (event: FormEvent) => {
+    const onUpdateTranslations = (event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault()
         setError(null)
         if (!planId) return
@@ -436,7 +436,7 @@ function PlanModal({
     // Create the plan, then publish whatever the price matrix was filled with. If a
     // price fails, the plan already exists (planId is set) so the modal flips to edit
     // mode on the prices tab, where the live table lets the admin finish.
-    const onCreate = async (event: FormEvent) => {
+    const onCreate = async (event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault()
         setError(null)
 
@@ -1008,7 +1008,7 @@ function PricesPanel({ plan, onClose }: { plan: AdminPlan; onClose: () => void }
         }
     }
 
-    const onSubmit = (event: FormEvent) => {
+    const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
         event.preventDefault()
         setError(null)
         if (!changes.length) return

@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { LanguageSwitcher } from '@/components/app/language-switcher'
@@ -25,7 +25,7 @@ function ProfileForm({ profile }: { profile: ProfileData }) {
     const [formError, setFormError] = useState<string | null>(null)
     const [saved, setSaved] = useState(false)
 
-    async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    async function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const data = new FormData(event.currentTarget)
         const heightRaw = nullify(data.get('heightCm'))

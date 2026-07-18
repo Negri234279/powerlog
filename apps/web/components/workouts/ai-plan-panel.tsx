@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useMemo, useState } from 'react'
+import { type SubmitEvent, useMemo, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { FormError } from '@/components/ui/form-error'
@@ -139,7 +139,7 @@ export function AiPlanPanel({
         )
     }
 
-    async function onRefine(event: FormEvent<HTMLFormElement>) {
+    async function onRefine(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         if (!draft) return
         const form = event.currentTarget

@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useId, useState } from 'react'
+import { type SubmitEvent, useId, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
@@ -35,7 +35,7 @@ export function EditSessionModal({ session, onClose }: { session: WorkoutHistory
     const [notes, setNotes] = useState(session.notes ?? '')
     const [error, setError] = useState<string | null>(null)
 
-    async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    async function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         setError(null)
         const trimmed = notes.trim()
