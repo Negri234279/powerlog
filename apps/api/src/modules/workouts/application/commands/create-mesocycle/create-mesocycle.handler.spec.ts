@@ -173,7 +173,7 @@ describe('CreateMesocycleHandler', () => {
 
     it('refuses to build a block of your own on a plan that allows none', async () => {
         const { mesocycles, entitlements, handler } = setup()
-        entitlements.on({ plan: 'athlete-basic', maxMesocycles: 0 })
+        entitlements.onAthlete({ plan: 'athlete-basic', maxMesocycles: 0 })
 
         await expect(handler.execute(new CreateMesocycleCommand(OWNER, content()))).rejects.toBeInstanceOf(
             PlanLimitReachedError,
@@ -187,7 +187,7 @@ describe('CreateMesocycleHandler', () => {
         const links = new FakeCoachLinks()
         links.link(COACH, ATHLETE)
         const { mesocycles, entitlements, handler } = setup(links)
-        entitlements.on({ plan: 'coach-lite', maxMesocycles: null, planSessions: false })
+        entitlements.onCoach({ plan: 'coach-lite', maxMesocycles: null, planSessions: false })
 
         await expect(handler.execute(new CreateMesocycleCommand(COACH, content(), ATHLETE))).rejects.toBeInstanceOf(
             FeatureNotInPlanError,

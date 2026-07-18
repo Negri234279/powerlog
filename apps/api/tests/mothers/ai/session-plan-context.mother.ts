@@ -10,6 +10,9 @@ export const SessionPlanContextMother = {
     create(overrides: Partial<SessionPlanContext> = {}): SessionPlanContext {
         return {
             sessionId: 'session-1',
+            // The specs' default user: the session is their OWN, so the AI gate
+            // draws on the athlete plan. Override to model a coach programming.
+            ownerId: '11111111-1111-4111-8111-111111111111',
             performedAt: new Date('2026-01-08T00:00:00.000Z'),
             sessionNotes: 'heavy day',
             exercises: [

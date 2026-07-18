@@ -53,7 +53,7 @@ describe('AdminUsersHandler', () => {
         const handler = new AdminUsersHandler(
             readModel,
             profiles,
-            new FakeEntitlements().on({ plan: 'athlete-pro' }),
+            new FakeEntitlements().onAthlete({ plan: 'athlete-pro' }).withoutCoach(),
             new FakePlanDirectory(),
         )
 

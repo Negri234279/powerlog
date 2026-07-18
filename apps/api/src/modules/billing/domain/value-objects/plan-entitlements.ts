@@ -6,10 +6,26 @@ import { CoachEntitlementsVO, coachEntitlementsSchema } from './coach-entitlemen
 
 /**
  * A plan's entitlements: the athlete shape or the coach shape, decided by the
- * plan's audience. Both collapse to the same flat {@link EntitlementsSnapshot},
- * so nothing downstream has to know which one it got.
+ * plan's audience. The two are independent — an athlete plan grants personal
+ * training, a coach plan grants coaching — and each contributes its own section
+ * of the user's {@link EntitlementsSnapshot}.
  */
 export type PlanEntitlementsVO = AthleteEntitlementsVO | CoachEntitlementsVO
+
+/**
+ * The flat view a pricing card renders from, shared by both audiences so the
+ * catalog handler and the GraphQL type stay shape-stable. A field the audience
+ * has no business with reads as "none" (`maxWorkouts: 0` on a coach plan), never
+ * as `null` — `null` means unlimited.
+ */
+export interface PlanPublicView {
+    maxTemplates: number | null
+    maxMesocycles: number | null
+    maxWorkouts: number | null
+    ai: boolean
+    planSessions: boolean
+    maxAthletes: number | null
+}
 
 /** Validate raw entitlements (admin form, jsonb column) against their audience. */
 export function planEntitlementsFor(audience: PlanAudience, raw: unknown): PlanEntitlementsVO {

@@ -30,8 +30,13 @@ export class GenerateMesocycleDraftHandler implements ICommandHandler<
 
     async execute(command: GenerateMesocycleDraftCommand): Promise<AiMesocycleDraftView> {
         // The plan gate goes before everything, so a plan without AI never reaches
-        // the provider. A coach designing for an athlete pays with their own plan.
-        await this.entitlements.assertFeature(command.userId, 'ai')
+        // the provider. Designing for an athlete draws on the coach plan; designing
+        // for yourself draws on your athlete plan.
+        if (command.athleteId) {
+            await this.entitlements.assertFeature(command.userId, 'coach', 'ai')
+        } else {
+            await this.entitlements.assertFeature(command.userId, 'athlete', 'ai')
+        }
 
         // Resolve the provider next: a missing key should fail before the athlete
         // waits for anything.

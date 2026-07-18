@@ -115,7 +115,7 @@ export class AvailablePlansHandler implements IQueryHandler<AvailablePlansQuery,
         const configured = this.gateways.available().map((gateway) => gateway.name)
 
         return plans.map((plan) => {
-            const snapshot = plan.entitlements.toSnapshot(plan.slug)
+            const view = plan.entitlements.publicView()
             const offer = offers.find((candidate) => candidate.planId === plan.id && candidate.isRedeemableAt(now))
             // The name/description in the request locale, falling back to the base.
             const translation = translations.find((t) => t.planId === plan.id && t.locale === query.locale)
@@ -127,12 +127,12 @@ export class AvailablePlansHandler implements IQueryHandler<AvailablePlansQuery,
                 description: translation?.description ?? plan.description,
                 isFree: plan.isFree,
                 sortOrder: plan.sortOrder,
-                maxTemplates: snapshot.maxTemplates,
-                maxMesocycles: snapshot.maxMesocycles,
-                maxWorkouts: snapshot.maxWorkouts,
-                ai: snapshot.ai,
-                planSessions: snapshot.planSessions,
-                maxAthletes: snapshot.maxAthletes,
+                maxTemplates: view.maxTemplates,
+                maxMesocycles: view.maxMesocycles,
+                maxWorkouts: view.maxWorkouts,
+                ai: view.ai,
+                planSessions: view.planSessions,
+                maxAthletes: view.maxAthletes,
                 prices: prices
                     .filter((price) => price.planId === plan.id)
                     .map((price) => ({

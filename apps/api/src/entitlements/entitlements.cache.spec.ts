@@ -7,17 +7,14 @@ import { InvalidateEntitlementsOnSubscriptionChanged } from './invalidate-on-sub
 import { SubscriptionChangedIntegrationEvent } from '../shared/integration-events/subscription-changed.integration-event'
 
 const FREE: EntitlementsSnapshot = {
-    plan: 'athlete-free',
-    audience: 'athlete',
-    maxTemplates: null,
-    maxMesocycles: null,
-    maxWorkouts: null,
-    ai: false,
-    planSessions: false,
-    maxAthletes: 0,
+    athlete: { plan: 'athlete-free', maxTemplates: null, maxMesocycles: null, maxWorkouts: null, ai: false },
+    coach: null,
 }
 
-const PRO: EntitlementsSnapshot = { ...FREE, plan: 'athlete-pro', ai: true }
+const PRO: EntitlementsSnapshot = {
+    athlete: { ...FREE.athlete, plan: 'athlete-pro', ai: true },
+    coach: null,
+}
 
 /**
  * The in-process mode (no `REDIS_URL`) — the one `pnpm dev` and the test suites

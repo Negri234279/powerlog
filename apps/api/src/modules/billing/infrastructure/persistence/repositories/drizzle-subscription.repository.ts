@@ -73,4 +73,13 @@ export class DrizzleSubscriptionRepository extends SubscriptionRepository {
 
         return row ? toSubscriptionAggregate(row) : null
     }
+
+    async findAllLiveByUser(userId: string): Promise<SubscriptionAggregate[]> {
+        const rows = await this.db
+            .select()
+            .from(subscriptions)
+            .where(and(eq(subscriptions.userId, userId), inArray(subscriptions.status, [...LIVE_STATUSES])))
+
+        return rows.map(toSubscriptionAggregate)
+    }
 }

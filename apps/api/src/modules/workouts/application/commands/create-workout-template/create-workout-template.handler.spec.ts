@@ -106,7 +106,7 @@ describe('CreateWorkoutTemplateHandler', () => {
 
     it('refuses to create a template on a plan that allows none', async () => {
         const { templates, entitlements, handler } = setup()
-        entitlements.on({ plan: 'athlete-free', maxTemplates: 0 })
+        entitlements.onAthlete({ plan: 'athlete-free', maxTemplates: 0 })
 
         await expect(handler.execute(new CreateWorkoutTemplateCommand(OWNER, content()))).rejects.toBeInstanceOf(
             PlanLimitReachedError,
@@ -116,7 +116,7 @@ describe('CreateWorkoutTemplateHandler', () => {
 
     it('refuses to create a template once the plan cap is reached', async () => {
         const { templates, entitlements, handler } = setup()
-        entitlements.on({ plan: 'athlete-free', maxTemplates: 1 })
+        entitlements.onAthlete({ plan: 'athlete-free', maxTemplates: 1 })
 
         await handler.execute(new CreateWorkoutTemplateCommand(OWNER, content()))
         await expect(handler.execute(new CreateWorkoutTemplateCommand(OWNER, content()))).rejects.toBeInstanceOf(

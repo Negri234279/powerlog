@@ -1,8 +1,12 @@
 import {
-    type CountableResource,
+    type AthleteEntitlementsSection,
+    type CoachEntitlementsSection,
     type EntitlementsSnapshot,
-    Entitlements,
     type Feature,
+    type FeatureOf,
+    type PlanAudience,
+    type ResourceOf,
+    Entitlements,
     FeatureNotInPlanError,
     PlanLimitReachedError,
 } from '../../../src/shared/contracts/entitlements'
@@ -12,71 +16,127 @@ import {
  * plan snapshot instead of from injected errors, so a test says "put this user on
  * a plan without AI" and gets the same `FEATURE_NOT_IN_PLAN` a free user would.
  *
- * Defaults to an unlimited plan, so handlers under test that don't care about
- * limits need no setup.
+ * Defaults to unlimited plans on **both** audiences, so handlers under test that
+ * don't care about limits need no setup. `onAthlete`/`onCoach` override the
+ * matching section; `withoutCoach()` models a user with no coaching at all.
  */
 export class FakeEntitlements extends Entitlements {
-    private snapshot: EntitlementsSnapshot = {
-        plan: 'test-unlimited',
-        audience: 'coach',
+    private athlete: AthleteEntitlementsSection = {
+        plan: 'test-athlete-unlimited',
         maxTemplates: null,
         maxMesocycles: null,
         maxWorkouts: null,
         ai: true,
-        planSessions: true,
-        maxAthletes: null,
     }
 
-    /** Put the user on a plan: everything allowed except what you override. */
-    on(plan: Partial<EntitlementsSnapshot>): this {
-        this.snapshot = { ...this.snapshot, ...plan }
+    private coach: CoachEntitlementsSection | null = {
+        plan: 'test-coach-unlimited',
+        maxAthletes: null,
+        planSessions: true,
+        maxTemplates: null,
+        maxMesocycles: null,
+        ai: true,
+    }
+
+    /** Put the user on an athlete plan: everything allowed except what you override. */
+    onAthlete(section: Partial<AthleteEntitlementsSection>): this {
+        this.athlete = { ...this.athlete, ...section }
 
         return this
     }
 
-    assertFeature(_userId: string, feature: Feature): Promise<void> {
-        if (this.grants(feature)) return Promise.resolve()
+    /** Put the user on a coach plan: everything allowed except what you override. */
+    onCoach(section: Partial<CoachEntitlementsSection>): this {
+        this.coach = {
+            ...(this.coach ?? {
+                plan: 'test-coach-unlimited',
+                maxAthletes: null,
+                planSessions: true,
+                maxTemplates: null,
+                maxMesocycles: null,
+                ai: true,
+            }),
+            ...section,
+        }
 
-        return Promise.reject(new FeatureNotInPlanError(feature, this.snapshot.plan))
+        return this
+    }
+
+    /** A user with no coach section at all (plain athlete). */
+    withoutCoach(): this {
+        this.coach = null
+
+        return this
+    }
+
+    assertFeature<A extends PlanAudience>(_userId: string, audience: A, feature: FeatureOf<A>): Promise<void> {
+        const section = this.section(audience)
+        if (section && this.grants(section, feature)) return Promise.resolve()
+
+        return Promise.reject(new FeatureNotInPlanError(feature, section?.plan ?? 'none', audience))
     }
 
     assertCanAddAthlete(_coachId: string, currentAthleteCount: number): Promise<void> {
-        const { maxAthletes } = this.snapshot
-        if (maxAthletes === null || currentAthleteCount < maxAthletes) return Promise.resolve()
+        // null = unlimited; no coach section at all = cap 0 (same as the real adapter).
+        if (this.coach) {
+            const { maxAthletes } = this.coach
+            if (maxAthletes === null || currentAthleteCount < maxAthletes) return Promise.resolve()
+        }
 
         return Promise.reject(
-            new PlanLimitReachedError('athletes', maxAthletes, currentAthleteCount, this.snapshot.plan),
+            new PlanLimitReachedError(
+                'athletes',
+                this.coach?.maxAthletes ?? 0,
+                currentAthleteCount,
+                this.coach?.plan ?? 'none',
+                'coach',
+            ),
         )
     }
 
-    assertWithinLimit(_userId: string, resource: CountableResource, currentCount: number): Promise<void> {
-        const limit = this.limitFor(resource)
-        if (limit === null || currentCount < limit) return Promise.resolve()
+    assertWithinLimit<A extends PlanAudience>(
+        _userId: string,
+        audience: A,
+        resource: ResourceOf<A>,
+        currentCount: number,
+    ): Promise<void> {
+        const section = this.section(audience)
+        const limit = section ? this.limitFor(section, resource) : 0
+        if (section && (limit === null || currentCount < limit)) return Promise.resolve()
 
-        return Promise.reject(new PlanLimitReachedError(resource, limit, currentCount, this.snapshot.plan))
+        return Promise.reject(
+            new PlanLimitReachedError(resource, limit ?? 0, currentCount, section?.plan ?? 'none', audience),
+        )
     }
 
     forUser(): Promise<EntitlementsSnapshot> {
-        return Promise.resolve(this.snapshot)
+        return Promise.resolve({ athlete: this.athlete, coach: this.coach })
     }
 
-    private grants(feature: Feature): boolean {
+    private section(audience: PlanAudience): AthleteEntitlementsSection | CoachEntitlementsSection | null {
+        return audience === 'coach' ? this.coach : this.athlete
+    }
+
+    private grants(section: AthleteEntitlementsSection | CoachEntitlementsSection, feature: Feature): boolean {
         switch (feature) {
             case 'ai':
-                return this.snapshot.ai
+                return section.ai
             case 'plan_sessions':
-                return this.snapshot.planSessions
+                return 'planSessions' in section && section.planSessions
         }
     }
 
-    private limitFor(resource: CountableResource): number | null {
+    private limitFor(
+        section: AthleteEntitlementsSection | CoachEntitlementsSection,
+        resource: ResourceOf<PlanAudience>,
+    ): number | null {
         switch (resource) {
             case 'templates':
-                return this.snapshot.maxTemplates
+                return section.maxTemplates
             case 'mesocycles':
-                return this.snapshot.maxMesocycles
+                return section.maxMesocycles
             case 'workouts':
-                return this.snapshot.maxWorkouts
+                return 'maxWorkouts' in section ? section.maxWorkouts : 0
         }
     }
 }

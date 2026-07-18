@@ -194,7 +194,7 @@ describe('GenerateSessionPlanDraftHandler', () => {
     it('refuses on a plan without AI, without calling the provider', async () => {
         // The key is the user's own, so a call would cost US nothing — but it would
         // cost THEM, and the plan already said no. The gate runs before the provider.
-        entitlements.on({ plan: 'athlete-free', ai: false })
+        entitlements.onAthlete({ plan: 'athlete-free', ai: false })
         const command = new GenerateSessionPlanDraftCommand(USER_ID, SESSION_ID)
 
         await expect(buildHandler().execute(command)).rejects.toBeInstanceOf(FeatureNotInPlanError)

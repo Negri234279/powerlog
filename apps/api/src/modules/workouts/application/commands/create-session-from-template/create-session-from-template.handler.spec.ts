@@ -69,7 +69,7 @@ describe('CreateSessionFromTemplateHandler', () => {
         // Starting a session — from a template or not — creates a workout, so it's
         // the workout cap that gates it, not the template one.
         const { sessions, entitlements, handler } = setup()
-        entitlements.on({ plan: 'athlete-free', maxWorkouts: 0 })
+        entitlements.onAthlete({ plan: 'athlete-free', maxWorkouts: 0 })
 
         await expect(handler.execute(new CreateSessionFromTemplateCommand(OWNER, 't-1'))).rejects.toBeInstanceOf(
             PlanLimitReachedError,

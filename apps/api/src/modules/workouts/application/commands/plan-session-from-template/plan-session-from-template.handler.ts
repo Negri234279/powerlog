@@ -39,7 +39,7 @@ export class PlanSessionFromTemplateHandler implements ICommandHandler<
 
         // Programming for someone else is the coach's plan paying, not the
         // athlete's: it's the coach who performs the action.
-        await this.entitlements.assertFeature(command.coachId, 'plan_sessions')
+        await this.entitlements.assertFeature(command.coachId, 'coach', 'plan_sessions')
 
         // The coach plans from their own template (ownership scoped to the coach).
         const template = await requireOwnedTemplate(this.templates, command.templateId, command.coachId)

@@ -348,8 +348,8 @@ describe('the Stripe webhook', () => {
         const mine = await gql(`query { mySubscription { status cancelAtPeriodEnd } }`, user.access)
         expect(mine.body.data.mySubscription).toMatchObject({ status: 'canceled', cancelAtPeriodEnd: true })
 
-        const entitlements = await gql(`query { myEntitlements { plan ai } }`, user.access)
-        expect(entitlements.body.data.myEntitlements).toMatchObject({ plan: 'athlete-pro', ai: true })
+        const entitlements = await gql(`query { myEntitlements { athlete { plan ai } } }`, user.access)
+        expect(entitlements.body.data.myEntitlements.athlete).toMatchObject({ plan: 'athlete-pro', ai: true })
     })
 
     it('mirrors the invoice Stripe issued, with its number and its PDF', async () => {

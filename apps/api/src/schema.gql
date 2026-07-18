@@ -1199,12 +1199,8 @@ type Mutation {
   verifyEmail(token: String!): Boolean!
 }
 
-type MyEntitlements {
+type MyAthleteEntitlements {
   ai: Boolean!
-  audience: String!
-
-  """null = unlimited."""
-  maxAthletes: Int
 
   """How many mesocycles they may create. null = unlimited."""
   maxMesocycles: Int
@@ -1214,8 +1210,32 @@ type MyEntitlements {
 
   """How many workouts they may log. null = unlimited."""
   maxWorkouts: Int
+
+  """Slug of the plan this section came from."""
+  plan: String!
+}
+
+type MyCoachEntitlements {
+  """The AI assistant when designing for athletes."""
+  ai: Boolean!
+
+  """null = unlimited."""
+  maxAthletes: Int
+
+  """Blocks designed for athletes. null = unlimited."""
+  maxMesocycles: Int
+
+  """Coaching templates (for athletes). null = unlimited."""
+  maxTemplates: Int
+
+  """Slug of the plan this section came from."""
   plan: String!
   planSessions: Boolean!
+}
+
+type MyEntitlements {
+  athlete: MyAthleteEntitlements!
+  coach: MyCoachEntitlements
 }
 
 type MyInvoice {

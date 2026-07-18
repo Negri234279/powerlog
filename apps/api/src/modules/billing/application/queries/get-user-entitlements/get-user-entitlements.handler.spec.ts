@@ -38,34 +38,60 @@ describe('GetUserEntitlementsHandler', () => {
         clock = new FakeClock(NOW)
     })
 
-    it('falls back to the free athlete plan when the user has no subscription', async () => {
+    it('falls back to the free athlete plan — and no coach section — for a plain athlete', async () => {
         const snapshot = await execute()
 
-        expect(snapshot.plan).toBe('athlete-free')
-        expect(snapshot.ai).toBe(false)
-        expect(snapshot.maxTemplates).toBeNull()
+        expect(snapshot.athlete.plan).toBe('athlete-free')
+        expect(snapshot.athlete.ai).toBe(false)
+        expect(snapshot.athlete.maxTemplates).toBeNull()
+        // No coaching at all: the UI reads this as "no coach plan area to render".
+        expect(snapshot.coach).toBeNull()
     })
 
-    it('falls back to the free COACH plan for a coach — which also covers their own training', async () => {
+    it('gives a coach with no subscriptions BOTH free plans — coaching does not buy training', async () => {
         users.seedRole(USER, 'coach')
 
         const snapshot = await execute()
 
-        expect(snapshot.plan).toBe('coach-free')
-        expect(snapshot.audience).toBe('coach')
-        expect(snapshot.maxAthletes).toBe(3)
-        // The coach's own athlete features come from the plan's nested section.
-        expect(snapshot.maxTemplates).toBeNull()
-        expect(snapshot.maxMesocycles).toBeNull()
+        expect(snapshot.coach?.plan).toBe('coach-free')
+        expect(snapshot.coach?.maxAthletes).toBe(3)
+        // Their own training resolves independently, to the free ATHLETE plan.
+        expect(snapshot.athlete.plan).toBe('athlete-free')
+        expect(snapshot.athlete.ai).toBe(false)
     })
 
-    it('reads the plan of an active subscription', async () => {
+    it('reads the plan of an active athlete subscription', async () => {
         await subscriptions.save(SubscriptionMother.create({ userId: USER, planId: 'plan-athlete-pro' }))
 
         const snapshot = await execute()
 
-        expect(snapshot.plan).toBe('athlete-pro')
-        expect(snapshot.ai).toBe(true)
+        expect(snapshot.athlete.plan).toBe('athlete-pro')
+        expect(snapshot.athlete.ai).toBe(true)
+    })
+
+    it('resolves each audience from its own subscription when the user holds both', async () => {
+        users.seedRole(USER, 'coach')
+        await subscriptions.save(SubscriptionMother.create({ id: 'sub-a', userId: USER, planId: 'plan-athlete-pro' }))
+        await subscriptions.save(SubscriptionMother.create({ id: 'sub-c', userId: USER, planId: 'plan-coach-pro' }))
+
+        const snapshot = await execute()
+
+        expect(snapshot.athlete.plan).toBe('athlete-pro')
+        expect(snapshot.athlete.ai).toBe(true)
+        expect(snapshot.coach?.plan).toBe('coach-pro')
+        expect(snapshot.coach?.maxAthletes).toBe(20)
+    })
+
+    it('keeps a paying coach on the free ATHLETE plan for their own training', async () => {
+        // A coach-pro subscription buys coaching AI, not personal AI.
+        users.seedRole(USER, 'coach')
+        await subscriptions.save(SubscriptionMother.create({ userId: USER, planId: 'plan-coach-pro' }))
+
+        const snapshot = await execute()
+
+        expect(snapshot.coach?.ai).toBe(true)
+        expect(snapshot.athlete.plan).toBe('athlete-free')
+        expect(snapshot.athlete.ai).toBe(false)
     })
 
     it('reads the plan as it is NOW, not as it was when they signed up', async () => {
@@ -74,7 +100,7 @@ describe('GetUserEntitlementsHandler', () => {
         await subscriptions.save(SubscriptionMother.create({ userId: USER, planId: 'plan-athlete-pro' }))
         plans.seed(PlanMother.athletePro({ id: 'plan-athlete-pro' }))
 
-        expect((await execute()).ai).toBe(true)
+        expect((await execute()).athlete.ai).toBe(true)
     })
 
     it('keeps a canceled subscription on its plan until the paid period ends', async () => {
@@ -82,7 +108,7 @@ describe('GetUserEntitlementsHandler', () => {
             SubscriptionMother.create({ userId: USER, planId: 'plan-athlete-pro', status: 'canceled' }),
         )
 
-        expect((await execute()).plan).toBe('athlete-pro')
+        expect((await execute()).athlete.plan).toBe('athlete-pro')
     })
 
     it('drops to free once the canceled period has elapsed', async () => {
@@ -93,8 +119,8 @@ describe('GetUserEntitlementsHandler', () => {
 
         const snapshot = await execute()
 
-        expect(snapshot.plan).toBe('athlete-free')
-        expect(snapshot.ai).toBe(false)
+        expect(snapshot.athlete.plan).toBe('athlete-free')
+        expect(snapshot.athlete.ai).toBe(false)
     })
 
     it('keeps a past_due subscriber on their plan while the gateway retries', async () => {
@@ -102,7 +128,7 @@ describe('GetUserEntitlementsHandler', () => {
             SubscriptionMother.create({ userId: USER, planId: 'plan-athlete-pro', status: 'past_due' }),
         )
 
-        expect((await execute()).plan).toBe('athlete-pro')
+        expect((await execute()).athlete.plan).toBe('athlete-pro')
     })
 
     it('does not entitle a checkout that was never completed', async () => {
@@ -110,7 +136,7 @@ describe('GetUserEntitlementsHandler', () => {
             SubscriptionMother.create({ userId: USER, planId: 'plan-athlete-pro', status: 'incomplete' }),
         )
 
-        expect((await execute()).plan).toBe('athlete-free')
+        expect((await execute()).athlete.plan).toBe('athlete-free')
     })
 
     it('honours a manual grant like any other subscription', async () => {
@@ -121,18 +147,18 @@ describe('GetUserEntitlementsHandler', () => {
 
         const snapshot = await execute()
 
-        expect(snapshot.plan).toBe('coach-pro')
-        expect(snapshot.maxAthletes).toBe(20)
+        expect(snapshot.coach?.plan).toBe('coach-pro')
+        expect(snapshot.coach?.maxAthletes).toBe(20)
     })
 
-    it('lets the subscribed plan win over the role, not the other way round', async () => {
-        // An athlete-role user manually put on a coach plan gets the coach plan: the
-        // role only picks the FREE fallback.
+    it('lets a live coach subscription open the coach section even without the role', async () => {
+        // An athlete-role user manually put on a coach plan gets the coach section:
+        // the role only picks the FREE fallback; a subscription always counts.
         await subscriptions.save(
             SubscriptionMother.create({ userId: USER, planId: 'plan-coach-pro', gateway: 'manual' }),
         )
 
-        expect((await execute()).audience).toBe('coach')
+        expect((await execute()).coach?.plan).toBe('coach-pro')
     })
 
     it('fails loudly when a subscription points at a plan that is gone', async () => {

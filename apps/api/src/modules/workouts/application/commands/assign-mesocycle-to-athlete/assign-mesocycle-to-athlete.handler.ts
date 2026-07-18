@@ -42,7 +42,7 @@ export class AssignMesocycleToAthleteHandler implements ICommandHandler<
             throw new NotLinkedToAthleteError()
         }
 
-        await this.entitlements.assertFeature(command.coachId, 'plan_sessions')
+        await this.entitlements.assertFeature(command.coachId, 'coach', 'plan_sessions')
 
         const source = await requireOwnedMesocycle(this.mesocycles, command.mesocycleId, command.coachId)
         const startDate = command.startDate ? new Date(command.startDate) : undefined

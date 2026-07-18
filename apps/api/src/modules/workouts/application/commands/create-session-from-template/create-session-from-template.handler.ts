@@ -32,7 +32,7 @@ export class CreateSessionFromTemplateHandler implements ICommandHandler<
         // the workout cap that gates it. Using an existing template stays allowed
         // after a downgrade; only creating new templates is what `maxTemplates` caps.
         const owned = await this.sessions.countSelfCreatedBy(command.userId)
-        await this.entitlements.assertWithinLimit(command.userId, 'workouts', owned)
+        await this.entitlements.assertWithinLimit(command.userId, 'athlete', 'workouts', owned)
 
         const template = await requireOwnedTemplate(this.templates, command.templateId, command.userId)
 

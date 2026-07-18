@@ -44,7 +44,7 @@ describe('CreateWorkoutSessionHandler', () => {
 
     it('refuses to log a workout once the plan cap is reached', async () => {
         const { sessions, entitlements, handler } = setup()
-        entitlements.on({ plan: 'athlete-free', maxWorkouts: 1 })
+        entitlements.onAthlete({ plan: 'athlete-free', maxWorkouts: 1 })
 
         await handler.execute(new CreateWorkoutSessionCommand('u-1'))
         await expect(handler.execute(new CreateWorkoutSessionCommand('u-1'))).rejects.toBeInstanceOf(

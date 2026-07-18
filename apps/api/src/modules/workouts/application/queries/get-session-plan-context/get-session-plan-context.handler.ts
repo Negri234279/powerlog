@@ -58,6 +58,7 @@ export class GetSessionPlanContextHandler implements IQueryHandler<
 
         return {
             sessionId: session.id,
+            ownerId: session.userId,
             performedAt: session.performedAt,
             sessionNotes: session.notes,
             exercises,

@@ -181,7 +181,7 @@ describe('GenerateMesocycleDraftHandler', () => {
     })
 
     it('refuses on a plan without AI, without calling the provider', async () => {
-        entitlements.on({ plan: 'athlete-free', ai: false })
+        entitlements.onAthlete({ plan: 'athlete-free', ai: false })
 
         await expect(buildHandler().execute(command())).rejects.toBeInstanceOf(FeatureNotInPlanError)
         expect(openai.completeCalls).toHaveLength(0)

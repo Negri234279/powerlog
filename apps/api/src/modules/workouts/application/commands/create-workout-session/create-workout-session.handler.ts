@@ -23,7 +23,7 @@ export class CreateWorkoutSessionHandler implements ICommandHandler<CreateWorkou
     async execute(command: CreateWorkoutSessionCommand): Promise<WorkoutSessionView> {
         // Only creating is gated: an over-cap athlete keeps and edits what they have.
         const owned = await this.sessions.countSelfCreatedBy(command.userId)
-        await this.entitlements.assertWithinLimit(command.userId, 'workouts', owned)
+        await this.entitlements.assertWithinLimit(command.userId, 'athlete', 'workouts', owned)
 
         const now = this.clock.now()
         const session = WorkoutSessionAggregate.create({

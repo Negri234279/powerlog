@@ -174,14 +174,11 @@ export class MyInvoicePageType {
     total!: number
 }
 
-/** What the user's plan entitles them to — for the UI only; the API is the authority. */
-@ObjectType('MyEntitlements')
-export class MyEntitlementsType {
-    @Field(() => String)
+/** What the user's ATHLETE plan grants: their own training. */
+@ObjectType('MyAthleteEntitlements')
+export class MyAthleteEntitlementsType {
+    @Field(() => String, { description: 'Slug of the plan this section came from.' })
     plan!: string
-
-    @Field(() => String)
-    audience!: string
 
     @Field(() => Int, { nullable: true, description: 'How many templates they may create. null = unlimited.' })
     maxTemplates!: number | null
@@ -194,10 +191,40 @@ export class MyEntitlementsType {
 
     @Field(() => Boolean)
     ai!: boolean
+}
+
+/** What the user's COACH plan grants: coaching only. */
+@ObjectType('MyCoachEntitlements')
+export class MyCoachEntitlementsType {
+    @Field(() => String, { description: 'Slug of the plan this section came from.' })
+    plan!: string
+
+    @Field(() => Int, { nullable: true, description: 'null = unlimited.' })
+    maxAthletes!: number | null
 
     @Field(() => Boolean)
     planSessions!: boolean
 
-    @Field(() => Int, { nullable: true, description: 'null = unlimited.' })
-    maxAthletes!: number | null
+    @Field(() => Int, { nullable: true, description: 'Coaching templates (for athletes). null = unlimited.' })
+    maxTemplates!: number | null
+
+    @Field(() => Int, { nullable: true, description: 'Blocks designed for athletes. null = unlimited.' })
+    maxMesocycles!: number | null
+
+    @Field(() => Boolean, { description: 'The AI assistant when designing for athletes.' })
+    ai!: boolean
+}
+
+/**
+ * What the user's plans entitle them to — for the UI only; the API is the
+ * authority. Athlete and coach plans are independent subscriptions, one section
+ * each; `coach` is null for users who do no coaching.
+ */
+@ObjectType('MyEntitlements')
+export class MyEntitlementsType {
+    @Field(() => MyAthleteEntitlementsType)
+    athlete!: MyAthleteEntitlementsType
+
+    @Field(() => MyCoachEntitlementsType, { nullable: true })
+    coach!: MyCoachEntitlementsType | null
 }

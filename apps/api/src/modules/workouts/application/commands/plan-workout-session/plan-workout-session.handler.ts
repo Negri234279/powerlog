@@ -31,7 +31,7 @@ export class PlanWorkoutSessionHandler implements ICommandHandler<PlanWorkoutSes
         }
 
         // The coach's plan pays for programming, not the athlete's.
-        await this.entitlements.assertFeature(command.coachId, 'plan_sessions')
+        await this.entitlements.assertFeature(command.coachId, 'coach', 'plan_sessions')
 
         const now = this.clock.now()
         const session = WorkoutSessionAggregate.create({

@@ -115,7 +115,7 @@ describe('InviteAthleteHandler', () => {
     it('enforces the plan athlete limit via entitlements', async () => {
         // A coach on a plan with no room left: the invitation is never issued, so
         // the cap can't be dodged by inviting more people than seats.
-        ctx.entitlements.on({ plan: 'coach-free', maxAthletes: 0 })
+        ctx.entitlements.onCoach({ plan: 'coach-free', maxAthletes: 0 })
 
         await expect(ctx.handler.execute(new InviteAthleteCommand(COACH, ATHLETE_EMAIL))).rejects.toBeInstanceOf(
             PlanLimitReachedError,

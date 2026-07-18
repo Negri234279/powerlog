@@ -68,7 +68,7 @@ describe('PlanWorkoutSessionHandler', () => {
         const links = new FakeCoachLinks()
         links.link(COACH, ATHLETE)
         const { sessions, entitlements, handler } = setup(links)
-        entitlements.on({ plan: 'coach-lite', planSessions: false })
+        entitlements.onCoach({ plan: 'coach-lite', planSessions: false })
 
         await expect(handler.execute(new PlanWorkoutSessionCommand(COACH, ATHLETE))).rejects.toBeInstanceOf(
             FeatureNotInPlanError,

@@ -6,47 +6,56 @@ import { CoachEntitlementsVO } from './coach-entitlements.vo'
 import { planEntitlementsFor } from './plan-entitlements'
 
 const ATHLETE_FREE = { maxTemplates: 3, maxMesocycles: 1, maxWorkouts: null, ai: false }
-const COACH_PRO = {
-    maxAthletes: 20,
-    planSessions: true,
-    athlete: { maxTemplates: null, maxMesocycles: null, maxWorkouts: null, ai: true },
-}
+// Coaching only — no nested athlete section: the coach's own training is the
+// (independent) athlete plan's business.
+const COACH_PRO = { maxAthletes: 20, planSessions: true, maxTemplates: null, maxMesocycles: null, ai: true }
 
 describe('plan entitlements', () => {
-    it('collapses an athlete plan into a snapshot that grants no coaching', () => {
-        const snapshot = AthleteEntitlementsVO.create(ATHLETE_FREE).toSnapshot('athlete-free')
+    it('sections an athlete plan: personal training only', () => {
+        const section = AthleteEntitlementsVO.create(ATHLETE_FREE).toSection('athlete-free')
 
-        expect(snapshot).toEqual({
+        expect(section).toEqual({
             plan: 'athlete-free',
-            audience: 'athlete',
             maxTemplates: 3,
             maxMesocycles: 1,
             maxWorkouts: null,
             ai: false,
-            planSessions: false,
-            maxAthletes: 0,
         })
     })
 
-    it("collapses a coach plan by merging in the coach's own athlete section", () => {
-        const snapshot = CoachEntitlementsVO.create(COACH_PRO).toSnapshot('coach-pro')
+    it('sections a coach plan: coaching only, no personal training riding along', () => {
+        const section = CoachEntitlementsVO.create(COACH_PRO).toSection('coach-pro')
 
-        expect(snapshot).toEqual({
+        expect(section).toEqual({
             plan: 'coach-pro',
-            audience: 'coach',
+            maxAthletes: 20,
+            planSessions: true,
             maxTemplates: null,
             maxMesocycles: null,
-            maxWorkouts: null,
             ai: true,
-            planSessions: true,
-            maxAthletes: 20,
         })
+    })
+
+    it('renders an athlete plan for the pricing page with no coaching', () => {
+        const view = AthleteEntitlementsVO.create(ATHLETE_FREE).publicView()
+
+        expect(view.planSessions).toBe(false)
+        // 0 = none — NOT null, which would read as unlimited.
+        expect(view.maxAthletes).toBe(0)
+    })
+
+    it('renders a coach plan for the pricing page with no personal training', () => {
+        const view = CoachEntitlementsVO.create(COACH_PRO).publicView()
+
+        expect(view.maxWorkouts).toBe(0)
+        expect(view.maxAthletes).toBe(20)
+        expect(view.planSessions).toBe(true)
     })
 
     it('keeps null maxAthletes as unlimited rather than turning it into a number', () => {
-        const snapshot = CoachEntitlementsVO.create({ ...COACH_PRO, maxAthletes: null }).toSnapshot('coach-elite')
+        const section = CoachEntitlementsVO.create({ ...COACH_PRO, maxAthletes: null }).toSection('coach-elite')
 
-        expect(snapshot.maxAthletes).toBeNull()
+        expect(section.maxAthletes).toBeNull()
     })
 
     it('rejects entitlements that are missing a feature', () => {
@@ -69,6 +78,16 @@ describe('plan entitlements', () => {
         )
     })
 
+    it('rejects the old nested coach shape — the athlete section moved to its own plan', () => {
+        expect(() =>
+            CoachEntitlementsVO.create({
+                maxAthletes: 20,
+                planSessions: true,
+                athlete: ATHLETE_FREE,
+            }),
+        ).toThrow(InvalidPlanEntitlementsError)
+    })
+
     it('rejects an athlete-shaped value for a coach plan', () => {
         expect(() => planEntitlementsFor('coach', ATHLETE_FREE)).toThrow(InvalidPlanEntitlementsError)
     })
@@ -77,7 +96,7 @@ describe('plan entitlements', () => {
         expect(() => planEntitlementsFor('athlete', COACH_PRO)).toThrow(InvalidPlanEntitlementsError)
     })
 
-    it('rejects a negative athlete cap', () => {
+    it('rejects a negative coach cap', () => {
         expect(() => CoachEntitlementsVO.create({ ...COACH_PRO, maxAthletes: -1 })).toThrow(
             InvalidPlanEntitlementsError,
         )

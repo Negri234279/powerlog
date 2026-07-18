@@ -118,7 +118,7 @@ describe('catalog admin handlers', () => {
             )
 
             const updated = await plans.findById(plan.id)
-            expect(updated?.entitlements.toSnapshot('athlete-pro').ai).toBe(false)
+            expect(updated?.entitlements.publicView().ai).toBe(false)
         })
 
         it('leaves out what the patch does not mention', async () => {
@@ -129,7 +129,7 @@ describe('catalog admin handlers', () => {
 
             const updated = await plans.findById(plan.id)
             expect(updated?.name).toBe('Pro (renamed)')
-            expect(updated?.entitlements.toSnapshot('athlete-pro').ai).toBe(true)
+            expect(updated?.entitlements.publicView().ai).toBe(true)
         })
 
         it('fails on a plan that is not there', async () => {

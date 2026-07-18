@@ -1,6 +1,7 @@
 import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 
-import type { EntitlementsSnapshot, PlanAudience } from '../../../../../shared/contracts/entitlements'
+import type { PlanAudience } from '../../../../../shared/contracts/entitlements'
+import type { PlanPublicView } from '../../../domain/value-objects/plan-entitlements'
 import type { IntroPhase, PlanOfferEntity } from '../../../domain/entities/plan-offer.entity'
 import type { PlanStatus } from '../../../domain/entities/plan.entity'
 import type { Currency, PlanInterval } from '../../../domain/plan-interval'
@@ -33,6 +34,12 @@ export interface AdminPlanOfferView {
     stripeCouponId: string | null
 }
 
+/** The plan's entitlements flattened for display, labelled with its slug/audience. */
+export interface AdminPlanSnapshotView extends PlanPublicView {
+    plan: string
+    audience: PlanAudience
+}
+
 export interface AdminPlanView {
     id: string
     audience: PlanAudience
@@ -45,7 +52,7 @@ export interface AdminPlanView {
     /** The raw jsonb the admin form edits. */
     entitlements: unknown
     /** The same entitlements collapsed — what a subscriber would actually get. */
-    snapshot: EntitlementsSnapshot
+    snapshot: AdminPlanSnapshotView
     /** Every version, active or withdrawn: the price history is part of the plan. */
     prices: AdminPlanPriceView[]
     /** The live offer, if the plan has one. */
@@ -86,7 +93,7 @@ export class AdminPlansHandler implements IQueryHandler<AdminPlansQuery, AdminPl
             isFree: plan.isFree,
             sortOrder: plan.sortOrder,
             entitlements: plan.entitlements.value,
-            snapshot: plan.entitlements.toSnapshot(plan.slug),
+            snapshot: { plan: plan.slug, audience: plan.audience, ...plan.entitlements.publicView() },
             prices: prices
                 .filter((price) => price.planId === plan.id)
                 .map((price) => ({

@@ -72,7 +72,9 @@ export class AdminUsersHandler implements IQueryHandler<AdminUsersQuery, AdminUs
                     isAdmin: row.isAdmin,
                     status: row.status,
                     emailVerified: row.emailVerified,
-                    plan: entitlements?.plan ?? null,
+                    // The cell shows the "primary" plan: the coach one when they
+                    // coach, their athlete one otherwise (plans are per-audience now).
+                    plan: entitlements ? (entitlements.coach?.plan ?? entitlements.athlete.plan) : null,
                     createdAt: row.createdAt,
                 }
             }),

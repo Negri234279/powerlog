@@ -137,9 +137,15 @@ describe('admin billing (GraphQL)', () => {
 
         const jsonSchema = res.body.data.adminPlanEntitlementsSchema
         // A feature added to the zod schema shows up here — and therefore in the form —
-        // with no UI change and no migration.
-        expect(Object.keys(jsonSchema.properties)).toEqual(['maxAthletes', 'planSessions', 'athlete'])
-        expect(jsonSchema.properties.athlete.properties).toHaveProperty('ai')
+        // with no UI change and no migration. The coach shape is flat now: coaching
+        // only, no nested athlete section (that moved to its own plan).
+        expect(Object.keys(jsonSchema.properties)).toEqual([
+            'maxAthletes',
+            'planSessions',
+            'maxTemplates',
+            'maxMesocycles',
+            'ai',
+        ])
     })
 
     it('creates a plan as a draft, and a draft cannot be granted to anyone', async () => {

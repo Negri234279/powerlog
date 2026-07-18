@@ -117,17 +117,18 @@ describe('Billing catalog (integration)', () => {
         expect(athleteFree?.slug).toBe('athlete-free')
         expect(coachFree?.slug).toBe('coach-free')
         // The seeded shape of the product: free trains, AI is paid for.
-        expect(athleteFree?.entitlements.toSnapshot('athlete-free').ai).toBe(false)
-        expect(coachFree?.entitlements.toSnapshot('coach-free').maxAthletes).toBe(3)
+        expect(athleteFree?.entitlements.publicView().ai).toBe(false)
+        expect(coachFree?.entitlements.publicView().maxAthletes).toBe(3)
     })
 
     it('rehydrates the jsonb entitlements through the zod schema of the plan audience', async () => {
         const coachPro = await plans.findById(await planIdOf('coach-pro'))
-        const snapshot = coachPro!.entitlements.toSnapshot('coach-pro')
+        const view = coachPro!.entitlements.publicView()
 
-        // The coach's own training features come from the plan's nested athlete
-        // section — the collapse happens on real data, not just in unit tests.
-        expect(snapshot).toMatchObject({ audience: 'coach', ai: true, planSessions: true, maxAthletes: 20 })
+        // The migrated coach shape is flat — coaching only, no nested athlete
+        // section — and it survives the jsonb round-trip on real data, not just
+        // in unit tests. Its ai/quotas carried over from the old nested values.
+        expect(view).toMatchObject({ ai: true, planSessions: true, maxAthletes: 20, maxWorkouts: 0 })
     })
 
     it('refuses a second active free plan for the same audience', async () => {

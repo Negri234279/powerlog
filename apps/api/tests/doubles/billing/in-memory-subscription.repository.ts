@@ -42,6 +42,12 @@ export class InMemorySubscriptionRepository extends SubscriptionRepository {
         return null
     }
 
+    async findAllLiveByUser(userId: string): Promise<SubscriptionAggregate[]> {
+        return [...this.byId.values()].filter(
+            (subscription) => subscription.userId === userId && LIVE_STATUSES.includes(subscription.status),
+        )
+    }
+
     all(): SubscriptionAggregate[] {
         return [...this.byId.values()]
     }

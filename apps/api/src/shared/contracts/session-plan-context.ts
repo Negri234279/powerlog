@@ -56,6 +56,12 @@ export interface ExercisePlanContext {
 /** Everything the model is given about a session it is asked to program. */
 export interface SessionPlanContext {
     sessionId: string
+    /**
+     * Who will lift it — the session's owner, whose history anchors the loads.
+     * The AI gate also reads it to pick which plan pays: programming your own
+     * session draws on the athlete plan, programming an athlete's on the coach plan.
+     */
+    ownerId: string
     performedAt: Date
     sessionNotes: string | null
     exercises: ExercisePlanContext[]

@@ -1,8 +1,9 @@
 import { z } from 'zod'
 
-import type { EntitlementsSnapshot } from '../../../../shared/contracts/entitlements'
+import type { AthleteEntitlementsSection } from '../../../../shared/contracts/entitlements'
 import { ValueObject } from '../../../../shared/domain/value-object'
 import { InvalidPlanEntitlementsError } from '../errors/billing.errors'
+import type { PlanPublicView } from './plan-entitlements'
 
 /**
  * What an athlete plan grants. Stored as jsonb and validated here with zod
@@ -35,11 +36,20 @@ export class AthleteEntitlementsVO extends ValueObject<AthleteEntitlements> {
         return new AthleteEntitlementsVO(raw as AthleteEntitlements)
     }
 
-    /** The flat view the rest of the app gates on. An athlete plan does no coaching. */
-    toSnapshot(plan: string): EntitlementsSnapshot {
+    /** The athlete section of a snapshot — what this plan grants its holder. */
+    toSection(plan: string): AthleteEntitlementsSection {
         return {
             plan,
-            audience: 'athlete',
+            maxTemplates: this.value.maxTemplates,
+            maxMesocycles: this.value.maxMesocycles,
+            maxWorkouts: this.value.maxWorkouts,
+            ai: this.value.ai,
+        }
+    }
+
+    /** The pricing-page view. An athlete plan does no coaching. */
+    publicView(): PlanPublicView {
+        return {
             maxTemplates: this.value.maxTemplates,
             maxMesocycles: this.value.maxMesocycles,
             maxWorkouts: this.value.maxWorkouts,
@@ -61,5 +71,5 @@ export class AthleteEntitlementsVO extends ValueObject<AthleteEntitlements> {
     }
 }
 
-/** The athlete schema, reused by the coach plan's nested section. */
+/** The athlete schema, exposed so the admin form can be generated from it. */
 export const athleteEntitlementsSchema = schema

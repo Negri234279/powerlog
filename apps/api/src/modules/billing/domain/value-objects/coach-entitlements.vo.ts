@@ -1,26 +1,29 @@
 import { z } from 'zod'
 
-import type { EntitlementsSnapshot } from '../../../../shared/contracts/entitlements'
+import type { CoachEntitlementsSection } from '../../../../shared/contracts/entitlements'
 import { ValueObject } from '../../../../shared/domain/value-object'
 import { InvalidPlanEntitlementsError } from '../errors/billing.errors'
-import { athleteEntitlementsSchema } from './athlete-entitlements.vo'
+import type { PlanPublicView } from './plan-entitlements'
 
 /**
- * What a coach plan grants.
- *
- * It **nests the athlete section** instead of repeating its flags: a coach trains
- * too, and their personal features are exactly an athlete's. One source of truth
- * for "may this person use AI" — two flags could disagree, and the admin form
- * would show the same check twice. The coach section only holds what is
- * exclusively about coaching, so a coach plan is an athlete plan plus a roster.
+ * What a coach plan grants: **coaching only**. It used to nest an athlete section
+ * (a coach plan was "an athlete plan plus a roster"); now athlete and coach plans
+ * are independent subscriptions, so the coach's own training comes from their
+ * athlete plan (or the free athlete fallback) and this shape holds nothing but
+ * the coaching side. `maxTemplates`/`maxMesocycles` cap the material built for
+ * athletes — not the coach's personal library.
  */
 const schema = z.strictObject({
     /** How many athletes the coach may have linked. `null` = unlimited. */
     maxAthletes: z.int().min(0).nullable(),
     /** Program for their athletes: plan sessions, design/assign blocks to them. */
     planSessions: z.boolean(),
-    /** The coach's own training features. */
-    athlete: athleteEntitlementsSchema,
+    /** How many coaching templates (to use with athletes) they may create. */
+    maxTemplates: z.int().min(0).nullable(),
+    /** How many blocks they may design for their athletes. */
+    maxMesocycles: z.int().min(0).nullable(),
+    /** The AI assistant when designing for athletes (BYOK, so boolean not quota). */
+    ai: z.boolean(),
 })
 
 export type CoachEntitlements = z.infer<typeof schema>
@@ -34,16 +37,25 @@ export class CoachEntitlementsVO extends ValueObject<CoachEntitlements> {
         return new CoachEntitlementsVO(raw as CoachEntitlements)
     }
 
-    /** The flat view the rest of the app gates on: the nested athlete section is
-     *  merged in as the coach's own features. */
-    toSnapshot(plan: string): EntitlementsSnapshot {
+    /** The coach section of a snapshot — what this plan grants its holder. */
+    toSection(plan: string): CoachEntitlementsSection {
         return {
             plan,
-            audience: 'coach',
-            maxTemplates: this.value.athlete.maxTemplates,
-            maxMesocycles: this.value.athlete.maxMesocycles,
-            maxWorkouts: this.value.athlete.maxWorkouts,
-            ai: this.value.athlete.ai,
+            maxAthletes: this.value.maxAthletes,
+            planSessions: this.value.planSessions,
+            maxTemplates: this.value.maxTemplates,
+            maxMesocycles: this.value.maxMesocycles,
+            ai: this.value.ai,
+        }
+    }
+
+    /** The pricing-page view. A coach plan grants no personal training. */
+    publicView(): PlanPublicView {
+        return {
+            maxTemplates: this.value.maxTemplates,
+            maxMesocycles: this.value.maxMesocycles,
+            maxWorkouts: 0,
+            ai: this.value.ai,
             planSessions: this.value.planSessions,
             maxAthletes: this.value.maxAthletes,
         }

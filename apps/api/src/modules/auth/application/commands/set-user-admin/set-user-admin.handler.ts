@@ -44,7 +44,7 @@ export class SetUserAdminHandler implements ICommandHandler<SetUserAdminCommand,
             isAdmin: user.isAdmin,
             status: user.status,
             emailVerified: user.isEmailVerified(),
-            plan: entitlements?.plan ?? null,
+            plan: entitlements ? (entitlements.coach?.plan ?? entitlements.athlete.plan) : null,
             createdAt: user.createdAt,
         }
     }

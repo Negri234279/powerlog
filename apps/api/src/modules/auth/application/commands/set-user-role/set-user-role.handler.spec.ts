@@ -14,7 +14,7 @@ function setup(users: InMemoryUserRepository) {
         users,
         new FakeClock(),
         new FakeProfiles().set('u1', { username: 'u1', avatarUrl: null, locale: null }),
-        new FakeEntitlements().on({ plan: 'coach-free' }),
+        new FakeEntitlements().onCoach({ plan: 'coach-free' }),
         events.asEventBus(),
     )
 

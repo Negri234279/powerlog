@@ -16,7 +16,7 @@ function setup() {
         repo,
         new FakeClock(),
         profiles,
-        new FakeEntitlements().on({ plan: 'athlete-free' }),
+        new FakeEntitlements().onAthlete({ plan: 'athlete-free' }).withoutCoach(),
     )
     return { repo, handler }
 }

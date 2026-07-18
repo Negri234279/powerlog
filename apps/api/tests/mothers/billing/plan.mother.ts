@@ -45,7 +45,15 @@ export const PlanMother = {
         })
     },
 
-    coachFree(overrides: Partial<{ id: string; maxAthletes: number | null; ai: boolean }> = {}) {
+    coachFree(
+        overrides: Partial<{
+            id: string
+            maxAthletes: number | null
+            ai: boolean
+            maxTemplates: number | null
+            maxMesocycles: number | null
+        }> = {},
+    ) {
         return PlanAggregate.create({
             id: overrides.id ?? 'plan-coach-free',
             audience: 'coach',
@@ -53,16 +61,27 @@ export const PlanMother = {
             name: 'Coach Free',
             status: 'active',
             isFree: true,
+            // Coaching only: no nested athlete section — the coach's own training
+            // comes from their (independent) athlete plan.
             entitlements: {
                 maxAthletes: overrides.maxAthletes === undefined ? 3 : overrides.maxAthletes,
                 planSessions: true,
-                athlete: athleteEntitlements({}, overrides.ai ?? false),
+                maxTemplates: overrides.maxTemplates === undefined ? null : overrides.maxTemplates,
+                maxMesocycles: overrides.maxMesocycles === undefined ? null : overrides.maxMesocycles,
+                ai: overrides.ai ?? false,
             },
             now: NOW,
         })
     },
 
-    coachPro(overrides: Partial<{ id: string; maxAthletes: number | null }> = {}) {
+    coachPro(
+        overrides: Partial<{
+            id: string
+            maxAthletes: number | null
+            maxTemplates: number | null
+            maxMesocycles: number | null
+        }> = {},
+    ) {
         return PlanAggregate.create({
             id: overrides.id ?? 'plan-coach-pro',
             audience: 'coach',
@@ -72,7 +91,9 @@ export const PlanMother = {
             entitlements: {
                 maxAthletes: overrides.maxAthletes === undefined ? 20 : overrides.maxAthletes,
                 planSessions: true,
-                athlete: athleteEntitlements({}, true),
+                maxTemplates: overrides.maxTemplates === undefined ? null : overrides.maxTemplates,
+                maxMesocycles: overrides.maxMesocycles === undefined ? null : overrides.maxMesocycles,
+                ai: true,
             },
             now: NOW,
         })

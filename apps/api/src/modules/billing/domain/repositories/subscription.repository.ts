@@ -18,6 +18,14 @@ export abstract class SubscriptionRepository {
      */
     abstract findLiveByUser(userId: string): Promise<SubscriptionAggregate | null>
 
+    /**
+     * Every live subscription of the user — athlete and coach plans are
+     * independent, so a coach may hold one of each. The partial unique index
+     * bounds this at one per audience; the same not-stacking rule as
+     * {@link findLiveByUser} applies within each.
+     */
+    abstract findAllLiveByUser(userId: string): Promise<SubscriptionAggregate[]>
+
     /** The local mirror of a gateway subscription — how a webhook finds its row. */
     abstract findByGatewayId(gatewaySubscriptionId: string): Promise<SubscriptionAggregate | null>
 
