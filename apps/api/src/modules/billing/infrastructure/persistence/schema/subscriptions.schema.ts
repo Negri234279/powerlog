@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm'
 import { boolean, index, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 import { planPrices } from './plan-prices.schema'
-import { plans } from './plans.schema'
+import { planAudienceEnum, plans } from './plans.schema'
 
 /** Where it is billed. `manual` = granted by an admin (comp, support, testing). */
 export const paymentGatewayEnum = pgEnum('payment_gateway', ['stripe', 'paypal', 'manual'])
@@ -36,6 +36,9 @@ export const subscriptions = pgTable(
         planId: uuid('plan_id')
             .notNull()
             .references(() => plans.id),
+        // Denormalised from the plan (immutable per subscription): the partial unique
+        // index keys on it, so athlete and coach plans are independent slots.
+        audience: planAudienceEnum('audience').notNull(),
         // Null for `manual` grants: nobody is being charged, so there is no price.
         planPriceId: uuid('plan_price_id').references(() => planPrices.id),
         gateway: paymentGatewayEnum('gateway').notNull(),
@@ -53,12 +56,13 @@ export const subscriptions = pgTable(
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },
     (table) => [
-        // One LIVE subscription per user. `expired` rows fall out of the index, so
-        // the billing history stays; a `canceled` one keeps its slot until it
-        // expires, so nobody can stack a second subscription on top of time they
-        // have already paid for. Same partial-index trick as the AI drafts.
-        uniqueIndex('subscriptions_one_live_per_user')
-            .on(table.userId)
+        // One LIVE subscription per user PER AUDIENCE — a coach may hold an athlete
+        // plan and a coach plan at once, but not two of either. `expired` rows fall
+        // out of the index, so the billing history stays; a `canceled` one keeps its
+        // slot until it expires, so nobody can stack a second subscription on top of
+        // time they have already paid for. Same partial-index trick as the AI drafts.
+        uniqueIndex('subscriptions_one_live_per_user_audience')
+            .on(table.userId, table.audience)
             .where(sql`${table.status} IN ('incomplete', 'trialing', 'active', 'past_due', 'canceled')`),
         // The renewal/expiry sweeps scan by period end.
         index('subscriptions_status_period_end').on(table.status, table.currentPeriodEnd),

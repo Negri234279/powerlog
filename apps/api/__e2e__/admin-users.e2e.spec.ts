@@ -107,8 +107,8 @@ async function userIdByEmail(email: string): Promise<string> {
 /** Put a user on a paid plan of the seeded catalog, the way a gateway would. */
 async function subscribeTo(userId: string, planSlug: string): Promise<void> {
     await pool.query(
-        `INSERT INTO subscriptions (user_id, plan_id, gateway, status, current_period_start, current_period_end)
-         SELECT $1, p.id, 'manual', 'active', now(), now() + interval '30 days'
+        `INSERT INTO subscriptions (user_id, plan_id, audience, gateway, status, current_period_start, current_period_end)
+         SELECT $1, p.id, p.audience, 'manual', 'active', now(), now() + interval '30 days'
          FROM plans p WHERE p.slug = $2`,
         [userId, planSlug],
     )

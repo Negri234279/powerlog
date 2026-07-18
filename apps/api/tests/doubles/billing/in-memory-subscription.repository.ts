@@ -1,3 +1,4 @@
+import type { PlanAudience } from '../../../src/shared/contracts/entitlements'
 import type { SubscriptionAggregate } from '../../../src/modules/billing/domain/entities/subscription.entity'
 import { SubscriptionRepository } from '../../../src/modules/billing/domain/repositories/subscription.repository'
 import type { PaymentGateway } from '../../../src/modules/billing/domain/entities/subscription.entity'
@@ -46,6 +47,20 @@ export class InMemorySubscriptionRepository extends SubscriptionRepository {
         return [...this.byId.values()].filter(
             (subscription) => subscription.userId === userId && LIVE_STATUSES.includes(subscription.status),
         )
+    }
+
+    async findLiveByUserAndAudience(userId: string, audience: PlanAudience): Promise<SubscriptionAggregate | null> {
+        for (const subscription of this.byId.values()) {
+            if (
+                subscription.userId === userId &&
+                subscription.audience === audience &&
+                LIVE_STATUSES.includes(subscription.status)
+            ) {
+                return subscription
+            }
+        }
+
+        return null
     }
 
     all(): SubscriptionAggregate[] {

@@ -1,3 +1,4 @@
+import type { PlanAudience } from '../../../src/shared/contracts/entitlements'
 import {
     type PaymentGateway,
     SubscriptionAggregate,
@@ -13,6 +14,7 @@ export const SubscriptionMother = {
             id: string
             userId: string
             planId: string
+            audience: PlanAudience
             planPriceId: string | null
             gateway: PaymentGateway
             gatewaySubscriptionId: string | null
@@ -26,6 +28,8 @@ export const SubscriptionMother = {
             id: overrides.id ?? 'sub-1',
             userId: overrides.userId ?? 'u-1',
             planId: overrides.planId ?? 'plan-athlete-pro',
+            // Defaults to athlete (the common case); a coach-plan test passes 'coach'.
+            audience: overrides.audience ?? 'athlete',
             planPriceId: overrides.planPriceId ?? null,
             gateway: overrides.gateway ?? 'stripe',
             gatewaySubscriptionId: overrides.gatewaySubscriptionId ?? null,

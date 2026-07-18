@@ -51,10 +51,11 @@ export class AssignSubscriptionHandler implements ICommandHandler<AssignSubscrip
         const role = (await this.users.getRole(command.userId)) ?? 'athlete'
         if (plan.audience !== role) throw new PlanAudienceMismatchError(plan.audience, role)
 
-        // One live subscription per user. Refusing here (rather than letting the
-        // partial unique index do it) also stops an admin from silently shadowing a
-        // paid subscription with a comp.
-        if (await this.subscriptions.findLiveByUser(command.userId)) {
+        // One live subscription per user PER AUDIENCE. Refusing here (rather than
+        // letting the partial unique index do it) also stops an admin from silently
+        // shadowing a paid subscription with a comp — but only within the same
+        // audience: a coach comp is fine alongside the user's own athlete plan.
+        if (await this.subscriptions.findLiveByUserAndAudience(command.userId, plan.audience)) {
             throw new SubscriptionAlreadyActiveError()
         }
 
@@ -65,6 +66,7 @@ export class AssignSubscriptionHandler implements ICommandHandler<AssignSubscrip
             id: this.ids.uuid(),
             userId: command.userId,
             planId: plan.id,
+            audience: plan.audience,
             gateway: 'manual',
             status: 'active',
             currentPeriodStart: now,

@@ -19,8 +19,8 @@ import { EntitlementsCache } from '../../src/entitlements/entitlements.cache'
  */
 export async function grantPlan(app: INestApplication, pool: Pool, userId: string, slug: string): Promise<void> {
     const { rowCount } = await pool.query(
-        `INSERT INTO subscriptions (user_id, plan_id, gateway, status, current_period_start, current_period_end)
-         SELECT $1::uuid, p.id, 'manual', 'active', now(), now() + interval '30 days'
+        `INSERT INTO subscriptions (user_id, plan_id, audience, gateway, status, current_period_start, current_period_end)
+         SELECT $1::uuid, p.id, p.audience, 'manual', 'active', now(), now() + interval '30 days'
          FROM plans p WHERE p.slug = $2`,
         [userId, slug],
     )

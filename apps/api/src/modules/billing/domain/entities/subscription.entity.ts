@@ -1,3 +1,4 @@
+import type { PlanAudience } from '../../../../shared/contracts/entitlements'
 import { ENTITLING_STATUSES, type SubscriptionStatus } from '../subscription-status'
 
 /** Where the subscription is billed. `manual` = granted by an admin (comp, support). */
@@ -8,6 +9,13 @@ export interface SubscriptionProps {
     /** Soft reference to the auth user (no DB FK across modules). */
     userId: string
     planId: string
+    /**
+     * The plan's audience, denormalised onto the subscription. Immutable — a plan
+     * change stays within an audience (athlete↔coach are separate subscriptions) —
+     * and it is what the partial unique index keys on: one live subscription per
+     * (user, audience), so a coach can hold an athlete plan and a coach plan at once.
+     */
+    audience: PlanAudience
     /** The price version it was signed on. Null for `manual` grants. */
     planPriceId: string | null
     gateway: PaymentGateway
@@ -41,6 +49,7 @@ export class SubscriptionAggregate {
         id: string
         userId: string
         planId: string
+        audience: PlanAudience
         planPriceId?: string | null
         gateway: PaymentGateway
         gatewayCustomerId?: string | null
@@ -54,6 +63,7 @@ export class SubscriptionAggregate {
             id: input.id,
             userId: input.userId,
             planId: input.planId,
+            audience: input.audience,
             planPriceId: input.planPriceId ?? null,
             gateway: input.gateway,
             gatewayCustomerId: input.gatewayCustomerId ?? null,
@@ -169,6 +179,9 @@ export class SubscriptionAggregate {
     }
     get planId(): string {
         return this.props.planId
+    }
+    get audience(): PlanAudience {
+        return this.props.audience
     }
     get planPriceId(): string | null {
         return this.props.planPriceId

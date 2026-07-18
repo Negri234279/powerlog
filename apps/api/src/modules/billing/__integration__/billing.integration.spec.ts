@@ -7,6 +7,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { Pool } from 'pg'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import type { PlanAudience } from '../../../shared/contracts/entitlements'
 import * as schema from '../../../database/schema'
 import { SubscriptionAggregate } from '../domain/entities/subscription.entity'
 import type { SubscriptionStatus } from '../domain/subscription-status'
@@ -93,6 +94,7 @@ async function violatedConstraint(write: Promise<unknown>): Promise<string | und
 function aSubscription(input: {
     userId: string
     planId: string
+    audience?: PlanAudience
     status?: SubscriptionStatus
     gatewaySubscriptionId?: string
 }): SubscriptionAggregate {
@@ -100,6 +102,7 @@ function aSubscription(input: {
         id: randomUUID(),
         userId: input.userId,
         planId: input.planId,
+        audience: input.audience ?? 'athlete',
         gateway: 'stripe',
         gatewaySubscriptionId: input.gatewaySubscriptionId ?? null,
         status: input.status ?? 'active',
@@ -189,14 +192,32 @@ describe('Billing catalog (integration)', () => {
 })
 
 describe('Subscriptions (integration)', () => {
-    it('allows only one live subscription per user', async () => {
+    it('allows only one live subscription per user and audience', async () => {
         const userId = randomUUID()
         const planId = await planIdOf('athlete-pro')
         await subscriptions.save(aSubscription({ userId, planId }))
 
         const violated = await violatedConstraint(subscriptions.save(aSubscription({ userId, planId })))
 
-        expect(violated).toBe('subscriptions_one_live_per_user')
+        expect(violated).toBe('subscriptions_one_live_per_user_audience')
+    })
+
+    it('lets a user hold a live athlete plan and a live coach plan at once', async () => {
+        // The whole point of the per-audience index: a coach subscribes to a coach
+        // plan for coaching AND an athlete plan for their own training.
+        const userId = randomUUID()
+        const athletePlan = await planIdOf('athlete-pro')
+        const coachPlan = await planIdOf('coach-pro')
+
+        await subscriptions.save(aSubscription({ userId, planId: athletePlan, audience: 'athlete' }))
+        await subscriptions.save(
+            aSubscription({ userId, planId: coachPlan, audience: 'coach', gatewaySubscriptionId: 'sub_coach_1' }),
+        )
+
+        const live = await subscriptions.findAllLiveByUser(userId)
+        expect(live).toHaveLength(2)
+        expect((await subscriptions.findLiveByUserAndAudience(userId, 'coach'))?.audience).toBe('coach')
+        expect((await subscriptions.findLiveByUserAndAudience(userId, 'athlete'))?.audience).toBe('athlete')
     })
 
     it('still counts a canceled subscription as live, so nobody stacks one on paid time', async () => {
@@ -206,7 +227,7 @@ describe('Subscriptions (integration)', () => {
 
         const violated = await violatedConstraint(subscriptions.save(aSubscription({ userId, planId })))
 
-        expect(violated).toBe('subscriptions_one_live_per_user')
+        expect(violated).toBe('subscriptions_one_live_per_user_audience')
     })
 
     it('lets a user subscribe again once the previous one expired', async () => {
@@ -264,9 +285,9 @@ describe('Admin billing stats (integration)', () => {
         status?: SubscriptionStatus
     }): Promise<void> {
         await pool.query(
-            `INSERT INTO subscriptions (user_id, plan_id, plan_price_id, gateway, status,
+            `INSERT INTO subscriptions (user_id, plan_id, audience, plan_price_id, gateway, status,
                                         current_period_start, current_period_end)
-             SELECT gen_random_uuid(), p.id, pp.id, 'stripe', $4::subscription_status,
+             SELECT gen_random_uuid(), p.id, p.audience, pp.id, 'stripe', $4::subscription_status,
                     now() - interval '1 day', now() + interval '20 days'
              FROM plans p
              JOIN plan_prices pp ON pp.plan_id = p.id AND pp.interval = $2::plan_interval

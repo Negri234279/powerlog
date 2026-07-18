@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { and, eq, inArray } from 'drizzle-orm'
 
+import type { PlanAudience } from '../../../../../shared/contracts/entitlements'
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import type { SubscriptionAggregate } from '../../../domain/entities/subscription.entity'
 import { SubscriptionRepository } from '../../../domain/repositories/subscription.repository'
@@ -81,5 +82,21 @@ export class DrizzleSubscriptionRepository extends SubscriptionRepository {
             .where(and(eq(subscriptions.userId, userId), inArray(subscriptions.status, [...LIVE_STATUSES])))
 
         return rows.map(toSubscriptionAggregate)
+    }
+
+    async findLiveByUserAndAudience(userId: string, audience: PlanAudience): Promise<SubscriptionAggregate | null> {
+        const [row] = await this.db
+            .select()
+            .from(subscriptions)
+            .where(
+                and(
+                    eq(subscriptions.userId, userId),
+                    eq(subscriptions.audience, audience),
+                    inArray(subscriptions.status, [...LIVE_STATUSES]),
+                ),
+            )
+            .limit(1)
+
+        return row ? toSubscriptionAggregate(row) : null
     }
 }

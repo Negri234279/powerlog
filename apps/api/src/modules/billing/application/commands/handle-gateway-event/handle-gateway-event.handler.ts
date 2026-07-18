@@ -162,6 +162,7 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
             id: this.ids.uuid(),
             userId: event.userId,
             planId: plan.id,
+            audience: plan.audience,
             planPriceId: event.planPriceId,
             gateway: event.gateway,
             gatewayCustomerId: event.gatewayCustomerId,
@@ -272,11 +273,18 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
         const price = await this.prices.findByGatewayPriceId(event.gatewayPriceId)
         if (!price) return null
 
+        // Resolve the plan before opening the row: its audience is denormalised onto
+        // the subscription (the unique index keys on it). A price references a plan by
+        // FK, so a missing one is a broken catalog — nothing to attribute a sub to.
+        const plan = await this.plans.findById(price.planId)
+        if (!plan) return null
+
         const now = this.clock.now()
         const subscription = SubscriptionAggregate.create({
             id: this.ids.uuid(),
             userId: event.userId,
             planId: price.planId,
+            audience: plan.audience,
             planPriceId: price.id,
             gateway: event.gateway,
             gatewayCustomerId: event.gatewayCustomerId ?? null,
@@ -288,8 +296,7 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
         })
         await this.subscriptions.save(subscription)
 
-        const plan = await this.plans.findById(price.planId)
-        if (plan) this.metrics.recordCheckout(event.gateway, plan.slug, 'completed')
+        this.metrics.recordCheckout(event.gateway, plan.slug, 'completed')
 
         await this.redriveFailedInvoices(subscription)
 

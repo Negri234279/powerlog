@@ -1,3 +1,4 @@
+import type { PlanAudience } from '../../../../shared/contracts/entitlements'
 import type { PaymentGateway, SubscriptionAggregate } from '../entities/subscription.entity'
 
 /** Persistence port for subscriptions. */
@@ -25,6 +26,14 @@ export abstract class SubscriptionRepository {
      * {@link findLiveByUser} applies within each.
      */
     abstract findAllLiveByUser(userId: string): Promise<SubscriptionAggregate[]>
+
+    /**
+     * The user's live subscription in one audience, or null. At most one exists
+     * (the partial unique index is on `(user, audience)`), so this is how the
+     * per-audience actions — checkout, change, cancel — find the row they operate
+     * on without touching the user's plan in the other audience.
+     */
+    abstract findLiveByUserAndAudience(userId: string, audience: PlanAudience): Promise<SubscriptionAggregate | null>
 
     /** The local mirror of a gateway subscription — how a webhook finds its row. */
     abstract findByGatewayId(gatewaySubscriptionId: string): Promise<SubscriptionAggregate | null>

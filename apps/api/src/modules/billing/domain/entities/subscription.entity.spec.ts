@@ -13,6 +13,7 @@ function subscription(status: SubscriptionStatus): SubscriptionAggregate {
         id: 's-1',
         userId: 'u-1',
         planId: 'p-1',
+        audience: 'athlete',
         gateway: 'stripe',
         status,
         currentPeriodStart: PERIOD_START,

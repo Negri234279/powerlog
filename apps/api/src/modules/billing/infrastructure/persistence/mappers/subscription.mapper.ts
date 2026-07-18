@@ -1,3 +1,4 @@
+import type { PlanAudience } from '../../../../../shared/contracts/entitlements'
 import type { PaymentGateway } from '../../../domain/entities/subscription.entity'
 import { SubscriptionAggregate } from '../../../domain/entities/subscription.entity'
 import type { SubscriptionStatus } from '../../../domain/subscription-status'
@@ -11,6 +12,7 @@ export function toSubscriptionAggregate(row: SubscriptionRow): SubscriptionAggre
         id: row.id,
         userId: row.userId,
         planId: row.planId,
+        audience: row.audience as PlanAudience,
         planPriceId: row.planPriceId,
         gateway: row.gateway as PaymentGateway,
         gatewayCustomerId: row.gatewayCustomerId,
@@ -31,6 +33,7 @@ export function toSubscriptionRow(subscription: SubscriptionAggregate): Subscrip
         id: subscription.id,
         userId: subscription.userId,
         planId: subscription.planId,
+        audience: subscription.audience,
         planPriceId: subscription.planPriceId,
         gateway: subscription.gateway,
         gatewayCustomerId: subscription.gatewayCustomerId,
