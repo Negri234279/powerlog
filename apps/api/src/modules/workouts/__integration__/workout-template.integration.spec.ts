@@ -134,4 +134,32 @@ describe('WorkoutTemplate persistence (integration)', () => {
         const searched = await list.list({ ownerId, search: 'alph' })
         expect(searched.map((r) => r.name)).toEqual(['Alpha'])
     })
+
+    it('separates personal and coaching templates by scope', async () => {
+        const ownerId = randomUUID()
+        await templates.save(
+            WorkoutTemplateMother.withTree(exerciseId, {
+                ownerId,
+                scope: 'personal',
+                content: { name: TemplateNameVO.create('My own'), exercises: [{ exerciseId, sets: [{}] }] },
+            }),
+        )
+        await templates.save(
+            WorkoutTemplateMother.withTree(exerciseId, {
+                ownerId,
+                scope: 'coaching',
+                content: { name: TemplateNameVO.create('For athletes'), exercises: [{ exerciseId, sets: [{}] }] },
+            }),
+        )
+
+        const personal = await list.list({ ownerId, scope: 'personal' })
+        const coaching = await list.list({ ownerId, scope: 'coaching' })
+        const both = await list.list({ ownerId })
+
+        expect(personal.map((r) => r.name)).toEqual(['My own'])
+        expect(coaching.map((r) => r.name)).toEqual(['For athletes'])
+        // The scope rides along on each row; omitting the filter returns both.
+        expect(personal[0]?.scope).toBe('personal')
+        expect(both).toHaveLength(2)
+    })
 })

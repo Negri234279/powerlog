@@ -27,6 +27,15 @@ export class InMemoryMesocycleRepository extends MesocycleRepository {
         return n
     }
 
+    async countPlannedForAthletesBy(coachId: string): Promise<number> {
+        let n = 0
+        for (const mesocycle of this.store.values()) {
+            if (mesocycle.plannedByUserId === coachId) n++
+        }
+
+        return n
+    }
+
     async delete(id: string): Promise<void> {
         this.store.delete(id)
     }

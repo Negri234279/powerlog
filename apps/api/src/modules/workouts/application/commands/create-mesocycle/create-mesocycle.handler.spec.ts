@@ -194,4 +194,35 @@ describe('CreateMesocycleHandler', () => {
         )
         expect(mesocycles.size).toBe(0)
     })
+
+    it("caps blocks built for athletes on the COACH plan's maxMesocycles", async () => {
+        // The coach may program (plan_sessions) but their coaching-block quota is 1:
+        // the second block for an athlete is refused, independently of their own.
+        const links = new FakeCoachLinks()
+        links.link(COACH, ATHLETE)
+        const { mesocycles, entitlements, handler } = setup(links)
+        entitlements.onCoach({ plan: 'coach-free', planSessions: true, maxMesocycles: 1 })
+
+        await handler.execute(new CreateMesocycleCommand(COACH, content(), ATHLETE))
+        await expect(handler.execute(new CreateMesocycleCommand(COACH, content(), ATHLETE))).rejects.toBeInstanceOf(
+            PlanLimitReachedError,
+        )
+        // Only the first block was created.
+        expect(mesocycles.size).toBe(1)
+    })
+
+    it("counts a coach's own blocks apart from the ones they build for athletes", async () => {
+        // A coach at their coaching cap of 1 (one block already for the athlete) can
+        // still build a block for THEMSELVES — that draws on the athlete plan.
+        const links = new FakeCoachLinks()
+        links.link(COACH, ATHLETE)
+        const { mesocycles, entitlements, handler } = setup(links)
+        entitlements.onCoach({ planSessions: true, maxMesocycles: 1 }).onAthlete({ maxMesocycles: null })
+
+        await handler.execute(new CreateMesocycleCommand(COACH, content(), ATHLETE))
+        // Their own block is fine — different scope, different plan.
+        await handler.execute(new CreateMesocycleCommand(COACH, content()))
+
+        expect(mesocycles.size).toBe(2)
+    })
 })

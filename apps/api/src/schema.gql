@@ -1731,7 +1731,7 @@ type Query {
   """
   The caller's templates (name-ordered), with cheap rollups; optional name search.
   """
-  workoutTemplates(search: String): [WorkoutTemplateSummary!]!
+  workoutTemplates(scope: String, search: String): [WorkoutTemplateSummary!]!
 }
 
 input RefineMesocycleDraftInput {
@@ -2146,6 +2146,9 @@ type WorkoutTemplateSummary {
   id: ID!
   name: String!
   notes: String
+
+  """personal (own training) | coaching (for athletes)"""
+  scope: String!
   setCount: Int!
   updatedAt: DateTime!
 }

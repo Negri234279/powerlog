@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import {
     type TemplateContentInput,
+    type TemplateScope,
     WorkoutTemplateAggregate,
 } from '../../../src/modules/workouts/domain/entities/workout-template.entity'
 import { RepsVO } from '../../../src/modules/workouts/domain/value-objects/reps.vo'
@@ -14,6 +15,7 @@ const NOW = new Date('2026-01-01T00:00:00.000Z')
 interface TemplateOverrides {
     id?: string
     ownerId?: string
+    scope?: TemplateScope
     content?: TemplateContentInput
     now?: Date
 }
@@ -40,6 +42,7 @@ export const WorkoutTemplateMother = {
         return WorkoutTemplateAggregate.create({
             id: overrides.id ?? randomUUID(),
             ownerId: overrides.ownerId ?? randomUUID(),
+            scope: overrides.scope,
             content,
             idFactory: () => randomUUID(),
             now: overrides.now ?? NOW,

@@ -124,4 +124,43 @@ describe('CreateWorkoutTemplateHandler', () => {
         )
         expect(templates.size).toBe(1)
     })
+
+    it('charges a coaching template to the COACH plan, not the athlete one', async () => {
+        // The coach plan allows the coaching template; the athlete cap is exhausted
+        // but irrelevant — the two scopes draw on different plans.
+        const { templates, entitlements, handler } = setup()
+        entitlements.onAthlete({ plan: 'athlete-free', maxTemplates: 0 }).onCoach({ maxTemplates: null })
+
+        const view = await handler.execute(new CreateWorkoutTemplateCommand(OWNER, content(), 'coaching'))
+
+        expect(view.id).toBeDefined()
+        expect(templates.size).toBe(1)
+    })
+
+    it('refuses a coaching template once the COACH plan cap is reached', async () => {
+        const { templates, entitlements, handler } = setup()
+        entitlements.onCoach({ plan: 'coach-free', maxTemplates: 1 })
+
+        await handler.execute(new CreateWorkoutTemplateCommand(OWNER, content(), 'coaching'))
+        await expect(
+            handler.execute(new CreateWorkoutTemplateCommand(OWNER, content(), 'coaching')),
+        ).rejects.toBeInstanceOf(PlanLimitReachedError)
+        expect(templates.size).toBe(1)
+    })
+
+    it('counts the two scopes independently — a personal cap does not block a coaching template', async () => {
+        // One personal template already at the personal cap of 1; a coaching template
+        // still goes through because it is counted (and capped) on its own scope.
+        const { templates, entitlements, handler } = setup()
+        entitlements.onAthlete({ maxTemplates: 1 }).onCoach({ maxTemplates: 1 })
+
+        await handler.execute(new CreateWorkoutTemplateCommand(OWNER, content(), 'personal'))
+        await handler.execute(new CreateWorkoutTemplateCommand(OWNER, content(), 'coaching'))
+
+        expect(templates.size).toBe(2)
+        // Each scope is now at its cap of 1: a second of either is refused.
+        await expect(
+            handler.execute(new CreateWorkoutTemplateCommand(OWNER, content(), 'personal')),
+        ).rejects.toBeInstanceOf(PlanLimitReachedError)
+    })
 })

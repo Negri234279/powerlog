@@ -1,14 +1,19 @@
-/** Filter for the template list: always owner-scoped, optional name search. */
+import type { TemplateScope } from '../../domain/entities/workout-template.entity'
+
+/** Filter for the template list: always owner-scoped, optional name search and scope. */
 export interface WorkoutTemplateListFilter {
     ownerId: string
     /** Case-insensitive substring match on the template name. */
     search?: string
+    /** Personal vs coaching. Omitted = both. */
+    scope?: TemplateScope
 }
 
 /** One row of the template list: header + cheap rollups. */
 export interface WorkoutTemplateSummaryRow {
     id: string
     name: string
+    scope: TemplateScope
     notes: string | null
     updatedAt: Date
     /** Number of exercises in the template. */

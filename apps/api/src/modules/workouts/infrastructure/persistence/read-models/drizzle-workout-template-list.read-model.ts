@@ -24,6 +24,7 @@ export class DrizzleWorkoutTemplateListReadModel extends WorkoutTemplateListRead
             const escaped = filter.search.replace(/[\\%_]/g, (ch) => `\\${ch}`)
             conditions.push(ilike(workoutTemplates.name, `%${escaped}%`))
         }
+        if (filter.scope) conditions.push(eq(workoutTemplates.scope, filter.scope))
 
         // LEFT JOINs so empty templates still appear; counts use DISTINCT because
         // the exercise rows fan out across their sets.
@@ -31,6 +32,7 @@ export class DrizzleWorkoutTemplateListReadModel extends WorkoutTemplateListRead
             .select({
                 id: workoutTemplates.id,
                 name: workoutTemplates.name,
+                scope: workoutTemplates.scope,
                 notes: workoutTemplates.notes,
                 updatedAt: workoutTemplates.updatedAt,
                 exerciseCount: sql<number>`count(distinct ${workoutTemplateExercises.id})::int`,
@@ -46,6 +48,7 @@ export class DrizzleWorkoutTemplateListReadModel extends WorkoutTemplateListRead
         return rows.map((row) => ({
             id: row.id,
             name: row.name,
+            scope: row.scope,
             notes: row.notes,
             updatedAt: row.updatedAt,
             exerciseCount: Number(row.exerciseCount),

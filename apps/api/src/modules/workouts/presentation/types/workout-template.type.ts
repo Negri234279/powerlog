@@ -76,6 +76,9 @@ export class WorkoutTemplateSummaryType {
     @Field()
     name!: string
 
+    @Field(() => String, { description: 'personal (own training) | coaching (for athletes)' })
+    scope!: string
+
     @Field(() => String, { nullable: true })
     notes?: string | null
 

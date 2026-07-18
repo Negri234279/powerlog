@@ -97,6 +97,15 @@ export class DrizzleMesocycleRepository extends MesocycleRepository {
         return row?.value ?? 0
     }
 
+    async countPlannedForAthletesBy(coachId: string): Promise<number> {
+        const [row] = await this.db
+            .select({ value: count() })
+            .from(mesocycles)
+            .where(eq(mesocycles.plannedByUserId, coachId))
+
+        return row?.value ?? 0
+    }
+
     async delete(id: string): Promise<void> {
         await this.db.delete(mesocycles).where(eq(mesocycles.id, id))
     }

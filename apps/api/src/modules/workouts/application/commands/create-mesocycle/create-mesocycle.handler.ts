@@ -31,11 +31,14 @@ export class CreateMesocycleHandler implements ICommandHandler<CreateMesocycleCo
             throw new NotLinkedToAthleteError()
         }
 
-        // Two different paths share this command, each paid by a different plan:
-        // a coach building a block for an athlete draws on their COACH plan, and a
-        // user building one for themselves on their ATHLETE plan (`maxMesocycles`).
+        // Two different paths share this command, each paid by a different plan.
+        // A coach building a block for an athlete draws on their COACH plan: the
+        // capability (`plan_sessions`) and the coaching-block quota (`maxMesocycles`).
+        // A user building one for themselves draws on their ATHLETE plan.
         if (athleteId !== undefined) {
             await this.entitlements.assertFeature(command.userId, 'coach', 'plan_sessions')
+            const coached = await this.mesocycles.countPlannedForAthletesBy(command.userId)
+            await this.entitlements.assertWithinLimit(command.userId, 'coach', 'mesocycles', coached)
         } else {
             const owned = await this.mesocycles.countSelfCreatedBy(command.userId)
             await this.entitlements.assertWithinLimit(command.userId, 'athlete', 'mesocycles', owned)
