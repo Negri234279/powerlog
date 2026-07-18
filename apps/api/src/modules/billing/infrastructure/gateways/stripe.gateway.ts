@@ -8,6 +8,7 @@ import { BillingMetrics, type GatewayOperation } from '../../application/ports/b
 import type { GatewayEvent } from '../../application/ports/gateway-event'
 import {
     type CheckoutRequest,
+    type CheckoutSession,
     PaymentGatewayPort,
     type PlanChangeMode,
     type PlanSyncResult,
@@ -186,7 +187,7 @@ export class StripeGateway extends PaymentGatewayPort {
         return coupon.id
     }
 
-    async createCheckout(request: CheckoutRequest): Promise<string> {
+    async createCheckout(request: CheckoutRequest): Promise<CheckoutSession> {
         const stripe = this.require()
         const priceId = request.price.externalIdOn('stripe')
         // Never send someone to a checkout for a price the provider has never heard
@@ -194,13 +195,18 @@ export class StripeGateway extends PaymentGatewayPort {
         if (!priceId) throw new PriceNotSyncedError()
 
         const offer = request.offer
+        const embedded = request.uiMode === 'embedded'
 
         const session = await this.call('checkout', () =>
             stripe.checkout.sessions.create({
                 mode: 'subscription',
                 line_items: [{ price: priceId, quantity: 1 }],
-                success_url: request.successUrl,
-                cancel_url: request.cancelUrl,
+                // Embedded lives in an iframe on our own page and reports completion
+                // through a callback, so it takes no success/cancel URL and never
+                // redirects; hosted is the classic redirect pair.
+                ...(embedded
+                    ? { ui_mode: 'embedded_page', redirect_on_completion: 'never' }
+                    : { ui_mode: 'hosted_page', success_url: request.successUrl, cancel_url: request.cancelUrl }),
                 ...(request.customerId ? { customer: request.customerId } : { customer_email: request.email }),
                 // How the webhook knows who this belongs to. The subscription row is
                 // created from the event, not from the redirect — a user who closes
@@ -220,9 +226,17 @@ export class StripeGateway extends PaymentGatewayPort {
             }),
         )
 
+        if (embedded) {
+            if (!session.client_secret) {
+                throw new GatewayRequestFailedError('stripe', 'embedded checkout session has no client secret')
+            }
+
+            return { url: null, clientSecret: session.client_secret }
+        }
+
         if (!session.url) throw new GatewayRequestFailedError('stripe', 'checkout session has no URL')
 
-        return session.url
+        return { url: session.url, clientSecret: null }
     }
 
     async cancelAtPeriodEnd(subscription: SubscriptionAggregate): Promise<void> {

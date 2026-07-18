@@ -2,6 +2,7 @@ import { type GatewayEvent, reviveGatewayEvent } from '../../../src/modules/bill
 import { GatewayProvider } from '../../../src/modules/billing/application/ports/gateway-provider.port'
 import {
     type CheckoutRequest,
+    type CheckoutSession,
     PaymentGatewayPort,
     type PlanChangeMode,
     type PlanSyncResult,
@@ -92,11 +93,16 @@ export class FakePaymentGateway extends PaymentGatewayPort {
         }
     }
 
-    async createCheckout(request: CheckoutRequest): Promise<string> {
+    async createCheckout(request: CheckoutRequest): Promise<CheckoutSession> {
         this.guard()
         this.calls.push({ operation: 'checkout', priceId: request.price.id })
 
-        return `https://gateway.test/checkout/${request.price.id}`
+        // Mirror the real split: embedded hands back a client secret, hosted a URL.
+        if (request.uiMode === 'embedded') {
+            return { url: null, clientSecret: `cs_test_${request.price.id}` }
+        }
+
+        return { url: `https://gateway.test/checkout/${request.price.id}`, clientSecret: null }
     }
 
     async cancelAtPeriodEnd(subscription: SubscriptionAggregate): Promise<void> {

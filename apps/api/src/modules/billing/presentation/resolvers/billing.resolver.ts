@@ -25,9 +25,16 @@ import {
     MyInvoicesQuery,
     MySubscriptionQuery,
 } from '../../application/queries/my-billing/my-billing.queries'
+import type { CheckoutSession } from '../../application/ports/payment-gateway.port'
 import type { PaymentGateway } from '../../domain/entities/subscription.entity'
 import { toSupportedLocale } from '../../../../shared/i18n/locale'
-import { MyEntitlementsType, MyInvoicePageType, MySubscriptionType, PublicPlanType } from '../types/billing.types'
+import {
+    CheckoutSessionType,
+    MyEntitlementsType,
+    MyInvoicePageType,
+    MySubscriptionType,
+    PublicPlanType,
+} from '../types/billing.types'
 
 const audienceArg = z.enum(['athlete', 'coach'])
 const gatewayArg = z.enum(['stripe', 'paypal'])
@@ -124,9 +131,9 @@ export class BillingResolver {
         return this.queryBus.execute<BillingPortalUrlQuery, string | null>(query)
     }
 
-    @Mutation(() => String, {
+    @Mutation(() => CheckoutSessionType, {
         description:
-            'Start paying for a plan. Returns the URL to send the browser to; the subscription is created by the webhook, not by the redirect.',
+            'Start paying for a plan. Returns a redirect URL (hosted) or a client secret (Stripe embedded, when embedded is true); the subscription is created by the webhook, not by the redirect.',
     })
     @UseGuards(JwtCookieGuard)
     async startCheckout(
@@ -135,10 +142,19 @@ export class BillingResolver {
         @Args('gateway', { type: () => String }, new ZodValidationPipe(gatewayArg)) gateway: PaymentGateway,
         @Args('offerId', { type: () => ID, nullable: true }, new ZodValidationPipe(optionalUuid))
         offerId: string | null,
-    ): Promise<string> {
-        const command = new StartCheckoutCommand(user.userId, planPriceId, gateway, offerId)
+        // Embedded is a Stripe-only, in-page checkout; the default is a hosted
+        // redirect, which is what every existing caller wants.
+        @Args('embedded', { type: () => Boolean, nullable: true }) embedded: boolean | null,
+    ): Promise<CheckoutSession> {
+        const command = new StartCheckoutCommand(
+            user.userId,
+            planPriceId,
+            gateway,
+            offerId,
+            embedded ? 'embedded' : 'hosted',
+        )
 
-        return this.commandBus.execute<StartCheckoutCommand, string>(command)
+        return this.commandBus.execute<StartCheckoutCommand, CheckoutSession>(command)
     }
 
     @Mutation(() => Boolean, {

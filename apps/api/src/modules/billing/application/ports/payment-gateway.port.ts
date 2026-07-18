@@ -38,9 +38,33 @@ export interface PlanSyncResult {
     } | null
 }
 
+/**
+ * How the checkout is rendered. `hosted` sends the browser to the provider's own
+ * page (a redirect); `embedded` returns a secret the web mounts in-page. Only
+ * Stripe does embedded — PayPal has no in-page subscription form, so a checkout
+ * asked for `embedded` on any other gateway is refused before it reaches the port.
+ */
+export type CheckoutUiMode = 'hosted' | 'embedded'
+
+/**
+ * The handle to a started checkout. Exactly one side is set, per {@link CheckoutUiMode}:
+ *  - `url` — a page to send the browser to (hosted redirect: PayPal, Stripe hosted);
+ *  - `clientSecret` — Stripe's embedded-checkout secret, initialised in an iframe
+ *    on our own page.
+ *
+ * The subscription is still born from the webhook either way; this only decides
+ * where the card is entered.
+ */
+export interface CheckoutSession {
+    url: string | null
+    clientSecret: string | null
+}
+
 export interface CheckoutRequest {
     userId: string
-    /** Where they land after paying / after backing out. */
+    /** How the card is collected: a redirect, or an in-page Stripe iframe. */
+    uiMode: CheckoutUiMode
+    /** Where they land after paying / after backing out. Hosted checkouts only. */
     successUrl: string
     cancelUrl: string
     plan: PlanAggregate
@@ -78,8 +102,11 @@ export abstract class PaymentGatewayPort {
         offer?: PlanOfferEntity | null,
     ): Promise<PlanSyncResult>
 
-    /** Start a checkout; returns the URL to send the browser to. */
-    abstract createCheckout(request: CheckoutRequest): Promise<string>
+    /**
+     * Start a checkout. Returns a {@link CheckoutSession}: a redirect URL for a
+     * hosted checkout, or a client secret for a Stripe embedded one.
+     */
+    abstract createCheckout(request: CheckoutRequest): Promise<CheckoutSession>
 
     /**
      * Stop it renewing. The user keeps the plan until `currentPeriodEnd` — every

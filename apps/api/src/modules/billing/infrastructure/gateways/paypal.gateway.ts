@@ -7,6 +7,7 @@ import { BillingMetrics, type GatewayOperation } from '../../application/ports/b
 import type { GatewayEvent } from '../../application/ports/gateway-event'
 import {
     type CheckoutRequest,
+    type CheckoutSession,
     PaymentGatewayPort,
     type PlanChangeMode,
     type PlanSyncResult,
@@ -225,7 +226,7 @@ export class PayPalGateway extends PaymentGatewayPort {
         return created.id
     }
 
-    async createCheckout(request: CheckoutRequest): Promise<string> {
+    async createCheckout(request: CheckoutRequest): Promise<CheckoutSession> {
         const paypal = this.require()
 
         // With an offer, the checkout points at the offer's own plan — that is where
@@ -255,7 +256,8 @@ export class PayPalGateway extends PaymentGatewayPort {
         const approve = subscription.links.find((link) => link.rel === 'approve')?.href
         if (!approve) throw new GatewayRequestFailedError('paypal', 'subscription has no approval link')
 
-        return approve
+        // PayPal has no embedded form: it is always a redirect to approve.
+        return { url: approve, clientSecret: null }
     }
 
     /**

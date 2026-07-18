@@ -212,6 +212,19 @@ export class GatewayNotConfiguredError extends BillingError {
     }
 }
 
+/**
+ * An embedded (in-page) checkout was asked for on a gateway that has no in-page
+ * form — only Stripe does. The web never offers it for another gateway, so this
+ * only fires if somebody calls the API directly.
+ */
+export class EmbeddedCheckoutUnsupportedError extends BillingError {
+    readonly code = 'EMBEDDED_CHECKOUT_UNSUPPORTED'
+
+    constructor(readonly gateway: string) {
+        super(`${gateway} has no embedded checkout; use a hosted one.`)
+    }
+}
+
 /** The catalog could not be pushed to the gateway (its API said no). */
 export class PlanSyncFailedError extends BillingError {
     readonly code = 'PLAN_SYNC_FAILED'

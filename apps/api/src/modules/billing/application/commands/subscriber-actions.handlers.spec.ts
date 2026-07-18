@@ -16,6 +16,7 @@ import { PlanMother, SubscriptionMother } from '../../../../../tests/mothers/bil
 import { PlanOfferEntity } from '../../domain/entities/plan-offer.entity'
 import { PlanPriceEntity } from '../../domain/entities/plan-price.entity'
 import {
+    EmbeddedCheckoutUnsupportedError,
     GatewayNotConfiguredError,
     NoActiveSubscriptionError,
     NotAGatewaySubscriptionError,
@@ -111,13 +112,29 @@ describe('what a subscriber can do', () => {
 
     describe('starting a checkout', () => {
         it('returns the URL to pay at — and creates nothing locally', async () => {
-            const url = await checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', null))
+            const session = await checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', null))
 
-            expect(url).toBe('https://gateway.test/checkout/price-pro')
+            expect(session).toEqual({ url: 'https://gateway.test/checkout/price-pro', clientSecret: null })
             // The subscription is born from the webhook. A user who pays and closes the
             // tab must still end up subscribed; one who fakes the redirect must not.
             expect(subscriptions.all()).toEqual([])
             expect(metrics.checkouts).toEqual([{ plan: 'athlete-pro', status: 'started' }])
+        })
+
+        it('returns a client secret for an embedded Stripe checkout', async () => {
+            const session = await checkout().execute(
+                new StartCheckoutCommand(USER, 'price-pro', 'stripe', null, 'embedded'),
+            )
+
+            // Embedded is an in-page iframe: no redirect URL, a client secret instead.
+            expect(session).toEqual({ url: null, clientSecret: 'cs_test_price-pro' })
+            expect(subscriptions.all()).toEqual([])
+        })
+
+        it('refuses an embedded checkout on a gateway that has no in-page form', async () => {
+            await expect(
+                checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'paypal', null, 'embedded')),
+            ).rejects.toBeInstanceOf(EmbeddedCheckoutUnsupportedError)
         })
 
         it('refuses when the user already pays for a plan IN THIS AUDIENCE', async () => {
@@ -132,9 +149,9 @@ describe('what a subscriber can do', () => {
             // Independent subscriptions: the athlete plan does not block a coach one.
             await subscriptions.save(aLiveSubscription())
 
-            const url = await checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null))
+            const session = await checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null))
 
-            expect(url).toBe('https://gateway.test/checkout/price-coach-pro')
+            expect(session.url).toBe('https://gateway.test/checkout/price-coach-pro')
         })
 
         it('lets an athlete buy a coach plan — the coach-onboarding path', async () => {
@@ -142,18 +159,18 @@ describe('what a subscriber can do', () => {
             // and it is the webhook's activation that promotes them (see
             // PromoteToCoachOnSubscriptionActivated), not this call — so a user who
             // pays and walks away stays an athlete.
-            const url = await checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null))
+            const session = await checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null))
 
-            expect(url).toBe('https://gateway.test/checkout/price-coach-pro')
+            expect(session.url).toBe('https://gateway.test/checkout/price-coach-pro')
             expect(metrics.checkouts).toEqual([{ plan: 'coach-pro', status: 'started' }])
         })
 
         it('sells the coach plan to a coach', async () => {
             users.seedRole(USER, 'coach')
 
-            const url = await checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null))
+            const session = await checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', null))
 
-            expect(url).toBe('https://gateway.test/checkout/price-coach-pro')
+            expect(session.url).toBe('https://gateway.test/checkout/price-coach-pro')
         })
 
         it('sells an athlete plan to a coach — they train too, and plans are independent', async () => {
@@ -161,9 +178,9 @@ describe('what a subscriber can do', () => {
             // an athlete plan they hold alongside their coach one, so it must go through.
             users.seedRole(USER, 'coach')
 
-            const url = await checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', null))
+            const session = await checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', null))
 
-            expect(url).toBe('https://gateway.test/checkout/price-pro')
+            expect(session.url).toBe('https://gateway.test/checkout/price-pro')
             expect(metrics.checkouts).toEqual([{ plan: 'athlete-pro', status: 'started' }])
         })
 

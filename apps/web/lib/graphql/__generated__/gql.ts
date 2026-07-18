@@ -19,7 +19,7 @@ type Documents = {
     "\n    query MyWorkoutUsage {\n        myWorkoutUsage {\n            templates\n            mesocycles\n            workouts\n        }\n    }\n": typeof types.MyWorkoutUsageDocument,
     "\n    query MyInvoices($limit: Int, $offset: Int) {\n        myInvoices(limit: $limit, offset: $offset) {\n            total\n            rows {\n                id\n                gateway\n                number\n                status\n                amountPaidCents\n                amountDueCents\n                currency\n                hostedUrl\n                pdfUrl\n                receiptUrl\n                issuedAt\n            }\n        }\n    }\n": typeof types.MyInvoicesDocument,
     "\n    query BillingPortalUrl($audience: String!) {\n        billingPortalUrl(audience: $audience)\n    }\n": typeof types.BillingPortalUrlDocument,
-    "\n    mutation StartCheckout($planPriceId: ID!, $gateway: String!, $offerId: ID) {\n        startCheckout(planPriceId: $planPriceId, gateway: $gateway, offerId: $offerId)\n    }\n": typeof types.StartCheckoutDocument,
+    "\n    mutation StartCheckout($planPriceId: ID!, $gateway: String!, $offerId: ID, $embedded: Boolean) {\n        startCheckout(planPriceId: $planPriceId, gateway: $gateway, offerId: $offerId, embedded: $embedded) {\n            url\n            clientSecret\n        }\n    }\n": typeof types.StartCheckoutDocument,
     "\n    mutation CancelSubscription($audience: String!) {\n        cancelSubscription(audience: $audience)\n    }\n": typeof types.CancelSubscriptionDocument,
     "\n    mutation ResumeSubscription($audience: String!) {\n        resumeSubscription(audience: $audience)\n    }\n": typeof types.ResumeSubscriptionDocument,
     "\n    mutation ChangePlan($planPriceId: ID!) {\n        changePlan(planPriceId: $planPriceId)\n    }\n": typeof types.ChangePlanDocument,
@@ -155,7 +155,7 @@ const documents: Documents = {
     "\n    query MyWorkoutUsage {\n        myWorkoutUsage {\n            templates\n            mesocycles\n            workouts\n        }\n    }\n": types.MyWorkoutUsageDocument,
     "\n    query MyInvoices($limit: Int, $offset: Int) {\n        myInvoices(limit: $limit, offset: $offset) {\n            total\n            rows {\n                id\n                gateway\n                number\n                status\n                amountPaidCents\n                amountDueCents\n                currency\n                hostedUrl\n                pdfUrl\n                receiptUrl\n                issuedAt\n            }\n        }\n    }\n": types.MyInvoicesDocument,
     "\n    query BillingPortalUrl($audience: String!) {\n        billingPortalUrl(audience: $audience)\n    }\n": types.BillingPortalUrlDocument,
-    "\n    mutation StartCheckout($planPriceId: ID!, $gateway: String!, $offerId: ID) {\n        startCheckout(planPriceId: $planPriceId, gateway: $gateway, offerId: $offerId)\n    }\n": types.StartCheckoutDocument,
+    "\n    mutation StartCheckout($planPriceId: ID!, $gateway: String!, $offerId: ID, $embedded: Boolean) {\n        startCheckout(planPriceId: $planPriceId, gateway: $gateway, offerId: $offerId, embedded: $embedded) {\n            url\n            clientSecret\n        }\n    }\n": types.StartCheckoutDocument,
     "\n    mutation CancelSubscription($audience: String!) {\n        cancelSubscription(audience: $audience)\n    }\n": types.CancelSubscriptionDocument,
     "\n    mutation ResumeSubscription($audience: String!) {\n        resumeSubscription(audience: $audience)\n    }\n": types.ResumeSubscriptionDocument,
     "\n    mutation ChangePlan($planPriceId: ID!) {\n        changePlan(planPriceId: $planPriceId)\n    }\n": types.ChangePlanDocument,
@@ -323,7 +323,7 @@ export function graphql(source: "\n    query BillingPortalUrl($audience: String!
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n    mutation StartCheckout($planPriceId: ID!, $gateway: String!, $offerId: ID) {\n        startCheckout(planPriceId: $planPriceId, gateway: $gateway, offerId: $offerId)\n    }\n"): (typeof documents)["\n    mutation StartCheckout($planPriceId: ID!, $gateway: String!, $offerId: ID) {\n        startCheckout(planPriceId: $planPriceId, gateway: $gateway, offerId: $offerId)\n    }\n"];
+export function graphql(source: "\n    mutation StartCheckout($planPriceId: ID!, $gateway: String!, $offerId: ID, $embedded: Boolean) {\n        startCheckout(planPriceId: $planPriceId, gateway: $gateway, offerId: $offerId, embedded: $embedded) {\n            url\n            clientSecret\n        }\n    }\n"): (typeof documents)["\n    mutation StartCheckout($planPriceId: ID!, $gateway: String!, $offerId: ID, $embedded: Boolean) {\n        startCheckout(planPriceId: $planPriceId, gateway: $gateway, offerId: $offerId, embedded: $embedded) {\n            url\n            clientSecret\n        }\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

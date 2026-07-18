@@ -87,6 +87,23 @@ export class PublicPlanType {
     offer!: PublicOfferType | null
 }
 
+/**
+ * A started checkout. Exactly one field is set: `url` for a hosted redirect
+ * (PayPal, or Stripe hosted), `clientSecret` for a Stripe embedded checkout the
+ * web mounts in an iframe.
+ */
+@ObjectType('CheckoutSession')
+export class CheckoutSessionType {
+    @Field(() => String, { nullable: true, description: 'Redirect the browser here (hosted checkout).' })
+    url!: string | null
+
+    @Field(() => String, {
+        nullable: true,
+        description: 'Initialise Stripe embedded checkout with this (in-page checkout).',
+    })
+    clientSecret!: string | null
+}
+
 /** The user's own subscription. Null when they are on the free plan. */
 @ObjectType('MySubscription')
 export class MySubscriptionType {

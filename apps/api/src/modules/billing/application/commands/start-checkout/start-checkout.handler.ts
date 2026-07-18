@@ -3,6 +3,7 @@ import { PinoLogger } from 'nestjs-pino'
 
 import { UserDirectory } from '../../../../../shared/contracts/user-directory'
 import {
+    EmbeddedCheckoutUnsupportedError,
     OfferNotRedeemableError,
     PlanNotAvailableError,
     PlanNotFoundError,
@@ -17,6 +18,7 @@ import { BillingConfig } from '../../ports/billing-config.port'
 import { BillingMetrics } from '../../ports/billing-metrics.port'
 import { Clock } from '../../ports/clock.port'
 import { GatewayProvider } from '../../ports/gateway-provider.port'
+import type { CheckoutSession } from '../../ports/payment-gateway.port'
 import { StartCheckoutCommand } from './start-checkout.command'
 
 /**
@@ -26,7 +28,7 @@ import { StartCheckoutCommand } from './start-checkout.command'
  * types the success URL by hand must not.
  */
 @CommandHandler(StartCheckoutCommand)
-export class StartCheckoutHandler implements ICommandHandler<StartCheckoutCommand, string> {
+export class StartCheckoutHandler implements ICommandHandler<StartCheckoutCommand, CheckoutSession> {
     constructor(
         private readonly subscriptions: SubscriptionRepository,
         private readonly plans: PlanRepository,
@@ -42,7 +44,14 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
         this.logger.setContext(StartCheckoutHandler.name)
     }
 
-    async execute(command: StartCheckoutCommand): Promise<string> {
+    async execute(command: StartCheckoutCommand): Promise<CheckoutSession> {
+        // Embedded is an in-page Stripe iframe; no other gateway has one. Refuse it
+        // up front rather than let the adapter hand back a redirect the web is not
+        // expecting (the UI only ever offers embedded for Stripe).
+        if (command.uiMode === 'embedded' && command.gateway !== 'stripe') {
+            throw new EmbeddedCheckoutUnsupportedError(command.gateway)
+        }
+
         const price = await this.prices.findById(command.planPriceId)
         if (!price || !price.active) throw new PlanPriceNotFoundError()
 
@@ -71,8 +80,9 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
         // plan does not become a second Stripe customer with a second payment method.
         const knownCustomerId = live.find((subscription) => subscription.gatewayCustomerId)?.gatewayCustomerId ?? null
 
-        const url = await gateway.createCheckout({
+        const session = await gateway.createCheckout({
             userId: command.userId,
+            uiMode: command.uiMode,
             plan,
             price,
             offer,
@@ -88,9 +98,12 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
         })
 
         this.metrics.recordCheckout(command.gateway, plan.slug, 'started')
-        this.logger.info({ plan: plan.slug, gateway: command.gateway, offer: offer?.id ?? null }, 'checkout started')
+        this.logger.info(
+            { plan: plan.slug, gateway: command.gateway, uiMode: command.uiMode, offer: offer?.id ?? null },
+            'checkout started',
+        )
 
-        return url
+        return session
     }
 
     private async resolveOffer(offerId: string | null, planId: string) {

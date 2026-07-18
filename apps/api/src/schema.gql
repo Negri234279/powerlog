@@ -421,6 +421,14 @@ input ChangePasswordInput {
   newPassword: String!
 }
 
+type CheckoutSession {
+  """Initialise Stripe embedded checkout with this (in-page checkout)."""
+  clientSecret: String
+
+  """Redirect the browser here (hosted checkout)."""
+  url: String
+}
+
 type CoachAthleteNote {
   body: String!
   updatedAt: DateTime!
@@ -1157,9 +1165,9 @@ type Mutation {
   setUserStatus(input: SetUserStatusInput!): AdminUser!
 
   """
-  Start paying for a plan. Returns the URL to send the browser to; the subscription is created by the webhook, not by the redirect.
+  Start paying for a plan. Returns a redirect URL (hosted) or a client secret (Stripe embedded, when embedded is true); the subscription is created by the webhook, not by the redirect.
   """
-  startCheckout(gateway: String!, offerId: ID, planPriceId: ID!): String!
+  startCheckout(embedded: Boolean, gateway: String!, offerId: ID, planPriceId: ID!): CheckoutSession!
 
   """
   Publish the plan, its prices on sale and its offer to a payment gateway. Re-runnable — this is also the retry.

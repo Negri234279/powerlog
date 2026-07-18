@@ -93,8 +93,11 @@ export function useStartCheckout() {
                 gateway: input.gateway,
                 offerId: input.offerId ?? null,
             }).then((r) => r.startCheckout),
-        onSuccess: (url) => {
-            window.location.assign(url)
+        // The redirect flow: hosted checkouts (PayPal, Stripe hosted) hand back a URL.
+        // The embedded flow reads `clientSecret` off the mutation itself and mounts it
+        // in-page, so it does not go through this hook.
+        onSuccess: (session) => {
+            if (session.url) window.location.assign(session.url)
         },
     })
 }
