@@ -39,7 +39,7 @@ export function BecomeCoachModal({ open, onClose }: { open: boolean; onClose: ()
     const [currency, setCurrency] = useState<(typeof CURRENCIES)[number]>('EUR')
 
     return (
-        <Modal open={open} onClose={onClose} labelledBy={titleId} className="max-w-3xl">
+        <Modal open={open} onClose={onClose} labelledBy={titleId} widthClassName="max-w-5xl">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2 id={titleId} className="font-display text-h3 tracking-tight">
@@ -66,7 +66,7 @@ export function BecomeCoachModal({ open, onClose }: { open: boolean; onClose: ()
                 </div>
             </div>
 
-            <div className="mt-5 grid max-h-[65vh] gap-4 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-6 grid max-h-[70vh] gap-4 overflow-y-auto pr-1 md:grid-cols-2 lg:grid-cols-3">
                 {isLoading
                     ? Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-72 rounded-2xl" />)
                     : plans
@@ -126,7 +126,7 @@ function CoachPlanCard({
     }
 
     return (
-        <article className="flex flex-col rounded-2xl bg-bg/40 p-5 ring-1 ring-hairline">
+        <article className="flex flex-col rounded-2xl bg-bg/40 p-6 ring-1 ring-hairline">
             <div className="flex items-start justify-between gap-2">
                 <h3 className="font-display text-h4 tracking-tight">{plan.name}</h3>
                 {offer ? (

@@ -19,6 +19,7 @@ export function Modal({
     onClose,
     labelledBy,
     className,
+    widthClassName = 'max-w-md',
     children,
 }: {
     open: boolean
@@ -26,6 +27,11 @@ export function Modal({
     /** id of the heading element, for aria-labelledby. */
     labelledBy?: string
     className?: string
+    /** Max-width utility for the dialog (e.g. 'max-w-3xl'). It replaces the default
+     *  rather than joining it: `cn` doesn't merge Tailwind classes, so a `max-w-*`
+     *  passed via `className` would collide with the base one and the CSS source
+     *  order — not the caller — would decide which wins. */
+    widthClassName?: string
     children: ReactNode
 }) {
     const { mounted, className: stateClass } = useEnterExit(open)
@@ -64,7 +70,8 @@ export function Modal({
             />
             <div
                 className={cn(
-                    't-modal relative w-full max-w-md rounded-[1.75rem] bg-shell p-1.5 ring-1 ring-hairline shadow-2xl',
+                    't-modal relative w-full rounded-[1.75rem] bg-shell p-1.5 ring-1 ring-hairline shadow-2xl',
+                    widthClassName,
                     stateClass,
                     className,
                 )}
