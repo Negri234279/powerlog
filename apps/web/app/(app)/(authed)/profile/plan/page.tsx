@@ -14,6 +14,7 @@ import {
     type PublicPlan,
     type PublicPrice,
     useAvailablePlans,
+    useBillingPortalUrl,
     useCancelSubscription,
     useChangePlan,
     useMyPlan,
@@ -26,11 +27,11 @@ import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { FormError } from '@/components/ui/form-error'
-import { Check } from '@/components/ui/icons'
+import { ArrowUpRight, Check } from '@/components/ui/icons'
 import { Modal } from '@/components/ui/modal'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
-import { TrackedButton } from '@/components/ui/tracked'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 const INTERVALS = ['month', 'year'] as const
 const CURRENCIES = ['EUR', 'USD'] as const
@@ -429,6 +430,12 @@ function CurrentPlan({
     const [confirming, setConfirming] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    // The gateway's own portal, for THIS plan's payment method. Only asked for when
+    // there is something to manage (a gateway-billed subscription); null for gateways
+    // with no portal (PayPal) so the button hides.
+    const isManageable = subscription != null && subscription.gateway !== 'manual'
+    const { data: portalUrl } = useBillingPortalUrl(audience, isManageable)
+
     const endsOn = subscription ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : null
 
     return (
@@ -465,7 +472,7 @@ function CurrentPlan({
             <FormError error={error} />
 
             {subscription && subscription.gateway !== 'manual' ? (
-                <div className="mt-4">
+                <div className="mt-4 flex flex-wrap items-center gap-3">
                     {subscription.cancelAtPeriodEnd && subscription.canResume ? (
                         <TrackedButton
                             analyticsId="billing-resume"
@@ -486,6 +493,18 @@ function CurrentPlan({
                             {t('cancel')}
                         </TrackedButton>
                     )}
+                    {/* Manage the card for THIS plan's gateway. With two plans on two
+                        gateways, each opens its own portal. */}
+                    {portalUrl ? (
+                        <TrackedLink
+                            analyticsId="billing-portal"
+                            href={portalUrl}
+                            className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
+                        >
+                            {t('paymentMethod')}
+                            <ArrowUpRight className="size-4" />
+                        </TrackedLink>
+                    ) : null}
                 </div>
             ) : null}
 

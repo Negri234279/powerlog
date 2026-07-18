@@ -259,17 +259,16 @@ export class BillingPortalUrlHandler implements IQueryHandler<BillingPortalUrlQu
     ) {}
 
     async execute(query: BillingPortalUrlQuery): Promise<string | null> {
-        // The portal is per gateway customer and shows every subscription that
-        // customer has — so any of the user's live gateway subscriptions opens the
-        // same door, regardless of audience. Pick the first that a gateway bills
-        // (skip `manual` grants, which have no portal).
-        const now = this.clock.now()
-        const live = await this.subscriptions.findAllLiveByUser(query.userId)
-        const subscription = live.find((candidate) => candidate.isEntitledAt(now) && candidate.gateway !== 'manual')
-        if (!subscription) return null
+        // Per audience: each plan manages its own payment method. A user with an
+        // athlete plan on Stripe and a coach plan on PayPal reaches each gateway from
+        // its own plan — one global portal could only ever point at one of them. (For
+        // same-gateway subscriptions the portal is customer-scoped and lists both,
+        // which is fine — the user still opens it from either plan.)
+        const subscription = await this.subscriptions.findLiveByUserAndAudience(query.userId, query.audience)
+        if (!subscription?.isEntitledAt(this.clock.now()) || subscription.gateway === 'manual') return null
 
         const gateway = this.gateways.get(subscription.gateway)
 
-        return gateway.billingPortalUrl(subscription, `${this.config.webOrigin}/profile/billing`)
+        return gateway.billingPortalUrl(subscription, `${this.config.webOrigin}/profile/plan`)
     }
 }

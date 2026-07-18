@@ -122,8 +122,8 @@ export const MyInvoicesDocument = graphql(`
 `)
 
 export const BillingPortalUrlDocument = graphql(`
-    query BillingPortalUrl {
-        billingPortalUrl
+    query BillingPortalUrl($audience: String!) {
+        billingPortalUrl(audience: $audience)
     }
 `)
 

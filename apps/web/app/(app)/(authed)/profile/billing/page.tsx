@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 
-import { type MyInvoice, useBillingPortalUrl, useMyInvoices } from '@/lib/graphql/hooks/use-billing'
+import { type MyInvoice, useMyInvoices } from '@/lib/graphql/hooks/use-billing'
 import { ArrowUpRight } from '@/components/ui/icons'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TrackedLink } from '@/components/ui/tracked'
@@ -18,27 +18,11 @@ function formatAmount(amountCents: number, currency: string): string {
 export default function BillingPage() {
     const t = useTranslations('billing')
     const { data, isLoading } = useMyInvoices()
-    // Null when there is no gateway subscription, or the gateway has no portal
-    // (PayPal): the button simply does not render.
-    const { data: portalUrl } = useBillingPortalUrl()
 
+    // The payment method is managed per plan now, from /profile/plan (a user can hold
+    // two subscriptions on two gateways). This page is the billing history only.
     return (
         <div className="space-y-8">
-            {portalUrl ? (
-                <section className="rounded-2xl bg-surface p-6 ring-1 ring-hairline">
-                    <h2 className="font-display text-h4 tracking-tight">{t('paymentMethod')}</h2>
-                    <p className="mt-2 text-sm text-text-dim">{t('paymentMethodBody')}</p>
-                    <TrackedLink
-                        analyticsId="billing-portal"
-                        href={portalUrl}
-                        className="mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
-                    >
-                        {t('openPortal')}
-                        <ArrowUpRight className="size-4" />
-                    </TrackedLink>
-                </section>
-            ) : null}
-
             <section>
                 <h2 className="font-display text-h4 tracking-tight">{t('invoices')}</h2>
 

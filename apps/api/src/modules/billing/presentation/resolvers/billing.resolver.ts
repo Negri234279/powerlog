@@ -111,11 +111,15 @@ export class BillingResolver {
 
     @Query(() => String, {
         nullable: true,
-        description: 'The gateway’s billing portal (card, invoices). Null when there is none — the button hides.',
+        description:
+            'The gateway’s billing portal (card, invoices) for your subscription in an audience (athlete | coach). Null when there is none — the button hides.',
     })
     @UseGuards(JwtCookieGuard)
-    async billingPortalUrl(@CurrentUser() user: AuthUser): Promise<string | null> {
-        const query = new BillingPortalUrlQuery(user.userId)
+    async billingPortalUrl(
+        @CurrentUser() user: AuthUser,
+        @Args('audience', { type: () => String }, new ZodValidationPipe(audienceArg)) audience: PlanAudience,
+    ): Promise<string | null> {
+        const query = new BillingPortalUrlQuery(user.userId, audience)
 
         return this.queryBus.execute<BillingPortalUrlQuery, string | null>(query)
     }

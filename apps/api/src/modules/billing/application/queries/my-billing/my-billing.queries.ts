@@ -28,7 +28,11 @@ export class MyInvoicesQuery {
     ) {}
 }
 
-/** A URL to the gateway's own billing portal, or null if it has none. */
+/** A URL to the gateway's own billing portal for the subscription in an audience,
+ *  or null if there is none (free/manual, or a gateway with no portal like PayPal). */
 export class BillingPortalUrlQuery {
-    constructor(readonly userId: string) {}
+    constructor(
+        readonly userId: string,
+        readonly audience: PlanAudience,
+    ) {}
 }

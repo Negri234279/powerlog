@@ -1612,9 +1612,9 @@ type Query {
   availablePlans(audience: String!, locale: String): [PublicPlan!]!
 
   """
-  The gateway’s billing portal (card, invoices). Null when there is none — the button hides.
+  The gateway’s billing portal (card, invoices) for your subscription in an audience (athlete | coach). Null when there is none — the button hides.
   """
-  billingPortalUrl: String
+  billingPortalUrl(audience: String!): String
 
   """
   Public: preview a pending invitation by its opaque token (for the invite-aware signup page).

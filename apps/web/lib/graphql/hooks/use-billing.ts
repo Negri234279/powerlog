@@ -65,12 +65,18 @@ export function useMyInvoices() {
     })
 }
 
-/** Null when the gateway has no portal (or there is no subscription): the button hides. */
-export function useBillingPortalUrl() {
+/**
+ * The billing portal for the subscription in an audience. Null when the gateway
+ * has no portal (PayPal), the plan is free/manual, or there is no subscription —
+ * so the "manage payment method" button hides. `enabled` lets the caller skip the
+ * request when there is plainly nothing to manage (free plan, manual grant).
+ */
+export function useBillingPortalUrl(audience: PlanAudience, enabled = true) {
     return useQuery({
-        queryKey: ['billingPortalUrl'],
-        queryFn: () => gqlRequest(BillingPortalUrlDocument).then((r) => r.billingPortalUrl),
+        queryKey: ['billingPortalUrl', audience],
+        queryFn: () => gqlRequest(BillingPortalUrlDocument, { audience }).then((r) => r.billingPortalUrl),
         staleTime: 60_000,
+        enabled,
     })
 }
 
