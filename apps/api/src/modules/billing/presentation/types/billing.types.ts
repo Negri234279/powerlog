@@ -134,6 +134,9 @@ export class MyInvoiceType {
     @Field(() => ID)
     id!: string
 
+    @Field(() => String, { description: 'Which platform issued it: stripe | paypal | manual.' })
+    gateway!: string
+
     @Field(() => String, { nullable: true, description: 'The gateway’s invoice number, when it issues one.' })
     number!: string | null
 

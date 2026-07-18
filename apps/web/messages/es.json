@@ -1110,6 +1110,11 @@
             "coach": "Coaching"
         },
         "coachPlanIncludes": "Tu plan de coach",
+        "source": {
+            "stripe": "Stripe",
+            "paypal": "PayPal",
+            "manual": "Manual"
+        },
         "currentPlan": "Tu plan",
         "freePlan": "Gratis",
         "freePlanBody": "Estás en el plan gratuito. Puedes mejorarlo cuando quieras.",

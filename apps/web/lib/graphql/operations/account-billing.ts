@@ -107,6 +107,7 @@ export const MyInvoicesDocument = graphql(`
             total
             rows {
                 id
+                gateway
                 number
                 status
                 amountPaidCents

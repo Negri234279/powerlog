@@ -73,6 +73,8 @@ export interface MySubscriptionView {
 
 export interface MyInvoiceView {
     id: string
+    /** Which platform issued it — stripe | paypal | manual — for a source badge. */
+    gateway: PaymentGateway
     number: string | null
     status: InvoiceStatus
     amountPaidCents: number
@@ -224,6 +226,7 @@ export class MyInvoicesHandler implements IQueryHandler<MyInvoicesQuery, { rows:
         return {
             rows: page.rows.map((invoice) => ({
                 id: invoice.id,
+                gateway: invoice.gateway,
                 number: invoice.number,
                 status: invoice.status,
                 amountPaidCents: invoice.amountPaidCents,

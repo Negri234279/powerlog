@@ -1247,6 +1247,9 @@ type MyInvoice {
   amountPaidCents: Int!
   currency: String!
 
+  """Which platform issued it: stripe | paypal | manual."""
+  gateway: String!
+
   """The invoice on the gateway’s site."""
   hostedUrl: String
   id: ID!

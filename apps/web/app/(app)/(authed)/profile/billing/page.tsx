@@ -51,9 +51,13 @@ function InvoiceRow({ invoice }: { invoice: MyInvoice }) {
     return (
         <article className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface p-4 ring-1 ring-hairline">
             <div>
-                <p className="text-sm text-text">
-                    {invoice.number ?? t('invoiceNoNumber')}
-                    <span className="mx-2 text-hairline">·</span>
+                <p className="flex flex-wrap items-center gap-2 text-sm text-text">
+                    <span>{invoice.number ?? t('invoiceNoNumber')}</span>
+                    {/* Which platform issued it — stripe / paypal / manual. */}
+                    <span className="rounded-full bg-white/[0.06] px-2 py-0.5 font-mono text-eyebrow uppercase text-text-dim">
+                        {t(`source.${invoice.gateway}` as 'source.stripe')}
+                    </span>
+                    <span className="text-hairline">·</span>
                     <span className="text-text-dim">{new Date(invoice.issuedAt).toLocaleDateString()}</span>
                 </p>
                 <p className="mt-0.5 font-mono text-xs text-text-faint">
