@@ -129,8 +129,14 @@ export const BillingPortalUrlDocument = graphql(`
 `)
 
 export const StartCheckoutDocument = graphql(`
-    mutation StartCheckout($planPriceId: ID!, $gateway: String!, $offerId: ID, $embedded: Boolean) {
-        startCheckout(planPriceId: $planPriceId, gateway: $gateway, offerId: $offerId, embedded: $embedded) {
+    mutation StartCheckout($planPriceId: ID!, $gateway: String!, $offerId: ID, $embedded: Boolean, $returnTo: String) {
+        startCheckout(
+            planPriceId: $planPriceId
+            gateway: $gateway
+            offerId: $offerId
+            embedded: $embedded
+            returnTo: $returnTo
+        ) {
             url
             clientSecret
         }

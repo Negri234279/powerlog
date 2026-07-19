@@ -80,6 +80,19 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
         // plan does not become a second Stripe customer with a second payment method.
         const knownCustomerId = live.find((subscription) => subscription.gatewayCustomerId)?.gatewayCustomerId ?? null
 
+        // Where a hosted redirect lands. The redirect is only a landing spot: the real
+        // state arrives by webhook and the page refetches on the realtime event, so it
+        // never trusts these params. The sign-up wizard finishes on the dashboard
+        // (which settles the plan — and promotes a coach — via that same event); an
+        // in-app upgrade returns to the plan page, whose `audience` focuses the tab
+        // that just paid and whose success banner confirms the activation.
+        const origin = this.config.webOrigin
+        const dashboard = command.returnTo === 'dashboard'
+        const successUrl = dashboard
+            ? `${origin}/dashboard`
+            : `${origin}/profile/plan?checkout=success&audience=${plan.audience}`
+        const cancelUrl = dashboard ? `${origin}/dashboard` : `${origin}/profile/plan?checkout=cancelled`
+
         const session = await gateway.createCheckout({
             userId: command.userId,
             uiMode: command.uiMode,
@@ -88,13 +101,8 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
             offer,
             customerId: knownCustomerId,
             email: contact?.email ?? '',
-            // The web's account area lives under /profile. The redirect is only a
-            // landing spot: the real state arrives by webhook, and the page is told to
-            // refetch by the realtime event — it never trusts these query params. The
-            // audience tells the plan page which side (athlete/coach tab) just paid, so
-            // it waits on the right subscription and, for a coach plan, promotes.
-            successUrl: `${this.config.webOrigin}/profile/plan?checkout=success&audience=${plan.audience}`,
-            cancelUrl: `${this.config.webOrigin}/profile/plan?checkout=cancelled`,
+            successUrl,
+            cancelUrl,
         })
 
         this.metrics.recordCheckout(command.gateway, plan.slug, 'started')

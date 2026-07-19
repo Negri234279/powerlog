@@ -137,6 +137,22 @@ describe('what a subscriber can do', () => {
             ).rejects.toBeInstanceOf(EmbeddedCheckoutUnsupportedError)
         })
 
+        it('returns an in-app checkout to the plan page by default', async () => {
+            await checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', null))
+
+            const call = gateway.calls.find((entry) => entry.operation === 'checkout')
+            expect(call?.successUrl).toBe('https://app.test/profile/plan?checkout=success&audience=athlete')
+            expect(call?.cancelUrl).toBe('https://app.test/profile/plan?checkout=cancelled')
+        })
+
+        it('returns a wizard checkout to the dashboard, not the plan page', async () => {
+            await checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', null, 'hosted', 'dashboard'))
+
+            const call = gateway.calls.find((entry) => entry.operation === 'checkout')
+            expect(call?.successUrl).toBe('https://app.test/dashboard')
+            expect(call?.cancelUrl).toBe('https://app.test/dashboard')
+        })
+
         it('refuses when the user already pays for a plan IN THIS AUDIENCE', async () => {
             await subscriptions.save(aLiveSubscription())
 

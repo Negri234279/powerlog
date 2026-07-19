@@ -38,6 +38,10 @@ import {
 
 const audienceArg = z.enum(['athlete', 'coach'])
 const gatewayArg = z.enum(['stripe', 'paypal'])
+const returnToArg = z
+    .enum(['plan', 'dashboard'])
+    .nullish()
+    .transform((value) => value ?? 'plan')
 const uuidArg = z.string().uuid()
 const optionalUuid = uuidArg.nullish().transform((value) => value ?? null)
 const limitArg = z.coerce
@@ -145,6 +149,10 @@ export class BillingResolver {
         // Embedded is a Stripe-only, in-page checkout; the default is a hosted
         // redirect, which is what every existing caller wants.
         @Args('embedded', { type: () => Boolean, nullable: true }) embedded: boolean | null,
+        // Where a hosted redirect returns to: 'plan' (default, in-app upgrades) or
+        // 'dashboard' (the sign-up wizard, which finishes on the app home).
+        @Args('returnTo', { type: () => String, nullable: true }, new ZodValidationPipe(returnToArg))
+        returnTo: 'plan' | 'dashboard',
     ): Promise<CheckoutSession> {
         const command = new StartCheckoutCommand(
             user.userId,
@@ -152,6 +160,7 @@ export class BillingResolver {
             gateway,
             offerId,
             embedded ? 'embedded' : 'hosted',
+            returnTo,
         )
 
         return this.commandBus.execute<StartCheckoutCommand, CheckoutSession>(command)

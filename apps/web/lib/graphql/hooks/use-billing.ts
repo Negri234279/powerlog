@@ -87,11 +87,19 @@ export function useBillingPortalUrl(audience: PlanAudience, enabled = true) {
  */
 export function useStartCheckout() {
     return useMutation({
-        mutationFn: (input: { planPriceId: string; gateway: string; offerId?: string | null }) =>
+        mutationFn: (input: {
+            planPriceId: string
+            gateway: string
+            offerId?: string | null
+            // Where a hosted redirect returns to: 'plan' (default) or 'dashboard'
+            // (the sign-up wizard). Ignored by the embedded flow, which never redirects.
+            returnTo?: 'plan' | 'dashboard'
+        }) =>
             gqlRequest(StartCheckoutDocument, {
                 planPriceId: input.planPriceId,
                 gateway: input.gateway,
                 offerId: input.offerId ?? null,
+                returnTo: input.returnTo ?? null,
             }).then((r) => r.startCheckout),
         // The redirect flow: hosted checkouts (PayPal, Stripe hosted) hand back a URL.
         // The embedded flow reads `clientSecret` off the mutation itself and mounts it

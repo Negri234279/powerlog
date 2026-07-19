@@ -1167,7 +1167,7 @@ type Mutation {
   """
   Start paying for a plan. Returns a redirect URL (hosted) or a client secret (Stripe embedded, when embedded is true); the subscription is created by the webhook, not by the redirect.
   """
-  startCheckout(embedded: Boolean, gateway: String!, offerId: ID, planPriceId: ID!): CheckoutSession!
+  startCheckout(embedded: Boolean, gateway: String!, offerId: ID, planPriceId: ID!, returnTo: String): CheckoutSession!
 
   """
   Publish the plan, its prices on sale and its offer to a payment gateway. Re-runnable — this is also the retry.

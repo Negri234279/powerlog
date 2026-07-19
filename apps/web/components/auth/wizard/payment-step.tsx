@@ -80,7 +80,14 @@ export function PaymentStep({ queue }: { queue: PaymentItem[] }) {
                     onClick={() => {
                         setError(null)
                         paypal.mutate(
-                            { planPriceId: item.price.id, gateway: 'paypal', offerId: item.offerId },
+                            {
+                                planPriceId: item.price.id,
+                                gateway: 'paypal',
+                                offerId: item.offerId,
+                                // PayPal leaves the wizard; bring it back to the
+                                // dashboard like the embedded flow, not the plan page.
+                                returnTo: 'dashboard',
+                            },
                             { onError: (err) => setError(toMessage(err)) },
                         )
                     }}

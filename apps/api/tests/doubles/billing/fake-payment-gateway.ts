@@ -22,6 +22,8 @@ export interface GatewayCall {
     subscriptionId?: string
     priceId?: string
     mode?: PlanChangeMode
+    successUrl?: string
+    cancelUrl?: string
 }
 
 /**
@@ -95,7 +97,12 @@ export class FakePaymentGateway extends PaymentGatewayPort {
 
     async createCheckout(request: CheckoutRequest): Promise<CheckoutSession> {
         this.guard()
-        this.calls.push({ operation: 'checkout', priceId: request.price.id })
+        this.calls.push({
+            operation: 'checkout',
+            priceId: request.price.id,
+            successUrl: request.successUrl,
+            cancelUrl: request.cancelUrl,
+        })
 
         // Mirror the real split: embedded hands back a client secret, hosted a URL.
         if (request.uiMode === 'embedded') {
