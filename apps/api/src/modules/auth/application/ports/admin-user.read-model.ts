@@ -32,6 +32,27 @@ export interface AdminUserListItem {
     createdAt: Date
 }
 
+/**
+ * The auth-owned account fields for one user's admin detail — a superset of the
+ * list row (adds units, whether they have a password, and updatedAt). The handle,
+ * plan, billing, coaching and training come from other modules and are joined in
+ * by the query handler.
+ */
+export interface AdminUserAccount {
+    id: string
+    email: string
+    role: UserRoleValue
+    isAdmin: boolean
+    status: AccountStatus
+    emailVerified: boolean
+    /** false → a Google-only account with no password. */
+    hasPassword: boolean
+    /** Unit preference: "kg" | "lb". */
+    units: string
+    createdAt: Date
+    updatedAt: Date
+}
+
 export interface AdminUserPage {
     rows: AdminUserListItem[]
     /** Total rows matching the filter (ignoring pagination), for the UI. */
@@ -59,4 +80,6 @@ export interface AdminUserStats {
 export abstract class AdminUserReadModel {
     abstract list(filter: AdminUserFilter, pagination: { limit: number; offset: number }): Promise<AdminUserPage>
     abstract stats(): Promise<AdminUserStats>
+    /** The account fields for one user's detail, or null if no such user. */
+    abstract byId(userId: string): Promise<AdminUserAccount | null>
 }

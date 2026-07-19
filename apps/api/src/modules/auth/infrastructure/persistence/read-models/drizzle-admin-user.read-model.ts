@@ -4,6 +4,7 @@ import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, ne, notInArray
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import type { PlanMembership } from '../../../../../shared/contracts/plan-membership'
 import {
+    type AdminUserAccount,
     type AdminUserFilter,
     type AdminUserPage,
     AdminUserReadModel,
@@ -49,6 +50,40 @@ export class DrizzleAdminUserReadModel extends AdminUserReadModel {
                 createdAt: row.createdAt,
             })),
             total: totals?.value ?? 0,
+        }
+    }
+
+    async byId(userId: string): Promise<AdminUserAccount | null> {
+        const [row] = await this.db
+            .select({
+                id: users.id,
+                email: users.email,
+                role: users.role,
+                isAdmin: users.isAdmin,
+                status: users.status,
+                emailVerifiedAt: users.emailVerifiedAt,
+                hashedPassword: users.hashedPassword,
+                units: users.units,
+                createdAt: users.createdAt,
+                updatedAt: users.updatedAt,
+            })
+            .from(users)
+            .where(eq(users.id, userId))
+            .limit(1)
+
+        if (!row) return null
+
+        return {
+            id: row.id,
+            email: row.email,
+            role: row.role,
+            isAdmin: row.isAdmin,
+            status: row.status,
+            emailVerified: row.emailVerifiedAt !== null,
+            hasPassword: row.hashedPassword !== null,
+            units: row.units,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
         }
     }
 

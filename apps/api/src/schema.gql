@@ -20,6 +20,16 @@ input AddPlanPriceInput {
   planId: ID!
 }
 
+type AdminAthleteEntitlements {
+  ai: Boolean!
+  maxMesocycles: Int
+  maxTemplates: Int
+  maxWorkouts: Int
+
+  """Slug of the plan this section came from."""
+  plan: String!
+}
+
 type AdminBillingStats {
   """Subscriptions currently granting their plan."""
   activeSubscriptions: Int!
@@ -33,11 +43,30 @@ type AdminBillingStats {
   trialing: Int!
 }
 
+type AdminCoachEntitlements {
+  ai: Boolean!
+  maxAthletes: Int
+  maxMesocycles: Int
+  maxTemplates: Int
+
+  """Slug of the plan this section came from."""
+  plan: String!
+  planSessions: Boolean!
+}
+
 type AdminCoachingStats {
   activeCoaches: Int!
   linkedAthletes: Int!
   links: Int!
   pendingInvitations: Int!
+}
+
+type AdminCoachingUserCard {
+  avatarUrl: String
+  firstName: String
+  lastName: String
+  userId: ID!
+  username: String!
 }
 
 type AdminExercise {
@@ -166,6 +195,63 @@ type AdminUser {
   username: String
 }
 
+type AdminUserAccount {
+  createdAt: DateTime!
+  email: String!
+  emailVerified: Boolean!
+
+  """false → a Google-only account with no password."""
+  hasPassword: Boolean!
+  id: ID!
+  isAdmin: Boolean!
+
+  """"athlete" | "coach"."""
+  role: String!
+
+  """"active" | "disabled" | "deleted"."""
+  status: String!
+
+  """Unit preference: "kg" | "lb"."""
+  units: String!
+  updatedAt: DateTime!
+}
+
+type AdminUserBilling {
+  """Currency of the MRR figure; null when nothing is charged."""
+  currency: String
+
+  """Monthly-normalised revenue from entitling, priced subscriptions."""
+  mrrCents: Int!
+  subscriptions: [AdminUserSubscription!]!
+}
+
+type AdminUserCoaching {
+  """How many athletes this user coaches (the true total)."""
+  athleteCount: Int!
+
+  """A bounded sample of those athletes (newest first)."""
+  athletes: [AdminCoachingUserCard!]!
+
+  """Coaches over this user (usually zero or one)."""
+  coaches: [AdminCoachingUserCard!]!
+}
+
+type AdminUserDetail {
+  account: AdminUserAccount!
+  billing: AdminUserBilling
+  coaching: AdminUserCoaching
+  entitlements: AdminUserEntitlements
+  profile: AdminUserProfile
+  training: AdminUserTraining
+}
+
+type AdminUserEntitlements {
+  athlete: AdminAthleteEntitlements!
+
+  """null when the user does no coaching."""
+  coach: AdminCoachEntitlements
+}
+
 type AdminUserPage {
   limit: Int!
   offset: Int!
@@ -173,6 +259,16 @@ type AdminUserPage {
 
   """Total users matching the filter (ignoring pagination)."""
   total: Int!
+}
+
+type AdminUserProfile {
+  avatarUrl: String
+  firstName: String
+  lastName: String
+
+  """Preferred locale (BCP-47), or null if unset."""
+  locale: String
+  username: String!
 }
 
 type AdminUserStats {
@@ -185,6 +281,36 @@ type AdminUserStats {
   newLast30Days: Int!
   total: Int!
   verified: Int!
+}
+
+type AdminUserSubscription {
+  """Null for a manual grant: nothing is charged."""
+  amountCents: Int
+  cancelAtPeriodEnd: Boolean!
+  createdAt: DateTime!
+  currency: String
+  currentPeriodEnd: DateTime!
+  currentPeriodStart: DateTime!
+
+  """stripe | paypal | manual."""
+  gateway: String!
+  id: ID!
+  interval: String
+  planId: ID!
+  planName: String!
+  planSlug: String!
+  status: String!
+}
+
+type AdminUserTraining {
+  completedSessions: Int!
+  distinctExercises: Int!
+
+  """When the user last trained, or null if never."""
+  lastSessionAt: DateTime
+  sessions: Int!
+  sessionsLast30Days: Int!
+  sets: Int!
 }
 
 type AdminWorkoutStats {
@@ -1538,6 +1664,11 @@ type Query {
   Subscriptions, filterable by status/gateway/plan and by exact email or handle.
   """
   adminSubscriptions(gateway: String, limit: Int, offset: Int, planId: ID, search: String, status: String): AdminSubscriptionPage!
+
+  """
+  The full detail of one user — account, profile, plan, billing, coaching, training (admin only).
+  """
+  adminUserDetail(userId: ID!): AdminUserDetail
 
   """Aggregate user counts for the admin dashboard."""
   adminUserStats: AdminUserStats!

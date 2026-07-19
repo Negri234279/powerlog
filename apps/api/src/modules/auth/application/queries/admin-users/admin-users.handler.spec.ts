@@ -43,6 +43,10 @@ class StubAdminUserReadModel extends AdminUserReadModel {
     async stats(): Promise<AdminUserStats> {
         throw new Error('not used')
     }
+
+    byId(): never {
+        throw new Error('not used')
+    }
 }
 
 describe('AdminUsersHandler', () => {

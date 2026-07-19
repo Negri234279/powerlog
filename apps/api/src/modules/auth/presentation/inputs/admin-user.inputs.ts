@@ -20,6 +20,9 @@ export const searchArg = optionalArg(z.string().trim().min(1).max(100))
 export const limitArg = optionalArg(z.coerce.number().int().min(1).max(100))
 export const offsetArg = optionalArg(z.coerce.number().int().min(0))
 
+// A required user id — the detail query's one argument.
+export const userIdArg = z.string().uuid()
+
 // ── set role ────────────────────────────────────────────────────────────
 @InputType()
 export class SetUserRoleInput {

@@ -18,6 +18,7 @@ import { VerifyEmailHandler } from './commands/verify-email/verify-email.handler
 import { CountRegistrationOnUserRegistered } from './event-handlers/count-registration-on-user-registered.handler'
 import { PromoteToCoachOnSubscriptionActivated } from './event-handlers/promote-to-coach-on-subscription-activated.handler'
 import { SendEmailVerificationOnUserRegistered } from './event-handlers/send-email-verification-on-user-registered.handler'
+import { AdminUserDetailHandler } from './queries/admin-user-detail/admin-user-detail.handler'
 import { AdminUserStatsHandler } from './queries/admin-user-stats/admin-user-stats.handler'
 import { AdminUsersHandler } from './queries/admin-users/admin-users.handler'
 import { GetMeHandler } from './queries/get-me/get-me.handler'
@@ -48,7 +49,13 @@ export const AUTH_COMMAND_HANDLERS = [
 ]
 
 /** CQRS query handlers for the auth module. */
-export const AUTH_QUERY_HANDLERS = [GetMeHandler, GetMySessionsHandler, AdminUsersHandler, AdminUserStatsHandler]
+export const AUTH_QUERY_HANDLERS = [
+    GetMeHandler,
+    GetMySessionsHandler,
+    AdminUsersHandler,
+    AdminUserStatsHandler,
+    AdminUserDetailHandler,
+]
 
 /** Integration-event handlers (react to events on the bus). */
 export const AUTH_EVENT_HANDLERS = [
