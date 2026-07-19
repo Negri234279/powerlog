@@ -48,12 +48,15 @@ function SetRow({
     set,
     index,
     units,
+    locked,
 }: {
     sessionId: string
     entryId: string
     set: WorkoutSetData
     index: number
     units: Units
+    /** Completed session in read-only mode: hide every mutating control. */
+    locked: boolean
 }) {
     const t = useTranslations('workouts')
     const update = useUpdateSet()
@@ -61,7 +64,8 @@ function SetRow({
     const [editing, setEditing] = useState(false)
     const [marking, setMarking] = useState(false)
 
-    if (editing) {
+    // Re-locking mid-edit closes the form rather than leaving it hanging.
+    if (editing && !locked) {
         return (
             <li className="py-2.5">
                 <SetForm
@@ -138,7 +142,7 @@ function SetRow({
                 </span>
             ) : null}
 
-            {done ? null : (
+            {locked || done ? null : (
                 <TrackedButton
                     analyticsId="set-complete-open"
                     type="button"
@@ -152,26 +156,30 @@ function SetRow({
             {/* A pencil on phones, the word from sm up: the row already carries two
                 stacked lines and up to three controls, and "edit" is the one whose
                 icon needs no explaining. `aria-label` keeps the name either way. */}
-            <TrackedButton
-                analyticsId="set-edit"
-                type="button"
-                aria-label={t('edit')}
-                onClick={() => setEditing(true)}
-                className="grid size-7 shrink-0 self-start place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-text sm:size-auto sm:px-2.5 sm:py-1"
-            >
-                <Pencil className="size-3.5 sm:hidden" />
-                <span className="hidden text-xs sm:inline">{t('edit')}</span>
-            </TrackedButton>
-            <TrackedButton
-                analyticsId="set-remove"
-                type="button"
-                aria-label={t('removeSet')}
-                onClick={() => remove.mutate({ sessionId, entryId, setId: set.id })}
-                disabled={remove.isPending}
-                className="grid size-7 shrink-0 self-start place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember disabled:opacity-50"
-            >
-                <Close className="size-3.5" />
-            </TrackedButton>
+            {locked ? null : (
+                <>
+                    <TrackedButton
+                        analyticsId="set-edit"
+                        type="button"
+                        aria-label={t('edit')}
+                        onClick={() => setEditing(true)}
+                        className="grid size-7 shrink-0 self-start place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-text sm:size-auto sm:px-2.5 sm:py-1"
+                    >
+                        <Pencil className="size-3.5 sm:hidden" />
+                        <span className="hidden text-xs sm:inline">{t('edit')}</span>
+                    </TrackedButton>
+                    <TrackedButton
+                        analyticsId="set-remove"
+                        type="button"
+                        aria-label={t('removeSet')}
+                        onClick={() => remove.mutate({ sessionId, entryId, setId: set.id })}
+                        disabled={remove.isPending}
+                        className="grid size-7 shrink-0 self-start place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember disabled:opacity-50"
+                    >
+                        <Close className="size-3.5" />
+                    </TrackedButton>
+                </>
+            )}
 
             {/* Mounted only while open so the form always seeds from the set as it
                 is right now, rather than from whatever it was on first render. */}
@@ -199,6 +207,7 @@ export function ExerciseEntry({
     exerciseName,
     units,
     athleteId,
+    locked,
 }: {
     sessionId: string
     entry: ExerciseEntryData
@@ -207,6 +216,8 @@ export function ExerciseEntry({
     /** Set only when a coach is editing an athlete's session — the previous marks
      *  shown must then be the athlete's, not the coach's. */
     athleteId?: string
+    /** Completed session in read-only mode: hide the add-set and remove controls. */
+    locked: boolean
 }) {
     const t = useTranslations('workouts')
     const errorMessage = useErrorMessage()
@@ -292,14 +303,16 @@ export function ExerciseEntry({
                             </span>
                         ) : null}
                     </TrackedButton>
-                    <TrackedButton
-                        analyticsId="exercise-entry-remove-open"
-                        type="button"
-                        onClick={() => setConfirmingRemove(true)}
-                        className="shrink-0 rounded-full px-3 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember"
-                    >
-                        {t('entryRemove')}
-                    </TrackedButton>
+                    {locked ? null : (
+                        <TrackedButton
+                            analyticsId="exercise-entry-remove-open"
+                            type="button"
+                            onClick={() => setConfirmingRemove(true)}
+                            className="shrink-0 rounded-full px-3 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember"
+                        >
+                            {t('entryRemove')}
+                        </TrackedButton>
+                    )}
                 </div>
 
                 {collapsed ? null : (
@@ -316,6 +329,7 @@ export function ExerciseEntry({
                                         set={set}
                                         index={i}
                                         units={units}
+                                        locked={locked}
                                     />
                                 ))}
                             </ul>
@@ -323,27 +337,29 @@ export function ExerciseEntry({
                             <p className="mt-3 text-sm text-text-faint">{t('noSetsYet')}</p>
                         )}
 
-                        <div className="mt-4">
-                            {adding ? (
-                                <SetForm
-                                    analyticsId="set-log"
-                                    units={units}
-                                    submitLabel={log.isPending ? t('adding') : t('addSet')}
-                                    pending={log.isPending}
-                                    onSubmit={onAddSet}
-                                    onCancel={() => setAdding(false)}
-                                />
-                            ) : (
-                                <TrackedButton
-                                    analyticsId="set-add-open"
-                                    type="button"
-                                    onClick={() => setAdding(true)}
-                                    className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
-                                >
-                                    <Plus className="size-4" /> {t('addSet')}
-                                </TrackedButton>
-                            )}
-                        </div>
+                        {locked ? null : (
+                            <div className="mt-4">
+                                {adding ? (
+                                    <SetForm
+                                        analyticsId="set-log"
+                                        units={units}
+                                        submitLabel={log.isPending ? t('adding') : t('addSet')}
+                                        pending={log.isPending}
+                                        onSubmit={onAddSet}
+                                        onCancel={() => setAdding(false)}
+                                    />
+                                ) : (
+                                    <TrackedButton
+                                        analyticsId="set-add-open"
+                                        type="button"
+                                        onClick={() => setAdding(true)}
+                                        className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                                    >
+                                        <Plus className="size-4" /> {t('addSet')}
+                                    </TrackedButton>
+                                )}
+                            </div>
+                        )}
 
                         <ExerciseHistory
                             exerciseId={entry.exerciseId}

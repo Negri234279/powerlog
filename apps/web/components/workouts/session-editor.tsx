@@ -18,8 +18,9 @@ import { AddExercise } from '@/components/workouts/add-exercise'
 import { AiPlanPanel } from '@/components/workouts/ai-plan-panel'
 import { ExerciseEntry } from '@/components/workouts/exercise-entry'
 import { SessionProgress, entryProgress } from '@/components/workouts/session-progress'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { FormError } from '@/components/ui/form-error'
-import { Check } from '@/components/ui/icons'
+import { Check, Lock, Pencil } from '@/components/ui/icons'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import type { BackLink } from '@/components/workouts/back-link'
@@ -54,6 +55,10 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
     const [confirmingDelete, setConfirmingDelete] = useState(false)
     const [actionError, setActionError] = useState<string | null>(null)
     const [statusFilter, setStatusFilter] = useState<string[]>([])
+    // A completed session opens read-only; unlocking is a deliberate, confirmed
+    // step so a stray tap while training can't rewrite what already happened.
+    const [unlocked, setUnlocked] = useState(false)
+    const [confirmingUnlock, setConfirmingUnlock] = useState(false)
 
     const nameById = useMemo(() => {
         const map = new Map<string, string>()
@@ -118,6 +123,7 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
     }
 
     const completed = session.status === 'completed'
+    const locked = completed && !unlocked
     const coachPlanned = session.plannedByUserId !== null && session.plannedByUserId !== session.userId
     // Someone else's session ⇒ a coach is programming for that athlete. Everything
     // showing past performance has to read the ATHLETE's history, not the coach's.
@@ -199,6 +205,45 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
 
             <FormError error={actionError} className="mt-4" />
 
+            {completed ? (
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-shell px-5 py-4 ring-1 ring-hairline">
+                    <div className="flex items-start gap-3">
+                        {locked ? (
+                            <Lock className="mt-0.5 size-4 shrink-0 text-text-faint" />
+                        ) : (
+                            <Pencil className="mt-0.5 size-4 shrink-0 text-amber" />
+                        )}
+                        <div>
+                            <p className="text-sm font-medium text-text">
+                                {locked ? t('completedLockedTitle') : t('editingCompletedTitle')}
+                            </p>
+                            <p className="mt-0.5 text-sm text-text-dim">
+                                {locked ? t('completedLockedBody') : t('editingCompletedBody')}
+                            </p>
+                        </div>
+                    </div>
+                    {locked ? (
+                        <TrackedButton
+                            analyticsId="session-unlock-open"
+                            type="button"
+                            onClick={() => setConfirmingUnlock(true)}
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                        >
+                            <Pencil className="size-4" /> {t('editSession')}
+                        </TrackedButton>
+                    ) : (
+                        <TrackedButton
+                            analyticsId="session-relock"
+                            type="button"
+                            onClick={() => setUnlocked(false)}
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                        >
+                            <Lock className="size-4" /> {t('lockSession')}
+                        </TrackedButton>
+                    )}
+                </div>
+            ) : null}
+
             <div className="mt-6">
                 <SessionProgress session={session} />
             </div>
@@ -246,14 +291,31 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
                             exerciseName={nameById.get(entry.exerciseId) ?? t('exercise')}
                             units={units}
                             athleteId={athleteId}
+                            locked={locked}
                         />
                     ))
                 )}
 
-                <div className="pt-2">
-                    <AddExercise sessionId={session.id} />
-                </div>
+                {locked ? null : (
+                    <div className="pt-2">
+                        <AddExercise sessionId={session.id} />
+                    </div>
+                )}
             </div>
+
+            <ConfirmModal
+                analyticsId="session-unlock"
+                open={confirmingUnlock}
+                onClose={() => setConfirmingUnlock(false)}
+                onConfirm={() => {
+                    setUnlocked(true)
+                    setConfirmingUnlock(false)
+                }}
+                title={t('unlockConfirmTitle')}
+                description={t('unlockConfirmBody')}
+                confirmLabel={t('unlockConfirm')}
+                cancelLabel={t('cancel')}
+            />
         </div>
     )
 }

@@ -170,6 +170,13 @@ export const Shield = (p: SVGProps<SVGSVGElement>) => (
     </Icon>
 )
 
+export const Lock = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <rect x="4.5" y="11" width="15" height="9" rx="2" />
+        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </Icon>
+)
+
 export const Dumbbell = (p: SVGProps<SVGSVGElement>) => (
     <Icon {...p}>
         <path d="M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12" />
