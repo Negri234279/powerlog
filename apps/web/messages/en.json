@@ -363,6 +363,8 @@
         "coachPlanned": "Coach-planned",
         "complete": "Complete",
         "completing": "Completing…",
+        "completeConfirmTitle": "Complete unfinished session?",
+        "completeConfirmBody": "You've marked {completed} of {total} sets. Mark the session as completed anyway?",
         "completedLockedTitle": "Completed session",
         "completedLockedBody": "Changes are locked to prevent accidental edits while you train.",
         "editSession": "Edit",

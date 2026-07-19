@@ -17,7 +17,7 @@ import { unitsOf } from '@/lib/units'
 import { AddExercise } from '@/components/workouts/add-exercise'
 import { AiPlanPanel } from '@/components/workouts/ai-plan-panel'
 import { ExerciseEntry } from '@/components/workouts/exercise-entry'
-import { SessionProgress, entryProgress } from '@/components/workouts/session-progress'
+import { SessionProgress, entryProgress, sessionProgress } from '@/components/workouts/session-progress'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { FormError } from '@/components/ui/form-error'
 import { Check, Lock, Pencil } from '@/components/ui/icons'
@@ -59,6 +59,7 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
     // step so a stray tap while training can't rewrite what already happened.
     const [unlocked, setUnlocked] = useState(false)
     const [confirmingUnlock, setConfirmingUnlock] = useState(false)
+    const [confirmingComplete, setConfirmingComplete] = useState(false)
 
     const nameById = useMemo(() => {
         const map = new Map<string, string>()
@@ -84,6 +85,7 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
     }, [session, statusFilter])
 
     async function onComplete() {
+        setConfirmingComplete(false)
         setActionError(null)
         try {
             await complete.mutateAsync(sessionId)
@@ -91,6 +93,18 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
         } catch (error) {
             setActionError(errorMessage(error))
         }
+    }
+
+    // Every set marked (e.g. 10/10) ⇒ complete straight away. Anything left
+    // pending is likely an early tap, so make finishing it a deliberate confirm.
+    function handleComplete() {
+        if (!session) return
+        if (sessionProgress(session).done) {
+            void onComplete()
+            return
+        }
+
+        setConfirmingComplete(true)
     }
 
     async function onDelete() {
@@ -123,6 +137,7 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
     }
 
     const completed = session.status === 'completed'
+    const progress = sessionProgress(session)
     const locked = completed && !unlocked
     const coachPlanned = session.plannedByUserId !== null && session.plannedByUserId !== session.userId
     // Someone else's session ⇒ a coach is programming for that athlete. Everything
@@ -161,7 +176,7 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
                         <TrackedButton
                             analyticsId="session-complete"
                             type="button"
-                            onClick={onComplete}
+                            onClick={handleComplete}
                             disabled={complete.isPending}
                             className="inline-flex items-center gap-1.5 rounded-full bg-pr/15 px-4 py-2 text-sm font-medium text-pr ring-1 ring-pr/30 transition-colors duration-300 hover:bg-pr/25 disabled:opacity-60"
                         >
@@ -302,6 +317,18 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
                     </div>
                 )}
             </div>
+
+            <ConfirmModal
+                analyticsId="session-complete-confirm"
+                open={confirmingComplete}
+                onClose={() => setConfirmingComplete(false)}
+                onConfirm={() => void onComplete()}
+                title={t('completeConfirmTitle')}
+                description={t('completeConfirmBody', { completed: progress.completed, total: progress.total })}
+                confirmLabel={t('complete')}
+                cancelLabel={t('cancel')}
+                pending={complete.isPending}
+            />
 
             <ConfirmModal
                 analyticsId="session-unlock"

@@ -363,6 +363,8 @@
         "coachPlanned": "Planificado por entrenador",
         "complete": "Completar",
         "completing": "Completando…",
+        "completeConfirmTitle": "¿Completar sin terminar?",
+        "completeConfirmBody": "Has marcado {completed} de {total} series. ¿Marcar la sesión como completada de todas formas?",
         "completedLockedTitle": "Sesión completada",
         "completedLockedBody": "Los cambios están bloqueados para evitar ediciones accidentales mientras entrenas.",
         "editSession": "Editar",
