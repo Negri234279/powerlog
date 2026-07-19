@@ -46,6 +46,19 @@ function invalidate(queryClient: QueryClient, type: RealtimeEventType): void {
     for (const queryKey of INVALIDATES[type]) {
         void queryClient.invalidateQueries({ queryKey })
     }
+
+    // A subscription change can flip the user's role — activating a coach plan
+    // promotes them (the reverse on the way out). The role rides in the JWT, so the
+    // invalidations above aren't enough: re-mint the session to pull the new role,
+    // then refetch `me`. This fires exactly when the webhook lands, so it works from
+    // anywhere (e.g. a fresh signup that paid for a coach plan and went to the
+    // dashboard). Single-flight-shared with the client, so it can't collide with the
+    // reconnect refresh.
+    if (type === 'subscription_updated') {
+        void refreshSession()
+            .then(() => queryClient.invalidateQueries({ queryKey: ['me'] }))
+            .catch(() => undefined)
+    }
 }
 
 // Backoff between reconnection attempts, capped. Jittered so a fleet of tabs

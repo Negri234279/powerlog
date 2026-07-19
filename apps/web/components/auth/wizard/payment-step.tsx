@@ -24,10 +24,10 @@ export interface PaymentItem {
  * at a time): Stripe stays in-page and advances on `onComplete`, so athlete → coach
  * flows without leaving; PayPal is a redirect that finishes on the plan page.
  *
- * When the queue is done it hands off to `/profile/plan?checkout=success` — the same
- * landing a gateway redirect uses — which waits for the webhook via realtime,
- * confirms activation, and (for a coach plan) refreshes the session so role=coach
- * reaches the JWT.
+ * When the queue is done it sends the new user to their dashboard. The plan may
+ * still be activating (it's the webhook, not this callback, that creates the
+ * subscription) — the dashboard settles it via the realtime `subscription_updated`
+ * event, which also refreshes the session so a paid coach plan's role reaches the JWT.
  */
 export function PaymentStep({ queue }: { queue: PaymentItem[] }) {
     const tw = useTranslations('auth.wizard')
@@ -42,9 +42,7 @@ export function PaymentStep({ queue }: { queue: PaymentItem[] }) {
     if (!item) return null
 
     function finish() {
-        const last = queue[queue.length - 1]!
-
-        router.replace(`/profile/plan?checkout=success&audience=${last.audience}`)
+        router.replace('/dashboard')
     }
 
     function onStripeComplete() {
