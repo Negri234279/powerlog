@@ -6,9 +6,15 @@ import { AdminGuard } from '../../auth/admin.guard'
 import { JwtCookieGuard } from '../../auth/jwt-cookie.guard'
 import type { Env } from '../../config/env'
 import { QueryBusProfileSnapshotReader } from '../../account/query-bus-profile-snapshot-reader'
+import { QueryBusUserBillingReader } from '../../admin-user-detail/query-bus-user-billing-reader'
+import { QueryBusUserCoachingReader } from '../../admin-user-detail/query-bus-user-coaching-reader'
+import { QueryBusUserTrainingReader } from '../../admin-user-detail/query-bus-user-training-reader'
 import { CommandBusProfileProvisioner } from '../../registration/command-bus-profile-provisioner'
 import { ProfileProvisioner } from '../../shared/contracts/profile-provisioner'
 import { ProfileSnapshotReader } from '../../shared/contracts/profile-snapshot-reader'
+import { UserBillingReader } from '../../shared/contracts/user-billing'
+import { UserCoachingReader } from '../../shared/contracts/user-coaching'
+import { UserTrainingReader } from '../../shared/contracts/user-training'
 import { UserDirectory } from '../../shared/contracts/user-directory'
 import {
     AUTH_APPLICATION_SERVICES,
@@ -70,6 +76,12 @@ const ADAPTERS: Provider[] = [
     // Cross-module port: reads the profile snapshot (handle + avatar) the
     // SessionIssuer stamps into the JWT, via the QueryBus.
     { provide: ProfileSnapshotReader, useClass: QueryBusProfileSnapshotReader },
+    // Cross-module ports for the admin user detail: billing (subscriptions + MRR),
+    // coaching (coach/athlete links) and workouts (training figures), each asked
+    // over the QueryBus so auth imports none of those modules.
+    { provide: UserBillingReader, useClass: QueryBusUserBillingReader },
+    { provide: UserCoachingReader, useClass: QueryBusUserCoachingReader },
+    { provide: UserTrainingReader, useClass: QueryBusUserTrainingReader },
 ]
 
 /**

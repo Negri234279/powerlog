@@ -34,6 +34,7 @@ import { GetMesocycleHandler } from './queries/get-mesocycle/get-mesocycle.handl
 import { GetStrengthProgressionHandler } from './queries/get-strength-progression/get-strength-progression.handler'
 import { GetTrainingDistributionHandler } from './queries/get-training-distribution/get-training-distribution.handler'
 import { GetTrainingSummaryHandler } from './queries/get-training-summary/get-training-summary.handler'
+import { GetUserTrainingHandler } from './queries/get-user-training/get-user-training.handler'
 import { GetVolumeSeriesHandler } from './queries/get-volume-series/get-volume-series.handler'
 import { GetWorkoutSessionHandler } from './queries/get-workout-session/get-workout-session.handler'
 import { GetWorkoutTemplateHandler } from './queries/get-workout-template/get-workout-template.handler'
@@ -94,6 +95,7 @@ export const WORKOUTS_QUERY_HANDLERS = [
     GetStrengthProgressionHandler,
     GetTrainingDistributionHandler,
     GetWorkoutUsageHandler,
+    GetUserTrainingHandler,
 ]
 
 /** CQRS event handlers for the workouts module (cross-module integration events). */
