@@ -25,7 +25,7 @@ import { MultiSelect } from '@/components/ui/multi-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
 import { Tooltip } from '@/components/ui/tooltip'
-import { TrackedButton } from '@/components/ui/tracked'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 /** User identity — username with the email + verification indicator beneath. */
 function UserIdentity({ user }: { user: AdminUser }) {
@@ -33,7 +33,13 @@ function UserIdentity({ user }: { user: AdminUser }) {
 
     return (
         <div className="min-w-0">
-            <p className="truncate text-text">{user.username ? `@${user.username}` : '—'}</p>
+            <TrackedLink
+                analyticsId="admin-user-detail-open"
+                href={`/admin/users/${user.id}`}
+                className="block truncate text-text transition-colors duration-300 hover:text-ember"
+            >
+                {user.username ? `@${user.username}` : user.email}
+            </TrackedLink>
             <div className="flex min-w-0 items-center gap-1.5">
                 <Tooltip label={user.emailVerified ? t('emailVerified') : t('emailNotVerified')}>
                     {user.emailVerified ? (

@@ -141,6 +141,93 @@ export const AdminUsersDocument = graphql(`
     }
 `)
 
+export const AdminUserDetailDocument = graphql(`
+    query AdminUserDetail($userId: ID!) {
+        adminUserDetail(userId: $userId) {
+            account {
+                id
+                email
+                role
+                isAdmin
+                status
+                emailVerified
+                hasPassword
+                units
+                createdAt
+                updatedAt
+            }
+            profile {
+                username
+                firstName
+                lastName
+                avatarUrl
+                locale
+            }
+            entitlements {
+                athlete {
+                    plan
+                    maxTemplates
+                    maxMesocycles
+                    maxWorkouts
+                    ai
+                }
+                coach {
+                    plan
+                    maxAthletes
+                    planSessions
+                    maxTemplates
+                    maxMesocycles
+                    ai
+                }
+            }
+            billing {
+                mrrCents
+                currency
+                subscriptions {
+                    id
+                    planId
+                    planSlug
+                    planName
+                    gateway
+                    status
+                    amountCents
+                    currency
+                    interval
+                    currentPeriodStart
+                    currentPeriodEnd
+                    cancelAtPeriodEnd
+                    createdAt
+                }
+            }
+            coaching {
+                athleteCount
+                coaches {
+                    userId
+                    username
+                    firstName
+                    lastName
+                    avatarUrl
+                }
+                athletes {
+                    userId
+                    username
+                    firstName
+                    lastName
+                    avatarUrl
+                }
+            }
+            training {
+                sessions
+                completedSessions
+                sets
+                distinctExercises
+                lastSessionAt
+                sessionsLast30Days
+            }
+        }
+    }
+`)
+
 export const SetUserRoleDocument = graphql(`
     mutation SetUserRole($input: SetUserRoleInput!) {
         setUserRole(input: $input) {
