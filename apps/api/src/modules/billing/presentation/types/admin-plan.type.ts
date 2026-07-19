@@ -89,6 +89,9 @@ export class PlanOfferType {
     @Field(() => String)
     name!: string
 
+    @Field(() => String, { nullable: true, description: 'Buyer-facing promo copy for the pricing card.' })
+    message!: string | null
+
     @Field(() => Int, { nullable: true, description: 'Free days before the first charge.' })
     trialDays!: number | null
 

@@ -1492,6 +1492,9 @@ type PlanOffer {
   endsAt: DateTime
   id: ID!
   introPhase: IntroPhase
+
+  """Buyer-facing promo copy for the pricing card."""
+  message: String
   name: String!
   startsAt: DateTime!
 
@@ -1592,6 +1595,9 @@ type PublicOffer {
   endsAt: DateTime
   id: ID!
   introPhase: IntroPhase
+
+  """Buyer-facing promo copy for the pricing card."""
+  message: String
   name: String!
   trialDays: Int
 }
@@ -1859,6 +1865,11 @@ type Query {
   The caller's headline training KPIs (incl. estimated S+B+D total), optionally ranged.
   """
   trainingSummary(from: String, to: String): TrainingSummary!
+
+  """
+  Whether you can still get a free trial in an audience (athlete | coach). False once you have used your one trial there.
+  """
+  trialEligible(audience: String!): Boolean!
 
   """Number of unread notifications (the bell badge)."""
   unreadNotificationsCount: Int!
@@ -2161,6 +2172,9 @@ input UpsertPlanOfferInput {
   """When it closes. Omitted → open-ended."""
   endsAt: DateTime
   introPhase: IntroPhaseInput
+
+  """Buyer-facing promo copy for the pricing card."""
+  message: String
   name: String!
   planId: ID!
 

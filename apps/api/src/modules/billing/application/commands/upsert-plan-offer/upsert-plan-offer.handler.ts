@@ -40,6 +40,7 @@ export class UpsertPlanOfferHandler implements ICommandHandler<UpsertPlanOfferCo
             id: this.ids.uuid(),
             planId: plan.id,
             name: command.name,
+            message: command.message,
             trialDays: command.trialDays,
             introPhase: command.introPhase,
             startsAt: command.startsAt,

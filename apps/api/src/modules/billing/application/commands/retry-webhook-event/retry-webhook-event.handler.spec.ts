@@ -10,6 +10,7 @@ import {
     InMemoryPlanPriceRepository,
     InMemoryPlanRepository,
     InMemorySubscriptionRepository,
+    InMemoryTrialRedemptionRepository,
     InMemoryWebhookEventStore,
 } from '../../../../../../tests/doubles/billing'
 import { RecordingEventBus, silentLogger } from '../../../../../../tests/doubles/shared'
@@ -93,6 +94,7 @@ describe('replaying a failed webhook', () => {
             plans,
             prices,
             new InMemoryInvoiceRepository(),
+            new InMemoryTrialRedemptionRepository(),
             events,
             new FakeWebhookRetryQueue(),
             new FakeBillingMetrics(),

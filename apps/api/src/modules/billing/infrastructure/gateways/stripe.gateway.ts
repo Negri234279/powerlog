@@ -220,7 +220,10 @@ export class StripeGateway extends PaymentGatewayPort {
                 },
                 subscription_data: {
                     metadata: { userId: request.userId, planId: request.plan.id, priceId: request.price.id },
-                    ...(offer?.trialDays ? { trial_period_days: offer.trialDays } : {}),
+                    // The trial rides the checkout session, separate from the coupon —
+                    // so an account that already used its one trial still gets the
+                    // offer's discount, just charged from day one.
+                    ...(offer?.trialDays && request.applyTrial ? { trial_period_days: offer.trialDays } : {}),
                 },
                 ...(offer?.stripeCouponId ? { discounts: [{ coupon: offer.stripeCouponId }] } : {}),
             }),

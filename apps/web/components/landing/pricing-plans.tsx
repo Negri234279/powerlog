@@ -170,6 +170,9 @@ function PlanCard({
         const offer = plan.offer
         if (!offer) return null
 
+        // The admin's own copy wins when they wrote one; otherwise fall back to a line
+        // derived from the terms.
+        if (offer.message) return offer.message
         if (offer.trialDays) return t('offerTrial', { days: offer.trialDays })
         if (offer.introPhase) {
             const { cycles, percentOff } = offer.introPhase

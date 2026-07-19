@@ -21,6 +21,7 @@ import {
     useMyWorkoutUsage,
     useResumeSubscription,
     useStartCheckout,
+    useTrialEligible,
 } from '@/lib/graphql/hooks/use-billing'
 import { track } from '@/lib/analytics/events'
 import { formatNumericDate } from '@/lib/format-date'
@@ -223,6 +224,10 @@ function PlanAudienceSection({
 }) {
     const t = useTranslations('billing')
     const { data: plans, isLoading: loadingPlans } = useAvailablePlans(audience)
+    // Whether a free trial would actually be honoured here. Default to true while it
+    // loads — the same optimism as the sign-up wizard, and the server strips the trial
+    // regardless if it turns out they already used it.
+    const { data: trialEligible = true } = useTrialEligible(audience)
 
     const currentPlanSlug = audience === 'coach' ? (coach?.plan ?? null) : athlete.plan
 
@@ -273,6 +278,7 @@ function PlanAudienceSection({
                                       )}
                                       subscription={subscription}
                                       currentPlanSlug={currentPlanSlug}
+                                      trialEligible={trialEligible}
                                   />
                               ))}
                 </div>
@@ -546,11 +552,13 @@ function PlanCard({
     price,
     subscription,
     currentPlanSlug,
+    trialEligible,
 }: {
     plan: PublicPlan
     price: PublicPrice | undefined
     subscription: MySubscription | null
     currentPlanSlug: string | null
+    trialEligible: boolean
 }) {
     const t = useTranslations('billing')
     const toMessage = useErrorMessage()
@@ -562,6 +570,23 @@ function PlanCard({
     // A price no gateway can sell is shown honestly, but there is nothing to click.
     const gateways = price?.gateways ?? []
     const offer = plan.offer
+
+    /**
+     * The promo badge, honest about what this account will actually get. The admin's
+     * custom message usually advertises the trial, so it only shows when the trial
+     * will be honoured (or the offer has no trial to misrepresent). A returning user
+     * who already spent their trial sees the intro discount, if any, or nothing.
+     */
+    function offerBadge(): string | null {
+        if (!offer) return null
+        if (offer.message && (!offer.trialDays || trialEligible)) return offer.message
+        if (offer.trialDays && trialEligible) return t('offerTrial', { days: offer.trialDays })
+        if (offer.introPhase) return t('offerDiscount', { percent: offer.introPhase.percentOff })
+
+        return null
+    }
+
+    const badge = offerBadge()
 
     const buy = (gateway: string) => {
         setError(null)
@@ -588,11 +613,9 @@ function PlanCard({
         >
             <div className="flex items-start justify-between gap-2">
                 <h3 className="font-display text-h4 tracking-tight">{plan.name}</h3>
-                {offer ? (
+                {badge ? (
                     <span className="rounded-full bg-ember/15 px-2 py-0.5 font-mono text-eyebrow uppercase text-ember">
-                        {offer.trialDays
-                            ? t('offerTrial', { days: offer.trialDays })
-                            : t('offerDiscount', { percent: offer.introPhase?.percentOff ?? 0 })}
+                        {badge}
                     </span>
                 ) : null}
             </div>

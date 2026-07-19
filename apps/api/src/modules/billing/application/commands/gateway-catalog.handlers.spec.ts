@@ -85,7 +85,15 @@ describe('publishing the catalog to a gateway', () => {
     it('publishes the plan offer and keeps the discount it created', async () => {
         await prices.save(aPrice('price-eur'))
         const offerId = await upsertOffer().execute(
-            new UpsertPlanOfferCommand(PLAN.id, 'Launch', 14, { cycles: 3, percentOff: 50 }, NOW, null),
+            new UpsertPlanOfferCommand(
+                PLAN.id,
+                'Launch',
+                '14 días gratis, luego 3 meses al 50%',
+                14,
+                { cycles: 3, percentOff: 50 },
+                NOW,
+                null,
+            ),
         )
 
         await sync().execute(new SyncPlanCommand(PLAN.id, 'stripe'))
@@ -132,9 +140,9 @@ describe('plan offers', () => {
     it('retires the offer the plan had live instead of editing it', async () => {
         // The old terms are already a coupon at the gateway, and coupons are
         // immutable — the people who signed up under them keep them.
-        const first = await upsert().execute(new UpsertPlanOfferCommand(PLAN.id, 'Launch', 14, null, NOW, null))
+        const first = await upsert().execute(new UpsertPlanOfferCommand(PLAN.id, 'Launch', null, 14, null, NOW, null))
 
-        const second = await upsert().execute(new UpsertPlanOfferCommand(PLAN.id, 'Summer', 30, null, NOW, null))
+        const second = await upsert().execute(new UpsertPlanOfferCommand(PLAN.id, 'Summer', null, 30, null, NOW, null))
 
         expect((await offers.findById(first))?.active).toBe(false)
         expect((await offers.findActiveByPlan(PLAN.id))?.id).toBe(second)
@@ -142,7 +150,7 @@ describe('plan offers', () => {
 
     it('refuses an offer that promises nothing', async () => {
         await expect(
-            upsert().execute(new UpsertPlanOfferCommand(PLAN.id, 'Empty', null, null, NOW, null)),
+            upsert().execute(new UpsertPlanOfferCommand(PLAN.id, 'Empty', null, null, null, NOW, null)),
         ).rejects.toBeInstanceOf(InvalidPlanOfferError)
     })
 
@@ -150,7 +158,7 @@ describe('plan offers', () => {
         const yesterday = new Date('2026-07-14T00:00:00.000Z')
 
         await expect(
-            upsert().execute(new UpsertPlanOfferCommand(PLAN.id, 'Backwards', 7, null, NOW, yesterday)),
+            upsert().execute(new UpsertPlanOfferCommand(PLAN.id, 'Backwards', null, 7, null, NOW, yesterday)),
         ).rejects.toBeInstanceOf(InvalidPlanOfferError)
     })
 })

@@ -31,6 +31,9 @@ export class PublicOfferType {
     @Field(() => String)
     name!: string
 
+    @Field(() => String, { nullable: true, description: 'Buyer-facing promo copy for the pricing card.' })
+    message!: string | null
+
     @Field(() => Int, { nullable: true })
     trialDays!: number | null
 

@@ -273,6 +273,7 @@ export class AdminBillingResolver {
         const command = new UpsertPlanOfferCommand(
             input.planId,
             input.name,
+            input.message ?? null,
             input.trialDays ?? null,
             input.introPhase ?? null,
             input.startsAt ?? new Date(),

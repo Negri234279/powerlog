@@ -26,6 +26,8 @@ export const planOffers = pgTable(
             .notNull()
             .references(() => plans.id, { onDelete: 'cascade' }),
         name: text('name').notNull(),
+        /** Buyer-facing promo copy for the pricing card. Null = no promo line. */
+        message: text('message'),
         /** Free days before the first charge (the card is still taken up front). */
         trialDays: integer('trial_days'),
         introPhase: jsonb('intro_phase').$type<IntroPhase>(),

@@ -231,9 +231,17 @@ export class PayPalGateway extends PaymentGatewayPort {
 
         // With an offer, the checkout points at the offer's own plan — that is where
         // the trial and the intro cycles are.
-        const planId = request.offer
-            ? request.offer.paypalPlanFor(request.price.id)
-            : request.price.externalIdOn('paypal')
+        //
+        // Unlike Stripe, PayPal bakes the trial and the discount into ONE plan, so
+        // they cannot be split. If this account already used its trial (`applyTrial`
+        // false on a trial offer) we fall back to the base plan — full price, no
+        // discount either. An intro-only offer has no trial to drop, so it keeps its
+        // plan. Stripe, where trial and coupon are separate, keeps the discount.
+        const suppressOffer = Boolean(request.offer?.trialDays) && !request.applyTrial
+        const planId =
+            request.offer && !suppressOffer
+                ? request.offer.paypalPlanFor(request.price.id)
+                : request.price.externalIdOn('paypal')
         if (!planId) throw new PriceNotSyncedError()
 
         const subscription = await this.call('checkout', () =>

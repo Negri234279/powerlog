@@ -70,6 +70,13 @@ export interface CheckoutRequest {
     plan: PlanAggregate
     price: PlanPriceEntity
     offer?: PlanOfferEntity | null
+    /**
+     * Whether the offer's free trial applies to THIS checkout. False when the account
+     * has already used its one trial in this audience — the offer's discount still
+     * applies, but the trial days do not (see `StartCheckoutHandler`). Meaningless
+     * without an `offer` that has `trialDays`; the adapters already guard on that.
+     */
+    applyTrial: boolean
     /** The provider-side customer this user already is, if any. */
     customerId?: string | null
     /** Shown on the provider's page when there is no customer yet. */

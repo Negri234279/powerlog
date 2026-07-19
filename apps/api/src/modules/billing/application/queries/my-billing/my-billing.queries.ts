@@ -36,3 +36,12 @@ export class BillingPortalUrlQuery {
         readonly audience: PlanAudience,
     ) {}
 }
+
+/** Whether the user can still get a free trial in an audience — false once they
+ *  have used their one trial there. Lets the UI hide a trial it would not honour. */
+export class TrialEligibilityQuery {
+    constructor(
+        readonly userId: string,
+        readonly audience: PlanAudience,
+    ) {}
+}

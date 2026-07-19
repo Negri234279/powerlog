@@ -10,6 +10,7 @@ import {
     InMemoryPlanPriceRepository,
     InMemoryPlanRepository,
     InMemorySubscriptionRepository,
+    InMemoryTrialRedemptionRepository,
 } from '../../../../../tests/doubles/billing'
 import { FakeUserDirectory, silentLogger } from '../../../../../tests/doubles/shared'
 import { PlanMother, SubscriptionMother } from '../../../../../tests/mothers/billing'
@@ -62,6 +63,7 @@ describe('what a subscriber can do', () => {
     let plans: InMemoryPlanRepository
     let prices: InMemoryPlanPriceRepository
     let offers: InMemoryPlanOfferRepository
+    let trialRedemptions: InMemoryTrialRedemptionRepository
     let gateway: FakePaymentGateway
     let users: FakeUserDirectory
     let metrics: FakeBillingMetrics
@@ -75,6 +77,7 @@ describe('what a subscriber can do', () => {
             aPrice('price-coach-pro', 1999, true, COACH_PRO.id),
         ])
         offers = new InMemoryPlanOfferRepository()
+        trialRedemptions = new InMemoryTrialRedemptionRepository()
         gateway = new FakePaymentGateway()
         users = new FakeUserDirectory().seed(USER, { email: 'u@example.com', username: 'u' })
         metrics = new FakeBillingMetrics()
@@ -88,6 +91,7 @@ describe('what a subscriber can do', () => {
             plans,
             prices,
             offers,
+            trialRedemptions,
             provider(),
             users,
             new FakeBillingConfig(),
@@ -215,6 +219,52 @@ describe('what a subscriber can do', () => {
             await expect(
                 checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', 'offer-old')),
             ).rejects.toBeInstanceOf(OfferNotRedeemableError)
+        })
+
+        const anActiveOffer = (planId = PRO.id, id = 'offer-live') =>
+            PlanOfferEntity.create({
+                id,
+                planId,
+                name: 'Launch',
+                message: '14 días gratis',
+                trialDays: 14,
+                introPhase: { cycles: 3, percentOff: 50 },
+                startsAt: new Date('2026-07-01T00:00:00.000Z'),
+                endsAt: null,
+                now: NOW,
+            })
+
+        it('applies the trial the first time an account checks out on the offer', async () => {
+            await offers.save(anActiveOffer())
+
+            await checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', 'offer-live'))
+
+            const call = gateway.calls.find((entry) => entry.operation === 'checkout')
+            expect(call?.offerId).toBe('offer-live')
+            expect(call?.applyTrial).toBe(true)
+        })
+
+        it('drops the trial but keeps the offer once the account has used its trial here', async () => {
+            await offers.save(anActiveOffer())
+            await trialRedemptions.record(USER, 'athlete', NOW)
+
+            await checkout().execute(new StartCheckoutCommand(USER, 'price-pro', 'stripe', 'offer-live'))
+
+            const call = gateway.calls.find((entry) => entry.operation === 'checkout')
+            // The offer still rides the checkout — the discount applies — but the free
+            // days do not: one trial per account per audience.
+            expect(call?.offerId).toBe('offer-live')
+            expect(call?.applyTrial).toBe(false)
+        })
+
+        it('counts the trial per audience: an athlete trial does not spend the coach one', async () => {
+            await offers.save(anActiveOffer(COACH_PRO.id, 'offer-coach'))
+            await trialRedemptions.record(USER, 'athlete', NOW)
+
+            await checkout().execute(new StartCheckoutCommand(USER, 'price-coach-pro', 'stripe', 'offer-coach'))
+
+            const call = gateway.calls.find((entry) => entry.operation === 'checkout')
+            expect(call?.applyTrial).toBe(true)
         })
 
         it('refuses cleanly when this deployment has no keys for the gateway', async () => {

@@ -20,6 +20,12 @@ export interface PlanOfferProps {
     id: string
     planId: string
     name: string
+    /**
+     * The line the buyer sees on the pricing card ("7 días gratis, luego 9,99 €").
+     * Free-text, written by the admin; null shows no promo copy. It is display only
+     * — the actual terms are `trialDays`/`introPhase`.
+     */
+    message: string | null
     /** Free days before the first charge. The payment method is still taken up front. */
     trialDays: number | null
     introPhase: IntroPhase | null
@@ -56,6 +62,7 @@ export class PlanOfferEntity {
         id: string
         planId: string
         name: string
+        message?: string | null
         trialDays?: number | null
         introPhase?: IntroPhase | null
         startsAt: Date
@@ -64,6 +71,9 @@ export class PlanOfferEntity {
     }): PlanOfferEntity {
         const trialDays = input.trialDays ?? null
         const introPhase = input.introPhase ?? null
+        // Trim to null so an empty or whitespace-only message never renders as a blank
+        // promo line on the card.
+        const message = input.message?.trim() || null
 
         // An offer that offers nothing is a mistake, not a no-op: it would show up
         // in the pricing page promising something and change nothing at checkout.
@@ -82,11 +92,15 @@ export class PlanOfferEntity {
         if (input.endsAt && input.endsAt <= input.startsAt) {
             throw new InvalidPlanOfferError('An offer cannot end before it starts.')
         }
+        if (message && message.length > 120) {
+            throw new InvalidPlanOfferError('An offer message is at most 120 characters.')
+        }
 
         return new PlanOfferEntity({
             id: input.id,
             planId: input.planId,
             name: input.name.trim(),
+            message,
             trialDays,
             introPhase,
             startsAt: input.startsAt,
@@ -141,6 +155,9 @@ export class PlanOfferEntity {
     }
     get name(): string {
         return this.props.name
+    }
+    get message(): string | null {
+        return this.props.message
     }
     get trialDays(): number | null {
         return this.props.trialDays

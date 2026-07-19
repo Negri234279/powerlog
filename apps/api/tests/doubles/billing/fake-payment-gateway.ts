@@ -24,6 +24,9 @@ export interface GatewayCall {
     mode?: PlanChangeMode
     successUrl?: string
     cancelUrl?: string
+    /** For a checkout: which offer it was started on, and whether the trial applied. */
+    offerId?: string | null
+    applyTrial?: boolean
 }
 
 /**
@@ -102,6 +105,8 @@ export class FakePaymentGateway extends PaymentGatewayPort {
             priceId: request.price.id,
             successUrl: request.successUrl,
             cancelUrl: request.cancelUrl,
+            offerId: request.offer?.id ?? null,
+            applyTrial: request.applyTrial,
         })
 
         // Mirror the real split: embedded hands back a client secret, hosted a URL.

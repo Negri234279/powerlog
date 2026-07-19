@@ -153,6 +153,15 @@ function PlanSelectCard({
                 </span>
             </div>
 
+            {/* The offer's promo line, written by the admin ("7 días gratis, luego
+                9,99 €"). New signups are always trial-eligible, so the wizard shows it
+                verbatim. */}
+            {plan.offer?.message ? (
+                <span className="mt-3 self-start rounded-full bg-ember/10 px-2.5 py-1 text-xs font-medium text-ember">
+                    {plan.offer.message}
+                </span>
+            ) : null}
+
             <p className="mt-3 font-display text-h3 tabular-nums tracking-tight">
                 {plan.isFree ? (
                     t('free')

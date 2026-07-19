@@ -33,6 +33,7 @@ import {
     BillingPortalUrlHandler,
     MyInvoicesHandler,
     MySubscriptionHandler,
+    TrialEligibilityHandler,
 } from './queries/my-billing/my-billing.handlers'
 
 /** CQRS command handlers for the billing module. */
@@ -66,6 +67,7 @@ export const BILLING_QUERY_HANDLERS = [
     MySubscriptionHandler,
     MyInvoicesHandler,
     BillingPortalUrlHandler,
+    TrialEligibilityHandler,
     AdminGatewayStatusHandler,
     AdminWebhookEventsHandler,
     AdminBillingDriftHandler,

@@ -10,11 +10,18 @@ import { PlanPriceRepository } from '../../../domain/repositories/plan-price.rep
 import { PlanRepository } from '../../../domain/repositories/plan.repository'
 import { PlanTranslationRepository } from '../../../domain/repositories/plan-translation.repository'
 import { SubscriptionRepository } from '../../../domain/repositories/subscription.repository'
+import { TrialRedemptionRepository } from '../../../domain/repositories/trial-redemption.repository'
 import type { SubscriptionStatus } from '../../../domain/subscription-status'
 import { BillingConfig } from '../../ports/billing-config.port'
 import { Clock } from '../../ports/clock.port'
 import { GatewayProvider } from '../../ports/gateway-provider.port'
-import { AvailablePlansQuery, BillingPortalUrlQuery, MyInvoicesQuery, MySubscriptionQuery } from './my-billing.queries'
+import {
+    AvailablePlansQuery,
+    BillingPortalUrlQuery,
+    MyInvoicesQuery,
+    MySubscriptionQuery,
+    TrialEligibilityQuery,
+} from './my-billing.queries'
 
 export interface PublicPriceView {
     id: string
@@ -28,6 +35,7 @@ export interface PublicPriceView {
 export interface PublicOfferView {
     id: string
     name: string
+    message: string | null
     trialDays: number | null
     introPhase: IntroPhase | null
     endsAt: Date | null
@@ -151,6 +159,7 @@ export class AvailablePlansHandler implements IQueryHandler<AvailablePlansQuery,
                     ? {
                           id: offer.id,
                           name: offer.name,
+                          message: offer.message,
                           trialDays: offer.trialDays,
                           introPhase: offer.introPhase,
                           endsAt: offer.endsAt,
@@ -273,5 +282,19 @@ export class BillingPortalUrlHandler implements IQueryHandler<BillingPortalUrlQu
         const gateway = this.gateways.get(subscription.gateway)
 
         return gateway.billingPortalUrl(subscription, `${this.config.webOrigin}/profile/plan`)
+    }
+}
+
+/**
+ * Whether this account may still get a free trial in an audience. The checkout is
+ * the authority (it strips the trial on its own); this is only so the UI does not
+ * dangle a trial that will not be honoured to a returning subscriber.
+ */
+@QueryHandler(TrialEligibilityQuery)
+export class TrialEligibilityHandler implements IQueryHandler<TrialEligibilityQuery, boolean> {
+    constructor(private readonly trialRedemptions: TrialRedemptionRepository) {}
+
+    async execute(query: TrialEligibilityQuery): Promise<boolean> {
+        return !(await this.trialRedemptions.hasRedeemed(query.userId, query.audience))
     }
 }

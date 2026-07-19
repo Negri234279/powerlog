@@ -27,6 +27,7 @@ export interface AdminPlanPriceView {
 export interface AdminPlanOfferView {
     id: string
     name: string
+    message: string | null
     trialDays: number | null
     introPhase: IntroPhase | null
     startsAt: Date
@@ -127,6 +128,7 @@ function offerViewOf(offer: PlanOfferEntity | undefined): AdminPlanOfferView | n
     return {
         id: offer.id,
         name: offer.name,
+        message: offer.message,
         trialDays: offer.trialDays,
         introPhase: offer.introPhase,
         startsAt: offer.startsAt,

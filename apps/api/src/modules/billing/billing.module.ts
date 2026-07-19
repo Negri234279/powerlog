@@ -23,6 +23,7 @@ import { PlanPriceRepository } from './domain/repositories/plan-price.repository
 import { PlanRepository } from './domain/repositories/plan.repository'
 import { PlanTranslationRepository } from './domain/repositories/plan-translation.repository'
 import { SubscriptionRepository } from './domain/repositories/subscription.repository'
+import { TrialRedemptionRepository } from './domain/repositories/trial-redemption.repository'
 import { GatewayRegistry } from './infrastructure/gateways/gateway.registry'
 import { PayPalGateway } from './infrastructure/gateways/paypal.gateway'
 import { StripeGateway } from './infrastructure/gateways/stripe.gateway'
@@ -45,6 +46,7 @@ import { DrizzlePlanPriceRepository } from './infrastructure/persistence/reposit
 import { DrizzlePlanRepository } from './infrastructure/persistence/repositories/drizzle-plan.repository'
 import { DrizzlePlanTranslationRepository } from './infrastructure/persistence/repositories/drizzle-plan-translation.repository'
 import { DrizzleSubscriptionRepository } from './infrastructure/persistence/repositories/drizzle-subscription.repository'
+import { DrizzleTrialRedemptionRepository } from './infrastructure/persistence/repositories/drizzle-trial-redemption.repository'
 import { SystemClock } from './infrastructure/time/system-clock'
 import { BILLING_CONTROLLERS, BILLING_RESOLVERS } from './presentation/billing.presentation'
 
@@ -58,6 +60,7 @@ const ADAPTERS: Provider[] = [
     { provide: WebhookEventStore, useClass: DrizzleWebhookEventStore },
     { provide: BillingConfig, useClass: EnvBillingConfig },
     { provide: SubscriptionRepository, useClass: DrizzleSubscriptionRepository },
+    { provide: TrialRedemptionRepository, useClass: DrizzleTrialRedemptionRepository },
     { provide: AdminBillingStatsReadModel, useClass: DrizzleAdminBillingStatsReadModel },
     { provide: AdminSubscriptionReadModel, useClass: DrizzleAdminSubscriptionReadModel },
     { provide: PlanMembershipReadModel, useClass: DrizzlePlanMembershipReadModel },

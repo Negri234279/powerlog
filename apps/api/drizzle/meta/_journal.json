@@ -379,6 +379,13 @@
       "when": 1784377428830,
       "tag": "0053_template_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1784475846462,
+      "tag": "0054_giant_lockjaw",
+      "breakpoints": true
     }
   ]
 }

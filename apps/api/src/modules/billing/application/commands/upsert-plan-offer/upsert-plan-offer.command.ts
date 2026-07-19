@@ -9,6 +9,7 @@ export class UpsertPlanOfferCommand {
     constructor(
         readonly planId: string,
         readonly name: string,
+        readonly message: string | null,
         readonly trialDays: number | null,
         readonly introPhase: IntroPhase | null,
         readonly startsAt: Date,

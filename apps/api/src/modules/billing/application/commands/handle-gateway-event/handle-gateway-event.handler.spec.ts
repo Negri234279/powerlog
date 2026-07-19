@@ -9,6 +9,7 @@ import {
     InMemoryPlanRepository,
     FakeWebhookRetryQueue,
     InMemorySubscriptionRepository,
+    InMemoryTrialRedemptionRepository,
     InMemoryWebhookEventStore,
 } from '../../../../../../tests/doubles/billing'
 import { RecordingEventBus, silentLogger } from '../../../../../../tests/doubles/shared'
@@ -101,6 +102,7 @@ describe('the webhook pipeline', () => {
     let plans: InMemoryPlanRepository
     let prices: InMemoryPlanPriceRepository
     let invoices: InMemoryInvoiceRepository
+    let trialRedemptions: InMemoryTrialRedemptionRepository
     let events: InMemoryWebhookEventStore
     let retries: FakeWebhookRetryQueue
     let metrics: FakeBillingMetrics
@@ -111,6 +113,7 @@ describe('the webhook pipeline', () => {
         plans = new InMemoryPlanRepository([PlanMother.athletePro(), PlanMother.athleteFree()])
         prices = new InMemoryPlanPriceRepository([aPrice('price-eur', 799, 'px_eur')])
         invoices = new InMemoryInvoiceRepository()
+        trialRedemptions = new InMemoryTrialRedemptionRepository()
         events = new InMemoryWebhookEventStore()
         retries = new FakeWebhookRetryQueue()
         metrics = new FakeBillingMetrics()
@@ -123,6 +126,7 @@ describe('the webhook pipeline', () => {
             plans,
             prices,
             invoices,
+            trialRedemptions,
             events,
             retries,
             metrics,
@@ -190,6 +194,24 @@ describe('the webhook pipeline', () => {
             await deliver(checkoutCompleted({ offerId: 'offer-1' }))
 
             expect(metrics.offerRedemptions).toEqual(['athlete-pro'])
+        })
+    })
+
+    describe('trial redemption', () => {
+        it('burns the account’s one trial when the gateway reports trialing', async () => {
+            await deliver(checkoutCompleted())
+
+            await deliver(subscriptionChanged({ status: 'trialing' }))
+
+            expect(await trialRedemptions.hasRedeemed(USER, 'athlete')).toBe(true)
+        })
+
+        it('does not record a trial for a subscription that started billing directly', async () => {
+            await deliver(checkoutCompleted())
+
+            await deliver(subscriptionChanged({ status: 'active' }))
+
+            expect(await trialRedemptions.hasRedeemed(USER, 'athlete')).toBe(false)
         })
     })
 

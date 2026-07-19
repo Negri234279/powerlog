@@ -13,6 +13,7 @@ import {
     MyWorkoutUsageDocument,
     ResumeSubscriptionDocument,
     StartCheckoutDocument,
+    TrialEligibleDocument,
 } from '@/lib/graphql/operations/account-billing'
 
 export type PublicPlan = AvailablePlansQuery['availablePlans'][number]
@@ -55,6 +56,19 @@ export function useAvailablePlans(audience: string) {
         queryKey: ['availablePlans', audience, locale],
         queryFn: () => gqlRequest(AvailablePlansDocument, { audience, locale }).then((r) => r.availablePlans),
         staleTime: 5 * 60_000,
+    })
+}
+
+/**
+ * Whether the signed-in user can still get a free trial in an audience. False once
+ * they have used their one trial there — the plan page reads this to stop showing a
+ * trial the checkout would strip anyway. The server is the authority; this is UX.
+ */
+export function useTrialEligible(audience: PlanAudience) {
+    return useQuery({
+        queryKey: ['trialEligible', audience],
+        queryFn: () => gqlRequest(TrialEligibleDocument, { audience }).then((r) => r.trialEligible),
+        staleTime: 60_000,
     })
 }
 

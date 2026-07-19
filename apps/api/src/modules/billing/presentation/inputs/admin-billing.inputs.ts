@@ -225,6 +225,9 @@ export class UpsertPlanOfferInput {
     @Field()
     name!: string
 
+    @Field(() => String, { nullable: true, description: 'Buyer-facing promo copy for the pricing card.' })
+    message?: string | null
+
     @Field(() => Int, { nullable: true, description: 'Free days before the first charge.' })
     trialDays?: number | null
 
@@ -241,6 +244,12 @@ export class UpsertPlanOfferInput {
 export const upsertPlanOfferSchema = z.object({
     planId: uuid,
     name: z.string().trim().min(1).max(60),
+    message: z
+        .string()
+        .trim()
+        .max(120)
+        .nullish()
+        .transform((value) => value || null),
     trialDays: z.int().min(1).max(365).nullish(),
     introPhase: z.object({ cycles: z.int().min(1).max(36), percentOff: z.int().min(1).max(100) }).nullish(),
     startsAt: z.coerce.date().nullish(),

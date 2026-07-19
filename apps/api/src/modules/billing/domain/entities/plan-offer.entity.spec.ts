@@ -71,4 +71,48 @@ describe('PlanOfferEntity', () => {
             }),
         ).toThrow(InvalidPlanOfferError)
     })
+
+    it('keeps the buyer-facing message it was given', () => {
+        const offer = PlanOfferEntity.create({
+            id: 'offer-4',
+            planId: 'plan-1',
+            name: 'Launch',
+            message: '7 días gratis',
+            trialDays: 7,
+            startsAt: STARTS,
+            now: STARTS,
+        })
+
+        expect(offer.message).toBe('7 días gratis')
+    })
+
+    it('trims a blank message down to null so no empty promo line renders', () => {
+        expect(anOffer().message).toBeNull()
+
+        const blank = PlanOfferEntity.create({
+            id: 'offer-5',
+            planId: 'plan-1',
+            name: 'Launch',
+            message: '   ',
+            trialDays: 7,
+            startsAt: STARTS,
+            now: STARTS,
+        })
+
+        expect(blank.message).toBeNull()
+    })
+
+    it('rejects a message longer than 120 characters', () => {
+        expect(() =>
+            PlanOfferEntity.create({
+                id: 'offer-6',
+                planId: 'plan-1',
+                name: 'Wordy',
+                message: 'x'.repeat(121),
+                trialDays: 7,
+                startsAt: STARTS,
+                now: STARTS,
+            }),
+        ).toThrow(InvalidPlanOfferError)
+    })
 })

@@ -24,6 +24,7 @@ import {
     BillingPortalUrlQuery,
     MyInvoicesQuery,
     MySubscriptionQuery,
+    TrialEligibilityQuery,
 } from '../../application/queries/my-billing/my-billing.queries'
 import type { CheckoutSession } from '../../application/ports/payment-gateway.port'
 import type { PaymentGateway } from '../../domain/entities/subscription.entity'
@@ -106,6 +107,20 @@ export class BillingResolver {
         const query = new MySubscriptionQuery(user.userId, audience)
 
         return this.queryBus.execute<MySubscriptionQuery, MySubscriptionView | null>(query)
+    }
+
+    @Query(() => Boolean, {
+        description:
+            'Whether you can still get a free trial in an audience (athlete | coach). False once you have used your one trial there.',
+    })
+    @UseGuards(JwtCookieGuard)
+    async trialEligible(
+        @CurrentUser() user: AuthUser,
+        @Args('audience', { type: () => String }, new ZodValidationPipe(audienceArg)) audience: PlanAudience,
+    ): Promise<boolean> {
+        const query = new TrialEligibilityQuery(user.userId, audience)
+
+        return this.queryBus.execute<TrialEligibilityQuery, boolean>(query)
     }
 
     @Query(() => MyInvoicePageType, { description: 'Your billing history, as the gateway issued it.' })

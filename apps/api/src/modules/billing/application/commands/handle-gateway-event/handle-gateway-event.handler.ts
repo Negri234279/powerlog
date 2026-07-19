@@ -11,6 +11,7 @@ import { PlanPriceRepository } from '../../../domain/repositories/plan-price.rep
 import { PlanRepository } from '../../../domain/repositories/plan.repository'
 import { InvoiceRepository } from '../../../domain/repositories/invoice.repository'
 import { SubscriptionRepository } from '../../../domain/repositories/subscription.repository'
+import { TrialRedemptionRepository } from '../../../domain/repositories/trial-redemption.repository'
 import { BillingMetrics, type SubscriptionEvent } from '../../ports/billing-metrics.port'
 import { Clock } from '../../ports/clock.port'
 import {
@@ -54,6 +55,7 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
         private readonly plans: PlanRepository,
         private readonly prices: PlanPriceRepository,
         private readonly invoices: InvoiceRepository,
+        private readonly trialRedemptions: TrialRedemptionRepository,
         private readonly events: WebhookEventStore,
         private readonly retries: WebhookRetryQueue,
         private readonly metrics: BillingMetrics,
@@ -219,6 +221,14 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
             now,
         )
         await this.subscriptions.save(subscription)
+
+        // A trial actually began: burn this account's one free trial in this audience,
+        // so a later checkout will not hand out a second one. This is the ground truth
+        // (the gateway says `trialing`), independent of what the checkout decided, and
+        // it is idempotent — a replayed event cannot record it twice.
+        if (subscription.status === 'trialing') {
+            await this.trialRedemptions.record(subscription.userId, subscription.audience, now)
+        }
 
         const plan = await this.plans.findById(subscription.planId)
         const reason = reasonOf({

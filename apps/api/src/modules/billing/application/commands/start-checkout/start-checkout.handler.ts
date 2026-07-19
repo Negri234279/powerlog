@@ -14,6 +14,7 @@ import { PlanOfferRepository } from '../../../domain/repositories/plan-offer.rep
 import { PlanPriceRepository } from '../../../domain/repositories/plan-price.repository'
 import { PlanRepository } from '../../../domain/repositories/plan.repository'
 import { SubscriptionRepository } from '../../../domain/repositories/subscription.repository'
+import { TrialRedemptionRepository } from '../../../domain/repositories/trial-redemption.repository'
 import { BillingConfig } from '../../ports/billing-config.port'
 import { BillingMetrics } from '../../ports/billing-metrics.port'
 import { Clock } from '../../ports/clock.port'
@@ -34,6 +35,7 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
         private readonly plans: PlanRepository,
         private readonly prices: PlanPriceRepository,
         private readonly offers: PlanOfferRepository,
+        private readonly trialRedemptions: TrialRedemptionRepository,
         private readonly gateways: GatewayProvider,
         private readonly users: UserDirectory,
         private readonly config: BillingConfig,
@@ -72,6 +74,16 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
         if (sameAudience?.isEntitledAt(now)) throw new SubscriptionAlreadyActiveError()
 
         const offer = await this.resolveOffer(command.offerId, plan.id)
+
+        // A trial is offered once per account per audience. If this account already
+        // used its trial here, the offer's discount still applies but the free days do
+        // not — the gateways read this flag and drop only the trial (Stripe) or fall
+        // back to the base price (PayPal, where trial and discount are one plan and
+        // cannot be split).
+        const applyTrial = offer?.trialDays
+            ? !(await this.trialRedemptions.hasRedeemed(command.userId, plan.audience))
+            : false
+
         const gateway = this.gateways.get(command.gateway)
         const contact = await this.users.getContact(command.userId)
 
@@ -99,6 +111,7 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
             plan,
             price,
             offer,
+            applyTrial,
             customerId: knownCustomerId,
             email: contact?.email ?? '',
             successUrl,
@@ -107,7 +120,13 @@ export class StartCheckoutHandler implements ICommandHandler<StartCheckoutComman
 
         this.metrics.recordCheckout(command.gateway, plan.slug, 'started')
         this.logger.info(
-            { plan: plan.slug, gateway: command.gateway, uiMode: command.uiMode, offer: offer?.id ?? null },
+            {
+                plan: plan.slug,
+                gateway: command.gateway,
+                uiMode: command.uiMode,
+                offer: offer?.id ?? null,
+                applyTrial,
+            },
             'checkout started',
         )
 

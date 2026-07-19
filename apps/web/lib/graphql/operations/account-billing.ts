@@ -26,6 +26,7 @@ export const AvailablePlansDocument = graphql(`
             offer {
                 id
                 name
+                message
                 trialDays
                 introPhase {
                     cycles
@@ -125,6 +126,14 @@ export const MyInvoicesDocument = graphql(`
 export const BillingPortalUrlDocument = graphql(`
     query BillingPortalUrl($audience: String!) {
         billingPortalUrl(audience: $audience)
+    }
+`)
+
+/** Whether the signed-in user can still get a free trial in an audience — used to
+ *  hide a trial the checkout would not honour to a returning subscriber. */
+export const TrialEligibleDocument = graphql(`
+    query TrialEligible($audience: String!) {
+        trialEligible(audience: $audience)
     }
 `)
 
