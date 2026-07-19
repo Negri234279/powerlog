@@ -22,6 +22,7 @@ export interface AdminUsersFilters {
 }
 
 const USERS_KEY = ['adminUsers']
+const DETAIL_KEY = ['adminUserDetail']
 const PAGE_SIZE = 30
 
 /** Filterable admin user listing, offset-paginated for infinite scroll. */
@@ -53,7 +54,10 @@ export function useSetUserRole() {
     return useMutation({
         mutationFn: (input: { userId: string; role: string }) =>
             gqlRequest(SetUserRoleDocument, { input }).then((r) => r.setUserRole),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: USERS_KEY })
+            void queryClient.invalidateQueries({ queryKey: DETAIL_KEY })
+        },
     })
 }
 
@@ -64,6 +68,7 @@ export function useSetUserAdmin() {
             gqlRequest(SetUserAdminDocument, { input }).then((r) => r.setUserAdmin),
         onSuccess: () => {
             void queryClient.invalidateQueries({ queryKey: USERS_KEY })
+            void queryClient.invalidateQueries({ queryKey: DETAIL_KEY })
             void queryClient.invalidateQueries({ queryKey: ['adminStats'] })
         },
     })
@@ -76,6 +81,7 @@ export function useSetUserStatus() {
             gqlRequest(SetUserStatusDocument, { input }).then((r) => r.setUserStatus),
         onSuccess: () => {
             void queryClient.invalidateQueries({ queryKey: USERS_KEY })
+            void queryClient.invalidateQueries({ queryKey: DETAIL_KEY })
             void queryClient.invalidateQueries({ queryKey: ['adminStats'] })
         },
     })

@@ -33,6 +33,8 @@ function useBillingInvalidator() {
         void queryClient.invalidateQueries({ queryKey: PLANS_KEY })
         void queryClient.invalidateQueries({ queryKey: SUBSCRIPTIONS_KEY })
         void queryClient.invalidateQueries({ queryKey: BILLING_STATS_KEY })
+        // A user's detail shows their subscriptions + MRR, so a grant/revoke moves it.
+        void queryClient.invalidateQueries({ queryKey: ['adminUserDetail'] })
     }
 }
 
