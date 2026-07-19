@@ -63,6 +63,7 @@ function SetRow({
     const remove = useRemoveSet()
     const [editing, setEditing] = useState(false)
     const [marking, setMarking] = useState(false)
+    const [confirmingRemove, setConfirmingRemove] = useState(false)
 
     // Re-locking mid-edit closes the form rather than leaving it hanging.
     if (editing && !locked) {
@@ -169,17 +170,34 @@ function SetRow({
                         <span className="hidden text-xs sm:inline">{t('edit')}</span>
                     </TrackedButton>
                     <TrackedButton
-                        analyticsId="set-remove"
+                        analyticsId="set-remove-open"
                         type="button"
                         aria-label={t('removeSet')}
-                        onClick={() => remove.mutate({ sessionId, entryId, setId: set.id })}
-                        disabled={remove.isPending}
+                        onClick={() => setConfirmingRemove(true)}
                         className="grid size-7 shrink-0 self-start place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember disabled:opacity-50"
                     >
                         <Close className="size-3.5" />
                     </TrackedButton>
                 </>
             )}
+
+            <ConfirmModal
+                analyticsId="set-remove"
+                open={confirmingRemove}
+                onClose={() => setConfirmingRemove(false)}
+                onConfirm={() =>
+                    remove.mutate(
+                        { sessionId, entryId, setId: set.id },
+                        { onSuccess: () => setConfirmingRemove(false) },
+                    )
+                }
+                title={t('setRemoveTitle', { index: index + 1 })}
+                description={t('setRemoveBody')}
+                confirmLabel={t('removeSet')}
+                cancelLabel={t('cancel')}
+                destructive
+                pending={remove.isPending}
+            />
 
             {/* Mounted only while open so the form always seeds from the set as it
                 is right now, rather than from whatever it was on first render. */}

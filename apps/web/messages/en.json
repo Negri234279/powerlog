@@ -396,6 +396,8 @@
         "adding": "Adding…",
         "planPrefix": "plan",
         "removeSet": "Remove set",
+        "setRemoveTitle": "Remove set {index}?",
+        "setRemoveBody": "This set will be removed. This can’t be undone.",
         "save": "Save",
         "saving": "Saving…",
         "weightLabel": "Weight ({units})",
