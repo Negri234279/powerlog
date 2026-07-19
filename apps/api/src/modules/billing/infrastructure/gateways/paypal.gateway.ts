@@ -435,8 +435,11 @@ export class PayPalGateway extends PaymentGatewayPort {
                         subscriptions?: { id: string; status: string }[]
                         total_pages?: number
                     }>(
+                        // page_size caps at 20 on PayPal's billing list endpoints; 100
+                        // is rejected with `INVALID_PARAMETER_VALUE`. The do/while below
+                        // pages through in full, so 20 loses nothing but request count.
                         `/v1/billing/subscriptions?plan_ids=${planId}&statuses=ACTIVE,SUSPENDED` +
-                            `&page_size=100&page=${page}&total_required=true`,
+                            `&page_size=20&page=${page}&total_required=true`,
                     )
                     for (const subscription of result.subscriptions ?? []) ids.push(subscription.id)
 
