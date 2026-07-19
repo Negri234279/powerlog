@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 
-import { RegisterForm } from '@/components/auth/register-form'
+import { RegisterWizard } from '@/components/auth/register-wizard'
 import { getSession, hasRefreshCookie } from '@/lib/auth/session'
 
 /**
@@ -13,5 +13,5 @@ export default async function RegisterPage() {
         redirect('/dashboard')
     }
 
-    return <RegisterForm />
+    return <RegisterWizard />
 }
