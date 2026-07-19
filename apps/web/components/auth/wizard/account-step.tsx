@@ -21,6 +21,7 @@ export function AccountStep({
     invited,
     prefillEmail,
     prefillUsername,
+    coachUsername,
     onBack,
     onDone,
 }: {
@@ -28,7 +29,9 @@ export function AccountStep({
     invited: boolean
     prefillEmail: string
     prefillUsername: string
-    onBack: () => void
+    coachUsername: string | null
+    /** Omitted when this is the first step — no previous step to go back to. */
+    onBack?: () => void
     onDone: (values: RegisterValues) => void
 }) {
     const t = useTranslations('auth')
@@ -41,6 +44,10 @@ export function AccountStep({
 
     const [email, setEmail] = useState(defaults?.email ?? prefillEmail)
     const [username, setUsername] = useState(defaults?.username ?? prefillUsername)
+
+    // A birth date can't be in the future — cap the picker at today (local date, so
+    // it doesn't slip a day near midnight UTC). The server enforces this too.
+    const today = new Date().toLocaleDateString('en-CA')
 
     function onLocaleChange(next: Locale) {
         if (next === locale) return
@@ -76,6 +83,12 @@ export function AccountStep({
 
     return (
         <form onSubmit={onSubmit} className="space-y-5" noValidate>
+            {invited ? (
+                <div className="rounded-2xl bg-ember/10 px-4 py-3 text-sm text-text ring-1 ring-ember/30">
+                    {t('register.invitedBanner', { coach: coachUsername ?? '' })}
+                </div>
+            ) : null}
+
             <Field label={t('fields.email')} htmlFor="email" error={te(errors['email'])}>
                 <Input
                     id="email"
@@ -185,6 +198,7 @@ export function AccountStep({
                         id="birthDate"
                         name="birthDate"
                         type="date"
+                        max={today}
                         autoComplete="bday"
                         defaultValue={defaults?.birthDate ?? ''}
                     />
@@ -192,14 +206,16 @@ export function AccountStep({
             </div>
 
             <div className="flex items-center gap-3 pt-2">
-                <TrackedButton
-                    analyticsId="wizard-account-back"
-                    type="button"
-                    onClick={onBack}
-                    className="rounded-full px-5 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
-                >
-                    {tw('back')}
-                </TrackedButton>
+                {onBack ? (
+                    <TrackedButton
+                        analyticsId="wizard-account-back"
+                        type="button"
+                        onClick={onBack}
+                        className="rounded-full px-5 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
+                    >
+                        {tw('back')}
+                    </TrackedButton>
+                ) : null}
                 <TrackedButton
                     analyticsId="wizard-account-continue"
                     type="submit"

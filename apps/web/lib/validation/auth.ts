@@ -33,6 +33,9 @@ export const registerSchema = z.object({
         z
             .string()
             .regex(/^\d{4}-\d{2}-\d{2}$/, 'invalidDate')
+            // No future birth dates. Lexicographic compare is exact for YYYY-MM-DD;
+            // `en-CA` is the local ISO date, so it matches the input's `max`.
+            .refine((value) => value <= new Date().toLocaleDateString('en-CA'), 'birthFuture')
             .optional(),
     ),
     heightCm: z.preprocess(

@@ -22,12 +22,12 @@ import { type Currency, type Interval, type WizardStep, chargeablePrice } from '
 
 // The four steps the progress dots track. `payment` runs after the account exists
 // (a paid plan needs it), so it sits outside the counted flow.
-const FLOW: WizardStep[] = ['athlete', 'coach', 'account', 'review']
+const FLOW: WizardStep[] = ['account', 'athlete', 'coach', 'review']
 
 /**
- * Sign-up as a plan-first wizard: pick an athlete plan, optionally a coach plan,
- * fill in the account, review, then create it. The account is created on review
- * (not sooner) because a paid plan's embedded checkout needs a user to attach the
+ * Sign-up wizard: fill in the account, pick an athlete plan, optionally a coach
+ * plan, review, then create it. The account is only created on review (not on the
+ * account step) because a paid plan's embedded checkout needs a user to attach the
  * subscription to — so a free sign-up ends at the dashboard, and a paid one hands
  * off to the payment step.
  */
@@ -48,7 +48,7 @@ export function RegisterWizard() {
     const preview = useCoachInvitationPreview(inviteToken)
     const invited = Boolean(preview.data)
 
-    const [step, setStep] = useState<WizardStep>('athlete')
+    const [step, setStep] = useState<WizardStep>('account')
     const [interval, setInterval] = useState<Interval>('month')
     const [currency, setCurrency] = useState<Currency>('EUR')
     const [athletePlan, setAthletePlan] = useState<PublicPlan | null>(null)
@@ -152,13 +152,21 @@ export function RegisterWizard() {
                                         selected={athletePlan}
                                         onSelect={setAthletePlan}
                                     />
-                                    <div className="flex justify-end">
+                                    <div className="flex items-center gap-3">
+                                        <TrackedButton
+                                            analyticsId="wizard-athlete-back"
+                                            type="button"
+                                            onClick={() => setStep('account')}
+                                            className="rounded-full px-5 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
+                                        >
+                                            {tw('back')}
+                                        </TrackedButton>
                                         <TrackedButton
                                             analyticsId="wizard-athlete-continue"
                                             type="button"
                                             disabled={!athletePlan}
                                             onClick={() => setStep('coach')}
-                                            className="rounded-full bg-ember-gradient px-6 py-3 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="flex-1 rounded-full bg-ember-gradient px-6 py-3 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             {tw('continue')}
                                         </TrackedButton>
@@ -180,7 +188,7 @@ export function RegisterWizard() {
                                     selected={coachPlan}
                                     onSelect={setCoachPlan}
                                     onBack={() => setStep('athlete')}
-                                    onContinue={() => setStep('account')}
+                                    onContinue={() => setStep('review')}
                                 />
                             ) : null}
 
@@ -190,10 +198,10 @@ export function RegisterWizard() {
                                     invited={invited}
                                     prefillEmail={preview.data?.email ?? ''}
                                     prefillUsername={preview.data?.suggestedUsername ?? ''}
-                                    onBack={() => setStep('coach')}
+                                    coachUsername={preview.data?.coachUsername ?? null}
                                     onDone={(values) => {
                                         setAccount(values)
-                                        setStep('review')
+                                        setStep('athlete')
                                     }}
                                 />
                             ) : null}
@@ -207,7 +215,7 @@ export function RegisterWizard() {
                                     account={account}
                                     pending={register.isPending || becomeCoach.isPending}
                                     formError={formError}
-                                    onBack={() => setStep('account')}
+                                    onBack={() => setStep('coach')}
                                     onCreate={createAccount}
                                 />
                             ) : null}
@@ -217,7 +225,7 @@ export function RegisterWizard() {
                     </div>
                 </div>
 
-                {step === 'athlete' ? (
+                {step === 'account' ? (
                     <p className="mt-6 text-center text-sm text-text-dim">
                         {t('register.haveAccount')}{' '}
                         <TrackedLink

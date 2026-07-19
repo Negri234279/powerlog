@@ -207,7 +207,8 @@
             "heightNumber": "Enter a number.",
             "heightWhole": "Whole centimetres.",
             "heightRange": "Between 50 and 300 cm.",
-            "passwordsMismatch": "Passwords don’t match."
+            "passwordsMismatch": "Passwords don’t match.",
+            "birthFuture": "Birth date cannot be in the future."
         },
         "wizard": {
             "progress": "Step {step} of {total}",
@@ -235,7 +236,6 @@
             "notAvailable": "Not available for this combination",
             "paymentTitle": "Payment",
             "paymentSubtitle": "Enter your payment method to activate your plan.",
-            "paymentPending": "Payment integration lands in the next block.",
             "payingFor": "Activate {plan}",
             "planCount": "Plan {current} of {total}",
             "payLater": "Finish later"

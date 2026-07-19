@@ -207,7 +207,8 @@
             "heightNumber": "Introduce un número.",
             "heightWhole": "Centímetros enteros.",
             "heightRange": "Entre 50 y 300 cm.",
-            "passwordsMismatch": "Las contraseñas no coinciden."
+            "passwordsMismatch": "Las contraseñas no coinciden.",
+            "birthFuture": "La fecha de nacimiento no puede ser futura."
         },
         "wizard": {
             "progress": "Paso {step} de {total}",
@@ -235,7 +236,6 @@
             "notAvailable": "No disponible en esta combinación",
             "paymentTitle": "Pago",
             "paymentSubtitle": "Introduce tu método de pago para activar tu plan.",
-            "paymentPending": "La integración del pago llega en el siguiente bloque.",
             "payingFor": "Activa {plan}",
             "planCount": "Plan {current} de {total}",
             "payLater": "Terminar más tarde"
