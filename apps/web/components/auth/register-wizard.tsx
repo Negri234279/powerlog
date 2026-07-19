@@ -15,6 +15,7 @@ import type { RegisterValues } from '@/lib/validation/auth'
 import { Mark } from '@/components/ui/icons'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import { AccountStep } from './wizard/account-step'
+import { type PaymentItem, PaymentStep } from './wizard/payment-step'
 import { PlanStep } from './wizard/plan-step'
 import { ReviewStep } from './wizard/review-step'
 import { type Currency, type Interval, type WizardStep, chargeablePrice } from './wizard/shared'
@@ -97,6 +98,29 @@ export function RegisterWizard() {
     }[step]
 
     const wide = step === 'athlete' || step === 'coach'
+
+    // The paid plans to charge for, in the order they're paid (athlete first). A free
+    // plan contributes nothing; the payment step only runs when this is non-empty.
+    const paymentQueue: PaymentItem[] = []
+    const athletePrice = chargeablePrice(athletePlan, interval, currency)
+    if (athletePlan && athletePrice) {
+        paymentQueue.push({
+            audience: 'athlete',
+            price: athletePrice,
+            offerId: athletePlan.offer?.id ?? null,
+            planName: athletePlan.name,
+        })
+    }
+
+    const coachPrice = coachEnabled ? chargeablePrice(coachPlan, interval, currency) : null
+    if (coachPlan && coachPrice) {
+        paymentQueue.push({
+            audience: 'coach',
+            price: coachPrice,
+            offerId: coachPlan.offer?.id ?? null,
+            planName: coachPlan.name,
+        })
+    }
 
     return (
         <main className="relative grid min-h-[100dvh] place-items-center overflow-hidden px-6 py-16">
@@ -188,7 +212,7 @@ export function RegisterWizard() {
                                 />
                             ) : null}
 
-                            {step === 'payment' ? <PaymentPlaceholder /> : null}
+                            {step === 'payment' ? <PaymentStep queue={paymentQueue} /> : null}
                         </div>
                     </div>
                 </div>
@@ -325,16 +349,5 @@ function Choice({
         >
             {children}
         </TrackedButton>
-    )
-}
-
-/** Block 4 replaces this with the embedded Stripe checkout + PayPal button. */
-function PaymentPlaceholder() {
-    const tw = useTranslations('auth.wizard')
-
-    return (
-        <div className="rounded-2xl bg-surface p-6 text-center text-sm text-text-dim ring-1 ring-hairline">
-            {tw('paymentPending')}
-        </div>
     )
 }

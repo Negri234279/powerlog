@@ -235,7 +235,10 @@
             "notAvailable": "Not available for this combination",
             "paymentTitle": "Payment",
             "paymentSubtitle": "Enter your payment method to activate your plan.",
-            "paymentPending": "Payment integration lands in the next block."
+            "paymentPending": "Payment integration lands in the next block.",
+            "payingFor": "Activate {plan}",
+            "planCount": "Plan {current} of {total}",
+            "payLater": "Finish later"
         }
     },
     "common": {

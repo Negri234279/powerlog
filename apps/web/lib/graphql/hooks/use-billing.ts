@@ -103,6 +103,28 @@ export function useStartCheckout() {
 }
 
 /**
+ * A client secret for an **embedded** Stripe checkout, shaped for
+ * `<EmbeddedCheckoutProvider>`'s `fetchClientSecret`. Unlike {@link useStartCheckout}
+ * (which redirects on a hosted URL), this hands back the secret the provider mounts
+ * in-page. Throws when Stripe returns none — the provider surfaces it as a load error.
+ */
+export async function fetchEmbeddedCheckoutSecret(input: {
+    planPriceId: string
+    offerId?: string | null
+}): Promise<string> {
+    const result = await gqlRequest(StartCheckoutDocument, {
+        planPriceId: input.planPriceId,
+        gateway: 'stripe',
+        offerId: input.offerId ?? null,
+        embedded: true,
+    })
+    const secret = result.startCheckout.clientSecret
+    if (!secret) throw new Error('Stripe returned no client secret for the embedded checkout')
+
+    return secret
+}
+
+/**
  * Cancel / resume / change plan are **requests to the gateway**: the local state
  * moves when the webhook lands. So these invalidate optimistically (the page will
  * usually still show the old value for a moment) and the realtime
