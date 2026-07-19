@@ -32,6 +32,9 @@ export class AdminUserAccountType {
 
     @Field()
     updatedAt!: Date
+
+    @Field(() => Date, { nullable: true, description: 'Last active (newest session issued), or null if never.' })
+    lastSeenAt!: Date | null
 }
 
 /** The public profile, or null if the user has no profile yet. */

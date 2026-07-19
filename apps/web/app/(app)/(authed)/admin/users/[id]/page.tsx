@@ -193,7 +193,6 @@ function Detail({ data, locale, cap, bool, subStatus, t }: DetailProps) {
                     <Row label={t('detailPassword')}>
                         {account.hasPassword ? t('detailPasswordYes') : t('detailPasswordNo')}
                     </Row>
-                    <Row label={t('detailCreated')}>{formatNumericDate(account.createdAt, locale)}</Row>
                     <Row label={t('detailUpdated')}>{formatNumericDate(account.updatedAt, locale)}</Row>
                 </Section>
 
@@ -206,8 +205,12 @@ function Detail({ data, locale, cap, bool, subStatus, t }: DetailProps) {
                             <Row label={t('detailLocale')}>{profile.locale ?? '—'}</Row>
                         </>
                     ) : (
-                        <Muted>{t('detailNoProfile')}</Muted>
+                        <p className="mb-2 text-sm text-text-faint">{t('detailNoProfile')}</p>
                     )}
+                    <Row label={t('detailRegistered')}>{formatNumericDate(account.createdAt, locale)}</Row>
+                    <Row label={t('detailLastSeen')}>
+                        {account.lastSeenAt ? formatNumericDate(account.lastSeenAt, locale) : t('detailNever')}
+                    </Row>
                 </Section>
 
                 {/* Plan & entitlements */}

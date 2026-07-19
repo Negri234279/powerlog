@@ -155,6 +155,7 @@ export const AdminUserDetailDocument = graphql(`
                 units
                 createdAt
                 updatedAt
+                lastSeenAt
             }
             profile {
                 username

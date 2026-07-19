@@ -51,6 +51,12 @@ export interface AdminUserAccount {
     units: string
     createdAt: Date
     updatedAt: Date
+    /**
+     * When the user was last active — the most recent refresh token issued to them
+     * (login or silent refresh), or null if they have never had a session (e.g. a
+     * brand-new account that hasn't logged in, or one whose sessions were revoked).
+     */
+    lastSeenAt: Date | null
 }
 
 export interface AdminUserPage {

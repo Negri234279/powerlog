@@ -205,6 +205,9 @@ type AdminUserAccount {
   id: ID!
   isAdmin: Boolean!
 
+  """Last active (newest session issued), or null if never."""
+  lastSeenAt: DateTime
+
   """"athlete" | "coach"."""
   role: String!
 

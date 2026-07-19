@@ -10,6 +10,7 @@ import {
     AdminUserReadModel,
     type AdminUserStats,
 } from '../../../application/ports/admin-user.read-model'
+import { refreshTokens } from '../schema/refresh-tokens.schema'
 import { users } from '../schema/users.schema'
 
 @Injectable()
@@ -73,6 +74,14 @@ export class DrizzleAdminUserReadModel extends AdminUserReadModel {
 
         if (!row) return null
 
+        // Last activity ≈ the newest refresh token issued to them: one is created on
+        // login and on every silent refresh, so the max tracks real use, not just
+        // the last explicit sign-in. A raw aggregate comes back as a string.
+        const [session] = await this.db
+            .select({ lastSeenAt: sql<string | null>`max(${refreshTokens.createdAt})` })
+            .from(refreshTokens)
+            .where(eq(refreshTokens.userId, userId))
+
         return {
             id: row.id,
             email: row.email,
@@ -84,6 +93,7 @@ export class DrizzleAdminUserReadModel extends AdminUserReadModel {
             units: row.units,
             createdAt: row.createdAt,
             updatedAt: row.updatedAt,
+            lastSeenAt: session?.lastSeenAt ? new Date(session.lastSeenAt) : null,
         }
     }
 

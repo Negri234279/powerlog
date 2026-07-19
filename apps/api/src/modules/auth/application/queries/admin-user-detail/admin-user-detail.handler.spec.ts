@@ -32,6 +32,7 @@ function accountFor(id: string): AdminUserAccount {
         units: 'kg',
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
         updatedAt: new Date('2026-06-01T00:00:00.000Z'),
+        lastSeenAt: new Date('2026-06-25T00:00:00.000Z'),
     }
 }
 
