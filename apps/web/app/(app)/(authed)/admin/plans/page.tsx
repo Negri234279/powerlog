@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type SubmitEvent, Fragment, useEffect, useId, useMemo, useState } from 'react'
+import { type SubmitEvent, Activity, Fragment, useEffect, useId, useMemo, useState } from 'react'
 
 import {
     type AdminPlan,
@@ -11,11 +11,13 @@ import {
     useAddPlanPrice,
     useAdminPlans,
     useCreatePlan,
+    useDeactivatePlanOffer,
     useDeactivatePlanPrice,
     useEntitlementsSchema,
     useReorderPlans,
     useSetPlanStatus,
     useUpdatePlan,
+    useUpsertPlanOffer,
 } from '@/lib/graphql/hooks/use-admin-billing'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useSyncPlanToGateway } from '@/lib/graphql/hooks/use-admin-gateways'
@@ -40,6 +42,9 @@ type TranslationDraft = Record<string, { name: string; description: string }>
 const INTERVALS = ['month', 'quarter', 'semester', 'year'] as const
 const CURRENCIES = ['EUR', 'USD'] as const
 const STATUSES = ['draft', 'active', 'archived'] as const
+
+// The offer tab needs a saved plan to hang on, so it only appears once the plan exists.
+type PlanTab = 'info' | 'prices' | 'translations' | 'offer'
 
 /** Cents → what an admin reads. The API only ever deals in integer cents. */
 function formatAmount(amountCents: number, currency: string, locale: string): string {
@@ -374,7 +379,7 @@ function PlanModal({
     // Null until the plan exists. Set on create, so a price publish (and later edits)
     // can hang on the freshly-minted plan without closing the modal.
     const [planId, setPlanId] = useState<string | null>(initial?.id ?? null)
-    const [tab, setTab] = useState<'info' | 'prices' | 'translations'>('info')
+    const [tab, setTab] = useState<PlanTab>('info')
 
     const [name, setName] = useState(initial?.name ?? '')
     const [slug, setSlug] = useState(initial?.slug ?? '')
@@ -499,112 +504,135 @@ function PlanModal({
                         { value: 'info', label: t('planTabInfo') },
                         { value: 'prices', label: t('planPrices') },
                         { value: 'translations', label: t('planTabTranslations') },
+                        // An offer attaches to a saved plan, so it only shows in edit mode.
+                        ...(planId ? [{ value: 'offer', label: t('planTabOffer') }] : []),
                     ]}
                     value={tab}
-                    onChange={(value) => setTab(value as 'info' | 'prices' | 'translations')}
+                    onChange={(value) => setTab(value as PlanTab)}
                 />
 
                 {planId ? (
-                    // Existing plan: base info and the live price table are saved
-                    // independently, each on its own tab.
-                    tab === 'info' ? (
-                        <form onSubmit={onUpdate} className="space-y-4">
-                            <PlanBaseFields
-                                schema={schema}
-                                name={name}
-                                setName={setName}
-                                slug={slug}
-                                setSlug={setSlug}
-                                showSlug={false}
-                                description={description}
-                                setDescription={setDescription}
-                                entitlements={entitlements}
-                                setEntitlements={setEntitlements}
-                                liveNote={initial?.status === 'active'}
-                            />
+                    // Existing plan: each tab is its own independent form. All four stay
+                    // MOUNTED inside <Activity> — the hidden ones keep their unsaved state
+                    // (React preserves it and tears down their effects until shown again),
+                    // so switching tabs and coming back never loses what was typed. They
+                    // are separate <form>s, so a hidden `required` field can never block a
+                    // submit fired from another tab.
+                    <>
+                        <Activity mode={tab === 'info' ? 'visible' : 'hidden'}>
+                            <form onSubmit={onUpdate} className="space-y-4">
+                                <PlanBaseFields
+                                    schema={schema}
+                                    name={name}
+                                    setName={setName}
+                                    slug={slug}
+                                    setSlug={setSlug}
+                                    showSlug={false}
+                                    description={description}
+                                    setDescription={setDescription}
+                                    entitlements={entitlements}
+                                    setEntitlements={setEntitlements}
+                                    liveNote={initial?.status === 'active'}
+                                />
 
-                            <FormError error={error} />
+                                <FormError error={error} />
 
-                            <div className="flex items-center gap-2">
-                                <TrackedButton
-                                    analyticsId="admin-plan-cancel"
-                                    type="button"
-                                    onClick={onClose}
-                                    className="w-full rounded-full px-6 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
-                                >
-                                    {t('cancel')}
-                                </TrackedButton>
-                                <div className="flex w-full items-center justify-end gap-3">
-                                    {saved ? (
-                                        <span
-                                            className="font-mono text-eyebrow uppercase text-ember"
-                                            aria-live="polite"
-                                        >
-                                            {t('planSaved')}
-                                        </span>
-                                    ) : null}
-                                    <SubmitButton
-                                        analyticsId="admin-plan-save"
-                                        loading={update.isPending}
-                                        disabled={!schema}
+                                <div className="flex items-center gap-2">
+                                    <TrackedButton
+                                        analyticsId="admin-plan-cancel"
+                                        type="button"
+                                        onClick={onClose}
+                                        className="w-full rounded-full px-6 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
                                     >
-                                        {t('save')}
-                                    </SubmitButton>
-                                </div>
-                            </div>
-                        </form>
-                    ) : tab === 'prices' ? (
-                        plan ? (
-                            <PricesPanel plan={plan} onClose={onClose} />
-                        ) : (
-                            <Skeleton className="h-40 rounded-2xl" />
-                        )
-                    ) : (
-                        <form onSubmit={onUpdateTranslations} className="space-y-4">
-                            <TranslationsFields
-                                value={translations}
-                                onChange={(locale, patch) =>
-                                    setTranslations((current) => {
-                                        const prev = current[locale] ?? { name: '', description: '' }
-
-                                        return {
-                                            ...current,
-                                            [locale]: {
-                                                name: patch.name ?? prev.name,
-                                                description: patch.description ?? prev.description,
-                                            },
-                                        }
-                                    })
-                                }
-                            />
-
-                            <FormError error={error} />
-
-                            <div className="flex items-center gap-2">
-                                <TrackedButton
-                                    analyticsId="admin-plan-cancel"
-                                    type="button"
-                                    onClick={onClose}
-                                    className="w-full rounded-full px-6 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
-                                >
-                                    {t('cancel')}
-                                </TrackedButton>
-                                <div className="flex w-full items-center justify-end gap-3">
-                                    {saved ? (
-                                        <span
-                                            className="font-mono text-eyebrow uppercase text-ember"
-                                            aria-live="polite"
+                                        {t('cancel')}
+                                    </TrackedButton>
+                                    <div className="flex w-full items-center justify-end gap-3">
+                                        {saved ? (
+                                            <span
+                                                className="font-mono text-eyebrow uppercase text-ember"
+                                                aria-live="polite"
+                                            >
+                                                {t('planSaved')}
+                                            </span>
+                                        ) : null}
+                                        <SubmitButton
+                                            analyticsId="admin-plan-save"
+                                            loading={update.isPending}
+                                            disabled={!schema}
                                         >
-                                            {t('planSaved')}
-                                        </span>
-                                    ) : null}
-                                    <SubmitButton analyticsId="admin-plan-translations-save" loading={update.isPending}>
-                                        {t('save')}
-                                    </SubmitButton>
+                                            {t('save')}
+                                        </SubmitButton>
+                                    </div>
                                 </div>
-                            </div>
-                        </form>
-                    )
+                            </form>
+                        </Activity>
+
+                        <Activity mode={tab === 'prices' ? 'visible' : 'hidden'}>
+                            {plan ? (
+                                <PricesPanel plan={plan} onClose={onClose} />
+                            ) : (
+                                <Skeleton className="h-40 rounded-2xl" />
+                            )}
+                        </Activity>
+
+                        <Activity mode={tab === 'offer' ? 'visible' : 'hidden'}>
+                            {plan ? (
+                                <OfferPanel plan={plan} onClose={onClose} />
+                            ) : (
+                                <Skeleton className="h-40 rounded-2xl" />
+                            )}
+                        </Activity>
+
+                        <Activity mode={tab === 'translations' ? 'visible' : 'hidden'}>
+                            <form onSubmit={onUpdateTranslations} className="space-y-4">
+                                <TranslationsFields
+                                    value={translations}
+                                    onChange={(locale, patch) =>
+                                        setTranslations((current) => {
+                                            const prev = current[locale] ?? { name: '', description: '' }
+
+                                            return {
+                                                ...current,
+                                                [locale]: {
+                                                    name: patch.name ?? prev.name,
+                                                    description: patch.description ?? prev.description,
+                                                },
+                                            }
+                                        })
+                                    }
+                                />
+
+                                <FormError error={error} />
+
+                                <div className="flex items-center gap-2">
+                                    <TrackedButton
+                                        analyticsId="admin-plan-cancel"
+                                        type="button"
+                                        onClick={onClose}
+                                        className="w-full rounded-full px-6 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
+                                    >
+                                        {t('cancel')}
+                                    </TrackedButton>
+                                    <div className="flex w-full items-center justify-end gap-3">
+                                        {saved ? (
+                                            <span
+                                                className="font-mono text-eyebrow uppercase text-ember"
+                                                aria-live="polite"
+                                            >
+                                                {t('planSaved')}
+                                            </span>
+                                        ) : null}
+                                        <SubmitButton
+                                            analyticsId="admin-plan-translations-save"
+                                            loading={update.isPending}
+                                        >
+                                            {t('save')}
+                                        </SubmitButton>
+                                    </div>
+                                </div>
+                            </form>
+                        </Activity>
+                    </>
                 ) : (
                     // New plan: base info and prices are filled together, then created
                     // and published in one submit. One form, the tabs swap which half shows.
@@ -1085,6 +1113,217 @@ function PricesPanel({ plan, onClose }: { plan: AdminPlan; onClose: () => void }
                 destructive
                 pending={pending}
                 analyticsId="admin-price-withdraw"
+            />
+        </div>
+    )
+}
+
+/** An ISO timestamp as the `yyyy-mm-dd` a `<input type="date">` wants, or empty. */
+function toDateInput(iso: string | null | undefined): string {
+    return iso ? iso.slice(0, 10) : ''
+}
+
+/**
+ * The plan's introductory offer: a free trial and/or a discounted opening phase,
+ * plus the promo line buyers see. There is at most one live offer per plan; saving
+ * **replaces** it (terms are immutable, so a change is a new offer), and after a
+ * change the plan must be re-synced to the gateways for the coupon/plan to exist —
+ * hence the reminder. A trial is honoured once per account; that limit is enforced
+ * at checkout, nothing to configure here.
+ */
+function OfferPanel({ plan, onClose }: { plan: AdminPlan; onClose: () => void }) {
+    const t = useTranslations('admin')
+    const toMessage = useErrorMessage()
+    const upsert = useUpsertPlanOffer()
+    const deactivate = useDeactivatePlanOffer()
+    const offer = plan.offer
+
+    const [name, setName] = useState(offer?.name ?? t('offerDefaultName'))
+    const [message, setMessage] = useState(offer?.message ?? '')
+    const [trialDays, setTrialDays] = useState(offer?.trialDays ? String(offer.trialDays) : '')
+    const [percentOff, setPercentOff] = useState(offer?.introPhase ? String(offer.introPhase.percentOff) : '')
+    const [cycles, setCycles] = useState(offer?.introPhase ? String(offer.introPhase.cycles) : '')
+    const [startsAt, setStartsAt] = useState(toDateInput(offer?.startsAt))
+    const [endsAt, setEndsAt] = useState(toDateInput(offer?.endsAt))
+    const [error, setError] = useState<string | null>(null)
+    const [saved, setSaved] = useState(false)
+    const [confirming, setConfirming] = useState(false)
+
+    const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        setError(null)
+        setSaved(false)
+
+        const hasTrial = trialDays.trim() !== ''
+        const hasIntroField = percentOff.trim() !== '' || cycles.trim() !== ''
+        // The API refuses an offer that grants nothing, and an intro phase needs both
+        // halves — say so here instead of letting the round-trip fail.
+        if (!hasTrial && !hasIntroField) {
+            setError(t('offerNeedsSomething'))
+            return
+        }
+        if (hasIntroField && (percentOff.trim() === '' || cycles.trim() === '')) {
+            setError(t('offerDiscountIncomplete'))
+            return
+        }
+
+        upsert.mutate(
+            {
+                planId: plan.id,
+                name: name.trim(),
+                message: message.trim() || null,
+                trialDays: hasTrial ? Number(trialDays) : null,
+                introPhase: hasIntroField ? { cycles: Number(cycles), percentOff: Number(percentOff) } : null,
+                startsAt: startsAt ? new Date(startsAt).toISOString() : null,
+                endsAt: endsAt ? new Date(endsAt).toISOString() : null,
+            },
+            { onSuccess: () => setSaved(true), onError: (err) => setError(toMessage(err)) },
+        )
+    }
+
+    const retire = () =>
+        offer &&
+        deactivate.mutate(offer.id, {
+            onSuccess: () => setConfirming(false),
+            onError: (err) => {
+                setError(toMessage(err))
+                setConfirming(false)
+            },
+        })
+
+    return (
+        <div className="space-y-5">
+            {offer ? (
+                <div className="rounded-2xl bg-ember/[0.06] p-4 ring-1 ring-ember/20">
+                    <p className="font-mono text-eyebrow uppercase text-ember">{t('offerLive')}</p>
+                    <p className="mt-1 text-sm text-text-dim">
+                        {offer.message ||
+                            [
+                                offer.trialDays ? t('offerTrial', { days: offer.trialDays }) : null,
+                                offer.introPhase ? t('offerDiscount', { percent: offer.introPhase.percentOff }) : null,
+                            ]
+                                .filter(Boolean)
+                                .join(' · ')}
+                    </p>
+                </div>
+            ) : (
+                <p className="text-sm text-text-faint">{t('offerNone')}</p>
+            )}
+
+            <p className="text-xs text-text-faint">{t('offerHint')}</p>
+
+            <form onSubmit={onSubmit} className="space-y-4">
+                <Field label={t('offerName')} hint={t('offerNameHint')}>
+                    <Input value={name} onChange={(event) => setName(event.target.value)} required maxLength={60} />
+                </Field>
+
+                <Field label={t('offerMessage')} hint={t('offerMessageHint')}>
+                    <Textarea
+                        value={message}
+                        onChange={(event) => setMessage(event.target.value)}
+                        maxLength={120}
+                        placeholder={t('offerMessagePlaceholder')}
+                    />
+                </Field>
+
+                <Field label={t('offerTrialDays')} hint={t('offerTrialDaysHint')}>
+                    <Input
+                        type="number"
+                        min="1"
+                        max="365"
+                        inputMode="numeric"
+                        placeholder="—"
+                        value={trialDays}
+                        onChange={(event) => setTrialDays(event.target.value)}
+                    />
+                </Field>
+
+                <div className="rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
+                    <p className="font-mono text-eyebrow uppercase text-text-dim">{t('offerDiscountTitle')}</p>
+                    <p className="mt-1 text-xs text-text-faint">{t('offerDiscountHint')}</p>
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                        <Field label={t('offerDiscountPercent')}>
+                            <Input
+                                type="number"
+                                min="1"
+                                max="100"
+                                inputMode="numeric"
+                                placeholder="—"
+                                value={percentOff}
+                                onChange={(event) => setPercentOff(event.target.value)}
+                            />
+                        </Field>
+                        <Field label={t('offerDiscountCycles')}>
+                            <Input
+                                type="number"
+                                min="1"
+                                max="36"
+                                inputMode="numeric"
+                                placeholder="—"
+                                value={cycles}
+                                onChange={(event) => setCycles(event.target.value)}
+                            />
+                        </Field>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                    <Field label={t('offerStartsAt')} hint={t('offerStartsAtHint')}>
+                        <Input type="date" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} />
+                    </Field>
+                    <Field label={t('offerEndsAt')} hint={t('offerEndsAtHint')}>
+                        <Input type="date" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} />
+                    </Field>
+                </div>
+
+                <p className="rounded-xl bg-white/[0.03] px-3 py-2 text-xs text-text-faint">{t('offerSyncHint')}</p>
+
+                <FormError error={error} />
+
+                <div className="flex items-center justify-end gap-3">
+                    {saved ? (
+                        <span className="font-mono text-eyebrow uppercase text-ember" aria-live="polite">
+                            {t('planSaved')}
+                        </span>
+                    ) : null}
+                    <SubmitButton analyticsId="admin-offer-save" loading={upsert.isPending}>
+                        {t('offerSave')}
+                    </SubmitButton>
+                </div>
+            </form>
+
+            {offer ? (
+                <TrackedButton
+                    analyticsId="admin-offer-retire-open"
+                    type="button"
+                    onClick={() => setConfirming(true)}
+                    disabled={deactivate.isPending}
+                    className="w-full rounded-full px-6 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text disabled:opacity-50"
+                >
+                    {t('offerRetire')}
+                </TrackedButton>
+            ) : null}
+
+            <TrackedButton
+                analyticsId="admin-offer-done"
+                type="button"
+                onClick={onClose}
+                className="w-full rounded-full px-6 py-3 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:text-text"
+            >
+                {t('planDone')}
+            </TrackedButton>
+
+            <ConfirmModal
+                open={confirming}
+                onClose={() => setConfirming(false)}
+                onConfirm={retire}
+                title={t('offerRetireTitle')}
+                description={t('offerRetireBody')}
+                confirmLabel={t('offerRetire')}
+                cancelLabel={t('cancel')}
+                destructive
+                pending={deactivate.isPending}
+                analyticsId="admin-offer-retire"
             />
         </div>
     )

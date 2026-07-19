@@ -1118,6 +1118,11 @@ type Mutation {
   """
   createWorkoutTemplate(input: WorkoutTemplateInput!, scope: String): WorkoutTemplate!
 
+  """
+  Retire a plan’s live offer without replacing it (turns the trial/discount off for new signups). Subscribers who signed up under it keep their terms.
+  """
+  deactivatePlanOffer(id: ID!): Boolean!
+
   """Withdraw a price. Subscriptions on it keep running — they paid for it."""
   deactivatePlanPrice(id: ID!): Boolean!
 

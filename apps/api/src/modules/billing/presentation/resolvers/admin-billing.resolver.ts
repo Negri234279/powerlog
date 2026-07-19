@@ -15,6 +15,7 @@ import { RevokeSubscriptionCommand } from '../../application/commands/revoke-sub
 import { SetPlanStatusCommand } from '../../application/commands/set-plan-status/set-plan-status.command'
 import { SyncPlanCommand } from '../../application/commands/sync-plan/sync-plan.command'
 import { UpdatePlanCommand } from '../../application/commands/update-plan/update-plan.command'
+import { DeactivatePlanOfferCommand } from '../../application/commands/deactivate-plan-offer/deactivate-plan-offer.command'
 import { UpsertPlanOfferCommand } from '../../application/commands/upsert-plan-offer/upsert-plan-offer.command'
 import type { AdminBillingStats } from '../../application/ports/admin-billing-stats.read-model'
 import { RetryWebhookEventCommand } from '../../application/commands/retry-webhook-event/retry-webhook-event.command'
@@ -281,6 +282,19 @@ export class AdminBillingResolver {
         )
 
         return this.commandBus.execute<UpsertPlanOfferCommand, string>(command)
+    }
+
+    @Mutation(() => Boolean, {
+        description:
+            'Retire a plan’s live offer without replacing it (turns the trial/discount off for new signups). Subscribers who signed up under it keep their terms.',
+    })
+    async deactivatePlanOffer(
+        @Args('id', { type: () => ID }, new ZodValidationPipe(uuidArg)) id: string,
+    ): Promise<boolean> {
+        const command = new DeactivatePlanOfferCommand(id)
+        await this.commandBus.execute<DeactivatePlanOfferCommand, void>(command)
+
+        return true
     }
 
     @Mutation(() => Boolean, {

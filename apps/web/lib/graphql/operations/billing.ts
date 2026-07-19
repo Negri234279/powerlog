@@ -38,6 +38,18 @@ export const AdminPlansDocument = graphql(`
                 name
                 description
             }
+            offer {
+                id
+                name
+                message
+                trialDays
+                introPhase {
+                    cycles
+                    percentOff
+                }
+                startsAt
+                endsAt
+            }
         }
     }
 `)
@@ -80,6 +92,18 @@ export const AddPlanPriceDocument = graphql(`
 export const DeactivatePlanPriceDocument = graphql(`
     mutation DeactivatePlanPrice($id: ID!) {
         deactivatePlanPrice(id: $id)
+    }
+`)
+
+export const UpsertPlanOfferDocument = graphql(`
+    mutation UpsertPlanOffer($input: UpsertPlanOfferInput!) {
+        upsertPlanOffer(input: $input)
+    }
+`)
+
+export const DeactivatePlanOfferDocument = graphql(`
+    mutation DeactivatePlanOffer($id: ID!) {
+        deactivatePlanOffer(id: $id)
     }
 `)
 

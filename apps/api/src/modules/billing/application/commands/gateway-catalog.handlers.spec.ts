@@ -13,6 +13,8 @@ import { silentLogger } from '../../../../../tests/doubles/shared'
 import { PlanMother } from '../../../../../tests/mothers/billing'
 import { PlanPriceEntity } from '../../domain/entities/plan-price.entity'
 import { GatewayNotConfiguredError, InvalidPlanOfferError } from '../../domain/errors/billing.errors'
+import { DeactivatePlanOfferCommand } from './deactivate-plan-offer/deactivate-plan-offer.command'
+import { DeactivatePlanOfferHandler } from './deactivate-plan-offer/deactivate-plan-offer.handler'
 import { SyncPlanCommand } from './sync-plan/sync-plan.command'
 import { SyncPlanHandler } from './sync-plan/sync-plan.handler'
 import { UpsertPlanOfferCommand } from './upsert-plan-offer/upsert-plan-offer.command'
@@ -136,6 +138,7 @@ describe('plan offers', () => {
     })
 
     const upsert = () => new UpsertPlanOfferHandler(plans, offers, new FakeClock(NOW), ids, silentLogger())
+    const deactivate = () => new DeactivatePlanOfferHandler(offers, new FakeClock(NOW), silentLogger())
 
     it('retires the offer the plan had live instead of editing it', async () => {
         // The old terms are already a coupon at the gateway, and coupons are
@@ -160,5 +163,13 @@ describe('plan offers', () => {
         await expect(
             upsert().execute(new UpsertPlanOfferCommand(PLAN.id, 'Backwards', null, 7, null, NOW, yesterday)),
         ).rejects.toBeInstanceOf(InvalidPlanOfferError)
+    })
+
+    it('retires the live offer, leaving the plan with none', async () => {
+        const id = await upsert().execute(new UpsertPlanOfferCommand(PLAN.id, 'Launch', null, 7, null, NOW, null))
+
+        await deactivate().execute(new DeactivatePlanOfferCommand(id))
+
+        expect(await offers.findActiveByPlan(PLAN.id)).toBeNull()
     })
 })

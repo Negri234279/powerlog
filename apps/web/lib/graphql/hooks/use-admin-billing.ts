@@ -11,13 +11,16 @@ import {
     AdminRevokeSubscriptionDocument,
     AdminSubscriptionsDocument,
     CreatePlanDocument,
+    DeactivatePlanOfferDocument,
     DeactivatePlanPriceDocument,
     SetPlanStatusDocument,
     UpdatePlanDocument,
+    UpsertPlanOfferDocument,
 } from '@/lib/graphql/operations/billing'
 
 export type AdminPlan = AdminPlansQuery['adminPlans'][number]
 export type AdminPlanPrice = AdminPlan['prices'][number]
+export type AdminPlanOffer = NonNullable<AdminPlan['offer']>
 export type AdminSubscription = AdminSubscriptionsQuery['adminSubscriptions']['rows'][number]
 
 const PLANS_KEY = ['adminPlans']
@@ -225,6 +228,36 @@ export function useDeactivatePlanPrice() {
 
     return useMutation({
         mutationFn: (id: string) => gqlRequest(DeactivatePlanPriceDocument, { id }).then((r) => r.deactivatePlanPrice),
+        onSuccess,
+    })
+}
+
+/** Publish/replace a plan's live offer (trial and/or intro discount, with copy). */
+export interface UpsertPlanOfferInput {
+    planId: string
+    name: string
+    message?: string | null
+    trialDays?: number | null
+    introPhase?: { cycles: number; percentOff: number } | null
+    startsAt?: string | null
+    endsAt?: string | null
+}
+
+export function useUpsertPlanOffer() {
+    const onSuccess = useCatalogChange()
+
+    return useMutation({
+        mutationFn: (input: UpsertPlanOfferInput) =>
+            gqlRequest(UpsertPlanOfferDocument, { input }).then((r) => r.upsertPlanOffer),
+        onSuccess,
+    })
+}
+
+export function useDeactivatePlanOffer() {
+    const onSuccess = useCatalogChange()
+
+    return useMutation({
+        mutationFn: (id: string) => gqlRequest(DeactivatePlanOfferDocument, { id }).then((r) => r.deactivatePlanOffer),
         onSuccess,
     })
 }

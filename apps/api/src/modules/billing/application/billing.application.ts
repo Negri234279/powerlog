@@ -1,6 +1,7 @@
 import { AddPlanPriceHandler } from './commands/add-plan-price/add-plan-price.handler'
 import { AssignSubscriptionHandler } from './commands/assign-subscription/assign-subscription.handler'
 import { CreatePlanHandler } from './commands/create-plan/create-plan.handler'
+import { DeactivatePlanOfferHandler } from './commands/deactivate-plan-offer/deactivate-plan-offer.handler'
 import { DeactivatePlanPriceHandler } from './commands/deactivate-plan-price/deactivate-plan-price.handler'
 import { HandleGatewayEventHandler } from './commands/handle-gateway-event/handle-gateway-event.handler'
 import {
@@ -46,6 +47,7 @@ export const BILLING_COMMAND_HANDLERS = [
     AssignSubscriptionHandler,
     RevokeSubscriptionHandler,
     UpsertPlanOfferHandler,
+    DeactivatePlanOfferHandler,
     SyncPlanHandler,
     StartCheckoutHandler,
     CancelSubscriptionHandler,
