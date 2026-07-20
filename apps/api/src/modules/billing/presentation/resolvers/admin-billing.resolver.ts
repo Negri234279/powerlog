@@ -193,6 +193,7 @@ export class AdminBillingResolver {
             (input.status as PlanStatus | null) ?? 'draft',
             input.isFree ?? false,
             input.sortOrder ?? 0,
+            input.highlighted ?? false,
             planTranslationsOf(input.translations),
         )
 
@@ -210,12 +211,14 @@ export class AdminBillingResolver {
             description?: string | null
             entitlements?: unknown
             sortOrder?: number
+            highlighted?: boolean
             translations?: PlanTranslation[]
         } = {}
         if (input.name != null) patch.name = input.name
         if (input.description !== undefined) patch.description = input.description
         if (input.entitlements !== undefined) patch.entitlements = input.entitlements
         if (input.sortOrder != null) patch.sortOrder = input.sortOrder
+        if (input.highlighted != null) patch.highlighted = input.highlighted
         if (input.translations != null) patch.translations = planTranslationsOf(input.translations)
 
         const command = new UpdatePlanCommand(input.id, patch)

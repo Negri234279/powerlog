@@ -13,6 +13,8 @@ export class CreatePlanCommand {
         readonly status: PlanStatus,
         readonly isFree: boolean,
         readonly sortOrder: number,
+        /** Editorial "recommended / most popular" flag for the pricing card. */
+        readonly highlighted: boolean,
         /** Localized name/description for non-default locales. Base name/description
          *  above are the default-locale (English) fallback. */
         readonly translations: PlanTranslation[],

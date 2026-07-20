@@ -134,6 +134,9 @@ export class AdminPlanType {
     @Field(() => Int)
     sortOrder!: number
 
+    @Field(() => Boolean, { description: 'Editorial "recommended / most popular" badge for the pricing card.' })
+    highlighted!: boolean
+
     @Field(() => JsonValue, {
         description: 'The raw entitlements the admin form edits. Its shape is the zod schema of the audience.',
     })

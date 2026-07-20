@@ -10,6 +10,7 @@ export class UpdatePlanCommand {
             /** Raw jsonb; re-validated against the plan's audience. */
             entitlements?: unknown
             sortOrder?: number
+            highlighted?: boolean
             /** Absent leaves the translations alone; present replaces the whole set. */
             translations?: PlanTranslation[]
         },

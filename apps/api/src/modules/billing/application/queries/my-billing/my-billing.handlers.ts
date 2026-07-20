@@ -48,6 +48,7 @@ export interface PublicPlanView {
     description: string | null
     isFree: boolean
     sortOrder: number
+    highlighted: boolean
     maxTemplates: number | null
     maxMesocycles: number | null
     maxWorkouts: number | null
@@ -137,6 +138,7 @@ export class AvailablePlansHandler implements IQueryHandler<AvailablePlansQuery,
                 description: translation?.description ?? plan.description,
                 isFree: plan.isFree,
                 sortOrder: plan.sortOrder,
+                highlighted: plan.highlighted,
                 maxTemplates: view.maxTemplates,
                 maxMesocycles: view.maxMesocycles,
                 maxWorkouts: view.maxWorkouts,

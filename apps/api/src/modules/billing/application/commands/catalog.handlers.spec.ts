@@ -62,6 +62,7 @@ describe('catalog admin handlers', () => {
             overrides.status ?? 'draft',
             overrides.isFree ?? false,
             5,
+            false,
             [],
         )
 
@@ -99,6 +100,7 @@ describe('catalog admin handlers', () => {
                 'draft',
                 false,
                 0,
+                false,
                 [],
             )
 

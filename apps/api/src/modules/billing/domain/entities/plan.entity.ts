@@ -21,6 +21,8 @@ export interface PlanProps {
     /** The fallback plan of its audience: no subscription row, no charge. */
     isFree: boolean
     sortOrder: number
+    /** Editorial "recommended / most popular" flag — display only, not a grant. */
+    highlighted: boolean
     entitlements: PlanEntitlementsVO
     /** The provider-side product this plan was published as. Null until synced. */
     stripeProductId: string | null
@@ -55,6 +57,7 @@ export class PlanAggregate {
         status?: PlanStatus
         isFree?: boolean
         sortOrder?: number
+        highlighted?: boolean
         /** Raw entitlements; validated against the audience's schema. */
         entitlements: unknown
         now: Date
@@ -73,6 +76,7 @@ export class PlanAggregate {
             status: input.status ?? 'draft',
             isFree: input.isFree ?? false,
             sortOrder: input.sortOrder ?? 0,
+            highlighted: input.highlighted ?? false,
             entitlements: planEntitlementsFor(input.audience, input.entitlements),
             stripeProductId: null,
             paypalProductId: null,
@@ -107,12 +111,14 @@ export class PlanAggregate {
             description?: string | null
             entitlements?: unknown
             sortOrder?: number
+            highlighted?: boolean
         },
         now: Date,
     ): void {
         if (patch.name !== undefined) this.props.name = patch.name.trim()
         if (patch.description !== undefined) this.props.description = patch.description
         if (patch.sortOrder !== undefined) this.props.sortOrder = patch.sortOrder
+        if (patch.highlighted !== undefined) this.props.highlighted = patch.highlighted
         if (patch.entitlements !== undefined) {
             this.props.entitlements = planEntitlementsFor(this.props.audience, patch.entitlements)
         }
@@ -174,6 +180,9 @@ export class PlanAggregate {
     }
     get sortOrder(): number {
         return this.props.sortOrder
+    }
+    get highlighted(): boolean {
+        return this.props.highlighted
     }
     get entitlements(): PlanEntitlementsVO {
         return this.props.entitlements

@@ -85,6 +85,12 @@ export class CreatePlanInput {
     @Field(() => Int, { nullable: true })
     sortOrder?: number | null
 
+    @Field(() => Boolean, {
+        nullable: true,
+        description: 'Editorial "recommended / most popular" badge for the pricing card.',
+    })
+    highlighted?: boolean | null
+
     @Field(() => [PlanTranslationInput], { nullable: true, description: 'Name/description in non-default locales.' })
     translations?: PlanTranslationInput[] | null
 }
@@ -111,6 +117,10 @@ export const createPlanSchema = z.object({
         .max(999)
         .nullish()
         .transform((value) => value ?? 0),
+    highlighted: z
+        .boolean()
+        .nullish()
+        .transform((value) => value ?? false),
     translations: z
         .array(planTranslation)
         .max(NON_DEFAULT_LOCALES.length)
@@ -136,6 +146,9 @@ export class UpdatePlanInput {
     @Field(() => Int, { nullable: true })
     sortOrder?: number | null
 
+    @Field(() => Boolean, { nullable: true, description: 'Toggle the "recommended" pricing badge.' })
+    highlighted?: boolean | null
+
     @Field(() => [PlanTranslationInput], {
         nullable: true,
         description: 'Absent leaves translations alone; present replaces the whole set.',
@@ -154,6 +167,7 @@ export const updatePlanSchema = z.object({
     description: z.string().trim().max(500).nullable().optional(),
     entitlements: entitlements.optional(),
     sortOrder: z.int().min(0).max(999).optional(),
+    highlighted: z.boolean().optional(),
     translations: z.array(planTranslation).max(NON_DEFAULT_LOCALES.length).optional(),
 })
 

@@ -20,6 +20,7 @@ export function toPlanAggregate(row: PlanRow): PlanAggregate {
         status: row.status as PlanStatus,
         isFree: row.isFree,
         sortOrder: row.sortOrder,
+        highlighted: row.highlighted,
         entitlements: row.entitlements,
         stripeProductId: row.stripeProductId,
         paypalProductId: row.paypalProductId,
@@ -38,6 +39,7 @@ export function toPlanRow(plan: PlanAggregate): PlanInsert {
         status: plan.status,
         isFree: plan.isFree,
         sortOrder: plan.sortOrder,
+        highlighted: plan.highlighted,
         // The VO's value is the validated jsonb — it went through zod on the way in.
         entitlements: plan.entitlements.value,
         stripeProductId: plan.stripeProductId,

@@ -107,6 +107,9 @@ type AdminPlan {
   The raw entitlements the admin form edits. Its shape is the zod schema of the audience.
   """
   entitlements: JSON!
+
+  """Editorial "recommended / most popular" badge for the pricing card."""
+  highlighted: Boolean!
   id: ID!
 
   """The fallback of its audience: no subscription row, no charge."""
@@ -649,6 +652,9 @@ input CreatePlanInput {
 
   """Validated against the zod schema of the audience."""
   entitlements: JSON!
+
+  """Editorial "recommended / most popular" badge for the pricing card."""
+  highlighted: Boolean
 
   """The audience fallback. At most one active free plan per audience."""
   isFree: Boolean
@@ -1610,6 +1616,9 @@ type PublicOffer {
 type PublicPlan {
   ai: Boolean!
   description: String
+
+  """Editorial "recommended / most popular" badge."""
+  highlighted: Boolean!
   id: ID!
   isFree: Boolean!
 
@@ -2106,6 +2115,9 @@ input UpdatePlanInput {
 
   """Editing these reaches live subscribers immediately."""
   entitlements: JSON
+
+  """Toggle the "recommended" pricing badge."""
+  highlighted: Boolean
   id: ID!
   name: String
   sortOrder: Int

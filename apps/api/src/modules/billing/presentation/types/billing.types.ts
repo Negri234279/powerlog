@@ -65,6 +65,9 @@ export class PublicPlanType {
     @Field(() => Int)
     sortOrder!: number
 
+    @Field(() => Boolean, { description: 'Editorial "recommended / most popular" badge.' })
+    highlighted!: boolean
+
     @Field(() => Int, { nullable: true, description: 'How many templates they may create. null = unlimited.' })
     maxTemplates!: number | null
 

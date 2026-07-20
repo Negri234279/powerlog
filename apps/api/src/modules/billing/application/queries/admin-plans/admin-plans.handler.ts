@@ -50,6 +50,8 @@ export interface AdminPlanView {
     status: PlanStatus
     isFree: boolean
     sortOrder: number
+    /** Editorial "recommended / most popular" flag. */
+    highlighted: boolean
     /** The raw jsonb the admin form edits. */
     entitlements: unknown
     /** The same entitlements collapsed — what a subscriber would actually get. */
@@ -93,6 +95,7 @@ export class AdminPlansHandler implements IQueryHandler<AdminPlansQuery, AdminPl
             status: plan.status,
             isFree: plan.isFree,
             sortOrder: plan.sortOrder,
+            highlighted: plan.highlighted,
             entitlements: plan.entitlements.value,
             snapshot: { plan: plan.slug, audience: plan.audience, ...plan.entitlements.publicView() },
             prices: prices

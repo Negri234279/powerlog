@@ -41,6 +41,7 @@ export class CreatePlanHandler implements ICommandHandler<CreatePlanCommand, str
             status: command.status,
             isFree: command.isFree,
             sortOrder: command.sortOrder,
+            highlighted: command.highlighted,
             entitlements: command.entitlements,
             now: this.clock.now(),
         })

@@ -42,6 +42,9 @@ export const plans = pgTable(
         // so this flag is how a user with nothing resolves to something.
         isFree: boolean('is_free').notNull().default(false),
         sortOrder: integer('sort_order').notNull().default(0),
+        // Editorial "most popular / recommended" flag the admin sets — display only,
+        // never an entitlement. Steers the pricing card's social-proof badge.
+        highlighted: boolean('highlighted').notNull().default(false),
         entitlements: jsonb('entitlements').notNull(),
         // The provider-side product this plan was published as. Null until an admin
         // syncs the catalog — the seed migration never calls an external API.
