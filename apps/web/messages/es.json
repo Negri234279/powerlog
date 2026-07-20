@@ -912,6 +912,8 @@
         "offerDefaultName": "Oferta de lanzamiento",
         "offerLive": "Oferta activa",
         "offerNone": "Este plan aún no tiene oferta.",
+        "offerTrial": "{days} días gratis",
+        "offerDiscount": "{percent}% de descuento al empezar",
         "offerHint": "Un trial gratis y/o una fase inicial con descuento para nuevos registros. Guardar reemplaza la oferta activa del plan. El trial se puede usar una vez por cuenta.",
         "offerName": "Nombre interno",
         "offerNameHint": "Solo para tu referencia — el usuario nunca lo ve.",

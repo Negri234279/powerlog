@@ -912,6 +912,8 @@
         "offerDefaultName": "Launch offer",
         "offerLive": "Live offer",
         "offerNone": "No offer on this plan yet.",
+        "offerTrial": "{days} days free",
+        "offerDiscount": "{percent}% off to start",
         "offerHint": "A free trial and/or a discounted opening phase for new signups. Saving replaces the plan's live offer. A trial can be used once per account.",
         "offerName": "Internal name",
         "offerNameHint": "For your reference only — buyers never see it.",
