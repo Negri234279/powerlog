@@ -35,7 +35,7 @@ export function PlanStep({
     onSelect: (plan: PublicPlan) => void
 }) {
     const t = useTranslations('billing')
-    const { data: plans, isLoading } = useAvailablePlans(audience)
+    const { data: plans, isLoading, isError, refetch } = useAvailablePlans(audience)
 
     // Start on the free plan so "continue" is valid from the off; the user's own
     // pick (guarded by `!selected`) is never overwritten.
@@ -62,23 +62,50 @@ export function PlanStep({
                 />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {isLoading || !plans
-                    ? Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-64 rounded-2xl" />)
-                    : plans
-                          .slice()
-                          .sort((a, b) => a.sortOrder - b.sortOrder)
-                          .map((plan) => (
-                              <PlanSelectCard
-                                  key={plan.id}
-                                  plan={plan}
-                                  interval={interval}
-                                  currency={currency}
-                                  selected={selected?.id === plan.id}
-                                  onSelect={() => onSelect(plan)}
-                              />
-                          ))}
-            </div>
+            {isError ? (
+                <PlansError message={t('plansError')} retryLabel={t('plansRetry')} onRetry={() => void refetch()} />
+            ) : !isLoading && plans && plans.length === 0 ? (
+                <p className="rounded-2xl bg-surface px-4 py-8 text-center text-sm text-text-dim ring-1 ring-hairline">
+                    {t('plansEmpty')}
+                </p>
+            ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {isLoading || !plans
+                        ? Array.from({ length: 3 }).map((_, index) => (
+                              <Skeleton key={index} className="h-64 rounded-2xl" />
+                          ))
+                        : plans
+                              .slice()
+                              .sort((a, b) => a.sortOrder - b.sortOrder)
+                              .map((plan) => (
+                                  <PlanSelectCard
+                                      key={plan.id}
+                                      plan={plan}
+                                      interval={interval}
+                                      currency={currency}
+                                      selected={selected?.id === plan.id}
+                                      onSelect={() => onSelect(plan)}
+                                  />
+                              ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
+/** Failed-catalog state: a specific reason plus a one-click recovery path. */
+function PlansError({ message, retryLabel, onRetry }: { message: string; retryLabel: string; onRetry: () => void }) {
+    return (
+        <div className="flex flex-col items-center gap-4 rounded-2xl bg-surface px-4 py-8 text-center ring-1 ring-hairline">
+            <p className="text-sm text-text-dim">{message}</p>
+            <TrackedButton
+                analyticsId="wizard-plans-retry"
+                type="button"
+                onClick={onRetry}
+                className="rounded-full px-5 py-2.5 text-sm text-text ring-1 ring-hairline transition-colors duration-300 hover:ring-ember/40"
+            >
+                {retryLabel}
+            </TrackedButton>
         </div>
     )
 }
