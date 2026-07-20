@@ -412,6 +412,8 @@ function PlanModal({
     // Explicit intent for a plan with no prices. Without this an empty matrix would slip
     // through as a free plan by accident; ticking it is what unlocks a priceless create.
     const [free, setFree] = useState(false)
+    // Editorial "recommended" badge on the pricing card. Display only — never a grant.
+    const [highlighted, setHighlighted] = useState(initial?.highlighted ?? false)
     // The offer draft while creating — an offer needs a saved plan (FK), so like prices it
     // rides along and is published right after the plan is born. Optional: left untouched ⇒
     // no offer. In edit mode the offer tab uses OfferPanel, not this draft.
@@ -450,7 +452,7 @@ function PlanModal({
         if (!planId) return
 
         update.mutate(
-            { id: planId, name, description: description || null, entitlements },
+            { id: planId, name, description: description || null, entitlements, highlighted },
             { onSuccess: () => setSaved(true), onError: (err) => setError(toMessage(err)) },
         )
     }
@@ -510,6 +512,7 @@ function PlanModal({
                 description: description || null,
                 entitlements,
                 isFree: free,
+                highlighted,
                 translations: translationPayload(translations),
             })
             created = true
@@ -571,6 +574,8 @@ function PlanModal({
                                     setDescription={setDescription}
                                     entitlements={entitlements}
                                     setEntitlements={setEntitlements}
+                                    highlighted={highlighted}
+                                    setHighlighted={setHighlighted}
                                     liveNote={initial?.status === 'active'}
                                 />
 
@@ -694,6 +699,8 @@ function PlanModal({
                                 setDescription={setDescription}
                                 entitlements={entitlements}
                                 setEntitlements={setEntitlements}
+                                highlighted={highlighted}
+                                setHighlighted={setHighlighted}
                                 liveNote={false}
                             />
                         ) : tab === 'prices' ? (
@@ -782,6 +789,8 @@ function PlanBaseFields({
     setDescription,
     entitlements,
     setEntitlements,
+    highlighted,
+    setHighlighted,
     liveNote,
 }: {
     schema?: EntitlementsJsonSchema
@@ -796,9 +805,12 @@ function PlanBaseFields({
     setDescription: (value: string) => void
     entitlements: EntitlementsValue
     setEntitlements: (value: EntitlementsValue) => void
+    highlighted: boolean
+    setHighlighted: (value: boolean) => void
     liveNote: boolean
 }) {
     const t = useTranslations('admin')
+    const highlightId = useId()
 
     return (
         <div className="space-y-4">
@@ -833,6 +845,22 @@ function PlanBaseFields({
                     maxLength={500}
                 />
             </Field>
+
+            <div className="rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
+                <div className="flex items-center gap-3">
+                    <input
+                        id={highlightId}
+                        type="checkbox"
+                        checked={highlighted}
+                        onChange={(event) => setHighlighted(event.target.checked)}
+                        className="size-4 accent-ember"
+                    />
+                    <label htmlFor={highlightId} className="text-sm text-text-dim">
+                        {t('planHighlighted')}
+                    </label>
+                </div>
+                <p className="mt-1.5 pl-7 text-xs text-text-faint">{t('planHighlightedHint')}</p>
+            </div>
 
             <div className="space-y-2">
                 <p className="font-mono text-eyebrow uppercase text-text-dim">{t('planEntitlements')}</p>

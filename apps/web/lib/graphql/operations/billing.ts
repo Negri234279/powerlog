@@ -13,6 +13,7 @@ export const AdminPlansDocument = graphql(`
             status
             isFree
             sortOrder
+            highlighted
             entitlements
             stripeProductId
             paypalProductId

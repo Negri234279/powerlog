@@ -10,6 +10,7 @@ export const AvailablePlansDocument = graphql(`
             description
             isFree
             sortOrder
+            highlighted
             maxTemplates
             maxMesocycles
             maxWorkouts

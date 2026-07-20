@@ -906,6 +906,8 @@
         "planSlugInvalid": "Usa un slug en minúsculas como athlete-pro (mín. 3 caracteres).",
         "planFreeConfirm": "Plan gratuito — sin precios",
         "planFreeLocked": "Que un plan sea gratuito se define al crearlo.",
+        "planHighlighted": "Plan recomendado",
+        "planHighlightedHint": "Añade una insignia “Recomendado” y destaca este plan en las tarjetas de precios. Úsalo en un plan por audiencia.",
         "planNeedsPrice": "Añade al menos un precio, o marca «Plan gratuito».",
         "planPriceReplaces": "Esto retira el {amount} actual.",
         "planPriceHistory": "Versiones retiradas",

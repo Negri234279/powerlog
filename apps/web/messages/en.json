@@ -906,6 +906,8 @@
         "planSlugInvalid": "Use a lowercase slug like athlete-pro (min. 3 characters).",
         "planFreeConfirm": "Free plan — no prices",
         "planFreeLocked": "A plan's free status is set when it's created.",
+        "planHighlighted": "Recommended plan",
+        "planHighlightedHint": "Adds a “Recommended” badge and highlights this plan on the pricing cards. Use it on one plan per audience.",
         "planNeedsPrice": "Add at least one price, or tick “Free plan”.",
         "planPriceReplaces": "This withdraws the current {amount}.",
         "planPriceHistory": "Withdrawn versions",

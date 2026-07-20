@@ -133,6 +133,7 @@ export interface CreatePlanInput {
     status?: string
     isFree?: boolean
     sortOrder?: number
+    highlighted?: boolean
     translations?: PlanTranslationInput[]
 }
 
@@ -151,6 +152,7 @@ export interface UpdatePlanInput {
     description?: string | null
     entitlements?: unknown
     sortOrder?: number
+    highlighted?: boolean
     translations?: PlanTranslationInput[]
 }
 
