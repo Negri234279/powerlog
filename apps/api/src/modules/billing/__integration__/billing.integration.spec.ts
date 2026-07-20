@@ -128,10 +128,9 @@ describe('Billing catalog (integration)', () => {
         const coachPro = await plans.findById(await planIdOf('coach-pro'))
         const view = coachPro!.entitlements.publicView()
 
-        // The migrated coach shape is flat — coaching only, no nested athlete
-        // section — and it survives the jsonb round-trip on real data, not just
-        // in unit tests. Its ai/quotas carried over from the old nested values.
-        expect(view).toMatchObject({ ai: true, planSessions: true, maxAthletes: 20, maxWorkouts: 0 })
+        // The coach shape is flat — coaching only, no nested athlete section — and
+        // it survives the jsonb round-trip on real data, not just in unit tests.
+        expect(view).toMatchObject({ ai: true, planSessions: true, maxAthletes: 30, maxWorkouts: 0 })
     })
 
     it('refuses a second active free plan for the same audience', async () => {
@@ -298,15 +297,15 @@ describe('Admin billing stats (integration)', () => {
     }
 
     it('normalises every interval to a month, so a yearly plan is not twelve times a monthly one', async () => {
-        // Seeded prices: athlete-pro is 7,99 €/month and 79,90 €/year.
+        // Seeded prices: athlete-pro is 4,99 €/month and 49,90 €/year.
         await subscribeOnPrice({ slug: 'athlete-pro', interval: 'month', currency: 'EUR' })
         await subscribeOnPrice({ slug: 'athlete-pro', interval: 'year', currency: 'EUR' })
 
         const { mrr } = await stats.read()
         const eur = mrr.find((row) => row.plan === 'athlete-pro' && row.currency === 'EUR')
 
-        // 799 + 7990/12 ≈ 799 + 666 = 1465 cents a month.
-        expect(eur?.amountCents).toBe(799 + Math.round(7990 / 12))
+        // 499 + 4990/12 ≈ 499 + 416 = 915 cents a month.
+        expect(eur?.amountCents).toBe(499 + Math.round(4990 / 12))
     })
 
     it('keeps the currencies apart instead of adding cents of different money together', async () => {
@@ -315,8 +314,8 @@ describe('Admin billing stats (integration)', () => {
 
         const { mrr } = await stats.read()
 
-        expect(mrr.find((row) => row.currency === 'EUR')?.amountCents).toBe(799)
-        expect(mrr.find((row) => row.currency === 'USD')?.amountCents).toBe(899)
+        expect(mrr.find((row) => row.currency === 'EUR')?.amountCents).toBe(499)
+        expect(mrr.find((row) => row.currency === 'USD')?.amountCents).toBe(549)
     })
 
     it('counts a past_due subscriber as revenue in recovery, but a trial as nothing yet', async () => {
@@ -326,7 +325,7 @@ describe('Admin billing stats (integration)', () => {
         const snapshot = await stats.read()
 
         // The trial pays nothing yet; the past_due one is still being billed for.
-        expect(snapshot.mrr.find((row) => row.plan === 'coach-pro')?.amountCents).toBe(1999)
+        expect(snapshot.mrr.find((row) => row.plan === 'coach-pro')?.amountCents).toBe(1299)
         expect(snapshot.trialing).toBe(1)
         expect(snapshot.pastDue).toBe(1)
         // Both still grant their plan, so both are "active" in the entitlement sense.

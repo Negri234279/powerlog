@@ -386,6 +386,13 @@
       "when": 1784475846462,
       "tag": "0054_giant_lockjaw",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1784560000000,
+      "tag": "0055_launch_catalog",
+      "breakpoints": true
     }
   ]
 }

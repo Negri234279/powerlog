@@ -29,7 +29,21 @@ let httpServer: ReturnType<INestApplication['getHttpServer']>
 
 const COOKIE = { access: 'pl_at' }
 
-const SEEDED = ['athlete-free', 'athlete-pro', 'coach-free', 'coach-pro', 'coach-elite']
+// The launch catalog (0055): three active tiers per audience, plus the pre-launch
+// plans it renamed `-legacy` and archived. beforeEach keeps all of them.
+const SEEDED = [
+    'athlete-free',
+    'athlete-pro',
+    'athlete-elite',
+    'coach-free',
+    'coach-pro',
+    'coach-elite',
+    'athlete-free-legacy',
+    'athlete-pro-legacy',
+    'coach-free-legacy',
+    'coach-pro-legacy',
+    'coach-elite-legacy',
+]
 
 beforeAll(async () => {
     container = await new PostgreSqlContainer('postgres:16-alpine').start()
@@ -117,13 +131,26 @@ describe('admin billing (GraphQL)', () => {
         const res = await gql(`query { adminPlans(audience: "athlete") { ${PLAN_FIELDS} } }`, admin.access)
 
         const plans = res.body.data.adminPlans
-        expect(plans.map((plan: { slug: string }) => plan.slug)).toEqual(['athlete-free', 'athlete-pro'])
+        // The live launch catalog is the three active athlete tiers; the pre-launch
+        // plans are still listed, archived (0055 renamed them `-legacy`).
+        const active = plans.filter((plan: { status: string }) => plan.status === 'active')
+        expect(active.map((plan: { slug: string }) => plan.slug)).toEqual([
+            'athlete-free',
+            'athlete-pro',
+            'athlete-elite',
+        ])
+        expect(
+            plans.some(
+                (plan: { slug: string; status: string }) =>
+                    plan.slug === 'athlete-pro-legacy' && plan.status === 'archived',
+            ),
+        ).toBe(true)
 
         const free = plans.find((plan: { slug: string }) => plan.slug === 'athlete-free')
         expect(free.isFree).toBe(true)
         expect(free.snapshot.ai).toBe(false)
         // The raw jsonb the form edits comes back as JSON, not as a typed shape.
-        expect(free.entitlements).toEqual({ maxTemplates: 5, maxMesocycles: 2, maxWorkouts: 50, ai: false })
+        expect(free.entitlements).toEqual({ maxTemplates: 3, maxMesocycles: 1, maxWorkouts: 30, ai: false })
 
         const pro = plans.find((plan: { slug: string }) => plan.slug === 'athlete-pro')
         expect(pro.prices).toHaveLength(4) // month/year × EUR/USD
@@ -295,7 +322,7 @@ describe('admin billing (GraphQL)', () => {
         expect(eurMonth.filter((price: { active: boolean }) => price.active)).toEqual([
             { interval: 'month', currency: 'EUR', amountCents: 999, active: true },
         ])
-        expect(eurMonth.find((price: { active: boolean }) => !price.active).amountCents).toBe(799)
+        expect(eurMonth.find((price: { active: boolean }) => !price.active).amountCents).toBe(499)
     })
 
     it("refuses to archive the audience's only free plan", async () => {
