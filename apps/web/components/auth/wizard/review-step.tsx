@@ -35,6 +35,7 @@ export function ReviewStep({
     return (
         <div className="space-y-5">
             <div className="space-y-3">
+                <Row label={tw('reviewAccount')} value={`@${account.username} · ${account.email}`} />
                 {athletePlan ? (
                     <PlanRow
                         label={tw('reviewAthletePlan')}
@@ -48,7 +49,6 @@ export function ReviewStep({
                 ) : (
                     <Row label={tw('reviewCoachPlan')} value={tw('reviewNoCoach')} />
                 )}
-                <Row label={tw('reviewAccount')} value={`@${account.username} · ${account.email}`} />
             </div>
 
             <FormError error={formError} />
