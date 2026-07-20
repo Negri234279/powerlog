@@ -4,9 +4,11 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { type SubmitEvent, useState, useTransition } from 'react'
 
+import { AvailabilityInput } from '@/components/ui/availability-input'
 import { Field, Input, Select } from '@/components/ui/field'
 import { PasswordInput } from '@/components/ui/password-input'
 import { TrackedButton } from '@/components/ui/tracked'
+import { useAvailability } from '@/lib/graphql/hooks/use-availability'
 import { setLocaleCookie } from '@/lib/i18n/actions'
 import { type Locale, LOCALE_LABELS, SUPPORTED_LOCALES } from '@/lib/i18n/config'
 import { type RegisterValues, fieldErrors, registerSchema } from '@/lib/validation/auth'
@@ -46,6 +48,15 @@ export function AccountStep({
     const [email, setEmail] = useState(defaults?.email ?? prefillEmail)
     const [username, setUsername] = useState(defaults?.username ?? prefillUsername)
 
+    // Live availability. The invited email is locked to the invitation, so there's
+    // nothing to check there. A "taken" or still-"checking" field blocks the step.
+    const emailStatus = useAvailability('email', email, invited)
+    const usernameStatus = useAvailability('username', username)
+    const blocked = [emailStatus, usernameStatus].some((s) => s === 'checking' || s === 'taken')
+
+    const emailError = emailStatus === 'taken' ? t('errors.emailTaken') : te(errors['email'])
+    const usernameError = usernameStatus === 'taken' ? t('errors.usernameTaken') : te(errors['username'])
+
     // A birth date can't be in the future — cap the picker at today (local date, so
     // it doesn't slip a day near midnight UTC). The server enforces this too.
     const today = new Date().toLocaleDateString('en-CA')
@@ -78,6 +89,10 @@ export function AccountStep({
             return
         }
 
+        // Belt-and-suspenders: the Continue button is disabled while taken/checking,
+        // but an Enter keypress could still fire — never advance with a known dup.
+        if (emailStatus === 'taken' || usernameStatus === 'taken') return
+
         setErrors({})
         onDone(parsed.data)
     }
@@ -90,8 +105,9 @@ export function AccountStep({
                 </div>
             ) : null}
 
-            <Field label={t('fields.email')} htmlFor="email" error={te(errors['email'])}>
-                <Input
+            <Field label={t('fields.email')} htmlFor="email" error={emailError}>
+                <AvailabilityInput
+                    status={emailStatus}
                     id="email"
                     name="email"
                     type="email"
@@ -107,10 +123,11 @@ export function AccountStep({
             <Field
                 label={t('fields.username')}
                 htmlFor="username"
-                error={te(errors['username'])}
+                error={usernameError}
                 hint={t('fields.usernameHint')}
             >
-                <Input
+                <AvailabilityInput
+                    status={usernameStatus}
                     id="username"
                     name="username"
                     autoComplete="username"
@@ -219,7 +236,8 @@ export function AccountStep({
                 <TrackedButton
                     analyticsId="wizard-account-continue"
                     type="submit"
-                    className="flex-1 rounded-full bg-ember-gradient px-6 py-3 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
+                    disabled={blocked}
+                    className="flex-1 rounded-full bg-ember-gradient px-6 py-3 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                     {tw('continue')}
                 </TrackedButton>

@@ -71,6 +71,8 @@ type Documents = {
     "\n    query Me {\n        me {\n            id\n            email\n            username\n            role\n            isAdmin\n            units\n            emailVerified\n            hasPassword\n            createdAt\n        }\n    }\n": typeof types.MeDocument,
     "\n    mutation Register($input: RegisterInput!) {\n        register(input: $input) {\n            id\n        }\n    }\n": typeof types.RegisterDocument,
     "\n    mutation Login($input: LoginInput!) {\n        login(input: $input) {\n            id\n        }\n    }\n": typeof types.LoginDocument,
+    "\n    query EmailAvailable($email: String!) {\n        emailAvailable(email: $email)\n    }\n": typeof types.EmailAvailableDocument,
+    "\n    query UsernameAvailable($username: String!) {\n        usernameAvailable(username: $username)\n    }\n": typeof types.UsernameAvailableDocument,
     "\n    mutation Logout {\n        logout\n    }\n": typeof types.LogoutDocument,
     "\n    mutation Refresh {\n        refresh {\n            id\n        }\n    }\n": typeof types.RefreshDocument,
     "\n    mutation DeleteAccount {\n        deleteAccount\n    }\n": typeof types.DeleteAccountDocument,
@@ -211,6 +213,8 @@ const documents: Documents = {
     "\n    query Me {\n        me {\n            id\n            email\n            username\n            role\n            isAdmin\n            units\n            emailVerified\n            hasPassword\n            createdAt\n        }\n    }\n": types.MeDocument,
     "\n    mutation Register($input: RegisterInput!) {\n        register(input: $input) {\n            id\n        }\n    }\n": types.RegisterDocument,
     "\n    mutation Login($input: LoginInput!) {\n        login(input: $input) {\n            id\n        }\n    }\n": types.LoginDocument,
+    "\n    query EmailAvailable($email: String!) {\n        emailAvailable(email: $email)\n    }\n": types.EmailAvailableDocument,
+    "\n    query UsernameAvailable($username: String!) {\n        usernameAvailable(username: $username)\n    }\n": types.UsernameAvailableDocument,
     "\n    mutation Logout {\n        logout\n    }\n": types.LogoutDocument,
     "\n    mutation Refresh {\n        refresh {\n            id\n        }\n    }\n": types.RefreshDocument,
     "\n    mutation DeleteAccount {\n        deleteAccount\n    }\n": types.DeleteAccountDocument,
@@ -536,6 +540,14 @@ export function graphql(source: "\n    mutation Register($input: RegisterInput!)
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    mutation Login($input: LoginInput!) {\n        login(input: $input) {\n            id\n        }\n    }\n"): (typeof documents)["\n    mutation Login($input: LoginInput!) {\n        login(input: $input) {\n            id\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query EmailAvailable($email: String!) {\n        emailAvailable(email: $email)\n    }\n"): (typeof documents)["\n    query EmailAvailable($email: String!) {\n        emailAvailable(email: $email)\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query UsernameAvailable($username: String!) {\n        usernameAvailable(username: $username)\n    }\n"): (typeof documents)["\n    query UsernameAvailable($username: String!) {\n        usernameAvailable(username: $username)\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -199,6 +199,8 @@
         },
         "errors": {
             "invalidEmail": "Introduce un email válido.",
+            "emailTaken": "Ese email ya tiene una cuenta.",
+            "usernameTaken": "Ese nombre de usuario ya está en uso.",
             "passwordRequired": "La contraseña es obligatoria.",
             "usernameLength": "Usa entre 3 y 30 caracteres.",
             "usernameChars": "Solo a–z, 0–9 y guion bajo.",

@@ -32,6 +32,18 @@ export const LoginDocument = graphql(`
     }
 `)
 
+export const EmailAvailableDocument = graphql(`
+    query EmailAvailable($email: String!) {
+        emailAvailable(email: $email)
+    }
+`)
+
+export const UsernameAvailableDocument = graphql(`
+    query UsernameAvailable($username: String!) {
+        usernameAvailable(username: $username)
+    }
+`)
+
 export const LogoutDocument = graphql(`
     mutation Logout {
         logout

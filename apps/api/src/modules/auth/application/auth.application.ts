@@ -21,6 +21,7 @@ import { SendEmailVerificationOnUserRegistered } from './event-handlers/send-ema
 import { AdminUserDetailHandler } from './queries/admin-user-detail/admin-user-detail.handler'
 import { AdminUserStatsHandler } from './queries/admin-user-stats/admin-user-stats.handler'
 import { AdminUsersHandler } from './queries/admin-users/admin-users.handler'
+import { EmailAvailableHandler } from './queries/email-available/email-available.handler'
 import { GetMeHandler } from './queries/get-me/get-me.handler'
 import { GetMySessionsHandler } from './queries/get-my-sessions/get-my-sessions.handler'
 import { EmailVerificationIssuer } from './services/email-verification-issuer.service'
@@ -52,6 +53,7 @@ export const AUTH_COMMAND_HANDLERS = [
 export const AUTH_QUERY_HANDLERS = [
     GetMeHandler,
     GetMySessionsHandler,
+    EmailAvailableHandler,
     AdminUsersHandler,
     AdminUserStatsHandler,
     AdminUserDetailHandler,

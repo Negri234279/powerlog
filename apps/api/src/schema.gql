@@ -1777,6 +1777,9 @@ type Query {
   """
   coachInvitationPreview(token: String!): CoachInvitationPreview
 
+  """Whether an email is free to register."""
+  emailAvailable(email: String!): Boolean!
+
   """
   The caller's recent completed sessions logging one exercise, with their performed sets.
   """
@@ -1878,6 +1881,9 @@ type Query {
 
   """Number of unread notifications (the bell badge)."""
   unreadNotificationsCount: Int!
+
+  """Whether a public handle is free to register."""
+  usernameAvailable(username: String!): Boolean!
 
   """The caller's weekly training volume, optionally within a date range."""
   volumeSeries(from: String, to: String): [VolumeBucket!]!

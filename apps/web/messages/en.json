@@ -199,6 +199,8 @@
         },
         "errors": {
             "invalidEmail": "Enter a valid email address.",
+            "emailTaken": "That email already has an account.",
+            "usernameTaken": "That username is taken.",
             "passwordRequired": "Password is required.",
             "usernameLength": "Use 3–30 characters.",
             "usernameChars": "Only a–z, 0–9 and underscore.",
