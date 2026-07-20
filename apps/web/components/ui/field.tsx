@@ -3,7 +3,7 @@ import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes 
 import { cn } from '@/lib/cn'
 
 const control =
-    'w-full rounded-2xl bg-bg/60 px-4 py-3 text-sm text-text ring-1 ring-hairline outline-none transition-colors duration-300 ease-spring placeholder:text-text-faint focus:ring-ember/50'
+    'w-full rounded-2xl bg-bg/60 px-4 py-3 text-sm text-text ring-1 ring-hairline outline-none transition-colors duration-300 ease-spring placeholder:text-text-faint focus:ring-ember/50 aria-[invalid=true]:ring-ember/60 aria-[invalid=true]:focus:ring-ember/70'
 
 /** Labeled form row with optional hint/error. */
 export function Field({

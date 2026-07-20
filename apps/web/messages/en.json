@@ -897,6 +897,8 @@
         "planPricesSave": "Save prices",
         "planPriceInvalid": "Enter a valid amount above zero.",
         "planBaseInvalid": "Fill in the name and a valid slug first.",
+        "planNameRequired": "Enter a plan name.",
+        "planSlugInvalid": "Use a lowercase slug like athlete-pro (min. 3 characters).",
         "planFreeConfirm": "Free plan — no prices",
         "planFreeLocked": "A plan's free status is set when it's created.",
         "planNeedsPrice": "Add at least one price, or tick “Free plan”.",

@@ -897,6 +897,8 @@
         "planPricesSave": "Guardar precios",
         "planPriceInvalid": "Introduce un importe válido mayor que cero.",
         "planBaseInvalid": "Rellena antes el nombre y un slug válido.",
+        "planNameRequired": "Introduce un nombre de plan.",
+        "planSlugInvalid": "Usa un slug en minúsculas como athlete-pro (mín. 3 caracteres).",
         "planFreeConfirm": "Plan gratuito — sin precios",
         "planFreeLocked": "Que un plan sea gratuito se define al crearlo.",
         "planNeedsPrice": "Añade al menos un precio, o marca «Plan gratuito».",

@@ -21,6 +21,8 @@ import {
 } from '@/lib/graphql/hooks/use-admin-billing'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useSyncPlanToGateway } from '@/lib/graphql/hooks/use-admin-gateways'
+import { fieldErrors } from '@/lib/validation/errors'
+import { planCreateSchema } from '@/lib/validation/plan'
 import { AdminTabs } from '@/components/admin/admin-tabs'
 import { type EntitlementsValue, EntitlementsForm, emptyEntitlements } from '@/components/admin/entitlements-form'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -409,6 +411,11 @@ function PlanModal({
     const [free, setFree] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [saved, setSaved] = useState(false)
+    // Per-field validation for the create flow: the `planCreateSchema` (zod) runs on
+    // submit and this holds `{ field: messageKey }`, so every bad field lights up red
+    // inline at once instead of the browser's native single-field popup. Same shape as
+    // the auth forms (`errors` + `fieldErrors()`). Keys translate via `t(key)`.
+    const [errors, setErrors] = useState<Record<string, string>>({})
 
     // A fresh plan starts from the schema's own empty shape; an existing one from
     // whatever it already grants.
@@ -457,26 +464,19 @@ function PlanModal({
         event.preventDefault()
         setError(null)
 
-        if (!name.trim() || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length < 3) {
-            setTab('info')
-            setError(t('planBaseInvalid'))
+        // Validate the whole form in one pass. `fieldErrors` collects every issue, so
+        // all bad fields light up together; we jump to the first tab that holds one
+        // (info fields and prices sit on separate tabs, only one mounted at a time).
+        const parsed = planCreateSchema.safeParse({ name, slug, free, prices: priceDraft })
+        if (!parsed.success) {
+            const nextErrors = fieldErrors(parsed.error)
+            setErrors(nextErrors)
+            setTab(nextErrors['name'] || nextErrors['slug'] ? 'info' : 'prices')
             return
         }
 
+        setErrors({})
         const prices = free ? [] : filledPrices(priceDraft)
-
-        // A paid plan with nothing filled is almost always a forgotten price, not an
-        // intended free plan — make the admin say which by ticking the box.
-        if (!free && prices.length === 0) {
-            setTab('prices')
-            setError(t('planNeedsPrice'))
-            return
-        }
-        if (!free && hasInvalidAmount(priceDraft)) {
-            setTab('prices')
-            setError(t('planPriceInvalid'))
-            return
-        }
 
         let created = false
         try {
@@ -650,14 +650,18 @@ function PlanModal({
                     // and published in one submit. One form, the tabs swap which half shows.
                     // The inactive half is unmounted (not just hidden) so a `required` field
                     // it holds can't silently block a submit fired from the other tab.
-                    <form onSubmit={onCreate} className="space-y-4">
+                    // `noValidate`: we run validation in JS and mark bad fields red inline,
+                    // rather than firing the browser's native single-field popup.
+                    <form onSubmit={onCreate} noValidate className="space-y-4">
                         {tab === 'info' ? (
                             <PlanBaseFields
                                 schema={schema}
                                 name={name}
                                 setName={setName}
+                                nameError={errors['name'] ? t(errors['name']) : undefined}
                                 slug={slug}
                                 setSlug={setSlug}
+                                slugError={errors['slug'] ? t(errors['slug']) : undefined}
                                 showSlug
                                 description={description}
                                 setDescription={setDescription}
@@ -681,6 +685,7 @@ function PlanModal({
                                         />
                                     </>
                                 )}
+                                {errors['prices'] ? <p className="text-xs text-ember">{t(errors['prices'])}</p> : null}
                             </div>
                         ) : (
                             <TranslationsFields
@@ -728,8 +733,10 @@ function PlanBaseFields({
     schema,
     name,
     setName,
+    nameError,
     slug,
     setSlug,
+    slugError,
     showSlug,
     description,
     setDescription,
@@ -740,8 +747,10 @@ function PlanBaseFields({
     schema?: EntitlementsJsonSchema
     name: string
     setName: (value: string) => void
+    nameError?: string
     slug: string
     setSlug: (value: string) => void
+    slugError?: string
     showSlug: boolean
     description: string
     setDescription: (value: string) => void
@@ -753,15 +762,22 @@ function PlanBaseFields({
 
     return (
         <div className="space-y-4">
-            <Field label={t('planName')}>
-                <Input value={name} onChange={(event) => setName(event.target.value)} required maxLength={60} />
+            <Field label={t('planName')} error={nameError}>
+                <Input
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    aria-invalid={!!nameError}
+                    required
+                    maxLength={60}
+                />
             </Field>
 
             {showSlug ? (
-                <Field label={t('planSlug')} hint={t('planSlugHint')}>
+                <Field label={t('planSlug')} error={slugError} hint={t('planSlugHint')}>
                     <Input
                         value={slug}
                         onChange={(event) => setSlug(event.target.value)}
+                        aria-invalid={!!slugError}
                         required
                         pattern="[a-z0-9]+(-[a-z0-9]+)*"
                         minLength={3}
