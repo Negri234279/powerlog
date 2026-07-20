@@ -69,7 +69,11 @@ export function PlanStep({
                     {t('plansEmpty')}
                 </p>
             ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div
+                    className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                    role="radiogroup"
+                    aria-label={t('planGroupLabel')}
+                >
                     {isLoading || !plans
                         ? Array.from({ length: 3 }).map((_, index) => (
                               <Skeleton key={index} className="h-64 rounded-2xl" />

@@ -244,19 +244,30 @@ export function RegisterWizard() {
 
 /** The dots for the four counted steps; `payment` shows them all done. */
 function ProgressDots({ step }: { step: WizardStep }) {
+    const tw = useTranslations('auth.wizard')
     const active = step === 'payment' ? FLOW.length : FLOW.indexOf(step)
+    // Screen readers get "Step X of N"; the dots themselves are decorative.
+    const current = Math.min(active + 1, FLOW.length)
 
     return (
-        <div className="flex items-center gap-1.5">
-            {FLOW.map((name, index) => (
-                <span
-                    key={name}
-                    className={cn(
-                        'h-1 rounded-full transition-all duration-300',
-                        index <= active ? 'w-6 bg-ember' : 'w-3 bg-white/[0.08]',
-                    )}
-                />
-            ))}
+        <div
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={FLOW.length}
+            aria-valuenow={current}
+            aria-valuetext={tw('progress', { step: current, total: FLOW.length })}
+        >
+            <div className="flex items-center gap-1.5" aria-hidden>
+                {FLOW.map((name, index) => (
+                    <span
+                        key={name}
+                        className={cn(
+                            'h-1 rounded-full transition-all duration-300',
+                            index <= active ? 'w-6 bg-ember' : 'w-3 bg-white/[0.08]',
+                        )}
+                    />
+                ))}
+            </div>
         </div>
     )
 }

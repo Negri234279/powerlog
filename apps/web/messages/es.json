@@ -1262,6 +1262,7 @@
         "plansError": "No pudimos cargar los planes. Revisa tu conexión e inténtalo de nuevo.",
         "plansRetry": "Reintentar",
         "plansEmpty": "No hay planes disponibles ahora mismo. Inténtalo más tarde.",
+        "planGroupLabel": "Elige un plan",
         "priceUnavailable": "—",
         "subscribe": "Suscribirme",
         "switchToPlan": "Cambiar a este plan",

@@ -1262,6 +1262,7 @@
         "plansError": "Couldn’t load the plans. Check your connection and try again.",
         "plansRetry": "Try again",
         "plansEmpty": "No plans are available right now. Please try again later.",
+        "planGroupLabel": "Choose a plan",
         "priceUnavailable": "—",
         "subscribe": "Subscribe",
         "switchToPlan": "Switch to this plan",
