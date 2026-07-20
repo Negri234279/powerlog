@@ -33,6 +33,17 @@ function prefersSpanish(req: NextRequest): boolean {
     return accept.trim().toLowerCase().startsWith('es')
 }
 
+/**
+ * Redirect with a RELATIVE `Location` (pathname + original query), resolved by the
+ * browser against the public URL. `NextResponse.redirect` needs an absolute URL,
+ * and building one from `req.nextUrl` behind the reverse proxy can leak the
+ * internal bind host (`https://0.0.0.0:3000/...`) when Next can't see the public
+ * host. A relative path avoids that and always stays on the visitor's origin.
+ */
+function redirectTo(pathname: string, req: NextRequest): NextResponse {
+    return new NextResponse(null, { status: 307, headers: { location: `${pathname}${req.nextUrl.search}` } })
+}
+
 export function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl
     // The long-lived refresh cookie is the durable session marker — the access
@@ -43,27 +54,21 @@ export function proxy(req: NextRequest) {
 
     const isProtected = PROTECTED.some((p) => pathname === p || pathname.startsWith(`${p}/`))
     if (isProtected && !hasSession) {
-        const url = req.nextUrl.clone()
-        url.pathname = '/login'
-        return NextResponse.redirect(url)
+        return redirectTo('/login', req)
     }
 
     // A stale-but-present cookie (revoked / expired / reuse-detected) doesn't trap
     // the user: /dashboard's gate fails the refresh, which clears both cookies and
     // drops them on /login — from where the landing is reachable again.
     if (SIGNED_IN_ELSEWHERE.includes(pathname) && hasSession) {
-        const url = req.nextUrl.clone()
-        url.pathname = '/dashboard'
-        return NextResponse.redirect(url)
+        return redirectTo('/dashboard', req)
     }
 
     // Anonymous visitor on the English landing who prefers Spanish → `/es`. Only `/`
     // auto-detects; `/es` is the explicit Spanish URL and never redirects away, so a
     // shared /es link always works and there's no redirect loop.
     if (pathname === '/' && prefersSpanish(req)) {
-        const url = req.nextUrl.clone()
-        url.pathname = '/es'
-        return NextResponse.redirect(url)
+        return redirectTo('/es', req)
     }
 
     return NextResponse.next()

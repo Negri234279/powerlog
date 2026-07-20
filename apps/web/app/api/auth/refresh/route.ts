@@ -21,13 +21,23 @@ function sanitizeNext(next: string | null): string {
 }
 
 /**
+ * Redirect with a RELATIVE `Location`, resolved by the browser against the public
+ * URL it's on. We must NOT build an absolute URL from `req.nextUrl.origin`: behind
+ * the reverse proxy Next can see the internal bind host, which leaks a bogus
+ * `https://0.0.0.0:3000/...` Location. A relative path sidesteps that entirely.
+ */
+function relativeRedirect(path: string): NextResponse {
+    return new NextResponse(null, { status: 307, headers: { location: path } })
+}
+
+/**
  * Redirect to login with the auth cookies cleared. A failed refresh means the
  * session is dead, so we drop the stale cookies — otherwise `pl_rt` lingers for
  * its full maxAge (e.g. a refresh revoked on another device) and keeps making
  * `hasRefreshCookie()` report a session that no longer exists.
  */
-function loggedOutRedirect(loginUrl: URL): NextResponse {
-    const res = NextResponse.redirect(loginUrl)
+function loggedOutRedirect(): NextResponse {
+    const res = relativeRedirect('/login')
     res.cookies.set(serverEnv.authCookieName, '', { path: '/', maxAge: 0 })
     res.cookies.set(serverEnv.refreshCookieName, '', { path: '/', maxAge: 0 })
     return res
@@ -43,7 +53,6 @@ function loggedOutRedirect(loginUrl: URL): NextResponse {
  */
 export async function GET(req: NextRequest): Promise<NextResponse> {
     const next = sanitizeNext(req.nextUrl.searchParams.get('next'))
-    const loginUrl = new URL('/login', req.nextUrl.origin)
 
     let apiRes: Response
     try {
@@ -55,7 +64,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         })
     } catch {
         log.error('session refresh failed: API unreachable', { next })
-        return loggedOutRedirect(loginUrl)
+        return loggedOutRedirect()
     }
 
     // The API only emits Set-Cookie on a successful rotation; a rejected refresh
@@ -65,11 +74,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (!apiRes.ok || setCookies.length === 0) {
         // Expired / revoked / reuse-detected refresh → user is bounced to login.
         log.warn('session refresh rejected', { status: apiRes.status, next })
-        return loggedOutRedirect(loginUrl)
+        return loggedOutRedirect()
     }
 
     log.debug('session refreshed', { next })
-    const res = NextResponse.redirect(new URL(next, req.nextUrl.origin))
+    const res = relativeRedirect(next)
     for (const cookie of setCookies) {
         res.headers.append('set-cookie', cookie)
     }
