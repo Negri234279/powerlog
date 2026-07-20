@@ -5,6 +5,7 @@ import {
     FakeClock,
     FakeIdGenerator,
     InMemoryInvoiceRepository,
+    InMemoryPlanOfferRepository,
     InMemoryPlanPriceRepository,
     InMemoryPlanRepository,
     FakeWebhookRetryQueue,
@@ -15,6 +16,7 @@ import {
 import { RecordingEventBus, silentLogger } from '../../../../../../tests/doubles/shared'
 import { PlanMother, SubscriptionMother } from '../../../../../../tests/mothers/billing'
 import { SubscriptionChangedIntegrationEvent } from '../../../../../shared/integration-events/subscription-changed.integration-event'
+import { PlanOfferEntity } from '../../../domain/entities/plan-offer.entity'
 import { PlanPriceEntity } from '../../../domain/entities/plan-price.entity'
 import type { SubscriptionStatus } from '../../../domain/subscription-status'
 import type {
@@ -101,6 +103,7 @@ describe('the webhook pipeline', () => {
     let subscriptions: InMemorySubscriptionRepository
     let plans: InMemoryPlanRepository
     let prices: InMemoryPlanPriceRepository
+    let offers: InMemoryPlanOfferRepository
     let invoices: InMemoryInvoiceRepository
     let trialRedemptions: InMemoryTrialRedemptionRepository
     let events: InMemoryWebhookEventStore
@@ -112,6 +115,7 @@ describe('the webhook pipeline', () => {
         subscriptions = new InMemorySubscriptionRepository()
         plans = new InMemoryPlanRepository([PlanMother.athletePro(), PlanMother.athleteFree()])
         prices = new InMemoryPlanPriceRepository([aPrice('price-eur', 799, 'px_eur')])
+        offers = new InMemoryPlanOfferRepository()
         invoices = new InMemoryInvoiceRepository()
         trialRedemptions = new InMemoryTrialRedemptionRepository()
         events = new InMemoryWebhookEventStore()
@@ -125,6 +129,7 @@ describe('the webhook pipeline', () => {
             subscriptions,
             plans,
             prices,
+            offers,
             invoices,
             trialRedemptions,
             events,
@@ -269,6 +274,57 @@ describe('the webhook pipeline', () => {
             await deliver(subscriptionChanged({ userId: null }))
 
             expect(subscriptions.all()).toEqual([])
+        })
+
+        it('resolves an offer’s own PayPal plan back to the price, so an offer signup is not dropped', async () => {
+            // The register bug: a PayPal OFFER bills against its own billing plan id,
+            // kept in the offer’s `paypalPlanIds` — not on `plan_prices`. The
+            // activation carries that offer plan id, and it must still resolve.
+            const offer = PlanOfferEntity.create({
+                id: 'offer-1',
+                planId: PRO.id,
+                name: 'Launch',
+                trialDays: 14,
+                startsAt: NOW,
+                now: NOW,
+            })
+            offer.syncedToPaypal({ 'price-eur': 'P-OFFER-2TT' }, NOW)
+            offers = new InMemoryPlanOfferRepository([offer])
+
+            await deliver(
+                subscriptionChanged({
+                    gateway: 'paypal',
+                    eventId: 'evt_paypal_offer',
+                    type: 'BILLING.SUBSCRIPTION.ACTIVATED',
+                    userId: USER,
+                    gatewayPriceId: 'P-OFFER-2TT',
+                }),
+            )
+
+            const created = await subscriptions.findByGatewayId(GATEWAY_SUB)
+            expect(created?.userId).toBe(USER)
+            expect(created?.planPriceId).toBe('price-eur')
+            expect(created?.isEntitledAt(NOW)).toBe(true)
+        })
+
+        it('fails loudly when it has a subscriber but the price maps to nothing — never a silent drop', async () => {
+            // A subscriber and a price id, yet nothing maps to it: a broken catalog, the
+            // exact shape of the bug that lost a paid signup. It must land `failed` and
+            // be retryable, not be swallowed as "processed".
+            await expect(
+                deliver(
+                    subscriptionChanged({
+                        gateway: 'paypal',
+                        eventId: 'evt_paypal_unknown',
+                        type: 'BILLING.SUBSCRIPTION.ACTIVATED',
+                        userId: USER,
+                        gatewayPriceId: 'P-NOT-IN-CATALOG',
+                    }),
+                ),
+            ).rejects.toThrow()
+
+            expect(subscriptions.all()).toEqual([])
+            expect(events.all()[0]?.status).toBe('failed')
         })
     })
 

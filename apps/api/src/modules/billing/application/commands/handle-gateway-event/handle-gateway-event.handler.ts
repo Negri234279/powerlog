@@ -6,7 +6,9 @@ import {
     SubscriptionChangedIntegrationEvent,
 } from '../../../../../shared/integration-events/subscription-changed.integration-event'
 import { InvoiceEntity } from '../../../domain/entities/invoice.entity'
+import type { PlanPriceEntity } from '../../../domain/entities/plan-price.entity'
 import { SubscriptionAggregate } from '../../../domain/entities/subscription.entity'
+import { PlanOfferRepository } from '../../../domain/repositories/plan-offer.repository'
 import { PlanPriceRepository } from '../../../domain/repositories/plan-price.repository'
 import { PlanRepository } from '../../../domain/repositories/plan.repository'
 import { InvoiceRepository } from '../../../domain/repositories/invoice.repository'
@@ -54,6 +56,7 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
         private readonly subscriptions: SubscriptionRepository,
         private readonly plans: PlanRepository,
         private readonly prices: PlanPriceRepository,
+        private readonly offers: PlanOfferRepository,
         private readonly invoices: InvoiceRepository,
         private readonly trialRedemptions: TrialRedemptionRepository,
         private readonly events: WebhookEventStore,
@@ -207,7 +210,7 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
 
         // The gateway may have moved them onto a different price (a plan change we
         // asked for, or one made in the provider's portal).
-        const newPrice = event.gatewayPriceId ? await this.prices.findByGatewayPriceId(event.gatewayPriceId) : null
+        const newPrice = event.gatewayPriceId ? await this.resolvePrice(event.gatewayPriceId) : null
 
         subscription.syncFromGateway(
             {
@@ -270,6 +273,23 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
     }
 
     /**
+     * A gateway price id → our price. A Stripe price or a base PayPal plan lives on
+     * `plan_prices`. A PayPal OFFER is its own billing plan (its trial/intro cycles
+     * are baked into the plan, PayPal has no coupons), so its subscription events
+     * carry the offer's plan id — resolved through the offer→price map when the base
+     * lookup misses. Stripe needs no fallback: its offers are coupons on the base
+     * price, so the id it reports stays the base one.
+     */
+    private async resolvePrice(gatewayPriceId: string): Promise<PlanPriceEntity | null> {
+        const direct = await this.prices.findByGatewayPriceId(gatewayPriceId)
+        if (direct) return direct
+
+        const priceId = await this.offers.findPriceIdByPaypalPlanId(gatewayPriceId)
+
+        return priceId ? this.prices.findById(priceId) : null
+    }
+
+    /**
      * **Neither provider promises we hear about the checkout first.** PayPal has no
      * checkout event at all (`BILLING.SUBSCRIPTION.ACTIVATED` is the first we hear),
      * and Stripe sends `customer.subscription.created` a second *before*
@@ -278,16 +298,26 @@ export class HandleGatewayEventHandler implements ICommandHandler<HandleGatewayE
      * would have created, which then finds it and only fills in what it knows.
      */
     private async createFromSubscriptionEvent(event: SubscriptionChangedEvent): Promise<SubscriptionAggregate | null> {
+        // No subscriber / no price on the event: not ours, or Stripe's ordering means
+        // the checkout that carries them hasn't arrived yet. A legitimate no-op.
         if (!event.userId || !event.gatewayPriceId) return null
 
-        const price = await this.prices.findByGatewayPriceId(event.gatewayPriceId)
-        if (!price) return null
+        const price = await this.resolvePrice(event.gatewayPriceId)
+        if (!price) {
+            // We have a subscriber AND a price id, yet nothing maps to it — a broken
+            // catalog mapping (e.g. an offer's PayPal plan we failed to record), not
+            // event ordering. Fail loudly so the event lands `failed`, is retried and
+            // alerts, instead of silently dropping a subscription that was paid for.
+            throw new Error(
+                `subscription ${event.gatewaySubscriptionId} references unknown gateway price ${event.gatewayPriceId}`,
+            )
+        }
 
         // Resolve the plan before opening the row: its audience is denormalised onto
         // the subscription (the unique index keys on it). A price references a plan by
-        // FK, so a missing one is a broken catalog — nothing to attribute a sub to.
+        // FK, so a missing one is a broken catalog — loud, not a silent drop.
         const plan = await this.plans.findById(price.planId)
-        if (!plan) return null
+        if (!plan) throw new Error(`price ${price.id} references unknown plan ${price.planId}`)
 
         const now = this.clock.now()
         const subscription = SubscriptionAggregate.create({

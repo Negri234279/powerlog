@@ -30,6 +30,16 @@ export class InMemoryPlanOfferRepository extends PlanOfferRepository {
         return [...this.byId.values()].filter((offer) => planIds.includes(offer.planId))
     }
 
+    async findPriceIdByPaypalPlanId(paypalPlanId: string): Promise<string | null> {
+        for (const offer of this.byId.values()) {
+            for (const [priceId, planId] of Object.entries(offer.paypalPlanIds ?? {})) {
+                if (planId === paypalPlanId) return priceId
+            }
+        }
+
+        return null
+    }
+
     all(): PlanOfferEntity[] {
         return [...this.byId.values()]
     }

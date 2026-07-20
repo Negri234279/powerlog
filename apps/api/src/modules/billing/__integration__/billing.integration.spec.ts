@@ -9,6 +9,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import type { PlanAudience } from '../../../shared/contracts/entitlements'
 import * as schema from '../../../database/schema'
+import { PlanAggregate } from '../domain/entities/plan.entity'
 import { SubscriptionAggregate } from '../domain/entities/subscription.entity'
 import type { SubscriptionStatus } from '../domain/subscription-status'
 import { DrizzleAdminBillingStatsReadModel } from '../infrastructure/persistence/read-models/drizzle-admin-billing-stats.read-model'
@@ -187,6 +188,29 @@ describe('Billing catalog (integration)', () => {
                 [planId],
             ),
         ).resolves.toBeDefined()
+    })
+
+    it('persists highlighted when a save UPDATES an existing plan, not only on insert', async () => {
+        // The upsert gotcha this guards: `highlighted` rode the INSERT but was missing
+        // from the onConflictDoUpdate `set`, so editing a live plan saved without error
+        // yet silently dropped the flag. Save once (insert), edit, save again (update).
+        const plan = PlanAggregate.create({
+            id: randomUUID(),
+            audience: 'athlete',
+            slug: 'test-highlighted',
+            name: 'Test',
+            status: 'active',
+            entitlements: { maxTemplates: null, maxMesocycles: null, maxWorkouts: null, ai: true },
+            now: PERIOD_START,
+        })
+        await plans.save(plan)
+
+        const loaded = await plans.findById(plan.id)
+        loaded!.update({ highlighted: true }, PERIOD_START)
+        await plans.save(loaded!)
+
+        const reloaded = await plans.findById(plan.id)
+        expect(reloaded!.highlighted).toBe(true)
     })
 })
 

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import { PlanOfferEntity } from '../../../domain/entities/plan-offer.entity'
@@ -99,5 +99,23 @@ export class DrizzlePlanOfferRepository extends PlanOfferRepository {
         const rows = await this.db.select().from(planOffers).where(inArray(planOffers.planId, planIds))
 
         return rows.map(toEntity)
+    }
+
+    async findPriceIdByPaypalPlanId(paypalPlanId: string): Promise<string | null> {
+        // `paypal_plan_ids` maps our price id → its PayPal offer plan. We have the
+        // value and want the key, so scan the (bounded, admin-made) set of offers
+        // that have any PayPal plans. Retired ones included, on purpose.
+        const rows = await this.db
+            .select({ paypalPlanIds: planOffers.paypalPlanIds })
+            .from(planOffers)
+            .where(isNotNull(planOffers.paypalPlanIds))
+
+        for (const row of rows) {
+            for (const [priceId, planId] of Object.entries(row.paypalPlanIds ?? {})) {
+                if (planId === paypalPlanId) return priceId
+            }
+        }
+
+        return null
     }
 }

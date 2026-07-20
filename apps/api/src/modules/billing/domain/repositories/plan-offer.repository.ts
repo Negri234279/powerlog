@@ -18,4 +18,13 @@ export abstract class PlanOfferRepository {
      * signed on it stays there for life — long after the offer stops being sold.
      */
     abstract findByPlans(planIds: string[]): Promise<PlanOfferEntity[]>
+
+    /**
+     * The price id whose PayPal offer plan is `paypalPlanId`, or null. A PayPal
+     * offer is its own billing plan (see `paypalPlanIds`), so an activation webhook
+     * whose plan id belongs to an offer resolves to a price through here rather than
+     * `plan_prices`. Retired offers included — a subscriber stays on the offer plan
+     * for life, so its webhooks keep arriving long after the offer is sold.
+     */
+    abstract findPriceIdByPaypalPlanId(paypalPlanId: string): Promise<string | null>
 }

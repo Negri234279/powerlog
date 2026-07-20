@@ -28,6 +28,7 @@ export class DrizzlePlanRepository extends PlanRepository {
                     description: row.description,
                     status: row.status,
                     sortOrder: row.sortOrder,
+                    highlighted: row.highlighted,
                     entitlements: row.entitlements,
                     stripeProductId: row.stripeProductId,
                     paypalProductId: row.paypalProductId,
