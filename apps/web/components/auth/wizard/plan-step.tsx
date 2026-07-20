@@ -9,7 +9,16 @@ import { Check } from '@/components/ui/icons'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
 import { TrackedButton } from '@/components/ui/tracked'
-import { type Currency, CURRENCIES, type Interval, INTERVALS, money, priceOf } from './shared'
+import {
+    type Currency,
+    CURRENCIES,
+    type Interval,
+    INTERVALS,
+    annualSavingsPct,
+    daysUntil,
+    money,
+    priceOf,
+} from './shared'
 
 /**
  * One plan-selection step, reused for both audiences. The catalog is the public
@@ -133,6 +142,11 @@ function PlanSelectCard({
     const locale = useLocale()
 
     const price = plan.isFree ? null : priceOf(plan, interval, currency)
+    // Honest annual anchor: the monthly-equivalent + real % saved, shown on year.
+    const savings = plan.isFree || interval !== 'year' ? null : annualSavingsPct(plan, currency)
+    const monthlyEquivCents = price && interval === 'year' ? Math.round(price.amountCents / 12) : null
+    // Real, admin-set deadline — never a fabricated countdown.
+    const offerEndsInDays = daysUntil(plan.offer?.endsAt)
 
     // What the plan grants, read off the entitlements the admin saved (same source
     // as the landing and the plan page). A cap of null is unlimited, a positive one
@@ -168,10 +182,20 @@ function PlanSelectCard({
             aria-checked={selected}
             onClick={onSelect}
             className={cn(
-                'flex h-full flex-col rounded-2xl bg-surface p-6 text-left ring-1 transition-colors duration-300',
-                selected ? 'ring-ember/60 glow-ember' : 'ring-hairline hover:ring-ember/30',
+                'relative flex h-full flex-col rounded-2xl bg-surface p-6 text-left ring-1 transition-colors duration-300',
+                selected
+                    ? 'ring-ember/60 glow-ember'
+                    : plan.highlighted
+                      ? 'ring-ember/40 glow-ember'
+                      : 'ring-hairline hover:ring-ember/30',
             )}
         >
+            {plan.highlighted ? (
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-ember-gradient px-3 py-0.5 text-xs font-semibold text-bg">
+                    {t('recommended')}
+                </span>
+            ) : null}
+
             <div className="flex items-start justify-between gap-2">
                 <h3 className="font-display text-h4 tracking-tight">{plan.name}</h3>
                 <span
@@ -185,12 +209,21 @@ function PlanSelectCard({
             </div>
 
             {/* The offer's promo line, written by the admin ("7 días gratis, luego
-                9,99 €"). New signups are always trial-eligible, so the wizard shows it
-                verbatim. */}
-            {plan.offer?.message ? (
-                <span className="mt-3 self-start rounded-full bg-ember/10 px-2.5 py-1 text-xs font-medium text-ember">
-                    {plan.offer.message}
-                </span>
+                9,99 €"), plus its real deadline when the admin set one — never a
+                fabricated countdown. New signups are always trial-eligible. */}
+            {plan.offer?.message || offerEndsInDays ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {plan.offer?.message ? (
+                        <span className="rounded-full bg-ember/10 px-2.5 py-1 text-xs font-medium text-ember">
+                            {plan.offer.message}
+                        </span>
+                    ) : null}
+                    {offerEndsInDays ? (
+                        <span className="text-xs font-medium text-ember/80">
+                            {t('offerEndsIn', { days: offerEndsInDays })}
+                        </span>
+                    ) : null}
+                </div>
             ) : null}
 
             <p className="mt-3 font-display text-h3 tabular-nums tracking-tight">
@@ -207,6 +240,16 @@ function PlanSelectCard({
                     <span className="text-sm text-text-faint">{tw('notAvailable')}</span>
                 )}
             </p>
+
+            {price && monthlyEquivCents ? (
+                <p className="mt-1 text-xs text-text-faint">
+                    ≈ {money(monthlyEquivCents, price.currency, locale)}
+                    {tw('perMonth')}
+                    {savings ? (
+                        <span className="ml-1.5 font-medium text-pr">· {t('annualSave', { percent: savings })}</span>
+                    ) : null}
+                </p>
+            ) : null}
 
             {plan.description ? <p className="mt-2 text-sm text-text-dim">{plan.description}</p> : null}
 

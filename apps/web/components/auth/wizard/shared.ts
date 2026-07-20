@@ -32,3 +32,29 @@ export function chargeablePrice(plan: PublicPlan | null, interval: Interval, cur
 
     return priceOf(plan, interval, currency)
 }
+
+/**
+ * Honest annual anchor: how much cheaper the yearly price is than paying monthly
+ * for a year, as a rounded percent — or null when it can't be computed (missing a
+ * price) or the year isn't actually cheaper. Compares REAL prices only.
+ */
+export function annualSavingsPct(plan: PublicPlan, currency: Currency): number | null {
+    const month = priceOf(plan, 'month', currency)
+    const year = priceOf(plan, 'year', currency)
+    if (!month || !year || month.amountCents <= 0) return null
+
+    const twelveMonths = month.amountCents * 12
+    if (year.amountCents >= twelveMonths) return null
+
+    return Math.round((1 - year.amountCents / twelveMonths) * 100)
+}
+
+/** Whole days until an ISO date, or null if it's absent, invalid, or already past. */
+export function daysUntil(iso: string | null | undefined): number | null {
+    if (!iso) return null
+
+    const ms = new Date(iso).getTime() - Date.now()
+    if (Number.isNaN(ms) || ms <= 0) return null
+
+    return Math.max(1, Math.ceil(ms / 86_400_000))
+}
