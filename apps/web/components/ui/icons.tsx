@@ -89,6 +89,14 @@ export const Plus = (p: SVGProps<SVGSVGElement>) => (
     </Icon>
 )
 
+/** Indeterminate loader: a faint track with a brighter arc that spins. */
+export const Spinner = ({ className, ...p }: SVGProps<SVGSVGElement>) => (
+    <Icon className={`animate-spin ${className ?? ''}`} {...p}>
+        <circle cx="12" cy="12" r="8" opacity="0.25" />
+        <path d="M12 4a8 8 0 0 1 8 8" />
+    </Icon>
+)
+
 export const Mail = (p: SVGProps<SVGSVGElement>) => (
     <Icon {...p}>
         <rect x="3" y="5" width="18" height="14" rx="2.5" />

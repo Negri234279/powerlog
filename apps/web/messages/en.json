@@ -1019,6 +1019,7 @@
         "webhookRetry": "Replay",
         "planSync": "Publish to {gateway}",
         "planSynced": "{gateway} ✓ — re-publish",
+        "planSyncing": "Publishing…",
         "cancel": "Cancel",
         "save": "Save"
     },

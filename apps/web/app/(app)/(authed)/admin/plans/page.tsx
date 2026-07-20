@@ -26,7 +26,7 @@ import { type EntitlementsValue, EntitlementsForm, emptyEntitlements } from '@/c
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Field, Input, Select, Textarea } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
-import { ChevronDown, Plus } from '@/components/ui/icons'
+import { ChevronDown, Plus, Spinner } from '@/components/ui/icons'
 import { Modal } from '@/components/ui/modal'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
@@ -270,6 +270,9 @@ function SyncButtons({ plan }: { plan: AdminPlan }) {
         <>
             {(['stripe', 'paypal'] as const).map((gateway, index) => {
                 const published = gateway === 'stripe' ? plan.stripeProductId !== null : plan.paypalProductId !== null
+                // Both buttons share one mutation, so `isPending` alone can't tell them
+                // apart — match the in-flight variables to spin only the clicked gateway.
+                const syncing = sync.isPending && sync.variables?.gateway === gateway
 
                 return (
                     <TrackedButton
@@ -281,13 +284,22 @@ function SyncButtons({ plan }: { plan: AdminPlan }) {
                             setError(null)
                             sync.mutate({ planId: plan.id, gateway }, { onError: (err) => setError(toMessage(err)) })
                         }}
-                        className={`${index === 0 ? 'ml-auto' : ''} rounded-full px-3 py-1.5 text-xs ring-1 transition-colors duration-300 disabled:opacity-50 ${
+                        className={`${index === 0 ? 'ml-auto' : ''} inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs ring-1 transition-colors duration-300 disabled:opacity-50 ${
                             published
                                 ? 'text-ember ring-ember/30 hover:text-ember'
                                 : 'text-text-dim ring-hairline hover:text-text'
                         }`}
                     >
-                        {published ? t('planSynced', { gateway }) : t('planSync', { gateway })}
+                        {syncing ? (
+                            <>
+                                <Spinner className="size-3.5" />
+                                {t('planSyncing')}
+                            </>
+                        ) : published ? (
+                            t('planSynced', { gateway })
+                        ) : (
+                            t('planSync', { gateway })
+                        )}
                     </TrackedButton>
                 )
             })}

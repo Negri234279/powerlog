@@ -1019,6 +1019,7 @@
         "webhookRetry": "Reprocesar",
         "planSync": "Publicar en {gateway}",
         "planSynced": "{gateway} ✓ — republicar",
+        "planSyncing": "Publicando…",
         "cancel": "Cancelar",
         "save": "Guardar"
     },
