@@ -7,6 +7,7 @@ import { type SubmitEvent, useState } from 'react'
 import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
+import { FormNotice } from '@/components/ui/form-notice'
 import { PasswordInput } from '@/components/ui/password-input'
 import { SubmitButton } from '@/components/ui/submit-button'
 import { TrackedLink } from '@/components/ui/tracked'
@@ -16,7 +17,7 @@ import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useLogin } from '@/lib/graphql/hooks/use-auth'
 import { fieldErrors, loginSchema } from '@/lib/validation/auth'
 
-export function LoginForm() {
+export function LoginForm({ expired = false }: { expired?: boolean }) {
     const t = useTranslations('auth')
     const te = (key?: string) => (key ? t(`errors.${key}`) : undefined)
     const errorMessage = useErrorMessage()
@@ -66,6 +67,7 @@ export function LoginForm() {
             }
         >
             <form onSubmit={onSubmit} className="space-y-5" noValidate>
+                {expired ? <FormNotice>{t('login.expired')}</FormNotice> : null}
                 <Field label={t('fields.email')} htmlFor="email" error={te(errors['email'])}>
                     <Input
                         id="email"

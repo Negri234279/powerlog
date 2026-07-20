@@ -124,7 +124,8 @@
             "submit": "Iniciar sesión",
             "newHere": "¿Nuevo por aquí?",
             "createAccount": "Crea una cuenta",
-            "forgot": "¿Olvidaste la contraseña?"
+            "forgot": "¿Olvidaste la contraseña?",
+            "expired": "Tu sesión terminó por seguridad. Inicia sesión de nuevo para continuar."
         },
         "register": {
             "title": "Crea tu cuenta",
