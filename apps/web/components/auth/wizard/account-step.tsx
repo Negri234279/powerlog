@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { type SubmitEvent, useState, useTransition } from 'react'
 
 import { Field, Input, Select } from '@/components/ui/field'
+import { PasswordInput } from '@/components/ui/password-input'
 import { TrackedButton } from '@/components/ui/tracked'
 import { setLocaleCookie } from '@/lib/i18n/actions'
 import { type Locale, LOCALE_LABELS, SUPPORTED_LOCALES } from '@/lib/i18n/config'
@@ -125,10 +126,9 @@ export function AccountStep({
                 error={te(errors['password'])}
                 hint={t('fields.passwordHint')}
             >
-                <Input
+                <PasswordInput
                     id="password"
                     name="password"
-                    type="password"
                     autoComplete="new-password"
                     placeholder="••••••••"
                     defaultValue={defaults?.password ?? ''}
