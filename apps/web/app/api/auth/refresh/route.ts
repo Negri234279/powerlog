@@ -25,6 +25,12 @@ function sanitizeNext(next: string | null): string {
  * URL it's on. We must NOT build an absolute URL from `req.nextUrl.origin`: behind
  * the reverse proxy Next can see the internal bind host, which leaks a bogus
  * `https://0.0.0.0:3000/...` Location. A relative path sidesteps that entirely.
+ *
+ * Safe here because this route is only ever reached by a full-page navigation
+ * (`window.location.assign` from hardLogout, or a server `redirect()` to this
+ * `/api` path) — the browser resolves the relative Location natively. Do NOT copy
+ * this into middleware: there Next's client router does `new URL(location)` with no
+ * base, so a relative path throws `Invalid URL` (middleware must stay absolute).
  */
 function relativeRedirect(path: string): NextResponse {
     return new NextResponse(null, { status: 307, headers: { location: path } })
