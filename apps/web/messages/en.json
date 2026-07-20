@@ -250,7 +250,9 @@
             "athlete": "Athlete",
             "coach": "Coach"
         },
-        "exSets": "{ex} ex · {sets} sets"
+        "exSets": "{ex} ex · {sets} sets",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password"
     },
     "dashboard": {
         "eyebrow": "Dashboard",

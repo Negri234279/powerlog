@@ -250,7 +250,9 @@
             "athlete": "Atleta",
             "coach": "Entrenador"
         },
-        "exSets": "{ex} ej · {sets} series"
+        "exSets": "{ex} ej · {sets} series",
+        "showPassword": "Mostrar contraseña",
+        "hidePassword": "Ocultar contraseña"
     },
     "dashboard": {
         "eyebrow": "Panel",

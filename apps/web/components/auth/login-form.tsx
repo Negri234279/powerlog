@@ -7,6 +7,7 @@ import { type SubmitEvent, useState } from 'react'
 import { AuthCard } from '@/components/auth/auth-card'
 import { Field, Input } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
+import { PasswordInput } from '@/components/ui/password-input'
 import { SubmitButton } from '@/components/ui/submit-button'
 import { TrackedLink } from '@/components/ui/tracked'
 import { track } from '@/lib/analytics/events'
@@ -75,10 +76,9 @@ export function LoginForm() {
                     />
                 </Field>
                 <Field label={t('fields.password')} htmlFor="password" error={te(errors['password'])}>
-                    <Input
+                    <PasswordInput
                         id="password"
                         name="password"
-                        type="password"
                         autoComplete="current-password"
                         placeholder="••••••••"
                     />
