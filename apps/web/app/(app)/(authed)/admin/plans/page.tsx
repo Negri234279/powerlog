@@ -8,6 +8,7 @@ import {
     type AdminPlanPrice,
     type EntitlementsJsonSchema,
     type PlanTranslationInput,
+    type UpsertPlanOfferInput,
     useAddPlanPrice,
     useAdminPlans,
     useCreatePlan,
@@ -45,7 +46,8 @@ const INTERVALS = ['month', 'quarter', 'semester', 'year'] as const
 const CURRENCIES = ['EUR', 'USD'] as const
 const STATUSES = ['draft', 'active', 'archived'] as const
 
-// The offer tab needs a saved plan to hang on, so it only appears once the plan exists.
+// An offer needs a saved plan (FK). In edit mode it's live via OfferPanel; in create it
+// rides along as a draft and publishes right after the plan is born (like prices).
 type PlanTab = 'info' | 'prices' | 'translations' | 'offer'
 
 /** Cents → what an admin reads. The API only ever deals in integer cents. */
@@ -389,6 +391,7 @@ function PlanModal({
     const create = useCreatePlan()
     const update = useUpdatePlan()
     const addPrice = useAddPlanPrice()
+    const upsertOffer = useUpsertPlanOffer()
 
     // Null until the plan exists. Set on create, so a price publish (and later edits)
     // can hang on the freshly-minted plan without closing the modal.
@@ -409,6 +412,12 @@ function PlanModal({
     // Explicit intent for a plan with no prices. Without this an empty matrix would slip
     // through as a free plan by accident; ticking it is what unlocks a priceless create.
     const [free, setFree] = useState(false)
+    // The offer draft while creating — an offer needs a saved plan (FK), so like prices it
+    // rides along and is published right after the plan is born. Optional: left untouched ⇒
+    // no offer. In edit mode the offer tab uses OfferPanel, not this draft.
+    const [offerDraft, setOfferDraft] = useState<OfferDraft>(() =>
+        seedOfferDraft(initial?.offer ?? null, t('offerDefaultName')),
+    )
     const [error, setError] = useState<string | null>(null)
     const [saved, setSaved] = useState(false)
     // Per-field validation for the create flow: the `planCreateSchema` (zod) runs on
@@ -475,10 +484,24 @@ function PlanModal({
             return
         }
 
+        // The offer is optional here; only vet it when the admin actually filled something.
+        // Its errors surface as free text on the offer tab (not a per-field red), so jump there.
+        if (offerDraftTouched(offerDraft)) {
+            const offerError = validateOfferDraft(offerDraft)
+            if (offerError) {
+                setTab('offer')
+                setError(t(offerError))
+                return
+            }
+        }
+
         setErrors({})
         const prices = free ? [] : filledPrices(priceDraft)
 
         let created = false
+        // Which follow-up we're on, so a failure after the plan is born lands the modal
+        // (now in edit mode) on the tab whose step failed.
+        let step: 'prices' | 'offer' = 'prices'
         try {
             const newId = await create.mutateAsync({
                 audience,
@@ -494,14 +517,19 @@ function PlanModal({
 
             for (const price of prices) await addPrice.mutateAsync({ planId: newId, ...price })
 
+            // The plan now exists, so the offer has a plan to hang on. Publish it last,
+            // only if the admin filled it in.
+            step = 'offer'
+            if (offerDraftTouched(offerDraft)) await upsertOffer.mutateAsync(offerInputFrom(newId, offerDraft))
+
             onClose()
         } catch (err) {
             setError(toMessage(err))
-            if (created) setTab('prices')
+            if (created) setTab(step)
         }
     }
 
-    const creating = create.isPending || addPrice.isPending
+    const creating = create.isPending || addPrice.isPending || upsertOffer.isPending
 
     return (
         <Modal open onClose={onClose} className="max-w-xl">
@@ -516,8 +544,7 @@ function PlanModal({
                         { value: 'info', label: t('planTabInfo') },
                         { value: 'prices', label: t('planPrices') },
                         { value: 'translations', label: t('planTabTranslations') },
-                        // An offer attaches to a saved plan, so it only shows in edit mode.
-                        ...(planId ? [{ value: 'offer', label: t('planTabOffer') }] : []),
+                        { value: 'offer', label: t('planTabOffer') },
                     ]}
                     value={tab}
                     onChange={(value) => setTab(value as PlanTab)}
@@ -687,7 +714,7 @@ function PlanModal({
                                 )}
                                 {errors['prices'] ? <p className="text-xs text-ember">{t(errors['prices'])}</p> : null}
                             </div>
-                        ) : (
+                        ) : tab === 'translations' ? (
                             <TranslationsFields
                                 value={translations}
                                 onChange={(locale, patch) =>
@@ -704,6 +731,19 @@ function PlanModal({
                                     })
                                 }
                             />
+                        ) : (
+                            // An offer needs a saved plan, so it rides along and publishes
+                            // right after create. Left untouched, no offer is created.
+                            <div className="space-y-4">
+                                <p className="text-xs text-text-faint">{t('offerHint')}</p>
+                                <OfferFields
+                                    value={offerDraft}
+                                    onChange={(patch) => setOfferDraft((current) => ({ ...current, ...patch }))}
+                                />
+                                <p className="rounded-xl bg-white/[0.03] px-3 py-2 text-xs text-text-faint">
+                                    {t('offerSyncHint')}
+                                </p>
+                            </div>
                         )}
 
                         <FormError error={error} />
@@ -1151,6 +1191,153 @@ function toDateInput(iso: string | null | undefined): string {
     return iso ? iso.slice(0, 10) : ''
 }
 
+/** The offer form's raw string state — one shape shared by the create draft and the edit panel. */
+type OfferDraft = {
+    name: string
+    message: string
+    trialDays: string
+    percentOff: string
+    cycles: string
+    startsAt: string
+    endsAt: string
+}
+
+/** Seed a draft from a saved offer (edit) or empty (create); the name defaults so it's never blank. */
+function seedOfferDraft(offer: AdminPlan['offer'], defaultName: string): OfferDraft {
+    return {
+        name: offer?.name ?? defaultName,
+        message: offer?.message ?? '',
+        trialDays: offer?.trialDays ? String(offer.trialDays) : '',
+        percentOff: offer?.introPhase ? String(offer.introPhase.percentOff) : '',
+        cycles: offer?.introPhase ? String(offer.introPhase.cycles) : '',
+        startsAt: toDateInput(offer?.startsAt),
+        endsAt: toDateInput(offer?.endsAt),
+    }
+}
+
+/** True if the admin filled anything beyond the pre-seeded name — i.e. an offer is intended. */
+function offerDraftTouched(draft: OfferDraft): boolean {
+    return [draft.message, draft.trialDays, draft.percentOff, draft.cycles, draft.startsAt, draft.endsAt].some(
+        (value) => value.trim() !== '',
+    )
+}
+
+/**
+ * The offer's shape rules, as a message key or null. An offer must grant something (trial
+ * and/or intro discount), and an intro phase needs both halves — the API refuses otherwise.
+ */
+function validateOfferDraft(draft: OfferDraft): 'offerNeedsSomething' | 'offerDiscountIncomplete' | null {
+    const hasTrial = draft.trialDays.trim() !== ''
+    const hasIntroField = draft.percentOff.trim() !== '' || draft.cycles.trim() !== ''
+
+    if (!hasTrial && !hasIntroField) return 'offerNeedsSomething'
+    if (hasIntroField && (draft.percentOff.trim() === '' || draft.cycles.trim() === ''))
+        return 'offerDiscountIncomplete'
+
+    return null
+}
+
+/** A validated draft as the upsert input (the cents/ISO shaping the API wants). */
+function offerInputFrom(planId: string, draft: OfferDraft): UpsertPlanOfferInput {
+    const hasTrial = draft.trialDays.trim() !== ''
+    const hasIntro = draft.percentOff.trim() !== '' || draft.cycles.trim() !== ''
+
+    return {
+        planId,
+        name: draft.name.trim(),
+        message: draft.message.trim() || null,
+        trialDays: hasTrial ? Number(draft.trialDays) : null,
+        introPhase: hasIntro ? { cycles: Number(draft.cycles), percentOff: Number(draft.percentOff) } : null,
+        startsAt: draft.startsAt ? new Date(draft.startsAt).toISOString() : null,
+        endsAt: draft.endsAt ? new Date(draft.endsAt).toISOString() : null,
+    }
+}
+
+/** The offer form fields — presentational; state lives in the parent (create draft or edit panel). */
+function OfferFields({ value, onChange }: { value: OfferDraft; onChange: (patch: Partial<OfferDraft>) => void }) {
+    const t = useTranslations('admin')
+
+    return (
+        <div className="space-y-4">
+            <Field label={t('offerName')} hint={t('offerNameHint')}>
+                <Input
+                    value={value.name}
+                    onChange={(event) => onChange({ name: event.target.value })}
+                    required
+                    maxLength={60}
+                />
+            </Field>
+
+            <Field label={t('offerMessage')} hint={t('offerMessageHint')}>
+                <Textarea
+                    value={value.message}
+                    onChange={(event) => onChange({ message: event.target.value })}
+                    maxLength={120}
+                    placeholder={t('offerMessagePlaceholder')}
+                />
+            </Field>
+
+            <Field label={t('offerTrialDays')} hint={t('offerTrialDaysHint')}>
+                <Input
+                    type="number"
+                    min="1"
+                    max="365"
+                    inputMode="numeric"
+                    placeholder="—"
+                    value={value.trialDays}
+                    onChange={(event) => onChange({ trialDays: event.target.value })}
+                />
+            </Field>
+
+            <div className="rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
+                <p className="font-mono text-eyebrow uppercase text-text-dim">{t('offerDiscountTitle')}</p>
+                <p className="mt-1 text-xs text-text-faint">{t('offerDiscountHint')}</p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                    <Field label={t('offerDiscountPercent')}>
+                        <Input
+                            type="number"
+                            min="1"
+                            max="100"
+                            inputMode="numeric"
+                            placeholder="—"
+                            value={value.percentOff}
+                            onChange={(event) => onChange({ percentOff: event.target.value })}
+                        />
+                    </Field>
+                    <Field label={t('offerDiscountCycles')}>
+                        <Input
+                            type="number"
+                            min="1"
+                            max="36"
+                            inputMode="numeric"
+                            placeholder="—"
+                            value={value.cycles}
+                            onChange={(event) => onChange({ cycles: event.target.value })}
+                        />
+                    </Field>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+                <Field label={t('offerStartsAt')} hint={t('offerStartsAtHint')}>
+                    <Input
+                        type="date"
+                        value={value.startsAt}
+                        onChange={(event) => onChange({ startsAt: event.target.value })}
+                    />
+                </Field>
+                <Field label={t('offerEndsAt')} hint={t('offerEndsAtHint')}>
+                    <Input
+                        type="date"
+                        value={value.endsAt}
+                        onChange={(event) => onChange({ endsAt: event.target.value })}
+                    />
+                </Field>
+            </div>
+        </div>
+    )
+}
+
 /**
  * The plan's introductory offer: a free trial and/or a discounted opening phase,
  * plus the promo line buyers see. There is at most one live offer per plan; saving
@@ -1166,13 +1353,7 @@ function OfferPanel({ plan, onClose }: { plan: AdminPlan; onClose: () => void })
     const deactivate = useDeactivatePlanOffer()
     const offer = plan.offer
 
-    const [name, setName] = useState(offer?.name ?? t('offerDefaultName'))
-    const [message, setMessage] = useState(offer?.message ?? '')
-    const [trialDays, setTrialDays] = useState(offer?.trialDays ? String(offer.trialDays) : '')
-    const [percentOff, setPercentOff] = useState(offer?.introPhase ? String(offer.introPhase.percentOff) : '')
-    const [cycles, setCycles] = useState(offer?.introPhase ? String(offer.introPhase.cycles) : '')
-    const [startsAt, setStartsAt] = useState(toDateInput(offer?.startsAt))
-    const [endsAt, setEndsAt] = useState(toDateInput(offer?.endsAt))
+    const [draft, setDraft] = useState<OfferDraft>(() => seedOfferDraft(offer, t('offerDefaultName')))
     const [error, setError] = useState<string | null>(null)
     const [saved, setSaved] = useState(false)
     const [confirming, setConfirming] = useState(false)
@@ -1182,31 +1363,18 @@ function OfferPanel({ plan, onClose }: { plan: AdminPlan; onClose: () => void })
         setError(null)
         setSaved(false)
 
-        const hasTrial = trialDays.trim() !== ''
-        const hasIntroField = percentOff.trim() !== '' || cycles.trim() !== ''
         // The API refuses an offer that grants nothing, and an intro phase needs both
         // halves — say so here instead of letting the round-trip fail.
-        if (!hasTrial && !hasIntroField) {
-            setError(t('offerNeedsSomething'))
-            return
-        }
-        if (hasIntroField && (percentOff.trim() === '' || cycles.trim() === '')) {
-            setError(t('offerDiscountIncomplete'))
+        const invalid = validateOfferDraft(draft)
+        if (invalid) {
+            setError(t(invalid))
             return
         }
 
-        upsert.mutate(
-            {
-                planId: plan.id,
-                name: name.trim(),
-                message: message.trim() || null,
-                trialDays: hasTrial ? Number(trialDays) : null,
-                introPhase: hasIntroField ? { cycles: Number(cycles), percentOff: Number(percentOff) } : null,
-                startsAt: startsAt ? new Date(startsAt).toISOString() : null,
-                endsAt: endsAt ? new Date(endsAt).toISOString() : null,
-            },
-            { onSuccess: () => setSaved(true), onError: (err) => setError(toMessage(err)) },
-        )
+        upsert.mutate(offerInputFrom(plan.id, draft), {
+            onSuccess: () => setSaved(true),
+            onError: (err) => setError(toMessage(err)),
+        })
     }
 
     const retire = () =>
@@ -1241,68 +1409,7 @@ function OfferPanel({ plan, onClose }: { plan: AdminPlan; onClose: () => void })
             <p className="text-xs text-text-faint">{t('offerHint')}</p>
 
             <form onSubmit={onSubmit} className="space-y-4">
-                <Field label={t('offerName')} hint={t('offerNameHint')}>
-                    <Input value={name} onChange={(event) => setName(event.target.value)} required maxLength={60} />
-                </Field>
-
-                <Field label={t('offerMessage')} hint={t('offerMessageHint')}>
-                    <Textarea
-                        value={message}
-                        onChange={(event) => setMessage(event.target.value)}
-                        maxLength={120}
-                        placeholder={t('offerMessagePlaceholder')}
-                    />
-                </Field>
-
-                <Field label={t('offerTrialDays')} hint={t('offerTrialDaysHint')}>
-                    <Input
-                        type="number"
-                        min="1"
-                        max="365"
-                        inputMode="numeric"
-                        placeholder="—"
-                        value={trialDays}
-                        onChange={(event) => setTrialDays(event.target.value)}
-                    />
-                </Field>
-
-                <div className="rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
-                    <p className="font-mono text-eyebrow uppercase text-text-dim">{t('offerDiscountTitle')}</p>
-                    <p className="mt-1 text-xs text-text-faint">{t('offerDiscountHint')}</p>
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-                        <Field label={t('offerDiscountPercent')}>
-                            <Input
-                                type="number"
-                                min="1"
-                                max="100"
-                                inputMode="numeric"
-                                placeholder="—"
-                                value={percentOff}
-                                onChange={(event) => setPercentOff(event.target.value)}
-                            />
-                        </Field>
-                        <Field label={t('offerDiscountCycles')}>
-                            <Input
-                                type="number"
-                                min="1"
-                                max="36"
-                                inputMode="numeric"
-                                placeholder="—"
-                                value={cycles}
-                                onChange={(event) => setCycles(event.target.value)}
-                            />
-                        </Field>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                    <Field label={t('offerStartsAt')} hint={t('offerStartsAtHint')}>
-                        <Input type="date" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} />
-                    </Field>
-                    <Field label={t('offerEndsAt')} hint={t('offerEndsAtHint')}>
-                        <Input type="date" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} />
-                    </Field>
-                </div>
+                <OfferFields value={draft} onChange={(patch) => setDraft((current) => ({ ...current, ...patch }))} />
 
                 <p className="rounded-xl bg-white/[0.03] px-3 py-2 text-xs text-text-faint">{t('offerSyncHint')}</p>
 
