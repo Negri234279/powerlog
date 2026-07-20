@@ -144,7 +144,7 @@ function WeekCard({ units }: { units: Units }) {
                         <TrackedLink
                             analyticsId="dashboard-plan-session"
                             href="/workouts"
-                            className="text-text underline-offset-4 hover:underline"
+                            className="text-text underline underline-offset-4 decoration-text-faint transition-colors hover:decoration-text"
                         >
                             {t('planSession')}
                         </TrackedLink>
@@ -353,7 +353,7 @@ function TemplatesCard() {
                     <TrackedLink
                         analyticsId="dashboard-templates-create"
                         href="/workouts/templates"
-                        className="text-text underline-offset-4 hover:underline"
+                        className="text-text underline underline-offset-4 decoration-text-faint transition-colors hover:decoration-text"
                     >
                         {t('createOne')}
                     </TrackedLink>{' '}

@@ -309,7 +309,7 @@ export function ExerciseEntry({
                                 collapsed && '-rotate-90',
                             )}
                         />
-                        <h3 className="truncate font-display text-h3 tracking-tight">{exerciseName}</h3>
+                        <h2 className="truncate font-display text-h3 tracking-tight">{exerciseName}</h2>
                         {progress.total > 0 ? (
                             <span
                                 className={cn(
