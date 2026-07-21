@@ -2,19 +2,19 @@ import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 
 import { Clock } from '../../ports/clock.port'
 import { TrainingDashboardReadModel } from '../../ports/training-dashboard.read-model'
-import { GetAthleteExecutionQuery } from './get-athlete-execution.query'
+import { GetTrainingExecutionQuery } from './get-training-execution.query'
 
 const DAY_MS = 86_400_000
 const WEEK_MS = 7 * DAY_MS
 
 /**
- * Execution KPIs for a coach's athlete. Every rate is nullable and `null` means
- * "no basis to answer", never zero: an athlete you have programmed nothing for
- * has no adherence, which is a different statement from 0% adherence, and the
- * UI has to be able to tell them apart.
+ * Execution KPIs, for a lifter's own training or for a coach's athlete. Every
+ * rate is nullable and `null` means "no basis to answer", never zero: someone
+ * you have programmed nothing for has no adherence, which is a different
+ * statement from 0% adherence, and the UI has to tell them apart.
  */
-export interface AthleteExecutionView {
-    /** Completed ÷ (completed + missed) of what this coach programmed. */
+export interface TrainingExecutionView {
+    /** Completed ÷ (completed + missed) within the query's planner scope. */
     adherenceRate: number | null
     plannedCompleted: number
     plannedMissed: number
@@ -56,14 +56,14 @@ function change(current: number, previous: number): number | null {
     return Math.round(((current - previous) / previous) * 10_000) / 10_000
 }
 
-@QueryHandler(GetAthleteExecutionQuery)
-export class GetAthleteExecutionHandler implements IQueryHandler<GetAthleteExecutionQuery, AthleteExecutionView> {
+@QueryHandler(GetTrainingExecutionQuery)
+export class GetTrainingExecutionHandler implements IQueryHandler<GetTrainingExecutionQuery, TrainingExecutionView> {
     constructor(
         private readonly dashboard: TrainingDashboardReadModel,
         private readonly clock: Clock,
     ) {}
 
-    async execute(query: GetAthleteExecutionQuery): Promise<AthleteExecutionView> {
+    async execute(query: GetTrainingExecutionQuery): Promise<TrainingExecutionView> {
         const now = this.clock.now()
         const from = query.from ? new Date(query.from) : undefined
         const to = query.to ? new Date(query.to) : undefined
@@ -74,8 +74,8 @@ export class GetAthleteExecutionHandler implements IQueryHandler<GetAthleteExecu
         const previousFrom = from && rangeMs > 0 ? new Date(from.getTime() - rangeMs) : undefined
 
         const row = await this.dashboard.execution({
-            userId: query.athleteId,
-            plannedByUserId: query.coachId,
+            userId: query.userId,
+            plannedByUserId: query.plannedByUserId,
             from,
             to,
             previousFrom,

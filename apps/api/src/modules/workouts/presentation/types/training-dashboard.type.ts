@@ -38,23 +38,28 @@ export class TrainingSummaryType {
 }
 
 /**
- * How an athlete is executing their training, for their coach.
+ * How someone is executing their training. Served to both a lifter reading their
+ * own numbers (`trainingExecution`) and a coach reading an athlete's
+ * (`athleteExecution`) — the same shape as `TrainingSummary` is.
  *
- * Two different populations live in here and the UI must not blur them:
- * adherence is measured **only against sessions this coach programmed**, while
- * set outcomes and load compliance cover **all** the athlete's training in the
- * range. Every rate is a ratio (0.94 = 94%), nullable, and `null` means "no
- * basis to answer" — never zero.
+ * **The adherence scope differs by caller and the UI must say which it is.** For
+ * a coach it counts only sessions *they* programmed, so it sits beside set
+ * outcomes and load compliance that cover all the athlete's training — two
+ * populations that must not be blurred. For a lifter's own view every planned
+ * session counts, so all three cover the same thing and the distinction is moot.
+ *
+ * Every rate is a ratio (0.94 = 94%), nullable, and `null` means "no basis to
+ * answer" — never zero.
  */
-@ObjectType('AthleteExecution')
-export class AthleteExecutionType {
-    @Field(() => Float, { nullable: true, description: 'Completed ÷ programmed by this coach. Null when none.' })
+@ObjectType('TrainingExecution')
+export class TrainingExecutionType {
+    @Field(() => Float, { nullable: true, description: 'Completed ÷ due, within the adherence scope. Null when none.' })
     adherenceRate?: number | null
 
     @Field(() => Int)
     plannedCompleted!: number
 
-    @Field(() => Int, { description: 'Programmed by this coach, already past, still not done.' })
+    @Field(() => Int, { description: 'In scope, already past, still not done.' })
     plannedMissed!: number
 
     @Field(() => Int, { description: 'Still on the calendar. Not bounded by the range.' })
@@ -97,8 +102,8 @@ export class AthleteExecutionType {
 }
 
 /**
- * One week of execution. Same scopes as `AthleteExecution`: adherence counts
- * only this coach's programming, load covers every completed session with a plan.
+ * One week of execution. Same scopes as `TrainingExecution`: adherence follows
+ * the caller's planner scope, load covers every completed session with a plan.
  */
 @ObjectType('ExecutionBucket')
 export class ExecutionBucketType {

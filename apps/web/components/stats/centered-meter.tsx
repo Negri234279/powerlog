@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn'
 
-import type { ComplianceBand } from './use-athlete-stats-view'
+import type { ComplianceBand } from './use-execution-view'
 
 /** How far either side of the target the meter can show before it flattens. */
 const WINDOW = 0.3

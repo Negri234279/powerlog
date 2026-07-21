@@ -2,10 +2,10 @@ import { useTranslations } from 'next-intl'
 
 import { TrackedLink } from '@/components/ui/tracked'
 
-import { RateValue } from './rate-value'
-import { SegmentedBar } from './segmented-bar'
+import { RateValue } from '@/components/stats/rate-value'
+import { SegmentedBar } from '@/components/stats/segmented-bar'
 import { StatsPanel } from './stats-panel'
-import type { AthleteStatsView } from './use-athlete-stats-view'
+import type { ExecutionView } from '@/components/stats/use-execution-view'
 
 function LegendDot({ tone, children }: { tone: string; children: React.ReactNode }) {
     return (
@@ -25,7 +25,7 @@ function LegendDot({ tone, children }: { tone: string; children: React.ReactNode
  * This is the one hero number on the tab. If it has no answer, nothing else gets
  * promoted to fill the gap — the panel says why instead.
  */
-export function ProgramAdherencePanel({ view, athleteId }: { view: AthleteStatsView; athleteId: string }) {
+export function ProgramAdherencePanel({ view, athleteId }: { view: ExecutionView; athleteId: string }) {
     const t = useTranslations('coaching.athleteStats')
     const { adherence } = view
 

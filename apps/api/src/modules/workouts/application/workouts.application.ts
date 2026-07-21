@@ -1,4 +1,4 @@
-import { AddExerciseEntryHandler } from './commands/add-exercise-entry/add-exercise-entry.handler'
+﻿import { AddExerciseEntryHandler } from './commands/add-exercise-entry/add-exercise-entry.handler'
 import { AssignMesocycleToAthleteHandler } from './commands/assign-mesocycle-to-athlete/assign-mesocycle-to-athlete.handler'
 import { CompleteSetHandler } from './commands/complete-set/complete-set.handler'
 import { CompleteWorkoutSessionHandler } from './commands/complete-workout-session/complete-workout-session.handler'
@@ -26,8 +26,8 @@ import { UpdateWorkoutSessionHandler } from './commands/update-workout-session/u
 import { UpdateWorkoutTemplateHandler } from './commands/update-workout-template/update-workout-template.handler'
 import { PurgeWorkoutsOnUserDeleted } from './event-handlers/purge-workouts-on-user-deleted.handler'
 import { AdminWorkoutStatsHandler } from './queries/admin-workout-stats/admin-workout-stats.handler'
-import { GetAthleteExecutionHandler } from './queries/get-athlete-execution/get-athlete-execution.handler'
-import { GetAthleteExecutionSeriesHandler } from './queries/get-athlete-execution-series/get-athlete-execution-series.handler'
+import { GetTrainingExecutionHandler } from './queries/get-training-execution/get-training-execution.handler'
+import { GetTrainingExecutionSeriesHandler } from './queries/get-training-execution-series/get-training-execution-series.handler'
 import { GetExerciseSessionHistoryHandler } from './queries/get-exercise-session-history/get-exercise-session-history.handler'
 import { GetMesocycleDesignContextHandler } from './queries/get-mesocycle-design-context/get-mesocycle-design-context.handler'
 import { GetSessionPlanContextHandler } from './queries/get-session-plan-context/get-session-plan-context.handler'
@@ -96,8 +96,8 @@ export const WORKOUTS_QUERY_HANDLERS = [
     GetVolumeSeriesHandler,
     GetStrengthProgressionHandler,
     GetTrainingDistributionHandler,
-    GetAthleteExecutionHandler,
-    GetAthleteExecutionSeriesHandler,
+    GetTrainingExecutionHandler,
+    GetTrainingExecutionSeriesHandler,
     GetWorkoutUsageHandler,
     GetUserTrainingHandler,
 ]

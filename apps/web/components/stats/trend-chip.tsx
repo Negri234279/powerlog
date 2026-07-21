@@ -11,7 +11,7 @@ import { cn } from '@/lib/cn'
  * and the accessible label spells the comparison out.
  */
 export function TrendChip({ change }: { change: number | null | undefined }) {
-    const t = useTranslations('coaching.athleteStats')
+    const t = useTranslations('stats')
 
     if (change === null || change === undefined) return null
 

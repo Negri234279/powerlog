@@ -18,9 +18,9 @@ import type {
     TrainingDistribution,
     VolumeBucketRow,
 } from '../../application/ports/training-dashboard.read-model'
-import { GetAthleteExecutionSeriesQuery } from '../../application/queries/get-athlete-execution-series/get-athlete-execution-series.query'
-import type { AthleteExecutionView } from '../../application/queries/get-athlete-execution/get-athlete-execution.handler'
-import { GetAthleteExecutionQuery } from '../../application/queries/get-athlete-execution/get-athlete-execution.query'
+import { GetTrainingExecutionSeriesQuery } from '../../application/queries/get-training-execution-series/get-training-execution-series.query'
+import type { TrainingExecutionView } from '../../application/queries/get-training-execution/get-training-execution.handler'
+import { GetTrainingExecutionQuery } from '../../application/queries/get-training-execution/get-training-execution.query'
 import { GetExerciseSessionHistoryQuery } from '../../application/queries/get-exercise-session-history/get-exercise-session-history.query'
 import { GetExerciseStatsQuery } from '../../application/queries/get-exercise-stats/get-exercise-stats.query'
 import type { MesocycleView } from '../../application/queries/get-mesocycle/get-mesocycle.handler'
@@ -42,7 +42,7 @@ import { ExerciseSessionHistoryType } from '../types/exercise-session-history.ty
 import { ExerciseStatsType } from '../types/exercise-stats.type'
 import { MesocycleSummaryType, MesocycleType } from '../types/mesocycle.type'
 import {
-    AthleteExecutionType,
+    TrainingExecutionType,
     ExecutionBucketType,
     StrengthProgressionType,
     TrainingDistributionType,
@@ -146,7 +146,7 @@ export class AthleteViewResolver {
         return this.queryBus.execute(query)
     }
 
-    @Query(() => AthleteExecutionType, {
+    @Query(() => TrainingExecutionType, {
         description:
             "How an athlete is executing: adherence to THIS coach's programming, set outcomes and load compliance across all their training, plus period-over-period trends (coaches only).",
     })
@@ -155,10 +155,10 @@ export class AthleteViewResolver {
         @Args('athleteId', { type: () => ID }, new ZodValidationPipe(uuidArg)) athleteId: string,
         @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
-    ): Promise<AthleteExecutionView> {
+    ): Promise<TrainingExecutionView> {
         // Adherence is measured against what the *caller* programmed, so the same
         // athlete scores differently for two coaches — deliberately.
-        const query = new GetAthleteExecutionQuery(athleteId, user.userId, from, to)
+        const query = new GetTrainingExecutionQuery(athleteId, user.userId, from, to)
         return this.queryBus.execute(query)
     }
 
@@ -172,7 +172,7 @@ export class AthleteViewResolver {
         @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
     ): Promise<ExecutionBucketRow[]> {
-        const query = new GetAthleteExecutionSeriesQuery(athleteId, user.userId, from, to)
+        const query = new GetTrainingExecutionSeriesQuery(athleteId, user.userId, from, to)
         return this.queryBus.execute(query)
     }
 

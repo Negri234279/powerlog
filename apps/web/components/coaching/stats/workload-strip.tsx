@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl'
 import { formatWeight, type Units } from '@/lib/units'
 import type { AthleteExecution, AthleteSummary } from '@/lib/graphql/hooks/use-athlete'
 
-import { TrendChip } from './trend-chip'
+import { TrendChip } from '@/components/stats/trend-chip'
 
 function Stat({ label, value, note }: { label: string; value: string; note?: React.ReactNode }) {
     return (

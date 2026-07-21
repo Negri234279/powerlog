@@ -12,7 +12,7 @@ import { ExerciseTable } from '@/components/coaching/stats/exercise-table'
 import { LastSessionHeader } from '@/components/coaching/stats/last-session-header'
 import { ProgramAdherencePanel } from '@/components/coaching/stats/program-adherence-panel'
 import { ExecutionSkeleton, WorkloadSkeleton } from '@/components/coaching/stats/stats-skeletons'
-import { useAthleteStatsView } from '@/components/coaching/stats/use-athlete-stats-view'
+import { useExecutionView } from '@/components/stats/use-execution-view'
 import { WorkloadStrip } from '@/components/coaching/stats/workload-strip'
 import { QueryError } from '@/components/ui/query-error'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -60,7 +60,7 @@ export function AthleteStats({ athleteId, units }: { athleteId: string; units: U
     const execution = useAthleteExecution(athleteId, from)
     const stats = useAthleteExerciseStats(athleteId, from)
 
-    const view = useAthleteStatsView(execution.data ?? undefined)
+    const view = useExecutionView(execution.data ?? undefined)
     const rows = [...(stats.data ?? [])].sort((a, b) => b.totalVolumeKg - a.totalVolumeKg)
 
     // The panels and the strip come from the same pair of queries, so they share

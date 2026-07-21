@@ -1,10 +1,10 @@
 import { useTranslations } from 'next-intl'
 
-import { CenteredMeter } from './centered-meter'
-import { MetricRow } from './metric-row'
-import { RateValue, asPercent } from './rate-value'
+import { CenteredMeter } from '@/components/stats/centered-meter'
+import { MetricRow } from '@/components/stats/metric-row'
+import { RateValue, asPercent } from '@/components/stats/rate-value'
 import { StatsPanel } from './stats-panel'
-import type { AthleteStatsView } from './use-athlete-stats-view'
+import type { ExecutionView } from '@/components/stats/use-execution-view'
 
 /**
  * "How do they execute?" — over **all** their training, not just what this coach
@@ -15,7 +15,7 @@ import type { AthleteStatsView } from './use-athlete-stats-view'
  * are independent measures, and they must not visually rhyme with the adherence
  * panel beside them.
  */
-export function ExecutionPanel({ view, avgRpe }: { view: AthleteStatsView; avgRpe: number | null | undefined }) {
+export function ExecutionPanel({ view, avgRpe }: { view: ExecutionView; avgRpe: number | null | undefined }) {
     const t = useTranslations('coaching.athleteStats')
     const { success, compliance } = view
 

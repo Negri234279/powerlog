@@ -20,7 +20,7 @@ import {
 } from '@/components/charts'
 import { TrackedButton } from '@/components/ui/tracked'
 
-import { ChartSection } from './chart-section'
+import { ChartSection } from '@/components/stats/chart-section'
 import { StrengthSection } from './strength-section'
 
 /**

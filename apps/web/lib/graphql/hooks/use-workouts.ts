@@ -17,6 +17,8 @@ import type {
     LogSetInput,
     StrengthProgressionQuery,
     TrainingDistributionQuery,
+    TrainingExecutionQuery,
+    TrainingExecutionSeriesQuery,
     TrainingSummaryQuery,
     UpdateSetInput,
     UpdateWorkoutSessionInput,
@@ -39,6 +41,8 @@ import {
     RemoveSetDocument,
     StrengthProgressionDocument,
     TrainingDistributionDocument,
+    TrainingExecutionDocument,
+    TrainingExecutionSeriesDocument,
     TrainingSummaryDocument,
     UpdateSetDocument,
     UpdateWorkoutSessionDocument,
@@ -59,6 +63,8 @@ export type TrainingSummaryData = TrainingSummaryQuery['trainingSummary']
 export type VolumeBucketData = VolumeSeriesQuery['volumeSeries'][number]
 export type StrengthProgressionData = StrengthProgressionQuery['strengthProgression']
 export type TrainingDistributionData = TrainingDistributionQuery['trainingDistribution']
+export type TrainingExecutionData = TrainingExecutionQuery['trainingExecution']
+export type ExecutionBucketData = TrainingExecutionSeriesQuery['trainingExecutionSeries'][number]
 
 // ── Queries ──────────────────────────────────────────────────
 
@@ -170,6 +176,22 @@ export function useTrainingDistribution(from?: string, to?: string) {
     return useQuery({
         queryKey: ['trainingDistribution', from ?? null, to ?? null],
         queryFn: () => gqlRequest(TrainingDistributionDocument, { from, to }).then((r) => r.trainingDistribution),
+    })
+}
+
+/** Own adherence, set outcomes, load compliance and trends, optionally ranged. */
+export function useTrainingExecution(from?: string, to?: string) {
+    return useQuery({
+        queryKey: ['trainingExecution', from ?? null, to ?? null],
+        queryFn: () => gqlRequest(TrainingExecutionDocument, { from, to }).then((r) => r.trainingExecution),
+    })
+}
+
+/** Own weekly adherence + programmed-vs-executed load, optionally ranged. */
+export function useTrainingExecutionSeries(from?: string, to?: string) {
+    return useQuery({
+        queryKey: ['trainingExecutionSeries', from ?? null, to ?? null],
+        queryFn: () => gqlRequest(TrainingExecutionSeriesDocument, { from, to }).then((r) => r.trainingExecutionSeries),
     })
 }
 

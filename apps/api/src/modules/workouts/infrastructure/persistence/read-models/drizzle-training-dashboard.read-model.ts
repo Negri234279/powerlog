@@ -124,19 +124,23 @@ export class DrizzleTrainingDashboardReadModel extends TrainingDashboardReadMode
             : sql`false`
 
         const completed = eq(workoutSessions.status, 'completed')
-        const mine = eq(workoutSessions.plannedByUserId, filter.plannedByUserId)
+        // No planner scope ⇒ every planned session counts, self-written included
+        // (those carry a NULL planner, so an equality test would drop them).
+        const inScope: SQL = filter.plannedByUserId
+            ? eq(workoutSessions.plannedByUserId, filter.plannedByUserId)
+            : sql`true`
         const countWhere = (...parts: SQL[]) => sql<number>`count(*) filter (where ${and(...parts)})::int`
         const ranged = (...parts: SQL[]) => and(...parts, ...inRange)!
 
         const sessionAggregates = this.db
             .select({
-                plannedCompleted: countWhere(ranged(completed, mine)),
+                plannedCompleted: countWhere(ranged(completed, inScope)),
                 plannedMissed: countWhere(
-                    ranged(eq(workoutSessions.status, 'planned'), mine, lt(workoutSessions.performedAt, filter.now)),
+                    ranged(eq(workoutSessions.status, 'planned'), inScope, lt(workoutSessions.performedAt, filter.now)),
                 ),
                 // Not `ranged`: see ExecutionRow.plannedUpcoming.
                 plannedUpcoming: countWhere(
-                    and(eq(workoutSessions.status, 'planned'), mine, gte(workoutSessions.performedAt, filter.now))!,
+                    and(eq(workoutSessions.status, 'planned'), inScope, gte(workoutSessions.performedAt, filter.now))!,
                 ),
                 completedSessions: countWhere(ranged(completed)),
                 previousCompletedSessions: countWhere(and(completed, inPrevious)!),
@@ -234,7 +238,7 @@ export class DrizzleTrainingDashboardReadModel extends TrainingDashboardReadMode
             .where(
                 and(
                     eq(workoutSessions.userId, filter.userId),
-                    eq(workoutSessions.plannedByUserId, filter.plannedByUserId),
+                    filter.plannedByUserId ? eq(workoutSessions.plannedByUserId, filter.plannedByUserId) : undefined,
                     ...range,
                 ),
             )

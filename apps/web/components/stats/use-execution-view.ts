@@ -1,4 +1,11 @@
 import type { AthleteExecution } from '@/lib/graphql/hooks/use-athlete'
+import type { TrainingExecutionData } from '@/lib/graphql/hooks/use-workouts'
+
+/**
+ * The execution payload, whether it came from the coach's `athleteExecution` or a
+ * lifter's own `trainingExecution` — the same GraphQL type behind both.
+ */
+export type ExecutionData = AthleteExecution | TrainingExecutionData
 
 /**
  * Below these counts a rate is arithmetic, not evidence. 100% adherence over two
@@ -17,7 +24,7 @@ export type Staleness = 'fresh' | 'slipping' | 'stale' | 'never'
 /** Which side of the programmed load they landed on. */
 export type ComplianceBand = 'under' | 'onPlan' | 'over'
 
-export interface AthleteStatsView {
+export interface ExecutionView {
     adherence: { rate: number | null; done: number; missed: number; upcoming: number; due: number; confident: boolean }
     success: { rate: number | null; ok: number; failed: number; pending: number; marked: number; confident: boolean }
     compliance: { rate: number | null; sets: number; band: ComplianceBand | null; confident: boolean }
@@ -45,7 +52,7 @@ function complianceBand(rate: number | null): ComplianceBand | null {
  * denominators, the confidence flags and the bands. Kept out of the components
  * so the same rules can't drift between the value, its meter and its label.
  */
-export function useAthleteStatsView(execution: AthleteExecution | undefined): AthleteStatsView | null {
+export function useExecutionView(execution: ExecutionData | undefined): ExecutionView | null {
     if (!execution) return null
 
     // Upcoming sessions aren't late yet, so they're not in the denominator —

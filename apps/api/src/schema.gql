@@ -513,41 +513,6 @@ input AssignSubscriptionInput {
   userId: ID!
 }
 
-type AthleteExecution {
-  """Completed ÷ programmed by this coach. Null when none."""
-  adherenceRate: Float
-  daysSinceLastSession: Int
-  failedSets: Int!
-
-  """Last completed session, all-time (ignores the range)."""
-  lastSessionAt: DateTime
-
-  """Executed ÷ programmed load. Above 1 = heavier than written."""
-  loadCompliance: Float
-
-  """Logged in a completed session but never marked either way."""
-  pendingSets: Int!
-  plannedCompleted: Int!
-
-  """Programmed by this coach, already past, still not done."""
-  plannedMissed: Int!
-
-  """Sets the compliance ratio is built from."""
-  plannedSets: Int!
-
-  """Still on the calendar. Not bounded by the range."""
-  plannedUpcoming: Int!
-  sessionsChange: Float
-  sessionsPerWeek: Float
-
-  """Successful ÷ marked sets, across all their training."""
-  successRate: Float
-  successSets: Int!
-
-  """Signed change vs the preceding window (0.12 = +12%)."""
-  volumeChange: Float
-}
-
 type BillingDrift {
   gateway: String!
 
@@ -1776,7 +1741,7 @@ type Query {
   """
   How an athlete is executing: adherence to THIS coach's programming, set outcomes and load compliance across all their training, plus period-over-period trends (coaches only).
   """
-  athleteExecution(athleteId: ID!, from: String, to: String): AthleteExecution!
+  athleteExecution(athleteId: ID!, from: String, to: String): TrainingExecution!
 
   """
   An athlete's adherence and programmed-vs-executed load, week by week — when they slipped, not just how much (coaches only).
@@ -1941,6 +1906,14 @@ type Query {
   The caller's volume distribution (muscle/category) and RPE breakdown, optionally ranged.
   """
   trainingDistribution(from: String, to: String): TrainingDistribution!
+
+  """
+  How the caller is executing their training: adherence to their own planned sessions, set outcomes, load compliance and period-over-period trends.
+  """
+  trainingExecution(from: String, to: String): TrainingExecution!
+
+  """The caller's adherence and programmed-vs-executed load, week by week."""
+  trainingExecutionSeries(from: String, to: String): [ExecutionBucket!]!
 
   """
   The caller's headline training KPIs (incl. estimated S+B+D total), optionally ranged.
@@ -2127,6 +2100,41 @@ type TrainingDistribution {
   byMuscle: [DistributionSlice!]!
   rir: [IntensityBucket!]!
   rpe: [IntensityBucket!]!
+}
+
+type TrainingExecution {
+  """Completed ÷ due, within the adherence scope. Null when none."""
+  adherenceRate: Float
+  daysSinceLastSession: Int
+  failedSets: Int!
+
+  """Last completed session, all-time (ignores the range)."""
+  lastSessionAt: DateTime
+
+  """Executed ÷ programmed load. Above 1 = heavier than written."""
+  loadCompliance: Float
+
+  """Logged in a completed session but never marked either way."""
+  pendingSets: Int!
+  plannedCompleted: Int!
+
+  """In scope, already past, still not done."""
+  plannedMissed: Int!
+
+  """Sets the compliance ratio is built from."""
+  plannedSets: Int!
+
+  """Still on the calendar. Not bounded by the range."""
+  plannedUpcoming: Int!
+  sessionsChange: Float
+  sessionsPerWeek: Float
+
+  """Successful ÷ marked sets, across all their training."""
+  successRate: Float
+  successSets: Int!
+
+  """Signed change vs the preceding window (0.12 = +12%)."""
+  volumeChange: Float
 }
 
 type TrainingSummary {

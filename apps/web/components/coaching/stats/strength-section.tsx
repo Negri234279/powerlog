@@ -9,7 +9,7 @@ import { useAthleteStrengthProgression } from '@/lib/graphql/hooks/use-athlete'
 import { formatWeight, type Units } from '@/lib/units'
 import { StrengthTrendChart } from '@/components/charts'
 
-import { ChartSection } from './chart-section'
+import { ChartSection } from '@/components/stats/chart-section'
 
 /** Competition lifts first — what a coach checks before writing the next block. */
 const PREFERRED = ['squat', 'bench', 'deadlift']

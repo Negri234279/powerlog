@@ -110,6 +110,42 @@ export const ExerciseStatsDocument = graphql(`
             totalReps
             bestE1rmKg
             heaviestWeightKg
+            successSets
+            failedSets
+        }
+    }
+`)
+
+export const TrainingExecutionDocument = graphql(`
+    query TrainingExecution($from: String, $to: String) {
+        trainingExecution(from: $from, to: $to) {
+            adherenceRate
+            plannedCompleted
+            plannedMissed
+            plannedUpcoming
+            successRate
+            successSets
+            failedSets
+            pendingSets
+            loadCompliance
+            plannedSets
+            sessionsPerWeek
+            lastSessionAt
+            daysSinceLastSession
+            volumeChange
+            sessionsChange
+        }
+    }
+`)
+
+export const TrainingExecutionSeriesDocument = graphql(`
+    query TrainingExecutionSeries($from: String, $to: String) {
+        trainingExecutionSeries(from: $from, to: $to) {
+            bucketStart
+            plannedCompleted
+            plannedMissed
+            plannedLoadKg
+            actualLoadKg
         }
     }
 `)

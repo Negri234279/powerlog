@@ -3,7 +3,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { cn } from '@/lib/cn'
 import { formatSessionDate } from '@/lib/format-date'
 
-import type { Staleness } from './use-athlete-stats-view'
+import type { Staleness } from '@/components/stats/use-execution-view'
 
 const DOT: Record<Staleness, string> = {
     fresh: 'bg-pr',

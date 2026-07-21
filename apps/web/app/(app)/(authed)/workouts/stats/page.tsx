@@ -14,6 +14,8 @@ import {
 } from '@/lib/graphql/hooks/use-workouts'
 import { formatWeight, unitsOf } from '@/lib/units'
 import { DistributionChart, IntensityChart, StrengthTrendChart, WeeklyVolumeChart } from '@/components/charts'
+import { ExecutionCharts } from '@/components/workouts/stats/execution-charts'
+import { ExecutionSection } from '@/components/workouts/stats/execution-section'
 import { PopNumber } from '@/components/ui/pop-number'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
@@ -235,6 +237,12 @@ export default function ExerciseStatsPage() {
                         <KpiTile label={t('kpiExercises')} value={String(summary?.distinctExercises ?? 0)} />
                     </div>
 
+                    {/* 1b — Execution: adherence, set outcomes, load compliance */}
+                    <ExecutionSection from={from} />
+
+                    {/* 1c — Weekly adherence + programmed vs executed */}
+                    <ExecutionCharts from={from} units={units} />
+
                     {/* 2 — Strength progression + projection */}
                     <SectionCard
                         title={t('progressionTitle')}
@@ -440,6 +448,18 @@ export default function ExerciseStatsPage() {
                                                     <Cell label={t('colReps')}>
                                                         <span className="text-text-dim">{row.totalReps}</span>
                                                     </Cell>
+                                                    <Cell label={t('colSuccess')}>
+                                                        <span className="text-text-dim">{row.successSets}</span>
+                                                    </Cell>
+                                                    <Cell label={t('colFailed')}>
+                                                        <span
+                                                            className={
+                                                                row.failedSets > 0 ? 'text-ember' : 'text-text-faint'
+                                                            }
+                                                        >
+                                                            {row.failedSets}
+                                                        </span>
+                                                    </Cell>
                                                 </dl>
                                             </li>
                                         )
@@ -457,7 +477,15 @@ export default function ExerciseStatsPage() {
                                                 {prev ? <th className="px-4 py-3 text-right font-normal">Δ</th> : null}
                                                 <th className="px-4 py-3 text-right font-normal">{t('colHeaviest')}</th>
                                                 <th className="px-4 py-3 text-right font-normal">{t('colSets')}</th>
-                                                <th className="py-3 pl-4 text-right font-normal">{t('colReps')}</th>
+                                                <th className="px-4 py-3 text-right font-normal">{t('colReps')}</th>
+                                                <th className="px-4 py-3 text-right font-normal">
+                                                    <span aria-hidden>✓</span>
+                                                    <span className="sr-only">{t('colSuccess')}</span>
+                                                </th>
+                                                <th className="py-3 pl-4 text-right font-normal">
+                                                    <span aria-hidden>✗</span>
+                                                    <span className="sr-only">{t('colFailed')}</span>
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-hairline">
@@ -498,8 +526,19 @@ export default function ExerciseStatsPage() {
                                                         <td className="px-4 py-3 text-right font-mono tabular-nums text-text-dim">
                                                             {row.totalSets}
                                                         </td>
-                                                        <td className="py-3 pl-4 text-right font-mono tabular-nums text-text-dim">
+                                                        <td className="px-4 py-3 text-right font-mono tabular-nums text-text-dim">
                                                             {row.totalReps}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right font-mono tabular-nums text-text-dim">
+                                                            {row.successSets}
+                                                        </td>
+                                                        <td
+                                                            className={cn(
+                                                                'py-3 pl-4 text-right font-mono tabular-nums',
+                                                                row.failedSets > 0 ? 'text-ember' : 'text-text-faint',
+                                                            )}
+                                                        >
+                                                            {row.failedSets}
                                                         </td>
                                                     </tr>
                                                 )

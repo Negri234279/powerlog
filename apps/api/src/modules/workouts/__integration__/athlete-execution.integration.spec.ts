@@ -143,6 +143,21 @@ describe('Athlete execution (integration)', () => {
             expect(row.completedSessions).toBe(3)
         })
 
+        it('should_count_every_planned_session_when_no_planner_scope_is_given', async () => {
+            // A lifter reading their own numbers: sessions they wrote themselves
+            // carry a NULL planner, so an equality test would silently drop them
+            // and report a self-coached athlete as having no adherence at all.
+            await save(
+                sessionWith({ performedAt: new Date('2026-03-01T00:00:00Z'), plannedByUserId: COACH }),
+                sessionWith({ performedAt: new Date('2026-03-03T00:00:00Z') }),
+                sessionWith({ performedAt: new Date('2026-03-05T00:00:00Z'), status: 'planned' }),
+            )
+
+            const row = await dashboard.execution({ userId: ATHLETE, now: NOW })
+
+            expect(row).toMatchObject({ plannedCompleted: 2, plannedMissed: 1 })
+        })
+
         it('should_keep_upcoming_sessions_visible_even_when_the_range_ends_today', async () => {
             await save(
                 sessionWith({
@@ -316,6 +331,20 @@ describe('Athlete execution (integration)', () => {
             const [week] = await dashboard.executionSeries(filter())
 
             expect(week).toMatchObject({ plannedLoadKg: 500, actualLoadKg: 450 })
+        })
+
+        it('should_bucket_self_planned_weeks_too_when_unscoped', async () => {
+            await save(
+                sessionWith({ performedAt: new Date('2026-03-02T00:00:00Z') }),
+                sessionWith({ performedAt: new Date('2026-03-09T00:00:00Z'), status: 'planned' }),
+            )
+
+            const series = await dashboard.executionSeries({ userId: ATHLETE, now: NOW })
+
+            expect(series.map((w) => [w.plannedCompleted, w.plannedMissed])).toEqual([
+                [1, 0],
+                [0, 1],
+            ])
         })
 
         it('should_keep_a_week_that_only_has_one_of_the_two_halves', async () => {

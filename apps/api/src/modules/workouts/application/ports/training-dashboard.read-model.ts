@@ -13,14 +13,18 @@ export interface StrengthProgressionFilter extends TrainingAnalyticsFilter {
 }
 
 /**
- * Execution/adherence is asked by a coach about one athlete, so it needs two
- * extra things the other aggregations don't: whose programming to hold the
- * athlete to, and where "now" is (a planned session in the past is missed; the
- * same session in the future is merely upcoming).
+ * Execution/adherence needs one thing the other aggregations don't: where "now"
+ * is. A planned session in the past was missed; the same session in the future
+ * is merely upcoming, and no rate should hold that against anyone yet.
  */
 export interface ExecutionFilter extends TrainingAnalyticsFilter {
-    /** Only sessions programmed by this coach count towards adherence. */
-    plannedByUserId: string
+    /**
+     * Hold the user to one person's programming. A coach passes their own id, so
+     * adherence answers "does this athlete do what *I* write". **Omitted**, every
+     * planned session counts whoever wrote it — which is what a lifter looking at
+     * their own numbers means by "did I do my sessions".
+     */
+    plannedByUserId?: string
     /**
      * Start of the immediately preceding window of equal length, for the
      * period-over-period trend. Undefined when the range is unbounded — "all
@@ -38,7 +42,7 @@ export interface ExecutionFilter extends TrainingAnalyticsFilter {
  * means.
  */
 export interface ExecutionRow {
-    /** Completed sessions this coach programmed, in range. */
+    /** Completed sessions within the adherence scope (see `plannedByUserId`), in range. */
     plannedCompleted: number
     /** Still `planned` and already past — the athlete didn't do them. In range. */
     plannedMissed: number
