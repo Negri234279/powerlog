@@ -52,7 +52,7 @@ export function InviteAthleteModal({ open, onClose }: { open: boolean; onClose: 
 
         setError(null)
         setSent(null)
-        
+
         invite.mutate(value, {
             onSuccess: () => {
                 setSent(value)
