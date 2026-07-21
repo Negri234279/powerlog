@@ -44,6 +44,8 @@ export class DrizzleExerciseStatsReadModel extends ExerciseStatsReadModel {
                 totalReps: sql<number>`coalesce(sum(${workoutSets.reps}), 0)::int`,
                 bestE1rmKg: sql<number | null>`max(${workoutSets.e1rmKg})`,
                 heaviestWeightKg: sql<number | null>`max(${workoutSets.weightKg})`,
+                successSets: sql<number>`count(*) filter (where ${workoutSets.outcome} = 'success')::int`,
+                failedSets: sql<number>`count(*) filter (where ${workoutSets.outcome} = 'failed')::int`,
             })
             .from(workoutSets)
             .innerJoin(workoutExerciseEntries, eq(workoutExerciseEntries.id, workoutSets.entryId))
@@ -64,6 +66,8 @@ export class DrizzleExerciseStatsReadModel extends ExerciseStatsReadModel {
             totalReps: Number(row.totalReps),
             bestE1rmKg: row.bestE1rmKg === null ? null : Number(row.bestE1rmKg),
             heaviestWeightKg: row.heaviestWeightKg === null ? null : Number(row.heaviestWeightKg),
+            successSets: Number(row.successSets),
+            failedSets: Number(row.failedSets),
         }))
     }
 }

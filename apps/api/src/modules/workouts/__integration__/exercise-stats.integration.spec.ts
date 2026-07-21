@@ -9,8 +9,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import * as schema from '../../../database/schema'
 import { WorkoutSessionMother } from '../../../../tests/mothers/workouts'
+import { RepsVO } from '../domain/value-objects/reps.vo'
+import { WeightVO } from '../domain/value-objects/weight.vo'
 import { DrizzleExerciseStatsReadModel } from '../infrastructure/persistence/read-models/drizzle-exercise-stats.read-model'
 import { DrizzleWorkoutSessionRepository } from '../infrastructure/persistence/repositories/drizzle-workout-session.repository'
+
+const NOW = new Date('2026-01-01T00:00:00.000Z')
 
 let container: StartedPostgreSqlContainer
 let pool: Pool
@@ -82,5 +86,26 @@ describe('Exercise stats (integration)', () => {
 
     it('returns nothing for a user with no logged sets', async () => {
         expect(await stats.perExercise({ userId: randomUUID() })).toEqual([])
+    })
+
+    it('counts marked outcomes per exercise, leaving unmarked sets out of both', async () => {
+        // Which lift they're missing on is the actionable version of a global
+        // failure rate, so the counts have to survive the GROUP BY per exercise.
+        const userId = randomUUID()
+        const session = WorkoutSessionMother.empty({ userId, performedAt: new Date('2026-01-15T00:00:00Z') })
+        const entry = session.addEntry({ id: randomUUID(), exerciseId: exA }, NOW)
+
+        const marked: Array<'success' | 'failed' | null> = ['success', 'success', 'failed', null]
+        for (const outcome of marked) {
+            const id = randomUUID()
+            session.addSet(entry.id, { id, weight: WeightVO.create(100), reps: RepsVO.create(5) }, NOW)
+            if (outcome) session.completeSet(entry.id, id, outcome, {}, NOW)
+        }
+        session.complete(NOW)
+        await sessions.save(session)
+
+        const [row] = await stats.perExercise({ userId })
+
+        expect(row).toMatchObject({ exerciseId: exA, totalSets: 4, successSets: 2, failedSets: 1 })
     })
 })

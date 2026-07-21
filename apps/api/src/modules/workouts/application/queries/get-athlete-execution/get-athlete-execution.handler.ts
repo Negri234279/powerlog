@@ -28,6 +28,8 @@ export interface AthleteExecutionView {
 
     /** Executed ÷ programmed load. Above 1 = trained heavier than written. */
     loadCompliance: number | null
+    /** Sets that ratio is built from, so the UI can show its denominator. */
+    plannedSets: number
 
     /** Mean completed sessions per week across the range. */
     sessionsPerWeek: number | null
@@ -95,6 +97,7 @@ export class GetAthleteExecutionHandler implements IQueryHandler<GetAthleteExecu
             pendingSets: row.pendingSets,
 
             loadCompliance: ratio(row.actualLoadKg, row.plannedLoadKg),
+            plannedSets: row.plannedSets,
 
             sessionsPerWeek: this.sessionsPerWeek(row, from, to, now),
             lastSessionAt: row.lastSessionAt,

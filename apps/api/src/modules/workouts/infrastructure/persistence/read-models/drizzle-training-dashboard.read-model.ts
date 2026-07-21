@@ -169,6 +169,7 @@ export class DrizzleTrainingDashboardReadModel extends TrainingDashboardReadMode
                 ),
                 plannedLoadKg: sumWhere(plannedLoad, ranged(completed, hasPlan)),
                 actualLoadKg: sumWhere(actualLoad, ranged(completed, hasPlan)),
+                plannedSets: countWhere(ranged(completed, hasPlan)),
             })
             .from(workoutSets)
             .innerJoin(workoutExerciseEntries, eq(workoutExerciseEntries.id, workoutSets.entryId))
@@ -198,6 +199,7 @@ export class DrizzleTrainingDashboardReadModel extends TrainingDashboardReadMode
             pendingSets: Number(sets?.pendingSets ?? 0),
             plannedLoadKg: Number(sets?.plannedLoadKg ?? 0),
             actualLoadKg: Number(sets?.actualLoadKg ?? 0),
+            plannedSets: Number(sets?.plannedSets ?? 0),
             volumeKg: Number(sets?.volumeKg ?? 0),
             previousVolumeKg: Number(sets?.previousVolumeKg ?? 0),
             firstSessionAt: bounds?.firstSessionAt == null ? null : new Date(bounds.firstSessionAt),

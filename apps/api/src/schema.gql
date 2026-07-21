@@ -532,6 +532,9 @@ type AthleteExecution {
   """Programmed by this coach, already past, still not done."""
   plannedMissed: Int!
 
+  """Sets the compliance ratio is built from."""
+  plannedSets: Int!
+
   """Still on the calendar. Not bounded by the range."""
   plannedUpcoming: Int!
   sessionsChange: Float
@@ -782,11 +785,15 @@ type ExerciseStats {
   bestE1rmKg: Float
   category: String!
   exerciseId: ID!
+  failedSets: Int!
 
   """Heaviest single set (kg)."""
   heaviestWeightKg: Float
   name: String!
   slug: String!
+
+  """Sets marked successful. Unmarked sets count in neither."""
+  successSets: Int!
   totalReps: Int!
   totalSets: Int!
 

@@ -66,6 +66,8 @@ export interface ExecutionRow {
      */
     plannedLoadKg: number
     actualLoadKg: number
+    /** How many sets those two sums are built from — the compliance denominator. */
+    plannedSets: number
     /** Σ weight·reps in range, and over the preceding window. */
     volumeKg: number
     previousVolumeKg: number

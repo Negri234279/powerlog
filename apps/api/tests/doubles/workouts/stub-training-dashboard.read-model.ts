@@ -34,6 +34,7 @@ const EMPTY_EXECUTION: ExecutionRow = {
     pendingSets: 0,
     plannedLoadKg: 0,
     actualLoadKg: 0,
+    plannedSets: 0,
     volumeKg: 0,
     previousVolumeKg: 0,
     firstSessionAt: null,

@@ -24,6 +24,13 @@ export interface ExerciseStatsRow {
     bestE1rmKg: number | null
     /** Heaviest single actual set (kg). */
     heaviestWeightKg: number | null
+    /**
+     * Sets the athlete marked either way. Turns "12% of sets failed" into
+     * "they're failing on bench", which is the version a coach can act on.
+     * Unmarked sets appear in neither count.
+     */
+    successSets: number
+    failedSets: number
 }
 
 /**

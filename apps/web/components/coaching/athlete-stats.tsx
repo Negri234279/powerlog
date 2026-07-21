@@ -4,8 +4,15 @@ import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 
 import { cn } from '@/lib/cn'
-import { useAthleteExerciseStats, useAthleteSummary } from '@/lib/graphql/hooks/use-athlete'
-import { formatWeight, type Units } from '@/lib/units'
+import { useAthleteExecution, useAthleteExerciseStats, useAthleteSummary } from '@/lib/graphql/hooks/use-athlete'
+import type { Units } from '@/lib/units'
+import { ExecutionPanel } from '@/components/coaching/stats/execution-panel'
+import { ExerciseTable } from '@/components/coaching/stats/exercise-table'
+import { LastSessionHeader } from '@/components/coaching/stats/last-session-header'
+import { ProgramAdherencePanel } from '@/components/coaching/stats/program-adherence-panel'
+import { ExecutionSkeleton, WorkloadSkeleton } from '@/components/coaching/stats/stats-skeletons'
+import { useAthleteStatsView } from '@/components/coaching/stats/use-athlete-stats-view'
+import { WorkloadStrip } from '@/components/coaching/stats/workload-strip'
 import { QueryError } from '@/components/ui/query-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
@@ -25,18 +32,18 @@ function isoDaysAgo(days: number): string {
     return date.toISOString()
 }
 
-function Kpi({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-    return (
-        <div className="rounded-2xl bg-bg/40 px-5 py-4 ring-1 ring-hairline">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-text-faint">{label}</p>
-            <p className={cn('mt-2 font-display tabular-nums', accent ? 'text-h3 text-gradient-ember' : 'text-h3')}>
-                {value}
-            </p>
-        </div>
-    )
-}
-
-/** The athlete's training KPIs and per-exercise breakdown, in the coach's units. */
+/**
+ * What a coach reads about one athlete's training.
+ *
+ * The layout encodes a rule the numbers can't state themselves: everything below
+ * the range tabs is filtered by them, and the one figure that isn't — when the
+ * athlete last trained — sits above. Below that, two panels rather than a grid
+ * of cards, because there are two questions here and they run over different
+ * populations: adherence covers only what *this* coach programmed, while
+ * execution quality covers everything the athlete lifts. Two percentages side by
+ * side with no such boundary would invite exactly the comparison that isn't
+ * valid.
+ */
 export function AthleteStats({ athleteId, units }: { athleteId: string; units: Units }) {
     const t = useTranslations('coaching')
     const ts = useTranslations('stats')
@@ -49,90 +56,82 @@ export function AthleteStats({ athleteId, units }: { athleteId: string; units: U
     const from = useMemo(() => (days === null ? undefined : isoDaysAgo(days)), [days])
 
     const summary = useAthleteSummary(athleteId, from)
+    const execution = useAthleteExecution(athleteId, from)
     const stats = useAthleteExerciseStats(athleteId, from)
 
+    const view = useAthleteStatsView(execution.data ?? undefined)
     const rows = [...(stats.data ?? [])].sort((a, b) => b.totalVolumeKg - a.totalVolumeKg)
+
+    // The panels and the strip come from the same pair of queries, so they share
+    // one loading branch and one error box — three separate retry buttons for a
+    // single failure is noise, not information.
+    const loading = summary.isLoading || execution.isLoading
+    const failed = summary.isError || execution.isError
+    // A range switch refetches; dimming what's on screen beats flashing skeletons.
+    const refetching = (summary.isFetching || execution.isFetching) && !loading
 
     return (
         <div className="space-y-6">
-            <SlidingTabs
-                analyticsId="athlete-stats-range"
-                value={range}
-                onChange={(value) => setRange(value as RangeKey)}
-                items={RANGES.map((r) => ({ value: r.key, label: ts(r.labelKey) }))}
+            <LastSessionHeader
+                lastSessionAt={execution.data?.lastSessionAt}
+                days={execution.data?.daysSinceLastSession}
+                staleness={view?.staleness ?? 'never'}
             />
 
-            {summary.isLoading ? (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                        <Skeleton key={i} className="h-24 rounded-2xl" />
-                    ))}
-                </div>
-            ) : summary.isError ? (
-                <QueryError
-                    message={t('statsLoadError')}
-                    onRetry={() => void summary.refetch()}
-                    analyticsId="athlete-summary-retry"
+            <div className="border-t border-hairline pt-6">
+                <SlidingTabs
+                    analyticsId="athlete-stats-range"
+                    value={range}
+                    onChange={(value) => setRange(value as RangeKey)}
+                    items={RANGES.map((r) => ({ value: r.key, label: ts(r.labelKey) }))}
                 />
-            ) : summary.data ? (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <Kpi label={ts('kpiSessions')} value={String(summary.data.sessions)} />
-                    <Kpi label={ts('kpiVolume')} value={formatWeight(summary.data.totalVolumeKg, units)} />
-                    <Kpi label={ts('kpiSets')} value={String(summary.data.totalSets)} />
-                    <Kpi
-                        label={ts('kpiEstTotal')}
-                        value={
-                            summary.data.estimatedTotalKg === null
-                                ? '—'
-                                : formatWeight(summary.data.estimatedTotalKg, units)
-                        }
-                        accent
-                    />
-                </div>
-            ) : null}
+            </div>
 
-            {stats.isLoading ? (
-                <Skeleton className="h-48 rounded-2xl" />
-            ) : stats.isError ? (
-                <QueryError
-                    message={t('statsLoadError')}
-                    onRetry={() => void stats.refetch()}
-                    analyticsId="athlete-stats-retry"
-                />
-            ) : rows.length === 0 ? (
-                <p className="text-sm text-text-faint">{t('noStats')}</p>
-            ) : (
-                <div className="overflow-x-auto rounded-2xl bg-bg/40 ring-1 ring-hairline">
-                    <table className="w-full min-w-[36rem] text-sm">
-                        <thead>
-                            <tr className="border-b border-hairline text-left font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                                <th className="px-5 py-3 font-normal">{ts('colExercise')}</th>
-                                <th className="px-5 py-3 text-right font-normal">{ts('colVolume')}</th>
-                                <th className="px-5 py-3 text-right font-normal">{ts('colSets')}</th>
-                                <th className="px-5 py-3 text-right font-normal">{ts('colBestE1rm')}</th>
-                                <th className="px-5 py-3 text-right font-normal">{ts('colHeaviest')}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="tabular-nums">
-                            {rows.map((row) => (
-                                <tr key={row.exerciseId} className="border-b border-hairline/60 last:border-0">
-                                    <td className="px-5 py-3 text-text">{row.name}</td>
-                                    <td className="px-5 py-3 text-right text-text">
-                                        {formatWeight(row.totalVolumeKg, units)}
-                                    </td>
-                                    <td className="px-5 py-3 text-right text-text-dim">{row.totalSets}</td>
-                                    <td className="px-5 py-3 text-right text-text-dim">
-                                        {formatWeight(row.bestE1rmKg, units)}
-                                    </td>
-                                    <td className="px-5 py-3 text-right text-text-dim">
-                                        {formatWeight(row.heaviestWeightKg, units)}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+            <div
+                role="tabpanel"
+                aria-live="polite"
+                aria-busy={refetching}
+                className={cn('space-y-4 transition-opacity duration-300', refetching && 'opacity-60')}
+            >
+                {loading ? (
+                    <>
+                        <ExecutionSkeleton />
+                        <WorkloadSkeleton />
+                    </>
+                ) : failed ? (
+                    <QueryError
+                        message={t('statsLoadError')}
+                        onRetry={() => {
+                            void summary.refetch()
+                            void execution.refetch()
+                        }}
+                        analyticsId="athlete-summary-retry"
+                    />
+                ) : view ? (
+                    <>
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <ProgramAdherencePanel view={view} athleteId={athleteId} />
+                            <ExecutionPanel view={view} avgRpe={summary.data?.avgRpe} />
+                        </div>
+
+                        <WorkloadStrip summary={summary.data ?? undefined} execution={execution.data} units={units} />
+                    </>
+                ) : null}
+
+                {stats.isLoading ? (
+                    <Skeleton className="h-48 rounded-2xl" />
+                ) : stats.isError ? (
+                    <QueryError
+                        message={t('statsLoadError')}
+                        onRetry={() => void stats.refetch()}
+                        analyticsId="athlete-stats-retry"
+                    />
+                ) : rows.length === 0 ? (
+                    <p className="text-sm text-text-faint">{t('noStats')}</p>
+                ) : (
+                    <ExerciseTable rows={rows} units={units} />
+                )}
+            </div>
         </div>
     )
 }

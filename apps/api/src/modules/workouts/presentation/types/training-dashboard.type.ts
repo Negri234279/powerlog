@@ -75,6 +75,9 @@ export class AthleteExecutionType {
     @Field(() => Float, { nullable: true, description: 'Executed ÷ programmed load. Above 1 = heavier than written.' })
     loadCompliance?: number | null
 
+    @Field(() => Int, { description: 'Sets the compliance ratio is built from.' })
+    plannedSets!: number
+
     @Field(() => Float, { nullable: true })
     sessionsPerWeek?: number | null
 

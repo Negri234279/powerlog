@@ -215,6 +215,8 @@ describe('Athlete execution (integration)', () => {
 
             expect(row.plannedLoadKg).toBe(1000)
             expect(row.actualLoadKg).toBe(500)
+            // The skipped set still counts towards the denominator's set count.
+            expect(row.plannedSets).toBe(2)
         })
 
         it('should_not_let_a_session_that_never_happened_drag_compliance_down_twice', async () => {

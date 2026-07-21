@@ -1,6 +1,7 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type {
+    AthleteExecutionQuery,
     AthleteExerciseStatsQuery,
     AthleteMesocyclesQuery,
     AthleteTrainingSummaryQuery,
@@ -10,6 +11,7 @@ import { gqlRequest } from '@/lib/graphql/client'
 import type { HistoryFilters } from '@/lib/workouts/use-history-filters'
 import {
     AssignMesocycleToAthleteDocument,
+    AthleteExecutionDocument,
     AthleteExerciseSessionHistoryDocument,
     AthleteExerciseStatsDocument,
     AthleteMesocyclesDocument,
@@ -23,6 +25,7 @@ import {
 export type AthleteHistoryItem = AthleteWorkoutHistoryQuery['athleteWorkoutHistory']['items'][number]
 export type AthleteStatsRow = AthleteExerciseStatsQuery['athleteExerciseStats'][number]
 export type AthleteSummary = AthleteTrainingSummaryQuery['athleteTrainingSummary']
+export type AthleteExecution = AthleteExecutionQuery['athleteExecution']
 export type AthleteMesocycle = AthleteMesocyclesQuery['athleteMesocycles'][number]
 
 /** Everything the coach reads about one athlete lives under this key. */
@@ -109,6 +112,21 @@ export function useAthleteSummary(athleteId: string, from?: string, enabled = tr
         queryKey: [...athleteKey(athleteId), 'summary', from ?? 'all'],
         queryFn: async () =>
             (await gqlRequest(AthleteTrainingSummaryDocument, { athleteId, from })).athleteTrainingSummary,
+        enabled,
+        retry: false,
+    })
+}
+
+/**
+ * Adherence, set outcomes and load compliance. Separate from `useAthleteSummary`
+ * because it answers a different question over a different population — see the
+ * API type: adherence covers only what *this* coach programmed, the rest covers
+ * all the athlete's training.
+ */
+export function useAthleteExecution(athleteId: string, from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'execution', from ?? 'all'],
+        queryFn: async () => (await gqlRequest(AthleteExecutionDocument, { athleteId, from })).athleteExecution,
         enabled,
         retry: false,
     })

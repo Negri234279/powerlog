@@ -80,6 +80,30 @@ export const AthleteExerciseStatsDocument = graphql(`
             totalReps
             bestE1rmKg
             heaviestWeightKg
+            successSets
+            failedSets
+        }
+    }
+`)
+
+export const AthleteExecutionDocument = graphql(`
+    query AthleteExecution($athleteId: ID!, $from: String, $to: String) {
+        athleteExecution(athleteId: $athleteId, from: $from, to: $to) {
+            adherenceRate
+            plannedCompleted
+            plannedMissed
+            plannedUpcoming
+            successRate
+            successSets
+            failedSets
+            pendingSets
+            loadCompliance
+            plannedSets
+            sessionsPerWeek
+            lastSessionAt
+            daysSinceLastSession
+            volumeChange
+            sessionsChange
         }
     }
 `)
