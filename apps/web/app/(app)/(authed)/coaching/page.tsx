@@ -16,6 +16,7 @@ import {
     useMyCoaches,
     usePendingInvitations,
 } from '@/lib/graphql/hooks/use-coaching'
+import { fullName } from '@/lib/user-name'
 import { cn } from '@/lib/cn'
 import { BecomeCoachModal } from '@/components/coaching/become-coach-modal'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -109,13 +110,6 @@ function InvitationCard({ invitation }: { invitation: PendingInvitation }) {
             <FormError error={error} className="mt-3" />
         </div>
     )
-}
-
-/** "Ana Ruiz" from whichever halves the user filled in; null when neither. */
-function fullName(user: CoachUser): string | null {
-    const name = [user.firstName, user.lastName].filter(Boolean).join(' ')
-
-    return name === '' ? null : name
 }
 
 /** Handle + real name (when they set one) under the avatar. */

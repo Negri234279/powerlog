@@ -60,7 +60,7 @@
         "coachEmptyBody": "Aún no tienes coach. Un coach te invita por email — acéptala y aparecerá aquí.",
         "becomeModalSubtitle": "Elige un plan de coach para empezar a entrenar atletas.",
         "becomeFree": "Empezar gratis",
-        "athlete": "Atleta",
+        "athleteLoading": "Cargando atleta…",
         "athleteMenu": "Acciones del atleta",
         "quickPlanSession": "Planificar sesión",
         "athleteNotFoundTitle": "Atleta no encontrado",

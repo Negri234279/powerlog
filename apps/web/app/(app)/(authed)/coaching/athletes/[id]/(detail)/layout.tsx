@@ -4,6 +4,7 @@ import { requireRole } from '@/lib/auth/session'
 import { AthleteHeader } from '@/components/coaching/athlete-header'
 import { AthleteNav } from '@/components/coaching/athlete-nav'
 import { AthleteNote } from '@/components/coaching/athlete-note'
+import { ChevronLeft } from '@/components/ui/icons'
 import { TrackedLink } from '@/components/ui/tracked'
 
 /**
@@ -40,15 +41,25 @@ export default async function AthleteDetailLayout({
 
     return (
         <div className="space-y-6">
-            <TrackedLink
-                analyticsId="athlete-back"
-                href="/coaching"
-                className="font-mono text-eyebrow uppercase text-text-faint transition-colors duration-300 hover:text-text-dim"
-            >
-                {t('backToCoaching')}
-            </TrackedLink>
+            {/* Back link and identity are one block, not two rungs of the page's
+                even rhythm — hence the tighter gap and the wrapper. The chevron
+                and the -ml-2 padding are what stop it reading as another caption
+                line: it used to share the header eyebrow's exact type treatment,
+                and its hit area was the glyph box. */}
+            <div>
+                <TrackedLink
+                    analyticsId="athlete-back"
+                    href="/coaching"
+                    className="-ml-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-sm text-text-dim transition-colors duration-300 hover:text-text"
+                >
+                    <ChevronLeft className="size-4" />
+                    {t('backToCoaching')}
+                </TrackedLink>
 
-            <AthleteHeader athleteId={id} />
+                <div className="mt-3">
+                    <AthleteHeader athleteId={id} />
+                </div>
+            </div>
 
             <AthleteNote athleteId={id} />
 
