@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 import { useAthleteExerciseStats, useAthleteSummary } from '@/lib/graphql/hooks/use-athlete'
@@ -42,7 +42,10 @@ export function AthleteStats({ athleteId, units }: { athleteId: string; units: U
     const [range, setRange] = useState<RangeKey>('90d')
 
     const days = RANGES.find((r) => r.key === range)?.days ?? null
-    const from = days === null ? undefined : isoDaysAgo(days)
+    // Anchor `from` to the selected range, not to render time: isoDaysAgo() reads
+    // `new Date()` at ms precision, so recomputing it every render would hand the
+    // query a fresh key each time → refetch → re-render → refetch (an infinite loop).
+    const from = useMemo(() => (days === null ? undefined : isoDaysAgo(days)), [days])
 
     const summary = useAthleteSummary(athleteId, from)
     const stats = useAthleteExerciseStats(athleteId, from)
