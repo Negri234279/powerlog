@@ -132,6 +132,73 @@ export const AthleteExerciseSessionHistoryDocument = graphql(`
     }
 `)
 
+export const AthleteExecutionSeriesDocument = graphql(`
+    query AthleteExecutionSeries($athleteId: ID!, $from: String, $to: String) {
+        athleteExecutionSeries(athleteId: $athleteId, from: $from, to: $to) {
+            bucketStart
+            plannedCompleted
+            plannedMissed
+            plannedLoadKg
+            actualLoadKg
+        }
+    }
+`)
+
+export const AthleteVolumeSeriesDocument = graphql(`
+    query AthleteVolumeSeries($athleteId: ID!, $from: String, $to: String) {
+        athleteVolumeSeries(athleteId: $athleteId, from: $from, to: $to) {
+            bucketStart
+            totalVolumeKg
+            totalSets
+            sessions
+        }
+    }
+`)
+
+export const AthleteTrainingDistributionDocument = graphql(`
+    query AthleteTrainingDistribution($athleteId: ID!, $from: String, $to: String) {
+        athleteTrainingDistribution(athleteId: $athleteId, from: $from, to: $to) {
+            byMuscle {
+                key
+                totalVolumeKg
+                totalSets
+            }
+            byCategory {
+                key
+                totalVolumeKg
+                totalSets
+            }
+            rpe {
+                value
+                sets
+            }
+            rir {
+                value
+                sets
+            }
+        }
+    }
+`)
+
+export const AthleteStrengthProgressionDocument = graphql(`
+    query AthleteStrengthProgression($athleteId: ID!, $exerciseId: ID!, $from: String, $to: String) {
+        athleteStrengthProgression(athleteId: $athleteId, exerciseId: $exerciseId, from: $from, to: $to) {
+            points {
+                performedAt
+                e1rmKg
+            }
+            trend {
+                slopePerWeekKg
+                r2
+                projections {
+                    weeks
+                    e1rmKg
+                }
+            }
+        }
+    }
+`)
+
 export const AthleteMesocyclesDocument = graphql(`
     query AthleteMesocycles($athleteId: ID!) {
         athleteMesocycles(athleteId: $athleteId) {

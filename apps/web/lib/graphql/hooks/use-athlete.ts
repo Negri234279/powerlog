@@ -12,10 +12,14 @@ import type { HistoryFilters } from '@/lib/workouts/use-history-filters'
 import {
     AssignMesocycleToAthleteDocument,
     AthleteExecutionDocument,
+    AthleteExecutionSeriesDocument,
     AthleteExerciseSessionHistoryDocument,
     AthleteExerciseStatsDocument,
     AthleteMesocyclesDocument,
+    AthleteStrengthProgressionDocument,
+    AthleteTrainingDistributionDocument,
     AthleteTrainingSummaryDocument,
+    AthleteVolumeSeriesDocument,
     AthleteWorkoutHistoryDocument,
     AthleteWorkoutSessionDocument,
     PlanSessionFromTemplateDocument,
@@ -137,6 +141,48 @@ export function useAthleteExerciseStats(athleteId: string, from?: string, enable
         queryKey: [...athleteKey(athleteId), 'exerciseStats', from ?? 'all'],
         queryFn: async () => (await gqlRequest(AthleteExerciseStatsDocument, { athleteId, from })).athleteExerciseStats,
         enabled,
+        retry: false,
+    })
+}
+
+/** Week-by-week adherence and programmed-vs-executed load — coach-only charts. */
+export function useAthleteExecutionSeries(athleteId: string, from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'executionSeries', from ?? 'all'],
+        queryFn: async () =>
+            (await gqlRequest(AthleteExecutionSeriesDocument, { athleteId, from })).athleteExecutionSeries,
+        enabled,
+        retry: false,
+    })
+}
+
+export function useAthleteVolumeSeries(athleteId: string, from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'volumeSeries', from ?? 'all'],
+        queryFn: async () => (await gqlRequest(AthleteVolumeSeriesDocument, { athleteId, from })).athleteVolumeSeries,
+        enabled,
+        retry: false,
+    })
+}
+
+export function useAthleteDistribution(athleteId: string, from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'distribution', from ?? 'all'],
+        queryFn: async () =>
+            (await gqlRequest(AthleteTrainingDistributionDocument, { athleteId, from })).athleteTrainingDistribution,
+        enabled,
+        retry: false,
+    })
+}
+
+/** Disabled until a lift is picked — there is no sensible "all exercises" e1RM. */
+export function useAthleteStrengthProgression(athleteId: string, exerciseId?: string, from?: string) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'strength', exerciseId ?? null, from ?? 'all'],
+        queryFn: async () =>
+            (await gqlRequest(AthleteStrengthProgressionDocument, { athleteId, exerciseId: exerciseId!, from }))
+                .athleteStrengthProgression,
+        enabled: Boolean(exerciseId),
         retry: false,
     })
 }

@@ -96,6 +96,28 @@ export class AthleteExecutionType {
     sessionsChange?: number | null
 }
 
+/**
+ * One week of execution. Same scopes as `AthleteExecution`: adherence counts
+ * only this coach's programming, load covers every completed session with a plan.
+ */
+@ObjectType('ExecutionBucket')
+export class ExecutionBucketType {
+    @Field({ description: 'Start of the week (UTC).' })
+    bucketStart!: Date
+
+    @Field(() => Int)
+    plannedCompleted!: number
+
+    @Field(() => Int)
+    plannedMissed!: number
+
+    @Field(() => Float)
+    plannedLoadKg!: number
+
+    @Field(() => Float)
+    actualLoadKg!: number
+}
+
 /** One week of training volume. */
 @ObjectType('VolumeBucket')
 export class VolumeBucketType {

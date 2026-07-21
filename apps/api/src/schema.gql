@@ -732,6 +732,16 @@ type DistributionSlice {
   totalVolumeKg: Float!
 }
 
+type ExecutionBucket {
+  actualLoadKg: Float!
+
+  """Start of the week (UTC)."""
+  bucketStart: DateTime!
+  plannedCompleted: Int!
+  plannedLoadKg: Float!
+  plannedMissed: Int!
+}
+
 type Exercise {
   """
   squat | bench | deadlift | chest | back | shoulders | legs | arms | core
@@ -1767,6 +1777,11 @@ type Query {
   How an athlete is executing: adherence to THIS coach's programming, set outcomes and load compliance across all their training, plus period-over-period trends (coaches only).
   """
   athleteExecution(athleteId: ID!, from: String, to: String): AthleteExecution!
+
+  """
+  An athlete's adherence and programmed-vs-executed load, week by week — when they slipped, not just how much (coaches only).
+  """
+  athleteExecutionSeries(athleteId: ID!, from: String, to: String): [ExecutionBucket!]!
 
   """
   An athlete's recent completed sessions logging one exercise, with their performed sets (coaches only).

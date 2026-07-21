@@ -1,4 +1,5 @@
 import {
+    type ExecutionBucketRow,
     type ExecutionFilter,
     type ExecutionRow,
     type StrengthPointRow,
@@ -47,6 +48,7 @@ interface Seed {
     strength?: StrengthPointRow[]
     distribution?: TrainingDistribution
     execution?: Partial<ExecutionRow>
+    executionSeries?: ExecutionBucketRow[]
 }
 
 /** Returns canned analytics and records the last filter each method received. */
@@ -56,6 +58,7 @@ export class StubTrainingDashboardReadModel extends TrainingDashboardReadModel {
     lastStrengthFilter?: StrengthProgressionFilter
     lastDistributionFilter?: TrainingAnalyticsFilter
     lastExecutionFilter?: ExecutionFilter
+    lastExecutionSeriesFilter?: ExecutionFilter
 
     constructor(private readonly seed: Seed = {}) {
         super()
@@ -84,5 +87,10 @@ export class StubTrainingDashboardReadModel extends TrainingDashboardReadModel {
     async execution(filter: ExecutionFilter): Promise<ExecutionRow> {
         this.lastExecutionFilter = filter
         return { ...EMPTY_EXECUTION, ...this.seed.execution }
+    }
+
+    async executionSeries(filter: ExecutionFilter): Promise<ExecutionBucketRow[]> {
+        this.lastExecutionSeriesFilter = filter
+        return this.seed.executionSeries ?? []
     }
 }

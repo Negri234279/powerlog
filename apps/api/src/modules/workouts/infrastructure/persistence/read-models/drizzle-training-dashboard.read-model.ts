@@ -3,6 +3,7 @@ import { and, desc, eq, gte, isNotNull, isNull, lt, lte, type SQL, sql } from 'd
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import {
+    type ExecutionBucketRow,
     type ExecutionFilter,
     type ExecutionRow,
     type StrengthPointRow,
@@ -205,6 +206,82 @@ export class DrizzleTrainingDashboardReadModel extends TrainingDashboardReadMode
             firstSessionAt: bounds?.firstSessionAt == null ? null : new Date(bounds.firstSessionAt),
             lastSessionAt: bounds?.lastSessionAt == null ? null : new Date(bounds.lastSessionAt),
         }
+    }
+
+    /**
+     * `execution()` bucketed by week. Two queries for the same reason as there —
+     * missed sessions have no sets to join — merged on the week key, so a week
+     * that only has one of the two halves still appears with zeros for the other.
+     */
+    async executionSeries(filter: ExecutionFilter): Promise<ExecutionBucketRow[]> {
+        const bucket = sql<Date>`date_trunc('week', ${workoutSessions.performedAt})`
+        const range: SQL[] = []
+        if (filter.from) range.push(gte(workoutSessions.performedAt, filter.from))
+        if (filter.to) range.push(lte(workoutSessions.performedAt, filter.to))
+
+        const completed = eq(workoutSessions.status, 'completed')
+
+        const adherence = this.db
+            .select({
+                bucketStart: bucket,
+                plannedCompleted: sql<number>`count(*) filter (where ${completed})::int`,
+                plannedMissed: sql<number>`count(*) filter (where ${and(
+                    eq(workoutSessions.status, 'planned'),
+                    lt(workoutSessions.performedAt, filter.now),
+                )})::int`,
+            })
+            .from(workoutSessions)
+            .where(
+                and(
+                    eq(workoutSessions.userId, filter.userId),
+                    eq(workoutSessions.plannedByUserId, filter.plannedByUserId),
+                    ...range,
+                ),
+            )
+            .groupBy(bucket)
+
+        const hasPlan = and(isNotNull(workoutSets.plannedWeightKg), isNotNull(workoutSets.plannedReps))!
+
+        const load = this.db
+            .select({
+                bucketStart: bucket,
+                plannedLoadKg: sql<number>`coalesce(sum(${workoutSets.plannedWeightKg} * ${workoutSets.plannedReps}), 0)`,
+                actualLoadKg: sql<number>`coalesce(sum(coalesce(${workoutSets.weightKg}, 0) * coalesce(${workoutSets.reps}, 0)), 0)`,
+            })
+            .from(workoutSets)
+            .innerJoin(workoutExerciseEntries, eq(workoutExerciseEntries.id, workoutSets.entryId))
+            .innerJoin(workoutSessions, eq(workoutSessions.id, workoutExerciseEntries.sessionId))
+            .where(and(eq(workoutSessions.userId, filter.userId), completed, hasPlan, ...range))
+            .groupBy(bucket)
+
+        const [adherenceRows, loadRows] = await Promise.all([adherence, load])
+
+        const byWeek = new Map<number, ExecutionBucketRow>()
+        const at = (raw: Date): ExecutionBucketRow => {
+            const bucketStart = new Date(raw)
+            const key = bucketStart.getTime()
+            const existing = byWeek.get(key)
+            if (existing) return existing
+
+            const fresh = { bucketStart, plannedCompleted: 0, plannedMissed: 0, plannedLoadKg: 0, actualLoadKg: 0 }
+            byWeek.set(key, fresh)
+
+            return fresh
+        }
+
+        for (const row of adherenceRows) {
+            const week = at(row.bucketStart)
+            week.plannedCompleted = Number(row.plannedCompleted)
+            week.plannedMissed = Number(row.plannedMissed)
+        }
+
+        for (const row of loadRows) {
+            const week = at(row.bucketStart)
+            week.plannedLoadKg = Number(row.plannedLoadKg)
+            week.actualLoadKg = Number(row.actualLoadKg)
+        }
+
+        return [...byWeek.values()].sort((a, b) => a.bucketStart.getTime() - b.bucketStart.getTime())
     }
 
     async volumeSeries(filter: TrainingAnalyticsFilter): Promise<VolumeBucketRow[]> {

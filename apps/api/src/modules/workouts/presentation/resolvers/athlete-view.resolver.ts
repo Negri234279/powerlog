@@ -13,7 +13,12 @@ import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import type { ExerciseSessionHistoryRow } from '../../application/ports/exercise-session-history.read-model'
 import type { ExerciseStatsRow } from '../../application/ports/exercise-stats.read-model'
 import type { MesocycleSummaryRow } from '../../application/ports/mesocycle-list.read-model'
-import type { TrainingDistribution, VolumeBucketRow } from '../../application/ports/training-dashboard.read-model'
+import type {
+    ExecutionBucketRow,
+    TrainingDistribution,
+    VolumeBucketRow,
+} from '../../application/ports/training-dashboard.read-model'
+import { GetAthleteExecutionSeriesQuery } from '../../application/queries/get-athlete-execution-series/get-athlete-execution-series.query'
 import type { AthleteExecutionView } from '../../application/queries/get-athlete-execution/get-athlete-execution.handler'
 import { GetAthleteExecutionQuery } from '../../application/queries/get-athlete-execution/get-athlete-execution.query'
 import { GetExerciseSessionHistoryQuery } from '../../application/queries/get-exercise-session-history/get-exercise-session-history.query'
@@ -38,6 +43,7 @@ import { ExerciseStatsType } from '../types/exercise-stats.type'
 import { MesocycleSummaryType, MesocycleType } from '../types/mesocycle.type'
 import {
     AthleteExecutionType,
+    ExecutionBucketType,
     StrengthProgressionType,
     TrainingDistributionType,
     TrainingSummaryType,
@@ -153,6 +159,20 @@ export class AthleteViewResolver {
         // Adherence is measured against what the *caller* programmed, so the same
         // athlete scores differently for two coaches — deliberately.
         const query = new GetAthleteExecutionQuery(athleteId, user.userId, from, to)
+        return this.queryBus.execute(query)
+    }
+
+    @Query(() => [ExecutionBucketType], {
+        description:
+            "An athlete's adherence and programmed-vs-executed load, week by week — when they slipped, not just how much (coaches only).",
+    })
+    async athleteExecutionSeries(
+        @CurrentUser() user: AuthUser,
+        @Args('athleteId', { type: () => ID }, new ZodValidationPipe(uuidArg)) athleteId: string,
+        @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
+        @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
+    ): Promise<ExecutionBucketRow[]> {
+        const query = new GetAthleteExecutionSeriesQuery(athleteId, user.userId, from, to)
         return this.queryBus.execute(query)
     }
 

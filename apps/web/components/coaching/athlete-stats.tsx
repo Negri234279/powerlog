@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { useAthleteExecution, useAthleteExerciseStats, useAthleteSummary } from '@/lib/graphql/hooks/use-athlete'
 import type { Units } from '@/lib/units'
+import { AthleteCharts } from '@/components/coaching/stats/athlete-charts'
 import { ExecutionPanel } from '@/components/coaching/stats/execution-panel'
 import { ExerciseTable } from '@/components/coaching/stats/exercise-table'
 import { LastSessionHeader } from '@/components/coaching/stats/last-session-header'
@@ -117,6 +118,10 @@ export function AthleteStats({ athleteId, units }: { athleteId: string; units: U
                         <WorkloadStrip summary={summary.data ?? undefined} execution={execution.data} units={units} />
                     </>
                 ) : null}
+
+                {/* Charts own their loading/empty states per section, so a slow
+                    series never blocks the numbers above from rendering. */}
+                <AthleteCharts athleteId={athleteId} rows={rows} from={from} units={units} />
 
                 {stats.isLoading ? (
                     <Skeleton className="h-48 rounded-2xl" />

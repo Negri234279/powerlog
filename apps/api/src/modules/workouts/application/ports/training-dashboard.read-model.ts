@@ -98,6 +98,24 @@ export interface TrainingSummaryRow {
     bestDeadliftE1rmKg: number | null
 }
 
+/**
+ * One week of execution. The aggregate rates say *how much*; this says *when* —
+ * six good weeks then two missed ones and a scattered miss every week both come
+ * out as 82%, and they are not the same problem.
+ *
+ * The two halves keep the same scopes as `ExecutionRow`: adherence counts only
+ * this coach's programming, load covers every completed session that carried a
+ * plan.
+ */
+export interface ExecutionBucketRow {
+    /** Start of the week (Monday, UTC). */
+    bucketStart: Date
+    plannedCompleted: number
+    plannedMissed: number
+    plannedLoadKg: number
+    actualLoadKg: number
+}
+
 /** One time bucket (week) of training volume. */
 export interface VolumeBucketRow {
     /** Start of the bucket (week), UTC. */
@@ -150,4 +168,5 @@ export abstract class TrainingDashboardReadModel {
     abstract strengthSeries(filter: StrengthProgressionFilter): Promise<StrengthPointRow[]>
     abstract distribution(filter: TrainingAnalyticsFilter): Promise<TrainingDistribution>
     abstract execution(filter: ExecutionFilter): Promise<ExecutionRow>
+    abstract executionSeries(filter: ExecutionFilter): Promise<ExecutionBucketRow[]>
 }

@@ -282,6 +282,60 @@ describe('Athlete execution (integration)', () => {
         })
     })
 
+    describe('weekly series', () => {
+        it('should_show_when_the_athlete_slipped_not_just_how_much', async () => {
+            // Two weeks kept, one missed entirely — the same 2/3 that the
+            // aggregate rate would flatten into a single number.
+            await save(
+                sessionWith({ performedAt: new Date('2026-03-02T00:00:00Z'), plannedByUserId: COACH }),
+                sessionWith({ performedAt: new Date('2026-03-09T00:00:00Z'), plannedByUserId: COACH }),
+                sessionWith({
+                    performedAt: new Date('2026-03-16T00:00:00Z'),
+                    status: 'planned',
+                    plannedByUserId: COACH,
+                }),
+            )
+
+            const series = await dashboard.executionSeries(filter())
+
+            expect(series.map((w) => [w.bucketStart.toISOString(), w.plannedCompleted, w.plannedMissed])).toEqual([
+                ['2026-03-02T00:00:00.000Z', 1, 0],
+                ['2026-03-09T00:00:00.000Z', 1, 0],
+                ['2026-03-16T00:00:00.000Z', 0, 1],
+            ])
+        })
+
+        it('should_pair_programmed_load_against_executed_load_in_the_same_week', async () => {
+            await save(
+                sessionWith({
+                    performedAt: new Date('2026-03-02T00:00:00Z'),
+                    sets: [{ plannedWeight: 100, plannedReps: 5, weight: 90, reps: 5, outcome: 'success' }],
+                }),
+            )
+
+            const [week] = await dashboard.executionSeries(filter())
+
+            expect(week).toMatchObject({ plannedLoadKg: 500, actualLoadKg: 450 })
+        })
+
+        it('should_keep_a_week_that_only_has_one_of_the_two_halves', async () => {
+            // A missed session has no sets, so it exists only in the adherence
+            // query — the merge has to carry it through with zeroed load.
+            await save(
+                sessionWith({
+                    performedAt: new Date('2026-03-02T00:00:00Z'),
+                    status: 'planned',
+                    plannedByUserId: COACH,
+                }),
+            )
+
+            const series = await dashboard.executionSeries(filter())
+
+            expect(series).toHaveLength(1)
+            expect(series[0]).toMatchObject({ plannedMissed: 1, plannedLoadKg: 0, actualLoadKg: 0 })
+        })
+    })
+
     it('should_scope_everything_to_the_athlete_asked_about', async () => {
         const stranger = WorkoutSessionMother.withTree(squatId, { userId: randomUUID() })
         await save(stranger)
