@@ -56,6 +56,8 @@
         "becomeTitle": "Conviértete en coach",
         "becomeBody": "Entrena a otros atletas: crea sus planes, plantillas y mesociclos, y sigue su progreso.",
         "become": "Hazte coach",
+        "coachEmptyTitle": "Tu coach",
+        "coachEmptyBody": "Aún no tienes coach. Un coach te invita por email — acéptala y aparecerá aquí.",
         "becomeModalSubtitle": "Elige un plan de coach para empezar a entrenar atletas.",
         "becomeFree": "Empezar gratis",
         "athlete": "Atleta",

@@ -249,9 +249,41 @@ function InviteForm() {
     )
 }
 
-function BecomeCoachCard() {
+/**
+ * Become-a-coach entry point, prominence tuned to context: `hero` (glowing, full
+ * section) when it's the main move on an otherwise-empty page, and `mid` (a card,
+ * no glow) above "my coaches" — a deliberate growth push that stays visible without
+ * a glowing CTA that would compete with accepting a pending invitation.
+ */
+function BecomeCoachCard({ variant = 'hero' }: { variant?: 'hero' | 'mid' }) {
     const t = useTranslations('coaching')
     const [open, setOpen] = useState(false)
+
+    if (variant === 'mid') {
+        return (
+            <div className="flex flex-col items-start gap-4 rounded-2xl bg-bg/40 p-5 ring-1 ring-hairline sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/[0.05] text-text-dim ring-1 ring-hairline">
+                        <Users className="size-5" />
+                    </div>
+                    <div className="max-w-md">
+                        <h2 className="font-display text-h4 tracking-tight">{t('becomeTitle')}</h2>
+                        <p className="mt-1 text-sm text-text-dim">{t('becomeBody')}</p>
+                    </div>
+                </div>
+                <TrackedButton
+                    analyticsId="coaching-become-coach"
+                    type="button"
+                    onClick={() => setOpen(true)}
+                    className="shrink-0 rounded-full px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:ring-ember/40"
+                >
+                    {t('become')}
+                </TrackedButton>
+
+                <BecomeCoachModal open={open} onClose={() => setOpen(false)} />
+            </div>
+        )
+    }
 
     return (
         <SectionShell>
@@ -278,6 +310,18 @@ function BecomeCoachCard() {
     )
 }
 
+/** Athlete with no coach and no pending invite: teach how a coach relationship starts. */
+function NoCoachCard() {
+    const t = useTranslations('coaching')
+
+    return (
+        <SectionShell>
+            <SectionHeader title={t('coachEmptyTitle')} subtitle={t('coachesSubtitle')} />
+            <p className="text-sm text-text-faint">{t('coachEmptyBody')}</p>
+        </SectionShell>
+    )
+}
+
 export default function CoachingPage() {
     const t = useTranslations('coaching')
     const { data: me } = useMe()
@@ -290,6 +334,13 @@ export default function CoachingPage() {
     const pending = invitations.data ?? []
     const coachList = coaches.data ?? []
     const athleteList = athletes.data ?? []
+
+    // "Become a coach" is a deliberate growth push: hero on an otherwise-empty page
+    // (the main move there), otherwise a mid-weight card ABOVE "my coaches" — but
+    // always below a pending invitation, whose "Accept" keeps the one glowing CTA.
+    const hasCoach = coachList.length > 0
+    const hasPending = pending.length > 0
+    const athleteNeedsCoach = !isCoach && !hasCoach && !hasPending
 
     return (
         <div className="space-y-6">
@@ -335,6 +386,10 @@ export default function CoachingPage() {
                 </SectionShell>
             ) : null}
 
+            {/* Growth push: mid-weight, above "my coaches" — but never on the empty
+                page (there it's the hero below) nor above a pending invite. */}
+            {!isCoach && !athleteNeedsCoach ? <BecomeCoachCard variant="mid" /> : null}
+
             {coachList.length > 0 ? (
                 <SectionShell>
                     <SectionHeader title={t('coachesTitle')} subtitle={t('coachesSubtitle')} />
@@ -344,9 +399,11 @@ export default function CoachingPage() {
                         ))}
                     </div>
                 </SectionShell>
+            ) : athleteNeedsCoach ? (
+                <NoCoachCard />
             ) : null}
 
-            {!isCoach ? <BecomeCoachCard /> : null}
+            {athleteNeedsCoach ? <BecomeCoachCard variant="hero" /> : null}
         </div>
     )
 }
