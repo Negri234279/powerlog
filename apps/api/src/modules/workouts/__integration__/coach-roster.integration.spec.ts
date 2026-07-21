@@ -1,7 +1,5 @@
-import { randomUUID } from 'node:crypto'
-
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
-import { eq, sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { Pool } from 'pg'
@@ -10,8 +8,6 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import * as schema from '../../../database/schema'
 import { WorkoutSessionMother } from '../../../../tests/mothers/workouts'
 import { WorkoutSessionAggregate } from '../domain/entities/workout-session.entity'
-import { RepsVO } from '../domain/value-objects/reps.vo'
-import { WeightVO } from '../domain/value-objects/weight.vo'
 import { DrizzleCoachRosterReadModel } from '../infrastructure/persistence/read-models/drizzle-coach-roster.read-model'
 import { DrizzleWorkoutSessionRepository } from '../infrastructure/persistence/repositories/drizzle-workout-session.repository'
 
@@ -20,16 +16,16 @@ let pool: Pool
 let db: NodePgDatabase<typeof schema>
 let repository: DrizzleWorkoutSessionRepository
 let roster: DrizzleCoachRosterReadModel
-let squatId: string
 
 const NOW = new Date('2026-04-01T00:00:00.000Z')
 const COACH = '22222222-2222-4222-8222-222222222222'
 const ANA = '11111111-1111-4111-8111-111111111111'
 const BEN = '33333333-3333-4333-8333-333333333333'
 
+/** The roster only reads sessions, so these fixtures never need a single set. */
 function sessionFor(
     userId: string,
-    spec: { performedAt: Date; status?: 'planned' | 'completed'; plannedBy?: string; weight?: number; reps?: number },
+    spec: { performedAt: Date; status?: 'planned' | 'completed'; plannedBy?: string },
 ): WorkoutSessionAggregate {
     const session = WorkoutSessionMother.empty({
         userId,
@@ -37,15 +33,6 @@ function sessionFor(
         status: 'planned',
         plannedByUserId: spec.plannedBy ?? null,
     })
-
-    if (spec.weight !== undefined && spec.reps !== undefined) {
-        const entry = session.addEntry({ id: randomUUID(), exerciseId: squatId }, NOW)
-        session.addSet(
-            entry.id,
-            { id: randomUUID(), weight: WeightVO.create(spec.weight), reps: RepsVO.create(spec.reps) },
-            NOW,
-        )
-    }
 
     if ((spec.status ?? 'completed') === 'completed') session.complete(NOW)
 
@@ -67,8 +54,6 @@ beforeAll(async () => {
     await migrate(db, { migrationsFolder: './drizzle' })
     repository = new DrizzleWorkoutSessionRepository(db)
     roster = new DrizzleCoachRosterReadModel(db)
-    const [squat] = await db.select().from(schema.exercises).where(eq(schema.exercises.category, 'squat')).limit(1)
-    squatId = squat!.id
 }, 120_000)
 
 afterAll(async () => {
@@ -83,14 +68,14 @@ beforeEach(async () => {
 describe('Coach roster (integration)', () => {
     it('should_keep_each_athletes_rollups_to_themselves', async () => {
         await save(
-            sessionFor(ANA, { performedAt: new Date('2026-03-20T00:00:00Z'), weight: 100, reps: 5 }),
-            sessionFor(BEN, { performedAt: new Date('2026-03-21T00:00:00Z'), weight: 60, reps: 10 }),
+            sessionFor(ANA, { performedAt: new Date('2026-03-20T00:00:00Z'), plannedBy: COACH }),
+            sessionFor(BEN, { performedAt: new Date('2026-03-21T00:00:00Z'), status: 'planned', plannedBy: COACH }),
         )
 
         const rows = await roster.roster(filter([ANA, BEN]))
 
-        expect(rows.find((r) => r.athleteId === ANA)).toMatchObject({ volumeKg: 500, completedSessions: 1 })
-        expect(rows.find((r) => r.athleteId === BEN)).toMatchObject({ volumeKg: 600, completedSessions: 1 })
+        expect(rows.find((r) => r.athleteId === ANA)).toMatchObject({ plannedCompleted: 1, plannedMissed: 0 })
+        expect(rows.find((r) => r.athleteId === BEN)).toMatchObject({ plannedCompleted: 0, plannedMissed: 1 })
     })
 
     it('should_return_a_row_for_an_athlete_who_has_never_logged_anything', async () => {
@@ -99,7 +84,13 @@ describe('Coach roster (integration)', () => {
         const rows = await roster.roster(filter([ANA]))
 
         expect(rows).toHaveLength(1)
-        expect(rows[0]).toMatchObject({ athleteId: ANA, lastSessionAt: null, nextSessionAt: null, volumeKg: 0 })
+        expect(rows[0]).toMatchObject({
+            athleteId: ANA,
+            lastSessionAt: null,
+            nextSessionAt: null,
+            plannedCompleted: 0,
+            plannedMissed: 0,
+        })
     })
 
     it('should_not_touch_the_database_for_an_empty_roster', async () => {
@@ -116,7 +107,7 @@ describe('Coach roster (integration)', () => {
 
         const [row] = await roster.roster(filter([ANA]))
 
-        expect(row).toMatchObject({ plannedCompleted: 1, plannedMissed: 1, completedSessions: 1 })
+        expect(row).toMatchObject({ plannedCompleted: 1, plannedMissed: 1 })
     })
 
     it('should_look_past_the_range_for_the_last_and_next_session', async () => {
@@ -129,7 +120,6 @@ describe('Coach roster (integration)', () => {
 
         const [row] = await roster.roster(filter([ANA], { from: new Date('2026-03-01T00:00:00Z'), to: NOW }))
 
-        expect(row!.completedSessions).toBe(0)
         expect(row!.lastSessionAt?.toISOString()).toBe('2026-01-10T00:00:00.000Z')
         expect(row!.nextSessionAt?.toISOString()).toBe('2026-05-20T00:00:00.000Z')
     })
@@ -145,16 +135,15 @@ describe('Coach roster (integration)', () => {
         expect(row!.nextSessionAt?.toISOString()).toBe('2026-04-15T00:00:00.000Z')
     })
 
-    it('should_split_the_current_window_from_the_preceding_one_for_the_trend', async () => {
+    it('should_count_adherence_only_inside_the_selected_range', async () => {
         await save(
-            // Previous window: [Feb 1, Mar 1)
-            sessionFor(ANA, { performedAt: new Date('2026-02-10T00:00:00Z'), weight: 100, reps: 5 }),
-            // Current window: [Mar 1, Apr 1]
-            sessionFor(ANA, { performedAt: new Date('2026-03-10T00:00:00Z'), weight: 100, reps: 10 }),
+            // Outside the window: must not count against them now.
+            sessionFor(ANA, { performedAt: new Date('2026-01-10T00:00:00Z'), status: 'planned', plannedBy: COACH }),
+            sessionFor(ANA, { performedAt: new Date('2026-03-10T00:00:00Z'), status: 'planned', plannedBy: COACH }),
         )
 
         const [row] = await roster.roster(filter([ANA], { from: new Date('2026-03-01T00:00:00Z'), to: NOW }))
 
-        expect(row).toMatchObject({ volumeKg: 1000, previousVolumeKg: 500 })
+        expect(row!.plannedMissed).toBe(1)
     })
 })

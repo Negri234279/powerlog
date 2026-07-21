@@ -4,17 +4,15 @@ import { useLocale, useTranslations } from 'next-intl'
 
 import { cn } from '@/lib/cn'
 import { formatSessionDate } from '@/lib/format-date'
-import { formatWeight, type Units } from '@/lib/units'
-import { TrendChip } from '@/components/stats/trend-chip'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import type { RosterRow } from './use-roster'
 
 /** A metric cell that hasn't loaded yet — sized to its value so nothing shifts. */
-export function CellSkeleton({ wide = false }: { wide?: boolean }) {
+export function CellSkeleton() {
     return (
         <div className="flex flex-col items-end gap-1.5">
-            <Skeleton className={cn('h-4', wide ? 'w-16' : 'w-12')} />
+            <Skeleton className="h-4 w-12" />
             <Skeleton className="h-3 w-20" />
         </div>
     )
@@ -68,21 +66,6 @@ export function AdherenceCell({ row }: { row: RosterRow }) {
             </span>
             <span className="mt-0.5 block text-xs text-text-faint tabular-nums">
                 {t('adherenceDetail', { done: plannedCompleted, due: plannedDue })}
-            </span>
-        </div>
-    )
-}
-
-/** Volume in range with its trend. Null (not zero) when they didn't train. */
-export function VolumeCell({ row, units }: { row: RosterRow; units: Units }) {
-    if (!row.metrics) return <CellSkeleton wide />
-    if (row.metrics.volumeKg === null) return <Absent />
-
-    return (
-        <div>
-            <span className="tabular-nums text-text">{formatWeight(row.metrics.volumeKg, units)}</span>
-            <span className="mt-0.5 block">
-                <TrendChip change={row.metrics.volumeChange} />
             </span>
         </div>
     )

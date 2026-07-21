@@ -112,38 +112,12 @@ describe('GetCoachRosterHandler', () => {
             expect(entry!.adherenceRate).toBeNull()
         })
 
-        it('should_report_no_volume_rather_than_zero_when_nothing_was_trained', async () => {
-            // Zero volume across zero sessions is an absence, not a measurement —
-            // and "0 kg" in a roster reads as a catastrophic week.
-            const { handler } = setup({ completedSessions: 0, volumeKg: 0 })
-
-            const [entry] = await handler.execute(new GetCoachRosterQuery(COACH))
-
-            expect(entry!.volumeKg).toBeNull()
-        })
-
         it('should_count_whole_days_since_the_last_session', async () => {
             const { handler } = setup({ lastSessionAt: daysAgo(3) })
 
             const [entry] = await handler.execute(new GetCoachRosterQuery(COACH))
 
             expect(entry!.daysSinceLastSession).toBe(3)
-        })
-
-        it('should_signal_volume_direction_against_the_preceding_window', async () => {
-            const { handler } = setup({ completedSessions: 4, volumeKg: 11_200, previousVolumeKg: 10_000 })
-
-            const [entry] = await handler.execute(new GetCoachRosterQuery(COACH))
-
-            expect(entry!.volumeChange).toBe(0.12)
-        })
-
-        it('should_report_no_trend_rather_than_infinite_growth_from_a_standing_start', async () => {
-            const { handler } = setup({ completedSessions: 4, volumeKg: 8_000, previousVolumeKg: 0 })
-
-            const [entry] = await handler.execute(new GetCoachRosterQuery(COACH))
-
-            expect(entry!.volumeChange).toBeNull()
         })
     })
 })

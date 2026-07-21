@@ -34,11 +34,6 @@ export interface CoachRosterEntry {
     plannedMissed: number
     /** Sessions due (completed + missed) — the adherence denominator. */
     plannedDue: number
-    completedSessions: number
-    /** Null rather than 0 when nothing was trained: zero volume from zero sessions
-     *  is an absence, not a measurement. */
-    volumeKg: number | null
-    volumeChange: number | null
     attention: RosterAttention
 }
 
@@ -83,12 +78,6 @@ export class GetCoachRosterHandler implements IQueryHandler<GetCoachRosterQuery,
                 plannedCompleted: row.plannedCompleted,
                 plannedMissed: row.plannedMissed,
                 plannedDue,
-                completedSessions: row.completedSessions,
-                volumeKg: row.completedSessions === 0 ? null : row.volumeKg,
-                volumeChange:
-                    row.previousVolumeKg <= 0
-                        ? null
-                        : Math.round(((row.volumeKg - row.previousVolumeKg) / row.previousVolumeKg) * 10_000) / 10_000,
                 attention: attentionOf({
                     daysSinceLastSession,
                     daysCoached: Math.floor((now.getTime() - coachedSince.getTime()) / DAY_MS),

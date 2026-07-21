@@ -5,7 +5,6 @@ import { useMemo, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 import { type CoachUser, useMyAthleteRoster } from '@/lib/graphql/hooks/use-coaching'
-import type { Units } from '@/lib/units'
 import { QueryError } from '@/components/ui/query-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TrackedButton } from '@/components/ui/tracked'
@@ -35,7 +34,7 @@ function isoDaysAgo(days: number): string {
  * The default order is attention, not alphabetical: alphabetical serves lookup,
  * and lookup is what the search box is for.
  */
-export function AthleteRoster({ athletes, units }: { athletes: readonly CoachUser[]; units: Units }) {
+export function AthleteRoster({ athletes }: { athletes: readonly CoachUser[] }) {
     const t = useTranslations('coaching.roster')
 
     // 30 days, deliberately unlike the athlete detail's 90: this screen asks
@@ -135,7 +134,6 @@ export function AthleteRoster({ athletes, units }: { athletes: readonly CoachUse
                 >
                     <RosterTable
                         rows={rows}
-                        units={units}
                         sort={sort}
                         direction={direction}
                         onSort={onSort}

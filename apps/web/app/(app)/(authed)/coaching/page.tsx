@@ -17,7 +17,6 @@ import {
     usePendingInvitations,
 } from '@/lib/graphql/hooks/use-coaching'
 import { fullName } from '@/lib/user-name'
-import { unitsOf } from '@/lib/units'
 import { cn } from '@/lib/cn'
 import { AthleteRoster, RosterSkeleton } from '@/components/coaching/roster/athlete-roster'
 import { BecomeCoachModal } from '@/components/coaching/become-coach-modal'
@@ -299,7 +298,6 @@ export default function CoachingPage() {
     const t = useTranslations('coaching')
     const { data: me } = useMe()
     const isCoach = me?.role === 'coach'
-    const units = unitsOf(me?.units)
 
     const invitations = usePendingInvitations()
     const coaches = useMyCoaches()
@@ -343,7 +341,7 @@ export default function CoachingPage() {
                     ) : athleteList.length === 0 ? (
                         <p className="text-sm text-text-faint">{t('noAthletes')}</p>
                     ) : (
-                        <AthleteRoster athletes={athleteList} units={units} />
+                        <AthleteRoster athletes={athleteList} />
                     )}
                 </SectionShell>
             ) : null}

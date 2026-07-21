@@ -3,10 +3,9 @@
 import { useTranslations } from 'next-intl'
 
 import { cn } from '@/lib/cn'
-import type { Units } from '@/lib/units'
 import { TrackedButton } from '@/components/ui/tracked'
 
-import { AdherenceCell, LastSessionCell, NextSessionCell, VolumeCell } from './roster-cells'
+import { AdherenceCell, LastSessionCell, NextSessionCell } from './roster-cells'
 import { RosterIdentity } from './roster-identity'
 import { useAttentionReason } from './use-attention-reason'
 import type { RosterRow, RosterSort, SortDirection } from './use-roster'
@@ -17,7 +16,6 @@ const FIRST_DIRECTION: Record<RosterSort, SortDirection> = {
     name: 'asc',
     last: 'desc',
     adherence: 'asc',
-    volume: 'asc',
     next: 'asc',
 }
 
@@ -76,14 +74,12 @@ function SortableHeader({
  */
 export function RosterTable({
     rows,
-    units,
     sort,
     direction,
     onSort,
     sortDisabled,
 }: {
     rows: readonly RosterRow[]
-    units: Units
     sort: RosterSort
     direction: SortDirection
     onSort: (column: RosterSort, firstDirection: SortDirection) => void
@@ -99,7 +95,6 @@ export function RosterTable({
         { column: 'name', label: t('colAthlete') },
         { column: 'last', label: t('colLast') },
         { column: 'adherence', label: t('colAdherence') },
-        { column: 'volume', label: t('colVolume') },
         { column: 'next', label: t('colNext') },
     ]
 
@@ -156,9 +151,6 @@ export function RosterTable({
                                 </td>
                                 <td className="px-4 py-3 text-right">
                                     <AdherenceCell row={row} />
-                                </td>
-                                <td className="px-4 py-3 text-right">
-                                    <VolumeCell row={row} units={units} />
                                 </td>
                                 <td className="py-3 pl-4 pr-5 text-right">
                                     <NextSessionCell row={row} />

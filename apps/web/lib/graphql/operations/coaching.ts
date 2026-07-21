@@ -26,9 +26,6 @@ export const MyAthleteRosterDocument = graphql(`
             plannedCompleted
             plannedMissed
             plannedDue
-            completedSessions
-            volumeKg
-            volumeChange
             attention
         }
     }

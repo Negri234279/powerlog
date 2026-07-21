@@ -9,9 +9,6 @@ const EMPTY: Omit<CoachRosterRow, 'athleteId'> = {
     nextSessionAt: null,
     plannedCompleted: 0,
     plannedMissed: 0,
-    completedSessions: 0,
-    volumeKg: 0,
-    previousVolumeKg: 0,
 }
 
 /** Canned roster rows keyed by athleteId; records the last filter it received. */

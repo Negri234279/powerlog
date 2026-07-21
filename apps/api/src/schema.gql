@@ -599,7 +599,6 @@ type CoachRosterEntry {
 
   """When the coaching relationship started."""
   coachedSince: DateTime!
-  completedSessions: Int!
   daysSinceLastSession: Int
 
   """All-time; null when they have never trained."""
@@ -612,12 +611,6 @@ type CoachRosterEntry {
   """Completed + missed — the adherence denominator."""
   plannedDue: Int!
   plannedMissed: Int!
-
-  """Signed change vs the preceding window."""
-  volumeChange: Float
-
-  """Null (not 0) when nothing was trained in range."""
-  volumeKg: Float
 }
 
 type CoachUser {

@@ -6,7 +6,7 @@ import type { CoachUser, RosterEntry } from '@/lib/graphql/hooks/use-coaching'
 import { fullName } from '@/lib/user-name'
 
 export type RosterFilter = 'all' | 'attention' | 'thisWeek'
-export type RosterSort = 'attention' | 'name' | 'last' | 'adherence' | 'volume' | 'next'
+export type RosterSort = 'attention' | 'name' | 'last' | 'adherence' | 'next'
 export type SortDirection = 'asc' | 'desc'
 
 /** Identity and training rollups, merged. Metrics are absent until they load. */
@@ -79,8 +79,6 @@ function compare(a: RosterRow, b: RosterRow, sort: RosterSort, direction: SortDi
             return compareNullable(lastSessionKey(a), lastSessionKey(b), direction)
         case 'adherence':
             return compareNullable(a.metrics?.adherenceRate, b.metrics?.adherenceRate, direction)
-        case 'volume':
-            return compareNullable(a.metrics?.volumeKg, b.metrics?.volumeKg, direction)
         case 'next':
             return compareNullable(time(a.metrics?.nextSessionAt), time(b.metrics?.nextSessionAt), direction)
         case 'attention': {

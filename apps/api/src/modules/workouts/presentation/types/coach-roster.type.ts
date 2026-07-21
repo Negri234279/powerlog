@@ -17,7 +17,12 @@ registerEnumType(ROSTER_ATTENTION, {
 /**
  * One athlete's training rollups for their coach's roster. Identity (handle,
  * name, avatar) is **not** here: it belongs to coaching/profile, and the client
- * merges the two by `athleteId`. Weights are kg.
+ * merges the two by `athleteId`.
+ *
+ * Every field is a count of, or a date on, a **session** — nothing here reads
+ * `workout_sets`. That is deliberate: this query runs for a whole squad, so
+ * anything set-level would scale with years of logged training on a screen that
+ * only triages. Volume, outcomes and load live on the athlete detail page.
  *
  * `lastSessionAt` and `nextSessionAt` ignore the date range on purpose — a
  * future session can't fall inside a past window, and "last trained 40 days ago"
@@ -51,15 +56,6 @@ export class CoachRosterEntryType {
 
     @Field(() => Int, { description: 'Completed + missed — the adherence denominator.' })
     plannedDue!: number
-
-    @Field(() => Int)
-    completedSessions!: number
-
-    @Field(() => Float, { nullable: true, description: 'Null (not 0) when nothing was trained in range.' })
-    volumeKg?: number | null
-
-    @Field(() => Float, { nullable: true, description: 'Signed change vs the preceding window.' })
-    volumeChange?: number | null
 
     @Field(() => ROSTER_ATTENTION)
     attention!: RosterAttention

@@ -84,7 +84,6 @@
             "colAthlete": "Athlete",
             "colLast": "Last",
             "colAdherence": "Adherence",
-            "colVolume": "Volume",
             "colNext": "Next",
             "never": "Never",
             "daysShort": "{days} d",
@@ -105,7 +104,6 @@
                 "name": "Name",
                 "last": "Last session",
                 "adherence": "Adherence",
-                "volume": "Volume",
                 "next": "Next session"
             },
             "noAttention": "Nobody needs attention. Good work.",

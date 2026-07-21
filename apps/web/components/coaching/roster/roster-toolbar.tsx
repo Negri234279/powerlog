@@ -16,7 +16,7 @@ export const ROSTER_RANGES: ReadonlyArray<{ key: RangeKey; labelKey: string; day
     { key: 'all', labelKey: 'rangeAll', days: null },
 ]
 
-const SORTS: readonly RosterSort[] = ['attention', 'last', 'adherence', 'volume', 'next', 'name']
+const SORTS: readonly RosterSort[] = ['attention', 'last', 'adherence', 'next', 'name']
 
 /**
  * Search, status segments and range scope.

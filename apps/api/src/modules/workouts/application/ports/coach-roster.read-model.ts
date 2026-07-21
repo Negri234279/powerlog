@@ -29,11 +29,6 @@ export interface CoachRosterRow {
     /** Adherence to this coach's programming, in range. */
     plannedCompleted: number
     plannedMissed: number
-    /** Completed sessions in range, whoever programmed them. */
-    completedSessions: number
-    /** Σ weight·reps in range, and over the preceding window for the trend. */
-    volumeKg: number
-    previousVolumeKg: number
 }
 
 /**
@@ -41,6 +36,12 @@ export interface CoachRosterRow {
  * `TrainingDashboardReadModel` because every method there answers about **one**
  * user: this one is deliberately plural, and the difference is what keeps a
  * 40-athlete roster from becoming 40 round trips.
+ *
+ * It reads **only** `workout_sessions` — no join to sets. Every figure here is a
+ * count of, or a date on, a session, so the roster's cost stays flat as athletes
+ * accumulate years of logged sets. Anything needing set-level data (volume,
+ * outcomes, load) belongs to the athlete detail page, where it is asked for one
+ * athlete at a time.
  */
 export abstract class CoachRosterReadModel {
     abstract roster(filter: CoachRosterFilter): Promise<CoachRosterRow[]>
