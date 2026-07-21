@@ -210,7 +210,8 @@
         "leaveCoach": "Dejar",
         "leaveCoachTitle": "¿Dejar a este coach?",
         "leaveCoachBody": "@{coach} dejará de ver tu entrenamiento y de planificarte. Conservas todo lo que te planificó.",
-        "cancel": "Cancelar"
+        "cancel": "Cancelar",
+        "done": "Hecho"
     },
     "auth": {
         "login": {

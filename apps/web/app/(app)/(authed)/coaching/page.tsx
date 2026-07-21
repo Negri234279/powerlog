@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type SubmitEvent, useState } from 'react'
+import { useState } from 'react'
 
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
@@ -10,7 +10,6 @@ import {
     type PendingInvitation,
     useAcceptInvitation,
     useDeclineInvitation,
-    useInviteAthlete,
     useLeaveCoach,
     useMyAthletes,
     useMyCoaches,
@@ -18,12 +17,13 @@ import {
 } from '@/lib/graphql/hooks/use-coaching'
 import { fullName } from '@/lib/user-name'
 import { cn } from '@/lib/cn'
+import { InviteAthleteModal } from '@/components/coaching/invite-athlete-modal'
 import { AthleteRoster, RosterSkeleton } from '@/components/coaching/roster/athlete-roster'
 import { BecomeCoachModal } from '@/components/coaching/become-coach-modal'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { FormError } from '@/components/ui/form-error'
 import { TextsReveal } from '@/components/ui/texts-reveal'
-import { Users } from '@/components/ui/icons'
+import { Plus, Users } from '@/components/ui/icons'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 /** Round avatar chip: the profile image when present, else the handle initials. */
@@ -48,11 +48,14 @@ function SectionShell({ children }: { children: React.ReactNode }) {
     )
 }
 
-function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
+function SectionHeader({ title, subtitle, action }: { title: string; subtitle: string; action?: React.ReactNode }) {
     return (
-        <div className="mb-5">
-            <h2 className="font-display text-h3">{title}</h2>
-            <p className="mt-1 text-sm text-text-dim">{subtitle}</p>
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h2 className="font-display text-h3">{title}</h2>
+                <p className="mt-1 text-sm text-text-dim">{subtitle}</p>
+            </div>
+            {action}
         </div>
     )
 }
@@ -170,57 +173,6 @@ function CoachRow({ coach }: { coach: CoachUser }) {
     )
 }
 
-function InviteForm() {
-    const t = useTranslations('coaching')
-    const errorMessage = useErrorMessage()
-    const invite = useInviteAthlete()
-    const [email, setEmail] = useState('')
-    const [error, setError] = useState<string | null>(null)
-    const [sent, setSent] = useState<string | null>(null)
-
-    function onSubmit(event: SubmitEvent<HTMLFormElement>) {
-        event.preventDefault()
-        const value = email.trim()
-        if (value === '') return
-
-        setError(null)
-        setSent(null)
-        invite.mutate(value, {
-            onSuccess: () => {
-                setSent(value)
-                setEmail('')
-            },
-            onError: (err) => setError(errorMessage(err)),
-        })
-    }
-
-    return (
-        <form onSubmit={onSubmit} className="mb-6">
-            <p className="mb-2 text-sm text-text-dim">{t('inviteHint')}</p>
-            <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t('inviteEmailPlaceholder')}
-                    aria-label={t('inviteTitle')}
-                    className="w-full rounded-full bg-bg/60 px-4 py-2.5 text-sm text-text ring-1 ring-hairline outline-none transition-colors duration-300 placeholder:text-text-faint focus:ring-ember/50 sm:max-w-xs"
-                />
-                <TrackedButton
-                    analyticsId="coaching-invite-submit"
-                    type="submit"
-                    disabled={invite.isPending || email.trim() === ''}
-                    className="rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-50"
-                >
-                    {t('invite')}
-                </TrackedButton>
-            </div>
-            {sent ? <p className="mt-2 text-sm text-pr">{t('inviteSent', { athlete: sent })}</p> : null}
-            <FormError error={error} className="mt-2" />
-        </form>
-    )
-}
-
 /**
  * Become-a-coach entry point, prominence tuned to context: `hero` (glowing, full
  * section) when it's the main move on an otherwise-empty page, and `mid` (a card,
@@ -299,6 +251,8 @@ export default function CoachingPage() {
     const { data: me } = useMe()
     const isCoach = me?.role === 'coach'
 
+    const [inviting, setInviting] = useState(false)
+
     const invitations = usePendingInvitations()
     const coaches = useMyCoaches()
     const athletes = useMyAthletes(isCoach)
@@ -334,8 +288,20 @@ export default function CoachingPage() {
 
             {isCoach ? (
                 <SectionShell>
-                    <SectionHeader title={t('athletesTitle')} subtitle={t('athletesSubtitle')} />
-                    <InviteForm />
+                    <SectionHeader
+                        title={t('athletesTitle')}
+                        subtitle={t('athletesSubtitle')}
+                        action={
+                            <TrackedButton
+                                analyticsId="coaching-invite-open"
+                                type="button"
+                                onClick={() => setInviting(true)}
+                                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white/[0.06] px-4 py-2 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
+                            >
+                                <Plus className="size-4" /> {t('inviteTitle')}
+                            </TrackedButton>
+                        }
+                    />
                     {athletes.isLoading ? (
                         <RosterSkeleton />
                     ) : athleteList.length === 0 ? (
@@ -343,6 +309,8 @@ export default function CoachingPage() {
                     ) : (
                         <AthleteRoster athletes={athleteList} />
                     )}
+
+                    <InviteAthleteModal open={inviting} onClose={() => setInviting(false)} />
                 </SectionShell>
             ) : null}
 
