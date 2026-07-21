@@ -21,6 +21,7 @@ import {
 } from '@/lib/graphql/hooks/use-workouts'
 import { useCreateSessionFromTemplate } from '@/lib/graphql/hooks/use-workout-templates'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
+import { todayLocalIso } from '@/lib/format-date'
 import { formatWeight, type Units, unitsOf } from '@/lib/units'
 import { computeRange, formatDay, formatRange, type PeriodMode } from '@/lib/workouts/period'
 import { EditSessionModal } from '@/components/workouts/edit-session-modal'
@@ -44,14 +45,6 @@ function formatDate(iso: string, locale: string): string {
         month: 'short',
         year: 'numeric',
     })
-}
-
-/** Today as YYYY-MM-DD in the user's local timezone (for <input type="date">). */
-function todayLocalIso(): string {
-    const d = new Date()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${d.getFullYear()}-${month}-${day}`
 }
 
 type StatusFilter = 'all' | 'planned' | 'completed'
