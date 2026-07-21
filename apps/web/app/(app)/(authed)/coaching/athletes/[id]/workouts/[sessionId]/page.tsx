@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 import { useEffect } from 'react'
 
-import { useMyAthletes } from '@/lib/graphql/hooks/use-coaching'
+import { useMyAthlete } from '@/lib/graphql/hooks/use-coaching'
 import { SessionEditor } from '@/components/workouts/session-editor'
 
 /**
@@ -29,9 +29,8 @@ export default function AthleteSessionPage() {
         }
     }, [athleteId, queryClient])
 
-    // Already cached from the coaching pages; falls back to a generic label.
-    const { data: athletes } = useMyAthletes()
-    const athlete = athletes?.find((candidate) => candidate.userId === athleteId)
+    // Already cached from the athlete detail header; falls back to a generic label.
+    const { data: athlete } = useMyAthlete(athleteId)
 
     return (
         <SessionEditor

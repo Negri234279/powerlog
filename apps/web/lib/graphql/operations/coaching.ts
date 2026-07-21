@@ -14,6 +14,18 @@ export const MyAthletesDocument = graphql(`
     }
 `)
 
+export const MyAthleteDocument = graphql(`
+    query MyAthlete($athleteId: ID!) {
+        myAthlete(athleteId: $athleteId) {
+            userId
+            username
+            firstName
+            lastName
+            avatarUrl
+        }
+    }
+`)
+
 export const MyCoachesDocument = graphql(`
     query MyCoaches {
         myCoaches {

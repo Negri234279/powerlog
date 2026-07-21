@@ -61,19 +61,20 @@
         "becomeModalSubtitle": "Pick a coaching plan to start training athletes.",
         "becomeFree": "Start free",
         "athlete": "Athlete",
+        "athleteNotFoundTitle": "Athlete not found",
+        "athleteNotFoundBody": "They are no longer one of your athletes, or the link has expired.",
         "backToCoaching": "Back to coaching",
         "coachesOnly": "Only available to coaches.",
         "noteTitle": "Private note",
         "noteSubtitle": "Only you can see this note about the athlete.",
         "notePlaceholder": "Observations, goals, injuries, preferences…",
-        "noteSave": "Save note",
+        "noteUnsaved": "Not saved",
         "noteSaving": "Saving…",
         "noteSaved": "Saved",
         "tab": {
             "training": "Training",
             "stats": "Stats",
-            "plan": "Plan",
-            "note": "Note"
+            "plan": "Plan"
         },
         "filter": {
             "all": "All",

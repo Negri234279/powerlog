@@ -98,6 +98,7 @@ type Documents = {
     "\n    mutation AdminAssignSubscription($input: AssignSubscriptionInput!) {\n        adminAssignSubscription(input: $input)\n    }\n": typeof types.AdminAssignSubscriptionDocument,
     "\n    mutation AdminRevokeSubscription($id: ID!) {\n        adminRevokeSubscription(id: $id)\n    }\n": typeof types.AdminRevokeSubscriptionDocument,
     "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": typeof types.MyAthletesDocument,
+    "\n    query MyAthlete($athleteId: ID!) {\n        myAthlete(athleteId: $athleteId) {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": typeof types.MyAthleteDocument,
     "\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": typeof types.MyCoachesDocument,
     "\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n": typeof types.PendingInvitationsDocument,
     "\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n": typeof types.BecomeCoachDocument,
@@ -240,6 +241,7 @@ const documents: Documents = {
     "\n    mutation AdminAssignSubscription($input: AssignSubscriptionInput!) {\n        adminAssignSubscription(input: $input)\n    }\n": types.AdminAssignSubscriptionDocument,
     "\n    mutation AdminRevokeSubscription($id: ID!) {\n        adminRevokeSubscription(id: $id)\n    }\n": types.AdminRevokeSubscriptionDocument,
     "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": types.MyAthletesDocument,
+    "\n    query MyAthlete($athleteId: ID!) {\n        myAthlete(athleteId: $athleteId) {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": types.MyAthleteDocument,
     "\n    query MyCoaches {\n        myCoaches {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": types.MyCoachesDocument,
     "\n    query PendingInvitations {\n        pendingInvitations {\n            id\n            coachId\n            coachUsername\n            createdAt\n        }\n    }\n": types.PendingInvitationsDocument,
     "\n    mutation BecomeCoach {\n        becomeCoach {\n            id\n            role\n        }\n    }\n": types.BecomeCoachDocument,
@@ -648,6 +650,10 @@ export function graphql(source: "\n    mutation AdminRevokeSubscription($id: ID!
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n"): (typeof documents)["\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query MyAthlete($athleteId: ID!) {\n        myAthlete(athleteId: $athleteId) {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n"): (typeof documents)["\n    query MyAthlete($athleteId: ID!) {\n        myAthlete(athleteId: $athleteId) {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

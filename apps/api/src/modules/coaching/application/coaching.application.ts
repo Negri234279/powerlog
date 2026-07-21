@@ -10,6 +10,7 @@ import { AdminCoachingStatsHandler } from './queries/admin-coaching-stats/admin-
 import { GetAthleteNoteHandler } from './queries/get-athlete-note/get-athlete-note.handler'
 import { GetCoachInvitationPreviewHandler } from './queries/get-coach-invitation-preview/get-coach-invitation-preview.handler'
 import { GetUserCoachingHandler } from './queries/get-user-coaching/get-user-coaching.handler'
+import { MyAthleteHandler } from './queries/my-athlete/my-athlete.handler'
 import { MyAthletesHandler } from './queries/my-athletes/my-athletes.handler'
 import { MyCoachesHandler } from './queries/my-coaches/my-coaches.handler'
 import { PendingInvitationsHandler } from './queries/pending-invitations/pending-invitations.handler'
@@ -29,6 +30,7 @@ export const COACHING_COMMAND_HANDLERS = [
 export const COACHING_QUERY_HANDLERS = [
     MyCoachesHandler,
     MyAthletesHandler,
+    MyAthleteHandler,
     PendingInvitationsHandler,
     GetAthleteNoteHandler,
     GetCoachInvitationPreviewHandler,

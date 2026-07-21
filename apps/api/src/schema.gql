@@ -1826,6 +1826,11 @@ type Query {
   """
   myAiUsage: AiUsageSummary!
 
+  """
+  One athlete linked to the calling coach (coaches only). Null when they are not your athlete — so a stale link renders as not-found instead of loading the whole roster to look them up.
+  """
+  myAthlete(athleteId: ID!): CoachUser
+
   """Athletes linked to the caller."""
   myAthletes: [CoachUser!]!
 

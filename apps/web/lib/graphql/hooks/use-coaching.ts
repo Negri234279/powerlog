@@ -10,6 +10,7 @@ import {
     DeclineInvitationDocument,
     InviteAthleteDocument,
     LeaveCoachDocument,
+    MyAthleteDocument,
     MyAthletesDocument,
     MyCoachesDocument,
     PendingInvitationsDocument,
@@ -21,6 +22,7 @@ export type CoachUser = MyAthletesQuery['myAthletes'][number]
 export type PendingInvitation = PendingInvitationsQuery['pendingInvitations'][number]
 
 const ATHLETES_KEY = ['coaching', 'athletes'] as const
+const athleteKey = (athleteId: string) => ['coaching', 'athlete', athleteId] as const
 const COACHES_KEY = ['coaching', 'coaches'] as const
 const PENDING_KEY = ['coaching', 'pendingInvitations'] as const
 
@@ -30,6 +32,20 @@ export function useMyAthletes(enabled = true) {
         queryKey: ATHLETES_KEY,
         queryFn: async () => (await gqlRequest(MyAthletesDocument)).myAthletes,
         enabled,
+        retry: false,
+    })
+}
+
+/**
+ * One athlete linked to the caller, by id (coaches only). Resolves `null` when
+ * they are not — a stale link, or an athlete who left — which the caller renders
+ * as a not-found state. Prefer this over filtering `useMyAthletes()`: that one
+ * can't tell "still loading the roster" apart from "not on it".
+ */
+export function useMyAthlete(athleteId: string) {
+    return useQuery({
+        queryKey: athleteKey(athleteId),
+        queryFn: async () => (await gqlRequest(MyAthleteDocument, { athleteId })).myAthlete,
         retry: false,
     })
 }
@@ -144,6 +160,7 @@ export function useRemoveAthlete() {
         mutationFn: (athleteId: string) => gqlRequest(RemoveAthleteDocument, { athleteId }),
         onSuccess: (_data, athleteId) => {
             void qc.invalidateQueries({ queryKey: ATHLETES_KEY })
+            void qc.invalidateQueries({ queryKey: athleteKey(athleteId) })
             void qc.invalidateQueries({ queryKey: ['athlete', athleteId] })
         },
     })
