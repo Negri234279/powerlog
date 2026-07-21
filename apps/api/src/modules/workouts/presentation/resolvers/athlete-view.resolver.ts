@@ -14,6 +14,8 @@ import type { ExerciseSessionHistoryRow } from '../../application/ports/exercise
 import type { ExerciseStatsRow } from '../../application/ports/exercise-stats.read-model'
 import type { MesocycleSummaryRow } from '../../application/ports/mesocycle-list.read-model'
 import type { TrainingDistribution, VolumeBucketRow } from '../../application/ports/training-dashboard.read-model'
+import type { AthleteExecutionView } from '../../application/queries/get-athlete-execution/get-athlete-execution.handler'
+import { GetAthleteExecutionQuery } from '../../application/queries/get-athlete-execution/get-athlete-execution.query'
 import { GetExerciseSessionHistoryQuery } from '../../application/queries/get-exercise-session-history/get-exercise-session-history.query'
 import { GetExerciseStatsQuery } from '../../application/queries/get-exercise-stats/get-exercise-stats.query'
 import type { MesocycleView } from '../../application/queries/get-mesocycle/get-mesocycle.handler'
@@ -35,6 +37,7 @@ import { ExerciseSessionHistoryType } from '../types/exercise-session-history.ty
 import { ExerciseStatsType } from '../types/exercise-stats.type'
 import { MesocycleSummaryType, MesocycleType } from '../types/mesocycle.type'
 import {
+    AthleteExecutionType,
     StrengthProgressionType,
     TrainingDistributionType,
     TrainingSummaryType,
@@ -134,6 +137,22 @@ export class AthleteViewResolver {
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
     ): Promise<TrainingSummaryView> {
         const query = new GetTrainingSummaryQuery(athleteId, from, to)
+        return this.queryBus.execute(query)
+    }
+
+    @Query(() => AthleteExecutionType, {
+        description:
+            "How an athlete is executing: adherence to THIS coach's programming, set outcomes and load compliance across all their training, plus period-over-period trends (coaches only).",
+    })
+    async athleteExecution(
+        @CurrentUser() user: AuthUser,
+        @Args('athleteId', { type: () => ID }, new ZodValidationPipe(uuidArg)) athleteId: string,
+        @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
+        @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
+    ): Promise<AthleteExecutionView> {
+        // Adherence is measured against what the *caller* programmed, so the same
+        // athlete scores differently for two coaches — deliberately.
+        const query = new GetAthleteExecutionQuery(athleteId, user.userId, from, to)
         return this.queryBus.execute(query)
     }
 

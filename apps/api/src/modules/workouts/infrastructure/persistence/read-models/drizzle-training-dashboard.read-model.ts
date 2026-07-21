@@ -1,8 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, desc, eq, gte, isNotNull, lte, type SQL, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, isNotNull, isNull, lt, lte, type SQL, sql } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import {
+    type ExecutionFilter,
+    type ExecutionRow,
     type StrengthPointRow,
     type StrengthProgressionFilter,
     type TrainingAnalyticsFilter,
@@ -80,6 +82,126 @@ export class DrizzleTrainingDashboardReadModel extends TrainingDashboardReadMode
             bestSquatE1rmKg: row?.bestSquatE1rmKg == null ? null : Number(row.bestSquatE1rmKg),
             bestBenchE1rmKg: row?.bestBenchE1rmKg == null ? null : Number(row.bestBenchE1rmKg),
             bestDeadliftE1rmKg: row?.bestDeadliftE1rmKg == null ? null : Number(row.bestDeadliftE1rmKg),
+        }
+    }
+
+    /**
+     * Adherence, set outcomes, load compliance and period-over-period trends.
+     *
+     * Three queries rather than one because they can't share a FROM. Adherence
+     * has to see sessions that were planned and never touched, and those have no
+     * qualifying sets — the set-joined aggregations above (`summary`, and every
+     * other method here) structurally cannot count them: the inner join drops
+     * the row. The all-time bounds can't share either, since they must survive
+     * the range filter that defines the other two.
+     *
+     * Current and previous windows come back from one pass each via FILTER, so
+     * the trend costs no extra round trip.
+     */
+    async execution(filter: ExecutionFilter): Promise<ExecutionRow> {
+        const { from, to, previousFrom } = filter
+
+        // The union of both windows, so one scan serves current + previous. Only
+        // the set-joined query narrows this way; the session-level one can't (see
+        // below), and it doesn't need to — it reads one row per session.
+        const widest: SQL[] = [eq(workoutSessions.userId, filter.userId)]
+        const lowerBound = previousFrom ?? from
+        if (lowerBound) widest.push(gte(workoutSessions.performedAt, lowerBound))
+        if (to) widest.push(lte(workoutSessions.performedAt, to))
+
+        const inRange: SQL[] = []
+        if (from) inRange.push(gte(workoutSessions.performedAt, from))
+        if (to) inRange.push(lte(workoutSessions.performedAt, to))
+
+        // An unbounded range filters nothing, but FILTER still needs a predicate.
+        const rangeOnly: SQL = inRange.length > 0 ? and(...inRange)! : sql`true`
+
+        // `previousFrom` absent ⇒ unbounded range ⇒ no preceding window at all.
+        // `false` keeps the FILTER valid while matching nothing.
+        const inPrevious: SQL = previousFrom
+            ? and(gte(workoutSessions.performedAt, previousFrom), lt(workoutSessions.performedAt, from!))!
+            : sql`false`
+
+        const completed = eq(workoutSessions.status, 'completed')
+        const mine = eq(workoutSessions.plannedByUserId, filter.plannedByUserId)
+        const countWhere = (...parts: SQL[]) => sql<number>`count(*) filter (where ${and(...parts)})::int`
+        const ranged = (...parts: SQL[]) => and(...parts, ...inRange)!
+
+        const sessionAggregates = this.db
+            .select({
+                plannedCompleted: countWhere(ranged(completed, mine)),
+                plannedMissed: countWhere(
+                    ranged(eq(workoutSessions.status, 'planned'), mine, lt(workoutSessions.performedAt, filter.now)),
+                ),
+                // Not `ranged`: see ExecutionRow.plannedUpcoming.
+                plannedUpcoming: countWhere(
+                    and(eq(workoutSessions.status, 'planned'), mine, gte(workoutSessions.performedAt, filter.now))!,
+                ),
+                completedSessions: countWhere(ranged(completed)),
+                previousCompletedSessions: countWhere(and(completed, inPrevious)!),
+            })
+            .from(workoutSessions)
+            // Scoped to the athlete and nothing else: every window lives in a
+            // FILTER instead. A `to` in this WHERE would drop the future sessions
+            // `plannedUpcoming` exists to count — a range ending today would scan
+            // them away before the FILTER ever saw them.
+            .where(eq(workoutSessions.userId, filter.userId))
+
+        // Sets carry no date of their own — every window test rides on the
+        // session they belong to, hence the same two joins as everywhere else.
+        const volume = sql`${workoutSets.weightKg} * ${workoutSets.reps}`
+        const plannedLoad = sql`${workoutSets.plannedWeightKg} * ${workoutSets.plannedReps}`
+        // A planned set left unperformed inside a completed session counts as
+        // zero executed, not as absent — that gap is exactly what this measures.
+        const actualLoad = sql`coalesce(${workoutSets.weightKg}, 0) * coalesce(${workoutSets.reps}, 0)`
+        const hasPlan = and(isNotNull(workoutSets.plannedWeightKg), isNotNull(workoutSets.plannedReps))!
+        const sumWhere = (expr: SQL, condition: SQL) =>
+            sql<number>`coalesce(sum(${expr}) filter (where ${condition}), 0)`
+
+        const setAggregates = this.db
+            .select({
+                volumeKg: sumWhere(volume, rangeOnly),
+                previousVolumeKg: sumWhere(volume, inPrevious),
+                successSets: countWhere(ranged(eq(workoutSets.outcome, 'success'))),
+                failedSets: countWhere(ranged(eq(workoutSets.outcome, 'failed'))),
+                pendingSets: countWhere(
+                    ranged(completed, isNull(workoutSets.outcome), isNotNull(workoutSets.weightKg)),
+                ),
+                plannedLoadKg: sumWhere(plannedLoad, ranged(completed, hasPlan)),
+                actualLoadKg: sumWhere(actualLoad, ranged(completed, hasPlan)),
+            })
+            .from(workoutSets)
+            .innerJoin(workoutExerciseEntries, eq(workoutExerciseEntries.id, workoutSets.entryId))
+            .innerJoin(workoutSessions, eq(workoutSessions.id, workoutExerciseEntries.sessionId))
+            .where(and(...widest))
+
+        // No range filter on purpose: "last trained 40 days ago" is precisely the
+        // fact a 30-day window would hide, and it's the one a coach needs most.
+        const allTimeBounds = this.db
+            .select({
+                firstSessionAt: sql<Date | null>`min(${workoutSessions.performedAt}) filter (where ${completed})`,
+                lastSessionAt: sql<Date | null>`max(${workoutSessions.performedAt}) filter (where ${completed})`,
+            })
+            .from(workoutSessions)
+            .where(eq(workoutSessions.userId, filter.userId))
+
+        const [[sessions], [sets], [bounds]] = await Promise.all([sessionAggregates, setAggregates, allTimeBounds])
+
+        return {
+            plannedCompleted: Number(sessions?.plannedCompleted ?? 0),
+            plannedMissed: Number(sessions?.plannedMissed ?? 0),
+            plannedUpcoming: Number(sessions?.plannedUpcoming ?? 0),
+            completedSessions: Number(sessions?.completedSessions ?? 0),
+            previousCompletedSessions: Number(sessions?.previousCompletedSessions ?? 0),
+            successSets: Number(sets?.successSets ?? 0),
+            failedSets: Number(sets?.failedSets ?? 0),
+            pendingSets: Number(sets?.pendingSets ?? 0),
+            plannedLoadKg: Number(sets?.plannedLoadKg ?? 0),
+            actualLoadKg: Number(sets?.actualLoadKg ?? 0),
+            volumeKg: Number(sets?.volumeKg ?? 0),
+            previousVolumeKg: Number(sets?.previousVolumeKg ?? 0),
+            firstSessionAt: bounds?.firstSessionAt == null ? null : new Date(bounds.firstSessionAt),
+            lastSessionAt: bounds?.lastSessionAt == null ? null : new Date(bounds.lastSessionAt),
         }
     }
 

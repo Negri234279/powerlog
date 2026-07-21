@@ -8,16 +8,16 @@
 
 ## Decisiones cerradas (no recuestionar sin motivo)
 
-| Tema | Decisión |
-| --- | --- |
-| Transporte del chat | **WebSocket dedicado** (elegido explícitamente por el usuario sobre el nudge-SSE recomendado). Ver el reparto de responsabilidades abajo — no sustituye el SSE existente. |
-| Proceso y despliegue | **HTTP y WS en el mismo proceso** (`powerlog-api`), expuesto en `api.powerlog.negri.es`. Multi-app solo para los futuros workers asíncronos. Detalle y alternativas descartadas en "Infraestructura y despliegue". |
-| Escrituras (enviar mensaje, marcar leído/entregado) | Pasan **siempre por CommandBus**, nunca por el gateway directamente. El WS es una puerta de entrada más, no un segundo camino a la base de datos. |
-| Vista del atleta | **Página de detalle simétrica**, `/coaching/coaches/[id]` (hoy no existe — el atleta solo ve una fila sin enlace en `/coaching`). |
+| Tema                                                      | Decisión                                                                                                                                                                                                                                                                                                                         |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transporte del chat                                       | **WebSocket dedicado** (elegido explícitamente por el usuario sobre el nudge-SSE recomendado). Ver el reparto de responsabilidades abajo — no sustituye el SSE existente.                                                                                                                                                        |
+| Proceso y despliegue                                      | **HTTP y WS en el mismo proceso** (`powerlog-api`), expuesto en `api.powerlog.negri.es`. Multi-app solo para los futuros workers asíncronos. Detalle y alternativas descartadas en "Infraestructura y despliegue".                                                                                                               |
+| Escrituras (enviar mensaje, marcar leído/entregado)       | Pasan **siempre por CommandBus**, nunca por el gateway directamente. El WS es una puerta de entrada más, no un segundo camino a la base de datos.                                                                                                                                                                                |
+| Vista del atleta                                          | **Página de detalle simétrica**, `/coaching/coaches/[id]` (hoy no existe — el atleta solo ve una fila sin enlace en `/coaching`).                                                                                                                                                                                                |
 | Historial tras desvincular (`removeAthlete`/`leaveCoach`) | **Se conserva para ambas partes, en solo lectura.** Mientras el vínculo existe: lectura y escritura. Roto el vínculo: la conversación sigue visible para los dos, pero nadie puede enviar más. Si se re-vincula, la misma conversación reabre para escritura (identidad estable por el par coach↔atleta, no por el link activo). |
-| Alcance v1 | **Paridad completa de UI**: texto, contador de no leídos, presencia (online / última vez), doble check de entregado/leído, indicador de "escribiendo…". Ficheros/imágenes **fuera de esta fase** (ver más abajo cómo se deja el hueco). |
-| Presencia | **Transversal, no solo del chat.** Sirve al chat (punto verde en la cabecera de la conversación) y al admin (`lastSeenAt` real en vez del proxy actual). Un único socket por pestaña, abierto para **todo** usuario autenticado — mismo razonamiento que ya vale para el SSE actual (ver "Punto de partida"). |
-| SSE existente | **No se toca.** Notificaciones, billing, coaching (`session_planned`, etc.) siguen sobre SSE tal cual. El WS nuevo es un canal aparte, exclusivamente para presencia + chat. Fusionarlo con SSE es un refactor de transporte que no corresponde a este bloque — se deja anotado en "Fuera de alcance". |
+| Alcance v1                                                | **Paridad completa de UI**: texto, contador de no leídos, presencia (online / última vez), doble check de entregado/leído, indicador de "escribiendo…". Ficheros/imágenes **fuera de esta fase** (ver más abajo cómo se deja el hueco).                                                                                          |
+| Presencia                                                 | **Transversal, no solo del chat.** Sirve al chat (punto verde en la cabecera de la conversación) y al admin (`lastSeenAt` real en vez del proxy actual). Un único socket por pestaña, abierto para **todo** usuario autenticado — mismo razonamiento que ya vale para el SSE actual (ver "Punto de partida").                    |
+| SSE existente                                             | **No se toca.** Notificaciones, billing, coaching (`session_planned`, etc.) siguen sobre SSE tal cual. El WS nuevo es un canal aparte, exclusivamente para presencia + chat. Fusionarlo con SSE es un refactor de transporte que no corresponde a este bloque — se deja anotado en "Fuera de alcance".                           |
 
 ## Punto de partida (ya existe — no rehacer)
 
@@ -33,10 +33,10 @@
   cross-instancia ya resuelto — `InMemoryRealtimeBus` de serie,
   `RedisRealtimeBus` cuando `REDIS_URL` está puesto (pub/sub, delivery
   local-first, `origin` para no auto-entregarse). El gateway de chat necesita el
-  mismo problema resuelto para sus *rooms*; no se reutiliza el bus tal cual
+  mismo problema resuelto para sus _rooms_; no se reutiliza el bus tal cual
   (está tipado a `RealtimeEvent` de un solo campo) pero si se usa Socket.IO, su
   **adaptador Redis oficial** (`@socket.io/redis-adapter`) resuelve exactamente
-  esto para *rooms* — mismo interruptor por `REDIS_URL` que ya usa el resto del
+  esto para _rooms_ — mismo interruptor por `REDIS_URL` que ya usa el resto del
   proyecto (sin Redis: adaptador en memoria de Socket.IO, un solo proceso).
 - **`CoachLinks`** (`shared/contracts/coach-links.ts`): puerto ya exportado por
   `coaching` (`areLinked(coachId, athleteId)`), consumido hoy por `workouts`.
@@ -142,39 +142,39 @@ sabe hacer bien:
 - **WebSocket** (`chat.gateway.ts`, Socket.IO): el canal **vivo**. No toca la
   base de datos directamente — cada evento que causa un cambio de estado
   despacha el mismo comando (`chat:send` → `CommandBus.execute(new
-  SendChatMessageCommand(...))`), exactamente como hoy `RealtimeHub.publish()`
-  lo llaman los *event handlers*, nunca al revés. Esto es lo que hace seguro
+SendChatMessageCommand(...))`), exactamente como hoy `RealtimeHub.publish()`
+  lo llaman los _event handlers_, nunca al revés. Esto es lo que hace seguro
   añadir un segundo transporte: la lógica de negocio no se duplica, solo la
   puerta de entrada.
 
-  A diferencia del hub SSE (deliberadamente "tonto": solo tipo, sin payload,
-  porque cualquiera puede tener el stream abierto y la autorización real vive
-  en los resolvers), **el gateway de chat sí autoriza por sala**: un socket
-  solo hace `join` a `conversation:<id>` después de que el servidor compruebe
-  que el usuario es `coachId`/`athleteId` de esa conversación. Por eso aquí sí
-  es seguro llevar el cuerpo del mensaje en el evento — no es el mismo
-  contrato que el SSE global, es un canal ya autorizado por sala.
+    A diferencia del hub SSE (deliberadamente "tonto": solo tipo, sin payload,
+    porque cualquiera puede tener el stream abierto y la autorización real vive
+    en los resolvers), **el gateway de chat sí autoriza por sala**: un socket
+    solo hace `join` a `conversation:<id>` después de que el servidor compruebe
+    que el usuario es `coachId`/`athleteId` de esa conversación. Por eso aquí sí
+    es seguro llevar el cuerpo del mensaje en el evento — no es el mismo
+    contrato que el SSE global, es un canal ya autorizado por sala.
 
-  **Eventos servidor → cliente**: `chat:message` (mensaje completo, a la sala
-  de la conversación) · `chat:typing` (efímero, no se persiste) ·
-  `chat:delivered` / `chat:read` (avance del cursor del otro participante, para
-  que el check pase a azul en vivo) · `presence:update` (`{ userId, online,
-  lastSeenAt }`, **solo** a los sockets de usuarios vinculados a ese `userId` —
-  nunca un broadcast global).
+    **Eventos servidor → cliente**: `chat:message` (mensaje completo, a la sala
+    de la conversación) · `chat:typing` (efímero, no se persiste) ·
+    `chat:delivered` / `chat:read` (avance del cursor del otro participante, para
+    que el check pase a azul en vivo) · `presence:update` (`{ userId, online,
+lastSeenAt }`, **solo** a los sockets de usuarios vinculados a ese `userId` —
+    nunca un broadcast global).
 
-  **Eventos cliente → servidor**: `chat:join` (con comprobación de
-  autorización) · `chat:send` · `chat:typing` (TTL de servidor ~6 s por si el
-  cliente muere a media escritura) · `chat:delivered-ack` /
-  `chat:read-ack`.
+    **Eventos cliente → servidor**: `chat:join` (con comprobación de
+    autorización) · `chat:send` · `chat:typing` (TTL de servidor ~6 s por si el
+    cliente muere a media escritura) · `chat:delivered-ack` /
+    `chat:read-ack`.
 
-  **Autenticación del handshake**: mismo `TokenSigner.verifyAccessToken` que
-  usa `JwtCookieGuard`, adaptado a un guard de WS que lee la cookie de
-  `socket.handshake.headers.cookie` en vez de `req.cookies` — no se reinventa
-  la verificación, solo el punto donde se lee el token.
+    **Autenticación del handshake**: mismo `TokenSigner.verifyAccessToken` que
+    usa `JwtCookieGuard`, adaptado a un guard de WS que lee la cookie de
+    `socket.handshake.headers.cookie` en vez de `req.cookies` — no se reinventa
+    la verificación, solo el punto donde se lee el token.
 
-  **Validación**: los mismos esquemas zod que ya existirían para los
-  argumentos GraphQL, aplicados también en el gateway antes de construir el
-  comando — el payload de un socket es entrada externa igual que un POST.
+    **Validación**: los mismos esquemas zod que ya existirían para los
+    argumentos GraphQL, aplicados también en el gateway antes de construir el
+    comando — el payload de un socket es entrada externa igual que un POST.
 
 ## `src/presence/` (módulo transversal nuevo, fuera de `src/modules/`)
 
@@ -187,7 +187,7 @@ tratar como un módulo de negocio ajeno.
   conexión realtime del usuario, el chat es una sala más dentro de ella.
 - **Al conectar**: verificar JWT, incrementar un contador de refs por
   `userId` (Map en memoria de un proceso; en varios, un contador Redis para
-  saber "¿está online en *algún* proceso?" — mismo interruptor por
+  saber "¿está online en _algún_ proceso?" — mismo interruptor por
   `REDIS_URL`). Resolver el conjunto de "interesados" (para un coach: sus
   atletas vía `CoachLinkRepository.athleteIdsOf`; para un atleta: sus coaches)
   y emitirles `presence:update online=true` — nunca un broadcast global, ni
@@ -195,7 +195,7 @@ tratar como un módulo de negocio ajeno.
 - **Al desconectar** (refs a 0, con un pequeño margen de gracia — 10-15 s, para
   no parpadear "offline" en un refresh de pestaña o una reconexión): persistir
   `lastSeenAt = now()` de forma durable y emitir `presence:update
-  online=false` al mismo conjunto de interesados.
+online=false` al mismo conjunto de interesados.
 - **`PresenceReader`** (puerto, patrón `CoachLinks`/`UserDirectory`):
   `isOnline(userId)`, `lastSeenAt(userId)`, variantes en bulk. Lo consume el
   chat (cabecera de la conversación) **y** `auth` (admin).
@@ -214,10 +214,10 @@ tratar como un módulo de negocio ajeno.
 
 ### Decisión: un solo proceso para HTTP + WS
 
-| Eje | Decisión | Razón |
-| --- | --- | --- |
-| HTTP + WebSocket | **Un único proceso** (`powerlog-api`): Socket.IO montado con el `IoAdapter` de Nest sobre el mismo servidor HTTP, `path: '/ws'`. | El gateway despacha al **mismo CommandBus** (ver "Presentación"). Separarlo obliga a un salto de red hacia la API por cada `chat:send`, o a duplicar el grafo de módulos y el acceso a la base de datos. Coste real, cero ganancia. |
-| API ↔ workers asíncronos (IA local, otra máquina) | **Multi-app**: misma imagen, distinto entrypoint (`main.worker.ts` sobre un módulo reducido), lanzado con otro `command`. | Un worker es un consumidor BullMQ (*pull*), no sirve sockets. `BullQueueFactory` (`src/queue/`) ya es la pieza. **No es un argumento para partir HTTP/WS**: un worker que termina un job no habla con el proceso WS por HTTP — publica en Redis y entrega el proceso que tiene el socket abierto (mismo seam que ya usa `RedisRealtimeBus`, y que `@socket.io/redis-adapter` resuelve para las *rooms*). |
+| Eje                                               | Decisión                                                                                                                         | Razón                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HTTP + WebSocket                                  | **Un único proceso** (`powerlog-api`): Socket.IO montado con el `IoAdapter` de Nest sobre el mismo servidor HTTP, `path: '/ws'`. | El gateway despacha al **mismo CommandBus** (ver "Presentación"). Separarlo obliga a un salto de red hacia la API por cada `chat:send`, o a duplicar el grafo de módulos y el acceso a la base de datos. Coste real, cero ganancia.                                                                                                                                                                      |
+| API ↔ workers asíncronos (IA local, otra máquina) | **Multi-app**: misma imagen, distinto entrypoint (`main.worker.ts` sobre un módulo reducido), lanzado con otro `command`.        | Un worker es un consumidor BullMQ (_pull_), no sirve sockets. `BullQueueFactory` (`src/queue/`) ya es la pieza. **No es un argumento para partir HTTP/WS**: un worker que termina un job no habla con el proceso WS por HTTP — publica en Redis y entrega el proceso que tiene el socket abierto (mismo seam que ya usa `RedisRealtimeBus`, y que `@socket.io/redis-adapter` resuelve para las _rooms_). |
 
 **Cuándo revisitar**: si los redespliegues (watchtower) tirando todos los sockets
 resultan molestos, o si la CPU del Pi sufre (`powerlog-api` tiene límite de
@@ -237,7 +237,7 @@ socket **directamente a la API**, no a través del rewrite `/api/*` de Next
 Las cookies no son un problema, y conviene entender por qué:
 
 - **Origin distinto** (`powerlog.negri.es` ≠ `api.powerlog.negri.es`) ⇒ aplica CORS.
-- **Mismo *site*** (dominio registrable `negri.es`) ⇒ `SameSite=Lax` **sí** envía
+- **Mismo _site_** (dominio registrable `negri.es`) ⇒ `SameSite=Lax` **sí** envía
   la cookie en el handshake. No hace falta `SameSite=None`.
 - **`COOKIE_DOMAIN=powerlog.negri.es`** ya está configurado
   (`infra/prod/powerlog-api.env.example`, aplicado en `auth-cookies.ts`), y
@@ -248,7 +248,7 @@ Lo que sí hay que hacer, concreto:
 
 1. **"Websockets Support" ON** en el proxy host `api.powerlog.negri.es` de NPM
    (viene apagado por defecto; sin eso el `Upgrade` responde 400).
-2. En *Advanced* de ese host, `proxy_read_timeout 3600s;`. El ping de Socket.IO
+2. En _Advanced_ de ese host, `proxy_read_timeout 3600s;`. El ping de Socket.IO
    (25 s) mantiene viva la conexión frente al corte de 60 s por defecto, pero no
    es un margen que interese apurar.
 3. **`cors: { origin: WEB_ORIGIN, credentials: true }`** en el `IoAdapter`: el
@@ -262,11 +262,11 @@ Lo que sí hay que hacer, concreto:
 ### Detalles de runtime
 
 - **`transports: ['websocket']`**, sin fallback a long-polling. Elimina el
-  requisito de *sticky sessions* si algún día hay más de una réplica, y ahorra
+  requisito de _sticky sessions_ si algún día hay más de una réplica, y ahorra
   CPU en el Pi.
 - **Shutdown**: `setupGracefulDrain` (`main.ts`) cierra las conexiones idle y
   arma un watchdog que mata el proceso con `exit 1` si el drain se pasa del
-  presupuesto. Las conexiones WS son *long-lived* ⇒ `server.close()` nunca
+  presupuesto. Las conexiones WS son _long-lived_ ⇒ `server.close()` nunca
   resolvería y **cada deploy saldría con exit 1**. El gateway necesita un
   `beforeApplicationShutdown` que desconecte los sockets (`io.close()`), mismo
   precedente que `RealtimeHub.onApplicationShutdown` con los streams SSE.
@@ -333,7 +333,7 @@ filas existentes.
   diga de qué evento de socket vino. Para `chat:send` (el único camino con
   escritura) el gateway abre un span manual `chat.ws chat:send` como padre antes
   de despachar; el resto de eventos (`typing`, `join`) no lo merecen.
-- **Dónde mirar cuando el handshake falle**: los errores de *upgrade* los
+- **Dónde mirar cuando el handshake falle**: los errores de _upgrade_ los
   devuelve nginx-proxy-manager, que vive en el stack **core** y no está en
   `powerlog-net` ⇒ **no aparecen en el Loki de powerlog**. Depurar un 400 en el
   handshake es mirar los logs del contenedor de NPM, no Grafana. Merece la pena
@@ -374,8 +374,8 @@ filas existentes.
    `PresenceReader`, y las salas de conversación con `chat:join`/`chat:send`/
    `chat:typing` despachando al mismo CommandBus del Chat.1. Adaptador Redis
    detrás de `REDIS_URL`, igual que el resto del proyecto.
-   **Incluye la infra** (ver "Infraestructura y despliegue"): *Websockets
-   Support* + `proxy_read_timeout` en el proxy host `api.powerlog.negri.es`,
+   **Incluye la infra** (ver "Infraestructura y despliegue"): _Websockets
+   Support_ + `proxy_read_timeout` en el proxy host `api.powerlog.negri.es`,
    `NEXT_PUBLIC_WS_URL` en los `.env.example` de ambos repos, y el
    `beforeApplicationShutdown` que desconecta sockets — sin este último, cada
    deploy sale con `exit 1`.
