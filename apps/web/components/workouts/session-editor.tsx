@@ -13,6 +13,7 @@ import {
     useExercises,
     useWorkoutSession,
 } from '@/lib/graphql/hooks/use-workouts'
+import { formatSessionDate } from '@/lib/format-date'
 import { unitsOf } from '@/lib/units'
 import { AddExercise } from '@/components/workouts/add-exercise'
 import { AiPlanPanel } from '@/components/workouts/ai-plan-panel'
@@ -24,15 +25,6 @@ import { Check, Lock, Pencil } from '@/components/ui/icons'
 import { MultiSelect } from '@/components/ui/multi-select'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import type { BackLink } from '@/components/workouts/back-link'
-
-function formatDate(iso: string, locale: string): string {
-    return new Date(iso).toLocaleDateString(locale, {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-    })
-}
 
 /**
  * The session view/editor: complete, delete, plan with AI, log sets. Shared by
@@ -157,7 +149,7 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
             <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-3">
-                        <h1 className="font-display text-display">{formatDate(session.performedAt, locale)}</h1>
+                        <h1 className="font-display text-display">{formatSessionDate(session.performedAt, locale)}</h1>
                         {coachPlanned ? (
                             <span className="rounded-full bg-amber/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-amber">
                                 {t('coachPlanned')}

@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type {
     AthleteExerciseStatsQuery,
@@ -7,6 +7,7 @@ import type {
     AthleteWorkoutHistoryQuery,
 } from '@/lib/graphql/__generated__/graphql'
 import { gqlRequest } from '@/lib/graphql/client'
+import type { HistoryFilters } from '@/lib/workouts/use-history-filters'
 import {
     AssignMesocycleToAthleteDocument,
     AthleteExerciseSessionHistoryDocument,
@@ -31,14 +32,19 @@ const HISTORY_PAGE_SIZE = 20
 
 // ── Reads ────────────────────────────────────────────────────
 
-export function useAthleteHistory(athleteId: string, status?: string, enabled = true) {
+/**
+ * The athlete's session history as their coach sees it. Takes the same filter
+ * set as the athlete's own history — the API's `athleteWorkoutHistory` accepts
+ * exactly the same arguments, gated by the coach↔athlete link.
+ */
+export function useAthleteHistory(athleteId: string, filters: HistoryFilters = {}, enabled = true) {
     return useInfiniteQuery({
-        queryKey: [...athleteKey(athleteId), 'history', status ?? 'all'],
+        queryKey: [...athleteKey(athleteId), 'history', filters],
         queryFn: ({ pageParam }) =>
             gqlRequest(AthleteWorkoutHistoryDocument, {
                 athleteId,
                 limit: HISTORY_PAGE_SIZE,
-                status,
+                ...filters,
                 // The API's zod arg takes string | undefined, never an explicit null.
                 cursor: pageParam ?? undefined,
             }).then((r) => r.athleteWorkoutHistory),
@@ -46,6 +52,9 @@ export function useAthleteHistory(athleteId: string, status?: string, enabled = 
         getNextPageParam: (last) => (last.hasNextPage ? last.nextCursor : undefined),
         enabled,
         retry: false,
+        // Keep the current results on screen while a new filter combination loads,
+        // so changing filters refreshes in place instead of flashing a skeleton.
+        placeholderData: keepPreviousData,
     })
 }
 

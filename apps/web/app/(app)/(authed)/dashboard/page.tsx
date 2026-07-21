@@ -13,6 +13,7 @@ import {
     useCreateSessionFromTemplate,
     useWorkoutTemplates,
 } from '@/lib/graphql/hooks/use-workout-templates'
+import { formatSessionDate } from '@/lib/format-date'
 import { formatWeight, type Units, unitsOf } from '@/lib/units'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
@@ -44,10 +45,6 @@ function currentWeekRange(): { from: string; to: string } {
     }
 
     return { from: iso(monday, false), to: iso(sunday, true) }
-}
-
-function formatDate(iso: string, locale: string): string {
-    return new Date(iso).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -162,7 +159,7 @@ function WeekCard({ units }: { units: Units }) {
                                     <span className="flex items-center gap-2.5">
                                         <Calendar className="size-4 text-text-faint" />
                                         <span className="text-sm text-text">
-                                            {formatDate(session.performedAt, locale)}
+                                            {formatSessionDate(session.performedAt, locale)}
                                         </span>
                                         <StatusBadge status={session.status} />
                                     </span>
@@ -280,7 +277,9 @@ function RecentCard({ units }: { units: Units }) {
                                 className="flex items-center justify-between gap-3 rounded-xl bg-bg/40 px-3.5 py-2.5 ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04]"
                             >
                                 <span className="flex items-center gap-2.5">
-                                    <span className="text-sm text-text">{formatDate(session.performedAt, locale)}</span>
+                                    <span className="text-sm text-text">
+                                        {formatSessionDate(session.performedAt, locale)}
+                                    </span>
                                     <StatusBadge status={session.status} />
                                 </span>
                                 <span className="font-mono text-[10px] uppercase tracking-widest text-text-faint">

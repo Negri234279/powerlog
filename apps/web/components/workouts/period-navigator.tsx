@@ -27,6 +27,8 @@ export function PeriodNavigator({
     to,
     onFrom,
     onTo,
+    analyticsPrefix,
+    className,
 }: {
     mode: PeriodMode
     onMode: (mode: PeriodMode) => void
@@ -40,19 +42,22 @@ export function PeriodNavigator({
     to: string
     onFrom: (value: string) => void
     onTo: (value: string) => void
+    /** Stable id prefix, e.g. `workouts` → `workouts-period-next`. */
+    analyticsPrefix: string
+    className?: string
 }) {
     const t = useTranslations('workouts')
     const canNavigate = mode !== 'all' && mode !== 'custom'
     const isCustom = mode === 'custom'
 
     return (
-        <div className="mt-6 rounded-2xl bg-shell p-1.5 ring-1 ring-hairline">
+        <div className={cn('rounded-2xl bg-shell p-1.5 ring-1 ring-hairline', className)}>
             <div className="t-acc inset-hi rounded-[calc(1rem-0.25rem)] bg-surface" data-open={isCustom}>
                 <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-1">
                         {canNavigate ? (
                             <TrackedButton
-                                analyticsId="workouts-period-prev"
+                                analyticsId={`${analyticsPrefix}-period-prev`}
                                 type="button"
                                 onClick={onPrev}
                                 aria-label={t('period.prev')}
@@ -73,7 +78,7 @@ export function PeriodNavigator({
 
                         {canNavigate ? (
                             <TrackedButton
-                                analyticsId="workouts-period-next"
+                                analyticsId={`${analyticsPrefix}-period-next`}
                                 type="button"
                                 onClick={onNext}
                                 aria-label={t('period.next')}
@@ -85,7 +90,7 @@ export function PeriodNavigator({
 
                         {canNavigate && !isCurrent ? (
                             <TrackedButton
-                                analyticsId="workouts-period-current"
+                                analyticsId={`${analyticsPrefix}-period-current`}
                                 type="button"
                                 onClick={onCurrent}
                                 className="ml-1 rounded-full px-3 py-1 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
@@ -102,7 +107,7 @@ export function PeriodNavigator({
                                 <div key={key} className="flex items-center">
                                     <span className="mx-1 h-4 w-px bg-hairline" aria-hidden />
                                     <TrackedButton
-                                        analyticsId="workouts-period-custom"
+                                        analyticsId={`${analyticsPrefix}-period-custom`}
                                         type="button"
                                         onClick={() => onMode(key)}
                                         aria-pressed={mode === key}
@@ -118,7 +123,7 @@ export function PeriodNavigator({
                                 </div>
                             ) : (
                                 <TrackedButton
-                                    analyticsId={`workouts-period-${key}`}
+                                    analyticsId={`${analyticsPrefix}-period-${key}`}
                                     key={key}
                                     type="button"
                                     onClick={() => onMode(key)}

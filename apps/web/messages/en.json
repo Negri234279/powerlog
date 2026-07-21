@@ -78,11 +78,6 @@
             "stats": "Stats",
             "plan": "Plan"
         },
-        "filter": {
-            "all": "All",
-            "planned": "Planned",
-            "completed": "Completed"
-        },
         "loading": "Loading…",
         "loadMore": "Load more",
         "noSessions": "No sessions yet.",
@@ -116,6 +111,7 @@
         "buildBlock": "Build a mesocycle",
         "athleteBlocksTitle": "Their blocks",
         "athleteBlocksSubtitle": "Mesocycles this athlete is training.",
+        "weekSummary": "{count, plural, one {# session} other {# sessions}} · {volume}",
         "noAthleteBlocks": "They aren’t training any block yet.",
         "blocksLoadError": "Couldn’t load their blocks.",
         "openBlock": "Open",

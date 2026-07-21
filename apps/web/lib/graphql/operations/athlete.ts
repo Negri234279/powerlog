@@ -6,8 +6,26 @@ import { graphql } from '@/lib/graphql/__generated__'
 // ── Reads ────────────────────────────────────────────────────
 
 export const AthleteWorkoutHistoryDocument = graphql(`
-    query AthleteWorkoutHistory($athleteId: ID!, $limit: Int, $status: String, $cursor: String) {
-        athleteWorkoutHistory(athleteId: $athleteId, limit: $limit, status: $status, cursor: $cursor) {
+    query AthleteWorkoutHistory(
+        $athleteId: ID!
+        $limit: Int
+        $status: String
+        $from: String
+        $to: String
+        $exerciseId: ID
+        $query: String
+        $cursor: String
+    ) {
+        athleteWorkoutHistory(
+            athleteId: $athleteId
+            limit: $limit
+            status: $status
+            from: $from
+            to: $to
+            exerciseId: $exerciseId
+            query: $query
+            cursor: $cursor
+        ) {
             items {
                 id
                 status

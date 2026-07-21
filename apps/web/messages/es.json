@@ -78,11 +78,6 @@
             "stats": "Estadísticas",
             "plan": "Planificar"
         },
-        "filter": {
-            "all": "Todas",
-            "planned": "Planificadas",
-            "completed": "Completadas"
-        },
         "loading": "Cargando…",
         "loadMore": "Cargar más",
         "noSessions": "Todavía no hay sesiones.",
@@ -116,6 +111,7 @@
         "buildBlock": "Crear un mesociclo",
         "athleteBlocksTitle": "Sus bloques",
         "athleteBlocksSubtitle": "Mesociclos que este atleta está entrenando.",
+        "weekSummary": "{count, plural, one {# sesión} other {# sesiones}} · {volume}",
         "noAthleteBlocks": "Aún no está entrenando ningún bloque.",
         "blocksLoadError": "No se pudieron cargar sus bloques.",
         "openBlock": "Abrir",
