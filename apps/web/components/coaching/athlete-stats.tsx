@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { useAthleteExerciseStats, useAthleteSummary } from '@/lib/graphql/hooks/use-athlete'
 import { formatWeight, type Units } from '@/lib/units'
+import { QueryError } from '@/components/ui/query-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
 
@@ -67,6 +68,12 @@ export function AthleteStats({ athleteId, units }: { athleteId: string; units: U
                         <Skeleton key={i} className="h-24 rounded-2xl" />
                     ))}
                 </div>
+            ) : summary.isError ? (
+                <QueryError
+                    message={t('statsLoadError')}
+                    onRetry={() => void summary.refetch()}
+                    analyticsId="athlete-summary-retry"
+                />
             ) : summary.data ? (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <Kpi label={ts('kpiSessions')} value={String(summary.data.sessions)} />
@@ -86,6 +93,12 @@ export function AthleteStats({ athleteId, units }: { athleteId: string; units: U
 
             {stats.isLoading ? (
                 <Skeleton className="h-48 rounded-2xl" />
+            ) : stats.isError ? (
+                <QueryError
+                    message={t('statsLoadError')}
+                    onRetry={() => void stats.refetch()}
+                    analyticsId="athlete-stats-retry"
+                />
             ) : rows.length === 0 ? (
                 <p className="text-sm text-text-faint">{t('noStats')}</p>
             ) : (

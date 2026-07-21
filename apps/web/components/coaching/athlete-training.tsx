@@ -8,6 +8,7 @@ import { type AthleteHistoryItem, useAthleteHistory, useAthleteSession } from '@
 import { useExercises } from '@/lib/graphql/hooks/use-workouts'
 import { formatWeight, type Units } from '@/lib/units'
 import { ChevronDown, Pencil } from '@/components/ui/icons'
+import { QueryError } from '@/components/ui/query-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
@@ -218,6 +219,12 @@ export function AthleteTraining({ athleteId, coachId, units }: { athleteId: stri
                         <Skeleton key={i} className="h-[4.5rem] rounded-2xl" />
                     ))}
                 </div>
+            ) : history.isError ? (
+                <QueryError
+                    message={t('trainingLoadError')}
+                    onRetry={() => void history.refetch()}
+                    analyticsId="athlete-history-retry"
+                />
             ) : sessions.length === 0 ? (
                 <p className="text-sm text-text-faint">{t('noSessions')}</p>
             ) : (
