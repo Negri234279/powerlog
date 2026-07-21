@@ -17,11 +17,12 @@ import {
     usePendingInvitations,
 } from '@/lib/graphql/hooks/use-coaching'
 import { fullName } from '@/lib/user-name'
+import { unitsOf } from '@/lib/units'
 import { cn } from '@/lib/cn'
+import { AthleteRoster, RosterSkeleton } from '@/components/coaching/roster/athlete-roster'
 import { BecomeCoachModal } from '@/components/coaching/become-coach-modal'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { FormError } from '@/components/ui/form-error'
-import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
 import { Users } from '@/components/ui/icons'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
@@ -121,28 +122,6 @@ function UserIdentity({ user }: { user: CoachUser }) {
             <span className="block truncate font-mono text-sm text-text">@{user.username}</span>
             {name ? <span className="block truncate text-xs text-text-dim">{name}</span> : null}
         </span>
-    )
-}
-
-function UserRow({ user, href }: { user: CoachUser; href?: string }) {
-    const base = 'flex items-center gap-3 rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline'
-    const content = (
-        <>
-            <Avatar username={user.username} src={user.avatarUrl} />
-            <UserIdentity user={user} />
-        </>
-    )
-
-    return href ? (
-        <TrackedLink
-            analyticsId="coaching-athlete-open"
-            href={href}
-            className={cn(base, 'transition-all duration-300 hover:ring-text/20')}
-        >
-            {content}
-        </TrackedLink>
-    ) : (
-        <div className={base}>{content}</div>
     )
 }
 
@@ -320,6 +299,7 @@ export default function CoachingPage() {
     const t = useTranslations('coaching')
     const { data: me } = useMe()
     const isCoach = me?.role === 'coach'
+    const units = unitsOf(me?.units)
 
     const invitations = usePendingInvitations()
     const coaches = useMyCoaches()
@@ -359,23 +339,11 @@ export default function CoachingPage() {
                     <SectionHeader title={t('athletesTitle')} subtitle={t('athletesSubtitle')} />
                     <InviteForm />
                     {athletes.isLoading ? (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            {Array.from({ length: 2 }).map((_, i) => (
-                                <Skeleton key={i} className="h-[4.5rem] rounded-2xl" />
-                            ))}
-                        </div>
+                        <RosterSkeleton />
                     ) : athleteList.length === 0 ? (
                         <p className="text-sm text-text-faint">{t('noAthletes')}</p>
                     ) : (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            {athleteList.map((athlete) => (
-                                <UserRow
-                                    key={athlete.userId}
-                                    user={athlete}
-                                    href={`/coaching/athletes/${athlete.userId}`}
-                                />
-                            ))}
-                        </div>
+                        <AthleteRoster athletes={athleteList} units={units} />
                     )}
                 </SectionShell>
             ) : null}

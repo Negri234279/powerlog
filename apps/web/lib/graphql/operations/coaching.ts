@@ -14,6 +14,26 @@ export const MyAthletesDocument = graphql(`
     }
 `)
 
+export const MyAthleteRosterDocument = graphql(`
+    query MyAthleteRoster($from: String, $to: String) {
+        myAthleteRoster(from: $from, to: $to) {
+            athleteId
+            coachedSince
+            lastSessionAt
+            daysSinceLastSession
+            nextSessionAt
+            adherenceRate
+            plannedCompleted
+            plannedMissed
+            plannedDue
+            completedSessions
+            volumeKg
+            volumeChange
+            attention
+        }
+    }
+`)
+
 export const MyAthleteDocument = graphql(`
     query MyAthlete($athleteId: ID!) {
         myAthlete(athleteId: $athleteId) {

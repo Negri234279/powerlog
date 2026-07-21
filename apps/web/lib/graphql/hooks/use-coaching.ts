@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import type { MyAthletesQuery, PendingInvitationsQuery } from '@/lib/graphql/__generated__/graphql'
+import type {
+    MyAthleteRosterQuery,
+    MyAthletesQuery,
+    PendingInvitationsQuery,
+} from '@/lib/graphql/__generated__/graphql'
 import { gqlRequest } from '@/lib/graphql/client'
 import {
     AcceptInvitationDocument,
@@ -11,6 +15,7 @@ import {
     InviteAthleteDocument,
     LeaveCoachDocument,
     MyAthleteDocument,
+    MyAthleteRosterDocument,
     MyAthletesDocument,
     MyCoachesDocument,
     PendingInvitationsDocument,
@@ -19,6 +24,7 @@ import {
 } from '@/lib/graphql/operations/coaching'
 
 export type CoachUser = MyAthletesQuery['myAthletes'][number]
+export type RosterEntry = MyAthleteRosterQuery['myAthleteRoster'][number]
 export type PendingInvitation = PendingInvitationsQuery['pendingInvitations'][number]
 
 const ATHLETES_KEY = ['coaching', 'athletes'] as const
@@ -31,6 +37,21 @@ export function useMyAthletes(enabled = true) {
     return useQuery({
         queryKey: ATHLETES_KEY,
         queryFn: async () => (await gqlRequest(MyAthletesDocument)).myAthletes,
+        enabled,
+        retry: false,
+    })
+}
+
+/**
+ * Training rollups for the whole roster, in one query. Kept separate from
+ * `useMyAthletes` because identity and training live in different modules — the
+ * two are merged by `athleteId` in the view, so identity can render before the
+ * numbers arrive rather than waiting on them.
+ */
+export function useMyAthleteRoster(from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...ATHLETES_KEY, 'roster', from ?? 'all'],
+        queryFn: async () => (await gqlRequest(MyAthleteRosterDocument, { from })).myAthleteRoster,
         enabled,
         retry: false,
     })
