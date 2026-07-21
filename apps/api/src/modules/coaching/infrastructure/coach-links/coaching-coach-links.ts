@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 
-import { CoachLinks } from '../../../../shared/contracts/coach-links'
+import { type CoachedAthlete, CoachLinks } from '../../../../shared/contracts/coach-links'
 import { CoachLinkRepository } from '../../domain/repositories/coach-link.repository'
 
 /**
@@ -15,5 +15,9 @@ export class CoachingCoachLinks extends CoachLinks {
 
     async areLinked(coachId: string, athleteId: string): Promise<boolean> {
         return this.links.areLinked(coachId, athleteId)
+    }
+
+    async athletesOf(coachId: string): Promise<CoachedAthlete[]> {
+        return this.links.athletesOf(coachId)
     }
 }

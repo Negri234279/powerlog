@@ -12,6 +12,7 @@ import {
 import { Clock } from './application/ports/clock.port'
 import { AdminWorkoutStatsReadModel } from './application/ports/admin-workout-stats.read-model'
 import { AthleteStrengthReadModel } from './application/ports/athlete-strength.read-model'
+import { CoachRosterReadModel } from './application/ports/coach-roster.read-model'
 import { ExerciseSessionHistoryReadModel } from './application/ports/exercise-session-history.read-model'
 import { ExerciseStatsReadModel } from './application/ports/exercise-stats.read-model'
 import { IdGenerator } from './application/ports/id-generator.port'
@@ -29,6 +30,7 @@ import { WorkoutTemplateRepository } from './domain/repositories/workout-templat
 import { UuidGenerator } from './infrastructure/id/uuid-generator'
 import { DrizzleAdminWorkoutStatsReadModel } from './infrastructure/persistence/read-models/drizzle-admin-workout-stats.read-model'
 import { DrizzleAthleteStrengthReadModel } from './infrastructure/persistence/read-models/drizzle-athlete-strength.read-model'
+import { DrizzleCoachRosterReadModel } from './infrastructure/persistence/read-models/drizzle-coach-roster.read-model'
 import { DrizzleExerciseSessionHistoryReadModel } from './infrastructure/persistence/read-models/drizzle-exercise-session-history.read-model'
 import { DrizzleExerciseStatsReadModel } from './infrastructure/persistence/read-models/drizzle-exercise-stats.read-model'
 import { DrizzleMesocycleListReadModel } from './infrastructure/persistence/read-models/drizzle-mesocycle-list.read-model'
@@ -65,6 +67,7 @@ const ADAPTERS: Provider[] = [
     { provide: SetMetrics, useClass: PrometheusSetMetrics },
     { provide: AthleteStrengthReadModel, useClass: DrizzleAthleteStrengthReadModel },
     { provide: UserTrainingReadModel, useClass: DrizzleUserTrainingReadModel },
+    { provide: CoachRosterReadModel, useClass: DrizzleCoachRosterReadModel },
 ]
 
 @Module({

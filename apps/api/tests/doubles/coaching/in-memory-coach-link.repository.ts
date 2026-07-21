@@ -43,9 +43,14 @@ export class InMemoryCoachLinkRepository extends CoachLinkRepository {
     }
 
     async athleteIdsOf(coachId: string): Promise<string[]> {
+        const rows = await this.athletesOf(coachId)
+        return rows.map((r) => r.athleteId)
+    }
+
+    async athletesOf(coachId: string): Promise<{ athleteId: string; since: Date }[]> {
         return this.links
             .filter((l) => l.coachId === coachId)
             .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-            .map((l) => l.athleteId)
+            .map((l) => ({ athleteId: l.athleteId, since: l.createdAt }))
     }
 }

@@ -591,6 +591,35 @@ type CoachInvitationPreview {
   suggestedUsername: String!
 }
 
+type CoachRosterEntry {
+  """Completed ÷ due of this coach's programming."""
+  adherenceRate: Float
+  athleteId: ID!
+  attention: RosterAttention!
+
+  """When the coaching relationship started."""
+  coachedSince: DateTime!
+  completedSessions: Int!
+  daysSinceLastSession: Int
+
+  """All-time; null when they have never trained."""
+  lastSessionAt: DateTime
+
+  """Next planned session, all-future."""
+  nextSessionAt: DateTime
+  plannedCompleted: Int!
+
+  """Completed + missed — the adherence denominator."""
+  plannedDue: Int!
+  plannedMissed: Int!
+
+  """Signed change vs the preceding window."""
+  volumeChange: Float
+
+  """Null (not 0) when nothing was trained in range."""
+  volumeKg: Float
+}
+
 type CoachUser {
   """Resolved avatar URL; null → show initials."""
   avatarUrl: String
@@ -1855,6 +1884,11 @@ type Query {
   """
   myAthlete(athleteId: ID!): CoachUser
 
+  """
+  Training rollups for every athlete the calling coach coaches, in one grouped pass. Identity is not included — merge with `myAthletes` by athleteId (coaches only).
+  """
+  myAthleteRoster(from: String, to: String): [CoachRosterEntry!]!
+
   """Athletes linked to the caller."""
   myAthletes: [CoachUser!]!
 
@@ -1989,6 +2023,16 @@ input RegisterInput {
 input ResetPasswordInput {
   newPassword: String!
   token: String!
+}
+
+"""
+Why an athlete is flagged on the roster, or `none`. At most one reason per athlete.
+"""
+enum RosterAttention {
+  lowAdherence
+  neverTrained
+  none
+  stale
 }
 
 type Session {

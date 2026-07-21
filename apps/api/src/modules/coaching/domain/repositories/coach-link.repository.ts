@@ -11,4 +11,6 @@ export abstract class CoachLinkRepository {
     abstract coachIdsOf(athleteId: string): Promise<string[]>
     /** Athletes linked to a coach. */
     abstract athleteIdsOf(coachId: string): Promise<string[]>
+    /** Same, carrying when each link was made. */
+    abstract athletesOf(coachId: string): Promise<{ athleteId: string; since: Date }[]>
 }

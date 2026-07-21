@@ -26,6 +26,7 @@ import { UpdateWorkoutSessionHandler } from './commands/update-workout-session/u
 import { UpdateWorkoutTemplateHandler } from './commands/update-workout-template/update-workout-template.handler'
 import { PurgeWorkoutsOnUserDeleted } from './event-handlers/purge-workouts-on-user-deleted.handler'
 import { AdminWorkoutStatsHandler } from './queries/admin-workout-stats/admin-workout-stats.handler'
+import { GetCoachRosterHandler } from './queries/get-coach-roster/get-coach-roster.handler'
 import { GetTrainingExecutionHandler } from './queries/get-training-execution/get-training-execution.handler'
 import { GetTrainingExecutionSeriesHandler } from './queries/get-training-execution-series/get-training-execution-series.handler'
 import { GetExerciseSessionHistoryHandler } from './queries/get-exercise-session-history/get-exercise-session-history.handler'
@@ -98,6 +99,7 @@ export const WORKOUTS_QUERY_HANDLERS = [
     GetTrainingDistributionHandler,
     GetTrainingExecutionHandler,
     GetTrainingExecutionSeriesHandler,
+    GetCoachRosterHandler,
     GetWorkoutUsageHandler,
     GetUserTrainingHandler,
 ]
