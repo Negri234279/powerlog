@@ -8,10 +8,12 @@ import { type AthleteHistoryItem, useAthleteHistory, useAthleteSession } from '@
 import { useExercises } from '@/lib/graphql/hooks/use-workouts'
 import { formatSessionDate } from '@/lib/format-date'
 import { formatWeight, type Units } from '@/lib/units'
+import { backParam } from '@/lib/workouts/back-param'
 import { formatRange, groupByWeek } from '@/lib/workouts/period'
 import { useHistoryFilters } from '@/lib/workouts/use-history-filters'
 import { HistoryFilterBar } from '@/components/workouts/history-filter-bar'
 import { PeriodNavigator } from '@/components/workouts/period-navigator'
+import { WeekHeading } from '@/components/workouts/week-heading'
 import { ChevronDown, Pencil } from '@/components/ui/icons'
 import { QueryError } from '@/components/ui/query-error'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -114,12 +116,14 @@ function SessionRow({
     units,
     nameById,
     canEdit,
+    backQuery,
 }: {
     athleteId: string
     session: AthleteHistoryItem
     units: Units
     nameById: Map<string, string>
     canEdit: boolean
+    backQuery: string
 }) {
     const t = useTranslations('coaching')
     const tw = useTranslations('workouts')
@@ -162,7 +166,7 @@ function SessionRow({
                         {canEdit ? (
                             <TrackedLink
                                 analyticsId="athlete-session-edit-plan"
-                                href={`/coaching/athletes/${athleteId}/workouts/${session.id}`}
+                                href={`/coaching/athletes/${athleteId}/workouts/${session.id}${backParam(backQuery)}`}
                                 className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                             >
                                 <Pencil className="size-3" /> {t('editPlan')}
@@ -184,30 +188,6 @@ function SessionRow({
                     </div>
                 </div>
             </div>
-        </div>
-    )
-}
-
-/** Week divider: the range, plus what the athlete actually did in it. */
-function WeekHeading({
-    label,
-    sessions,
-    volumeKg,
-    units,
-}: {
-    label: string
-    sessions: number
-    volumeKg: number
-    units: Units
-}) {
-    const t = useTranslations('coaching')
-
-    return (
-        <div className="flex flex-wrap items-baseline justify-between gap-2 px-1">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-text-dim">{label}</p>
-            <p className="font-mono text-[10px] uppercase tracking-widest tabular-nums text-text-faint">
-                {t('weekSummary', { count: sessions, volume: formatWeight(volumeKg, units) })}
-            </p>
         </div>
     )
 }
@@ -243,6 +223,7 @@ export function AthleteTraining({ athleteId, coachId, units }: { athleteId: stri
                 units={units}
                 nameById={nameById}
                 canEdit={session.plannedByUserId === coachId}
+                backQuery={history.queryString}
             />
         )
     }

@@ -21,11 +21,14 @@ import {
 } from '@/lib/graphql/hooks/use-workouts'
 import { useCreateSessionFromTemplate } from '@/lib/graphql/hooks/use-workout-templates'
 import { formatSessionDate, todayLocalIso } from '@/lib/format-date'
-import { type StatusFilter, useHistoryFilters } from '@/lib/workouts/use-history-filters'
+import { backParam } from '@/lib/workouts/back-param'
+import { formatRange, groupByWeek } from '@/lib/workouts/period'
+import { useHistoryFilters } from '@/lib/workouts/use-history-filters'
 import { formatWeight, type Units, unitsOf } from '@/lib/units'
 import { EditSessionModal } from '@/components/workouts/edit-session-modal'
 import { HistoryFilterBar } from '@/components/workouts/history-filter-bar'
 import { PeriodNavigator } from '@/components/workouts/period-navigator'
+import { WeekHeading } from '@/components/workouts/week-heading'
 import { type SelectedTemplate, TemplateBrowseModal, TemplateCombobox } from '@/components/workouts/template-select'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
@@ -140,12 +143,14 @@ function SessionRow({
     nameById,
     onEdit,
     onDelete,
+    backQuery,
 }: {
     session: WorkoutHistoryItem
     units: Units
     nameById: Map<string, string>
     onEdit: () => void
     onDelete: () => void
+    backQuery: string
 }) {
     const t = useTranslations('workouts')
     const locale = useLocale()
@@ -183,7 +188,7 @@ function SessionRow({
 
                     <TrackedLink
                         analyticsId="session-open"
-                        href={`/workouts/${session.id}`}
+                        href={`/workouts/${session.id}${backParam(backQuery)}`}
                         className="flex flex-col gap-3 py-4 pl-12 pr-14 sm:flex-row sm:items-center sm:justify-between"
                     >
                         <div className="min-w-0">
@@ -270,11 +275,32 @@ export default function WorkoutsPage() {
     const { data, isLoading, isError, isPlaceholderData, fetchNextPage, hasNextPage, isFetchingNextPage } =
         useWorkoutHistory(history.filters)
 
-    const items = data?.pages.flatMap((page) => page.items) ?? []
+    const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data])
+    const weeks = useMemo(() => groupByWeek(items, (session) => session.performedAt), [items])
+    // A single week needs no dividers, and neither does the week view itself.
+    const showWeeks = history.periodMode !== 'week' && weeks.length > 1
     const showFilters = !isLoading && (items.length > 0 || history.hasActiveFilters)
     // While a new filter combination loads, previous results stay visible
     // (keepPreviousData) — dim them slightly instead of flashing a loading state.
     const isFiltering = isPlaceholderData
+
+    function renderSession(session: WorkoutHistoryItem) {
+        return (
+            <li key={session.id}>
+                <SessionRow
+                    session={session}
+                    units={units}
+                    nameById={nameById}
+                    backQuery={history.queryString}
+                    onEdit={() => setEditing(session)}
+                    onDelete={() => {
+                        setDeleteError(null)
+                        setDeleting(session)
+                    }}
+                />
+            </li>
+        )
+    }
 
     async function onCreate(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
@@ -554,22 +580,23 @@ export default function WorkoutsPage() {
                     )
                 ) : (
                     <>
-                        <ul className="space-y-3">
-                            {items.map((session) => (
-                                <li key={session.id}>
-                                    <SessionRow
-                                        session={session}
-                                        units={units}
-                                        nameById={nameById}
-                                        onEdit={() => setEditing(session)}
-                                        onDelete={() => {
-                                            setDeleteError(null)
-                                            setDeleting(session)
-                                        }}
-                                    />
-                                </li>
-                            ))}
-                        </ul>
+                        {showWeeks ? (
+                            <div className="space-y-6">
+                                {weeks.map((week) => (
+                                    <section key={week.key} className="space-y-3">
+                                        <WeekHeading
+                                            label={formatRange('week', week.range, locale)}
+                                            sessions={week.items.length}
+                                            volumeKg={week.items.reduce((total, item) => total + item.totalVolumeKg, 0)}
+                                            units={units}
+                                        />
+                                        <ul className="space-y-3">{week.items.map(renderSession)}</ul>
+                                    </section>
+                                ))}
+                            </div>
+                        ) : (
+                            <ul className="space-y-3">{items.map(renderSession)}</ul>
+                        )}
                         {hasNextPage ? (
                             <TrackedButton
                                 analyticsId="workouts-load-more"

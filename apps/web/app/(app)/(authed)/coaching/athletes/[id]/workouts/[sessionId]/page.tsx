@@ -2,10 +2,11 @@
 
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 
 import { useMyAthlete } from '@/lib/graphql/hooks/use-coaching'
+import { BACK_PARAM, backHref } from '@/lib/workouts/back-param'
 import { SessionEditor } from '@/components/workouts/session-editor'
 
 /**
@@ -31,12 +32,13 @@ export default function AthleteSessionPage() {
 
     // Already cached from the athlete detail header; falls back to a generic label.
     const { data: athlete } = useMyAthlete(athleteId)
+    const searchParams = useSearchParams()
 
     return (
         <SessionEditor
             sessionId={params.sessionId}
             back={{
-                href: `/coaching/athletes/${athleteId}`,
+                href: backHref(`/coaching/athletes/${athleteId}`, searchParams.get(BACK_PARAM)),
                 label: athlete ? `← @${athlete.username}` : t('backToAthlete'),
                 analyticsId: 'session-breadcrumb-athlete',
             }}
