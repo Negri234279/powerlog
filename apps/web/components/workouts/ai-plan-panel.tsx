@@ -8,6 +8,7 @@ import { FormError } from '@/components/ui/form-error'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Bolt } from '@/components/ui/icons'
+import { HistoryEntryLink } from '@/components/ai/history-entry-link'
 import { ProposedSets } from '@/components/ai/proposed-sets'
 import { TrackedButton } from '@/components/ui/tracked'
 import { type Units } from '@/lib/units'
@@ -154,14 +155,18 @@ export function AiPlanPanel({
     // wants it. A live draft always expands — there's a proposal to review.
     if (!open && !draft) {
         return (
-            <TrackedButton
-                analyticsId="ai-plan-open"
-                type="button"
-                onClick={() => setOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
-            >
-                <Bolt className="size-4" /> {t('open')}
-            </TrackedButton>
+            <div className="flex flex-wrap items-center gap-4">
+                <TrackedButton
+                    analyticsId="ai-plan-open"
+                    type="button"
+                    onClick={() => setOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
+                >
+                    <Bolt className="size-4" /> {t('open')}
+                </TrackedButton>
+                {/* Collapsed is exactly when "where's my old one" gets asked. */}
+                <HistoryEntryLink kind="session" sessionId={sessionId} analyticsId="ai-plan-history-link" />
+            </div>
         )
     }
 
@@ -175,11 +180,14 @@ export function AiPlanPanel({
                         <p className="mt-3 max-w-lg text-body text-text-dim">{draft ? t('draftBody') : t('body')}</p>
                     </div>
 
-                    {draft ? (
-                        <span className="whitespace-nowrap rounded-full bg-white/[0.06] px-3 py-1 font-mono text-eyebrow uppercase text-text-dim">
-                            {draft.model}
-                        </span>
-                    ) : null}
+                    <div className="flex flex-col items-end gap-2">
+                        {draft ? (
+                            <span className="whitespace-nowrap rounded-full bg-white/[0.06] px-3 py-1 font-mono text-eyebrow uppercase text-text-dim">
+                                {draft.model}
+                            </span>
+                        ) : null}
+                        <HistoryEntryLink kind="session" sessionId={sessionId} analyticsId="ai-plan-history-link" />
+                    </div>
                 </div>
 
                 {draft ? (

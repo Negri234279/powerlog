@@ -1,8 +1,12 @@
-import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { AiDraftHistoryQuery } from '@/lib/graphql/__generated__/graphql'
 import { gqlRequest } from '@/lib/graphql/client'
-import { AiDraftHistoryDocument } from '@/lib/graphql/operations/ai-history'
+import {
+    AiDraftHistoryDocument,
+    ForkMesocycleDraftDocument,
+    ForkPlanDraftDocument,
+} from '@/lib/graphql/operations/ai-history'
 
 export type AiDraftSummary = AiDraftHistoryQuery['aiDraftHistory']['items'][number]
 
@@ -13,6 +17,9 @@ export interface AiHistoryFilters {
     kind?: AiDraftKindFilter
     /** Only drafts programming this session — what the session panel links to. */
     sessionId?: string
+    /** An athlete's id, or `'self'` for the caller's own blocks. */
+    athleteId?: string
+    status?: 'open' | 'accepted' | 'discarded'
 }
 
 const PAGE_SIZE = 20
@@ -28,7 +35,15 @@ export function useAiDraftHistory(filters: AiHistoryFilters = {}) {
     const kind = kindArg(filters.kind)
 
     return useInfiniteQuery({
-        queryKey: ['aiDraftHistory', { kind: kind ?? 'all', sessionId: filters.sessionId ?? null }],
+        queryKey: [
+            'aiDraftHistory',
+            {
+                kind: kind ?? 'all',
+                sessionId: filters.sessionId ?? null,
+                athleteId: filters.athleteId ?? null,
+                status: filters.status ?? null,
+            },
+        ],
         queryFn: ({ pageParam }) =>
             // Omit the cursor on the first page — the API's zod arg accepts
             // `string | undefined`, not an explicit null.
@@ -36,6 +51,8 @@ export function useAiDraftHistory(filters: AiHistoryFilters = {}) {
                 limit: PAGE_SIZE,
                 kind,
                 sessionId: filters.sessionId,
+                athleteId: filters.athleteId,
+                status: filters.status,
                 cursor: pageParam ?? undefined,
             }).then((r) => r.aiDraftHistory),
         initialPageParam: null as string | null,
@@ -63,5 +80,69 @@ export function useAiDraftCount(filters: AiHistoryFilters = {}) {
                 count: r.aiDraftHistory.items.length,
                 more: r.aiDraftHistory.hasNextPage,
             })),
+    })
+}
+
+/**
+ * The draft still open on the same target as `filters`, if any — a session, or a
+ * (coach, athlete) pair for a block.
+ *
+ * The API supersedes it silently when a fork lands, which is the right server
+ * behaviour but the wrong thing to do to a user without warning. This is what
+ * lets the UI say *what* it is about to replace, before replacing it.
+ */
+export function useOpenDraftFor(filters: AiHistoryFilters, enabled = true) {
+    const kind = kindArg(filters.kind)
+
+    return useQuery({
+        queryKey: [
+            'aiOpenDraft',
+            { kind: kind ?? 'all', sessionId: filters.sessionId ?? null, athleteId: filters.athleteId ?? null },
+        ],
+        queryFn: () =>
+            gqlRequest(AiDraftHistoryDocument, {
+                limit: 1,
+                kind,
+                status: 'open',
+                sessionId: filters.sessionId,
+                athleteId: filters.athleteId,
+            }).then((r) => r.aiDraftHistory.items[0] ?? null),
+        enabled,
+    })
+}
+
+/**
+ * Pick a conversation back up. Costs no model call — the fork is an open draft
+ * carrying the old proposal, which the panels then refine the ordinary way.
+ *
+ * Everything the fork touched is invalidated: the history (a new row, and the
+ * superseded draft's status changed under us), the open-draft probes, and the
+ * live draft key of whichever panel now owns it.
+ */
+export function useForkAiDraft() {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: async (draft: { id: string; kind: string }) =>
+            draft.kind === 'mesocycle'
+                ? {
+                      kind: 'mesocycle' as const,
+                      draft: (await gqlRequest(ForkMesocycleDraftDocument, { draftId: draft.id })).forkMesocycleDraft,
+                  }
+                : {
+                      kind: 'session' as const,
+                      draft: (await gqlRequest(ForkPlanDraftDocument, { draftId: draft.id })).forkPlanDraft,
+                  },
+        onSuccess: (result) => {
+            void queryClient.invalidateQueries({ queryKey: ['aiDraftHistory'] })
+            void queryClient.invalidateQueries({ queryKey: ['aiDraftCount'] })
+            void queryClient.invalidateQueries({ queryKey: ['aiOpenDraft'] })
+
+            if (result.kind === 'session') {
+                void queryClient.invalidateQueries({ queryKey: ['sessionPlanDraft', result.draft.sessionId] })
+            } else {
+                void queryClient.invalidateQueries({ queryKey: ['aiMesocycleDraft'] })
+            }
+        },
     })
 }

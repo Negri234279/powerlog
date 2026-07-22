@@ -595,8 +595,21 @@
             "readOnlyDiscarded": "Descartado: no se escribió nada. Esta conversación ya no cambia.",
             "notFoundTitle": "Este plan no está aquí",
             "notFoundBody": "No existe, o no es tuyo.",
-            "backToHistory": "Volver al historial"
-        }
+            "backToHistory": "Volver al historial",
+            "continueInNewDraft": "Continuar en un borrador nuevo",
+            "continuing": "Continuando…",
+            "resume": "Retomar este borrador"
+        },
+        "fork": {
+            "conflictTitle": "¿Reemplazar el borrador abierto?",
+            "conflictBody": "Ya tienes un borrador abierto para esto. Continuar aquí lo reemplaza.",
+            "conflictReassurance": "Se queda en tu historial y puedes retomarlo más tarde.",
+            "goToOpen": "Abrir ese borrador",
+            "replaceAndContinue": "Reemplazar y continuar",
+            "continuing": "Continuando…",
+            "cancel": "Cancelar"
+        },
+        "previous": "Anteriores · {count} →"
     },
     "mesocycles": {
         "eyebrow": "Mesociclo",

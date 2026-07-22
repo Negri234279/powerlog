@@ -8,6 +8,7 @@ import { Pool } from 'pg'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import type { LlmCompletionRequest } from '../src/ai/llm-provider.port'
 import { LlmProviderRegistry } from '../src/ai/llm-provider.registry'
 import { AppModule } from '../src/app.module'
 import { PG_POOL } from '../src/database/database.module'
@@ -24,6 +25,29 @@ let httpServer: ReturnType<INestApplication['getHttpServer']>
 let openai: StubLlmProviderClient
 
 const COOKIE = { access: 'pl_at' }
+
+/**
+ * The logged weights the plan prompt carried, as numbers.
+ *
+ * `buildPlanUserPrompt` sends a sentence, then optionally the athlete's own
+ * words, then the training context as pretty-printed JSON. The payload is always
+ * last, which is what makes `lastIndexOf` a safe way back to it even when the
+ * athlete's note happens to contain a brace.
+ */
+function historyWeightsIn(call: LlmCompletionRequest | undefined): (number | null)[] {
+    const content = call?.messages[0]?.content ?? ''
+    const start = content.lastIndexOf('\n\n{')
+    if (start === -1) throw new Error('the plan prompt carried no JSON payload')
+
+    const payload = JSON.parse(content.slice(start)) as {
+        exercises: { recentSessions: { sets: { weightKg: number | null }[] }[] }[]
+    }
+
+    return payload.exercises
+        .flatMap((exercise) => exercise.recentSessions)
+        .flatMap((session) => session.sets)
+        .map((set) => set.weightKg)
+}
 
 beforeAll(async () => {
     container = await new PostgreSqlContainer('postgres:16-alpine').start()
@@ -186,9 +210,16 @@ describe('AI session plan — a coach programming for an athlete', () => {
         const draftId: string = generated.body.data.generateSessionPlanDraft.id
 
         // What actually went to the model: the athlete's 100kg, never the coach's 200.
-        const prompt = JSON.stringify(openai.completeCalls.at(-1))
-        expect(prompt).toContain('100')
-        expect(prompt).not.toContain('200')
+        //
+        // Asserted over the parsed payload, so weights are compared as numbers.
+        // A substring search over the serialized request cannot express this: the
+        // prompt embeds entry ids, and a hex UUID like "2d1b200a-…" contains "200",
+        // which failed this assertion at random for reasons having nothing to do
+        // with whose history was used.
+        const weights = historyWeightsIn(openai.completeCalls.at(-1))
+
+        expect(weights).toContain(100)
+        expect(weights).not.toContain(200)
 
         // Accepting writes the targets onto the athlete's session — the coach is the
         // one running this, so the draft is theirs, but the session stays the athlete's.

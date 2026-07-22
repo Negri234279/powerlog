@@ -595,8 +595,21 @@
             "readOnlyDiscarded": "Discarded — nothing was written. This conversation can't change.",
             "notFoundTitle": "This plan isn't here",
             "notFoundBody": "It doesn't exist, or it isn't yours.",
-            "backToHistory": "Back to AI history"
-        }
+            "backToHistory": "Back to AI history",
+            "continueInNewDraft": "Continue in a new draft",
+            "continuing": "Continuing…",
+            "resume": "Resume this draft"
+        },
+        "fork": {
+            "conflictTitle": "Replace the open draft?",
+            "conflictBody": "You already have an open draft for this. Continuing here replaces it.",
+            "conflictReassurance": "It stays in your history, and you can pick it up again later.",
+            "goToOpen": "Open that draft instead",
+            "replaceAndContinue": "Replace and continue",
+            "continuing": "Continuing…",
+            "cancel": "Cancel"
+        },
+        "previous": "Previous · {count} →"
     },
     "mesocycles": {
         "eyebrow": "Mesocycle",

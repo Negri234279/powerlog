@@ -2,21 +2,27 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useLocale, useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 import { draftTitle } from '@/lib/ai/draft-title'
 import { formatSessionDate } from '@/lib/format-date'
 import { gqlRequest } from '@/lib/graphql/client'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
+import { useForkAiDraft, useOpenDraftFor } from '@/lib/graphql/hooks/use-ai-history'
 import { useExercises, useWorkoutSession } from '@/lib/graphql/hooks/use-workouts'
 import { AiDraftDetailDocument } from '@/lib/graphql/operations/ai-history'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { unitsOf } from '@/lib/units'
+import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
+import { FormError } from '@/components/ui/form-error'
 import { QueryError } from '@/components/ui/query-error'
 import { Skeleton } from '@/components/ui/skeleton'
-import { TrackedLink } from '@/components/ui/tracked'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import { ProposedWeek } from '@/components/workouts/mesocycle-ai-shared'
 import { AiConversationThread } from './ai-conversation-thread'
 import { AiDraftKindChip, AiDraftStatusChip } from './ai-draft-chips'
+import { ForkConflictModal } from './fork-conflict-modal'
 import { groupByEntry, ProposedSets } from './proposed-sets'
 
 /**
@@ -31,6 +37,8 @@ export function AiDraftDetail({ draftId }: { draftId: string }) {
     const tu = useTranslations('aiHistory.untitled')
     const locale = useLocale()
     const errorMessage = useErrorMessage()
+    const router = useRouter()
+    const [confirming, setConfirming] = useState(false)
 
     const { data: me } = useMe()
     const units = unitsOf(me?.units)
@@ -47,6 +55,44 @@ export function AiDraftDetail({ draftId }: { draftId: string }) {
     // exists decides if "view session" is a link or a note.
     const session = useWorkoutSession(plan?.sessionId ?? '')
     const exercises = useExercises()
+
+    // Where continuing lands: the panel that owns a live draft of this kind. A
+    // coach's block is built on the athlete's route, not the personal one.
+    const panelHref = plan
+        ? (`/workouts/${plan.sessionId}` as const)
+        : mesocycle?.athleteId
+          ? (`/coaching/athletes/${mesocycle.athleteId}/mesocycles/new` as const)
+          : ('/workouts/mesocycles' as const)
+
+    // Is something already open on the same target? Only asked for a resolved
+    // draft — an open one is not forked, it is resumed.
+    const openDraft = useOpenDraftFor(
+        plan
+            ? { kind: 'session', sessionId: plan.sessionId }
+            : { kind: 'mesocycle', athleteId: mesocycle?.athleteId ?? 'self' },
+        Boolean(plan ?? mesocycle) && (plan ?? mesocycle)?.status !== 'open',
+    )
+    const fork = useForkAiDraft()
+
+    function continueConversation() {
+        fork.mutate(
+            { id: (plan ?? mesocycle)!.id, kind: plan ? 'session' : 'mesocycle' },
+            {
+                onSuccess: () => {
+                    setConfirming(false)
+                    router.push(panelHref)
+                },
+            },
+        )
+    }
+
+    function onContinue() {
+        // Warn only when there is something to lose. With nothing open the fork
+        // runs straight away — an interstitial that always says "are you sure"
+        // teaches people to click through it.
+        if (openDraft.data) setConfirming(true)
+        else continueConversation()
+    }
 
     if (detail.isPending) {
         return (
@@ -147,6 +193,50 @@ export function AiDraftDetail({ draftId }: { draftId: string }) {
                     {td('viewMesocycle')}
                 </TrackedLink>
             ) : null}
+
+            <div className="mt-6">
+                {draft.status === 'open' ? (
+                    // A live draft is not continued, it is resumed — and it is
+                    // accepted in the panel, never here: two screens that can
+                    // accept the same draft is how a double-accept ships.
+                    <TrackedLink
+                        analyticsId="ai-draft-resume"
+                        href={panelHref}
+                        className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04]"
+                    >
+                        {td('resume')}
+                    </TrackedLink>
+                ) : (
+                    <TrackedButton
+                        analyticsId="ai-draft-fork"
+                        type="button"
+                        onClick={onContinue}
+                        disabled={fork.isPending}
+                        className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60"
+                    >
+                        {fork.isPending ? td('continuing') : td('continueInNewDraft')}
+                    </TrackedButton>
+                )}
+
+                {/* A downgrade outlives the history, so this is reachable. */}
+                {isPlanRefusal(fork.error) ? (
+                    <div className="mt-4">
+                        <UpgradeGate error={fork.error} />
+                    </div>
+                ) : (
+                    <FormError error={fork.error ? errorMessage(fork.error) : null} className="mt-3" />
+                )}
+            </div>
+
+            <ForkConflictModal
+                open={confirming}
+                blocking={openDraft.data ?? null}
+                pending={fork.isPending}
+                error={fork.error && !isPlanRefusal(fork.error) ? errorMessage(fork.error) : null}
+                onClose={() => setConfirming(false)}
+                onGoToOpen={() => router.push(panelHref)}
+                onConfirm={continueConversation}
+            />
 
             <div className="mt-8 grid gap-6 lg:grid-cols-12">
                 {/* Proposal first: on a phone the question is "what did it tell me

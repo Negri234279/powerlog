@@ -18,6 +18,7 @@ import { Field, Input, Textarea } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { Bolt } from '@/components/ui/icons'
+import { HistoryEntryLink } from '@/components/ai/history-entry-link'
 import { TrackedButton } from '@/components/ui/tracked'
 import { DayToggles, ProposedWeek } from './mesocycle-ai-shared'
 
@@ -150,7 +151,7 @@ export function MesocycleAiPanel({
     // and an athlete without an AI provider configured should not be nagged.
     if (!open && !draft) {
         return (
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap items-center gap-4">
                 <TrackedButton
                     analyticsId="ai-mesocycle-open"
                     type="button"
@@ -159,6 +160,8 @@ export function MesocycleAiPanel({
                 >
                     <Bolt className="size-4" /> {t('open')}
                 </TrackedButton>
+                {/* Collapsed is exactly when "where's my old one" gets asked. */}
+                <HistoryEntryLink kind="mesocycle" analyticsId="ai-mesocycle-history-link" />
             </div>
         )
     }

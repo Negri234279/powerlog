@@ -8,8 +8,22 @@ import { graphql } from '@/lib/graphql/__generated__'
  * screen, so a page of rows never carries them.
  */
 export const AiDraftHistoryDocument = graphql(`
-    query AiDraftHistory($limit: Int, $kind: String, $status: String, $sessionId: ID, $cursor: String) {
-        aiDraftHistory(limit: $limit, kind: $kind, status: $status, sessionId: $sessionId, cursor: $cursor) {
+    query AiDraftHistory(
+        $limit: Int
+        $kind: String
+        $status: String
+        $sessionId: ID
+        $athleteId: String
+        $cursor: String
+    ) {
+        aiDraftHistory(
+            limit: $limit
+            kind: $kind
+            status: $status
+            sessionId: $sessionId
+            athleteId: $athleteId
+            cursor: $cursor
+        ) {
             items {
                 id
                 kind
@@ -43,6 +57,23 @@ export const AiDraftDetailDocument = graphql(`
             ...AiPlanDraftFields
         }
         mesocycleDraftById(draftId: $draftId) {
+            ...AiMesocycleDraftFields
+        }
+    }
+`)
+
+/** Continue a past conversation: a new open draft carrying its proposal. */
+export const ForkPlanDraftDocument = graphql(`
+    mutation ForkPlanDraft($draftId: ID!) {
+        forkPlanDraft(draftId: $draftId) {
+            ...AiPlanDraftFields
+        }
+    }
+`)
+
+export const ForkMesocycleDraftDocument = graphql(`
+    mutation ForkMesocycleDraft($draftId: ID!) {
+        forkMesocycleDraft(draftId: $draftId) {
             ...AiMesocycleDraftFields
         }
     }
