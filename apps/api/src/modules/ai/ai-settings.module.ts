@@ -13,6 +13,7 @@ import {
     AI_EVENT_HANDLERS,
     AI_QUERY_HANDLERS,
 } from './application/ai.application'
+import { AiDraftHistoryReadModel } from './application/ports/ai-draft-history.read-model'
 import { Clock } from './application/ports/clock.port'
 import { IdGenerator } from './application/ports/id-generator.port'
 import { ModelPricing } from './application/ports/model-pricing.port'
@@ -23,6 +24,7 @@ import { AiProviderConfigRepository } from './domain/repositories/ai-provider-co
 import { AiUsageRepository } from './domain/repositories/ai-usage.repository'
 import { AesGcmSecretCipher } from './infrastructure/crypto/aes-gcm-secret-cipher'
 import { UuidGenerator } from './infrastructure/id/uuid-generator'
+import { DrizzleAiDraftHistoryReadModel } from './infrastructure/persistence/read-models/drizzle-ai-draft-history.read-model'
 import { DrizzleAiMesocycleDraftRepository } from './infrastructure/persistence/repositories/drizzle-ai-mesocycle-draft.repository'
 import { DrizzleAiPlanDraftRepository } from './infrastructure/persistence/repositories/drizzle-ai-plan-draft.repository'
 import { DrizzleAiProviderConfigRepository } from './infrastructure/persistence/repositories/drizzle-ai-provider-config.repository'
@@ -40,6 +42,7 @@ const ADAPTERS: Provider[] = [
     { provide: AiPlanDraftRepository, useClass: DrizzleAiPlanDraftRepository },
     { provide: AiMesocycleDraftRepository, useClass: DrizzleAiMesocycleDraftRepository },
     { provide: AiUsageRepository, useClass: DrizzleAiUsageRepository },
+    { provide: AiDraftHistoryReadModel, useClass: DrizzleAiDraftHistoryReadModel },
     { provide: ModelPricing, useClass: StaticModelPricing },
     // Cross-module contracts, bridged over the CQRS buses and handled by workouts.
     { provide: SessionPlanContextReader, useClass: QueryBusSessionPlanContextReader },

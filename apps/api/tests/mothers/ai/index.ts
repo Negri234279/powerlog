@@ -6,6 +6,7 @@ export {
     mesocycleDraftProposal,
     mesocycleDraftSet,
 } from './ai-mesocycle-draft.mother'
+export { AiDraftSummaryMother } from './ai-draft-summary.mother'
 export { AI_DRAFT_DEFAULTS, AiPlanDraftMother, planDraftSet } from './ai-plan-draft.mother'
 export { AI_MOTHER_DEFAULTS, AiProviderConfigMother } from './ai-provider-config.mother'
 export { CATALOG_IDS, MesocycleDesignContextMother } from './mesocycle-design-context.mother'

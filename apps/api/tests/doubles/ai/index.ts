@@ -1,6 +1,7 @@
 export { FakeClock } from './fake-clock'
 export { FakeIdGenerator } from './fake-id-generator'
 export { FakeSecretCipher } from './fake-secret-cipher'
+export { InMemoryAiDraftHistoryReadModel } from './in-memory-ai-draft-history.read-model'
 export { InMemoryAiMesocycleDraftRepository } from './in-memory-ai-mesocycle-draft.repository'
 export { InMemoryAiPlanDraftRepository } from './in-memory-ai-plan-draft.repository'
 export { InMemoryAiProviderConfigRepository } from './in-memory-ai-provider-config.repository'

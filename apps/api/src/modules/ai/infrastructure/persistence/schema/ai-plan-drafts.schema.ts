@@ -46,7 +46,10 @@ export const aiPlanDrafts = pgTable(
         uniqueIndex('ai_plan_drafts_one_open_per_session')
             .on(table.sessionId)
             .where(sql`${table.status} = 'open'`),
-        index('ai_plan_drafts_user_idx').on(table.userId),
+        // The history feed: one user's drafts, newest activity first. Replaces a
+        // plain `user_id` index — this one has it as a prefix, so it also serves
+        // the erase-on-account-deletion scan.
+        index('ai_plan_drafts_user_updated_idx').on(table.userId, table.updatedAt.desc(), table.id.desc()),
     ],
 )
 
@@ -74,7 +77,14 @@ export const aiPlanDraftSets = pgTable(
     (table) => [primaryKey({ columns: [table.draftId, table.entryId, table.order] })],
 )
 
-/** `ai_plan_draft_messages` — the refinement conversation attached to a draft. */
+/**
+ * `ai_plan_draft_messages` — the refinement conversation attached to a draft.
+ *
+ * `position` orders the thread, not `created_at`: the athlete's request and the
+ * model's answer to it are recorded at the same instant, and Postgres returns ties
+ * in whatever order it likes — which would show the conversation backwards. Same
+ * call as `ai_mesocycle_draft_messages`.
+ */
 export const aiPlanDraftMessages = pgTable(
     'ai_plan_draft_messages',
     {
@@ -82,9 +92,11 @@ export const aiPlanDraftMessages = pgTable(
         draftId: uuid('draft_id')
             .notNull()
             .references(() => aiPlanDrafts.id, { onDelete: 'cascade' }),
+        /** 0-based position in the thread. */
+        position: integer('position').notNull(),
         role: aiPlanMessageRoleEnum('role').notNull(),
         content: text('content').notNull(),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     },
-    (table) => [index('ai_plan_draft_messages_draft_idx').on(table.draftId, table.createdAt)],
+    (table) => [uniqueIndex('ai_plan_draft_messages_draft_position').on(table.draftId, table.position)],
 )

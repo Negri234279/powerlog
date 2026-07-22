@@ -147,34 +147,35 @@ SendChatMessageCommand(...))`), exactamente como hoy `RealtimeHub.publish()`
   añadir un segundo transporte: la lógica de negocio no se duplica, solo la
   puerta de entrada.
 
-    A diferencia del hub SSE (deliberadamente "tonto": solo tipo, sin payload,
-    porque cualquiera puede tener el stream abierto y la autorización real vive
-    en los resolvers), **el gateway de chat sí autoriza por sala**: un socket
-    solo hace `join` a `conversation:<id>` después de que el servidor compruebe
-    que el usuario es `coachId`/`athleteId` de esa conversación. Por eso aquí sí
-    es seguro llevar el cuerpo del mensaje en el evento — no es el mismo
-    contrato que el SSE global, es un canal ya autorizado por sala.
+        A diferencia del hub SSE (deliberadamente "tonto": solo tipo, sin payload,
+        porque cualquiera puede tener el stream abierto y la autorización real vive
+        en los resolvers), **el gateway de chat sí autoriza por sala**: un socket
+        solo hace `join` a `conversation:<id>` después de que el servidor compruebe
+        que el usuario es `coachId`/`athleteId` de esa conversación. Por eso aquí sí
+        es seguro llevar el cuerpo del mensaje en el evento — no es el mismo
+        contrato que el SSE global, es un canal ya autorizado por sala.
 
-    **Eventos servidor → cliente**: `chat:message` (mensaje completo, a la sala
-    de la conversación) · `chat:typing` (efímero, no se persiste) ·
-    `chat:delivered` / `chat:read` (avance del cursor del otro participante, para
-    que el check pase a azul en vivo) · `presence:update` (`{ userId, online,
-lastSeenAt }`, **solo** a los sockets de usuarios vinculados a ese `userId` —
+        **Eventos servidor → cliente**: `chat:message` (mensaje completo, a la sala
+        de la conversación) · `chat:typing` (efímero, no se persiste) ·
+        `chat:delivered` / `chat:read` (avance del cursor del otro participante, para
+        que el check pase a azul en vivo) · `presence:update` (`{ userId, online,
+
+    lastSeenAt }`, **solo** a los sockets de usuarios vinculados a ese `userId` —
     nunca un broadcast global).
 
-    **Eventos cliente → servidor**: `chat:join` (con comprobación de
-    autorización) · `chat:send` · `chat:typing` (TTL de servidor ~6 s por si el
-    cliente muere a media escritura) · `chat:delivered-ack` /
-    `chat:read-ack`.
+        **Eventos cliente → servidor**: `chat:join` (con comprobación de
+        autorización) · `chat:send` · `chat:typing` (TTL de servidor ~6 s por si el
+        cliente muere a media escritura) · `chat:delivered-ack` /
+        `chat:read-ack`.
 
-    **Autenticación del handshake**: mismo `TokenSigner.verifyAccessToken` que
-    usa `JwtCookieGuard`, adaptado a un guard de WS que lee la cookie de
-    `socket.handshake.headers.cookie` en vez de `req.cookies` — no se reinventa
-    la verificación, solo el punto donde se lee el token.
+        **Autenticación del handshake**: mismo `TokenSigner.verifyAccessToken` que
+        usa `JwtCookieGuard`, adaptado a un guard de WS que lee la cookie de
+        `socket.handshake.headers.cookie` en vez de `req.cookies` — no se reinventa
+        la verificación, solo el punto donde se lee el token.
 
-    **Validación**: los mismos esquemas zod que ya existirían para los
-    argumentos GraphQL, aplicados también en el gateway antes de construir el
-    comando — el payload de un socket es entrada externa igual que un POST.
+        **Validación**: los mismos esquemas zod que ya existirían para los
+        argumentos GraphQL, aplicados también en el gateway antes de construir el
+        comando — el payload de un socket es entrada externa igual que un POST.
 
 ## `src/presence/` (módulo transversal nuevo, fuera de `src/modules/`)
 

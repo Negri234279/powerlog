@@ -60,10 +60,12 @@ export const AiPlanDraftMapper = {
         return draft.sets.map((set) => ({ draftId: draft.id, ...set }))
     },
 
+    /** The aggregate's message order is the thread's order, so it is what gets stored. */
     messagesToPersistence(draft: AiPlanDraftAggregate): (typeof aiPlanDraftMessages.$inferInsert)[] {
-        return draft.messages.map((message) => ({
+        return draft.messages.map((message, position) => ({
             id: message.id,
             draftId: draft.id,
+            position,
             role: message.role,
             content: message.content,
             createdAt: message.createdAt,

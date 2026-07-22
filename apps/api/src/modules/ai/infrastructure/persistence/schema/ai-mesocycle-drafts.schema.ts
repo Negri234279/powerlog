@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 import type { MesocycleDraftProposal } from '../../../domain/entities/ai-mesocycle-draft.entity'
 import { aiPlanDraftStatusEnum, aiPlanMessageRoleEnum } from './ai-plan-drafts.schema'
@@ -55,6 +55,9 @@ export const aiMesocycleDrafts = pgTable(
         uniqueIndex('ai_mesocycle_drafts_one_open_per_user')
             .on(table.userId, sql`coalesce(${table.athleteId}, ${table.userId})`)
             .where(sql`${table.status} = 'open'`),
+        // The history feed: one user's drafts, newest activity first. Its `user_id`
+        // prefix also serves the erase-on-account-deletion scan.
+        index('ai_mesocycle_drafts_user_updated_idx').on(table.userId, table.updatedAt.desc(), table.id.desc()),
     ],
 )
 

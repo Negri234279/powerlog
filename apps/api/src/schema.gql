@@ -328,6 +328,46 @@ type AdminWorkoutStats {
   sets: Int!
 }
 
+type AiDraftHistoryPage {
+  hasNextPage: Boolean!
+  items: [AiDraftSummary!]!
+  nextCursor: String
+}
+
+type AiDraftSummary {
+  """
+  The athlete a coach designed for; null on session drafts and on the caller’s own blocks.
+  """
+  athleteId: ID
+  createdAt: DateTime!
+  id: ID!
+
+  """"session" or "mesocycle"."""
+  kind: String!
+  messageCount: Int!
+
+  """The model that produced the proposal."""
+  model: String!
+
+  """The block name the model proposed; null on session drafts."""
+  name: String
+
+  """"openai" or "anthropic"."""
+  provider: String!
+
+  """The session programmed; null on mesocycle drafts."""
+  sessionId: ID
+
+  """"open", "accepted" or "discarded"."""
+  status: String!
+
+  """
+  What the athlete asked for, in their own words; null when the draft was generated unprompted.
+  """
+  title: String
+  updatedAt: DateTime!
+}
+
 type AiMesocycleDraft {
   """The athlete it was designed for; null → your own block."""
   athleteId: ID
@@ -1754,6 +1794,19 @@ type Query {
   """Aggregate training counts (admin only)."""
   adminWorkoutStats: AdminWorkoutStats!
 
+  """
+  Your AI drafts, most recent activity first. Session and mesocycle drafts in one feed.
+  """
+  aiDraftHistory(
+    """An athlete’s id, or "self" for your own blocks."""
+    athleteId: String
+    cursor: String
+    kind: String
+    limit: Int
+    sessionId: ID
+    status: String
+  ): AiDraftHistoryPage!
+
   """Models the stored key may call, fetched live from the provider."""
   aiModels(provider: String!): [AiModel!]!
 
@@ -1860,6 +1913,11 @@ type Query {
   mesocycleDraft(athleteId: ID): AiMesocycleDraft
 
   """
+  One mesocycle draft by id, whatever its status — the history’s detail view.
+  """
+  mesocycleDraftById(draftId: ID!): AiMesocycleDraft!
+
+  """
   The caller's mesocycles (newest first), with cheap rollups; optional name search.
   """
   mesocycles(search: String): [MesocycleSummary!]!
@@ -1920,6 +1978,11 @@ type Query {
 
   """Liveness ping for the GraphQL schema."""
   ping: String!
+
+  """
+  One session draft by id, whatever its status — the history’s detail view.
+  """
+  planDraftById(draftId: ID!): AiPlanDraft!
 
   """The proposal awaiting a decision on this session, if any."""
   sessionPlanDraft(sessionId: ID!): AiPlanDraft
