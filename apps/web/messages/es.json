@@ -526,6 +526,7 @@
         "reps": "Reps",
         "intensity": "Intensidad",
         "rangePlaceholder": "5 o 5-8",
+        "errNumFormat": "Introduce un número.",
         "errRangeFormat": "Usa un número o un rango, p. ej. 5-8.",
         "errRangeReversed": "El extremo inferior no puede ser mayor que el superior.",
         "errRangeReps": "Las reps deben ser números enteros del 1 al 1000.",

@@ -4,6 +4,13 @@ import { useTranslations } from 'next-intl'
 import { type SubmitEvent, type ReactNode, useState } from 'react'
 
 import type { Units } from '@/lib/units'
+import {
+    type PlannedField,
+    rangeErrorKey,
+    scalarErrorKey,
+    validatePlanned,
+    validateScalar,
+} from '@/lib/workouts/planned-validation'
 import { Input, Select } from '@/components/ui/field'
 import { TrackedButton } from '@/components/ui/tracked'
 
@@ -29,6 +36,10 @@ export interface SetValues {
 }
 
 type Intensity = 'none' | 'rpe' | 'rir'
+
+/** Every validatable field in the form: the performed trio and the planned trio. */
+type FieldKey = 'weight' | 'reps' | 'intensity' | 'plannedWeight' | 'plannedReps' | 'plannedIntensity'
+const FIELD_KEYS: FieldKey[] = ['weight', 'reps', 'intensity', 'plannedWeight', 'plannedReps', 'plannedIntensity']
 
 const EMPTY: SetValues = {
     plannedWeight: null,
@@ -69,11 +80,12 @@ function startIntensity(rpe: unknown, rir: unknown): Intensity {
     return 'none'
 }
 
-function NumberField({ label, children }: { label: string; children: ReactNode }) {
+function NumberField({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
     return (
         <label className="space-y-1">
             <span className="block font-mono text-[10px] uppercase tracking-widest text-text-dim">{label}</span>
             {children}
+            {error ? <p className="max-w-[8rem] text-[10px] leading-tight text-ember">{error}</p> : null}
         </label>
     )
 }
@@ -96,6 +108,8 @@ function IntensityFields({
     onKindChange,
     value,
     onValueChange,
+    onBlur,
+    error,
     range = false,
 }: {
     label: string
@@ -103,6 +117,8 @@ function IntensityFields({
     onKindChange: (kind: Intensity) => void
     value: string
     onValueChange: (value: string) => void
+    onBlur?: () => void
+    error?: string
     /** Planned side: the value is a range (`7-8`), so the field takes text. */
     range?: boolean
 }) {
@@ -112,7 +128,7 @@ function IntensityFields({
         <>
             <NumberField label={label}>
                 <div className="w-24">
-                    <Select value={kind} onChange={(e) => onKindChange(e.target.value as Intensity)}>
+                    <Select value={kind} onChange={(e) => onKindChange(e.target.value as Intensity)} onBlur={onBlur}>
                         <option value="none">{t('none')}</option>
                         <option value="rpe">RPE</option>
                         <option value="rir">RIR</option>
@@ -121,7 +137,7 @@ function IntensityFields({
             </NumberField>
 
             {kind !== 'none' ? (
-                <NumberField label={kind === 'rpe' ? t('rpeRange') : t('rir')}>
+                <NumberField label={kind === 'rpe' ? t('rpeRange') : t('rir')} error={error}>
                     <div className="w-20">
                         {range ? (
                             <Input
@@ -129,6 +145,8 @@ function IntensityFields({
                                 inputMode="decimal"
                                 value={value}
                                 onChange={(e) => onValueChange(e.target.value)}
+                                onBlur={onBlur}
+                                aria-invalid={error ? true : undefined}
                                 placeholder={t('rangePlaceholder')}
                             />
                         ) : (
@@ -139,6 +157,8 @@ function IntensityFields({
                                 min={0}
                                 value={value}
                                 onChange={(e) => onValueChange(e.target.value)}
+                                onBlur={onBlur}
+                                aria-invalid={error ? true : undefined}
                                 placeholder="—"
                             />
                         )}
@@ -186,9 +206,71 @@ export function SetForm({
     )
     const [plannedIntensityValue, setPlannedIntensityValue] = useState(start.plannedRpe ?? start.plannedRir ?? '')
     const [outcome, setOutcome] = useState<OutcomeValue>(start.outcome ?? 'pending')
+    // Per-field client validation messages. A field validates on blur; Save
+    // re-checks every field at once so the whole set's problems surface together.
+    const [errors, setErrors] = useState<Record<string, string>>({})
+
+    const intensityField = (kind: Intensity): PlannedField => (kind === 'rpe' ? 'rpe' : 'rir')
+
+    /** The validation message for one field, or null when it's blank/valid. Planned
+     *  cells accept ranges (`5-8`); performed cells accept a single number. */
+    function checkField(key: FieldKey): string | null {
+        switch (key) {
+            case 'weight': {
+                const code = validateScalar(weight, 'weight', units)
+                return code ? t(scalarErrorKey(code, 'weight')) : null
+            }
+            case 'reps': {
+                const code = validateScalar(reps, 'reps', units)
+                return code ? t(scalarErrorKey(code, 'reps')) : null
+            }
+            case 'intensity': {
+                if (intensity === 'none') return null
+                const field = intensityField(intensity)
+                const code = validateScalar(intensityValue, field, units)
+                return code ? t(scalarErrorKey(code, field)) : null
+            }
+            case 'plannedWeight': {
+                const code = validatePlanned(plannedWeight, 'weight', units)
+                return code ? t(rangeErrorKey(code, 'weight')) : null
+            }
+            case 'plannedReps': {
+                const code = validatePlanned(plannedReps, 'reps', units)
+                return code ? t(rangeErrorKey(code, 'reps')) : null
+            }
+            case 'plannedIntensity': {
+                if (plannedIntensity === 'none') return null
+                const field = intensityField(plannedIntensity)
+                const code = validatePlanned(plannedIntensityValue, field, units)
+                return code ? t(rangeErrorKey(code, field)) : null
+            }
+        }
+    }
+
+    /** Validate one field on blur, setting or clearing just its error. */
+    function validateOnBlur(key: FieldKey) {
+        setErrors((prev) => {
+            const next = { ...prev }
+            const message = checkField(key)
+            if (message) next[key] = message
+            else delete next[key]
+            return next
+        })
+    }
 
     function submit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
+
+        // Check every field up front and surface all problems together, rather than
+        // letting the back-end reject one at a time.
+        const found: Record<string, string> = {}
+        for (const key of FIELD_KEYS) {
+            const message = checkField(key)
+            if (message) found[key] = message
+        }
+        setErrors(found)
+        if (Object.keys(found).length > 0) return
+
         const value = parseNum(intensityValue)
         onSubmit({
             plannedWeight: textOrNull(plannedWeight),
@@ -208,7 +290,7 @@ export function SetForm({
             {/* Two rows, never mixed: what was done, and what was asked for. Read
                 as one list of fields they are easy to fill into the wrong half. */}
             <FieldRow label={t('doneSection')}>
-                <NumberField label={t('weightLabel', { units })}>
+                <NumberField label={t('weightLabel', { units })} error={errors['weight']}>
                     <div className="w-24">
                         <Input
                             type="number"
@@ -217,12 +299,14 @@ export function SetForm({
                             min={0}
                             value={weight}
                             onChange={(e) => setWeight(e.target.value)}
+                            onBlur={() => validateOnBlur('weight')}
+                            aria-invalid={errors['weight'] ? true : undefined}
                             placeholder="0"
                         />
                     </div>
                 </NumberField>
 
-                <NumberField label={t('reps')}>
+                <NumberField label={t('reps')} error={errors['reps']}>
                     <div className="w-20">
                         <Input
                             type="number"
@@ -230,6 +314,8 @@ export function SetForm({
                             min={0}
                             value={reps}
                             onChange={(e) => setReps(e.target.value)}
+                            onBlur={() => validateOnBlur('reps')}
+                            aria-invalid={errors['reps'] ? true : undefined}
                             placeholder="0"
                         />
                     </div>
@@ -241,6 +327,8 @@ export function SetForm({
                     onKindChange={setIntensity}
                     value={intensityValue}
                     onValueChange={setIntensityValue}
+                    onBlur={() => validateOnBlur('intensity')}
+                    error={errors['intensity']}
                 />
 
                 {showOutcome ? (
@@ -258,25 +346,29 @@ export function SetForm({
 
             <FieldRow label={t('plannedSection')}>
                 {/* Planned targets take text so a range like `50-55` keeps its hyphen. */}
-                <NumberField label={t('weightLabel', { units })}>
+                <NumberField label={t('weightLabel', { units })} error={errors['plannedWeight']}>
                     <div className="w-24">
                         <Input
                             type="text"
                             inputMode="decimal"
                             value={plannedWeight}
                             onChange={(e) => setPlannedWeight(e.target.value)}
+                            onBlur={() => validateOnBlur('plannedWeight')}
+                            aria-invalid={errors['plannedWeight'] ? true : undefined}
                             placeholder={t('rangePlaceholder')}
                         />
                     </div>
                 </NumberField>
 
-                <NumberField label={t('reps')}>
+                <NumberField label={t('reps')} error={errors['plannedReps']}>
                     <div className="w-20">
                         <Input
                             type="text"
                             inputMode="numeric"
                             value={plannedReps}
                             onChange={(e) => setPlannedReps(e.target.value)}
+                            onBlur={() => validateOnBlur('plannedReps')}
+                            aria-invalid={errors['plannedReps'] ? true : undefined}
                             placeholder={t('rangePlaceholder')}
                         />
                     </div>
@@ -288,6 +380,8 @@ export function SetForm({
                     onKindChange={setPlannedIntensity}
                     value={plannedIntensityValue}
                     onValueChange={setPlannedIntensityValue}
+                    onBlur={() => validateOnBlur('plannedIntensity')}
+                    error={errors['plannedIntensity']}
                     range
                 />
             </FieldRow>

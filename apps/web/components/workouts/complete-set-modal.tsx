@@ -8,6 +8,7 @@ import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { type WorkoutSetData, useCompleteSet } from '@/lib/graphql/hooks/use-workouts'
 import { formatRange, formatWeightRange, rangeMin } from '@/lib/range'
 import { kgTo, type Units } from '@/lib/units'
+import { type PlannedField, scalarErrorKey, validateScalar } from '@/lib/workouts/planned-validation'
 import { FormError } from '@/components/ui/form-error'
 import { Input, Select } from '@/components/ui/field'
 import { Modal } from '@/components/ui/modal'
@@ -116,12 +117,49 @@ export function CompleteSetModal({
     const [intensity, setIntensity] = useState<Intensity>(start.intensity)
     const [intensityValue, setIntensityValue] = useState(start.intensityValue)
     const [error, setError] = useState<string | null>(null)
+    // Per-field client validation messages. Performed values are single numbers,
+    // validated on blur and all together on submit before the mutation runs.
+    const [errors, setErrors] = useState<Record<string, string>>({})
+
+    /** The message for one performed field, or null when blank/valid. */
+    function checkField(key: 'weight' | 'reps' | 'intensity'): string | null {
+        if (key === 'weight') {
+            const code = validateScalar(weight, 'weight', units)
+            return code ? t(scalarErrorKey(code, 'weight')) : null
+        }
+        if (key === 'reps') {
+            const code = validateScalar(reps, 'reps', units)
+            return code ? t(scalarErrorKey(code, 'reps')) : null
+        }
+        if (intensity === 'none') return null
+        const field: PlannedField = intensity === 'rpe' ? 'rpe' : 'rir'
+        const code = validateScalar(intensityValue, field, units)
+        return code ? t(scalarErrorKey(code, field)) : null
+    }
+
+    function validateOnBlur(key: 'weight' | 'reps' | 'intensity') {
+        setErrors((prev) => {
+            const next = { ...prev }
+            const message = checkField(key)
+            if (message) next[key] = message
+            else delete next[key]
+            return next
+        })
+    }
 
     async function submit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         setError(null)
-        const value = parseNum(intensityValue)
 
+        const found: Record<string, string> = {}
+        for (const key of ['weight', 'reps', 'intensity'] as const) {
+            const message = checkField(key)
+            if (message) found[key] = message
+        }
+        setErrors(found)
+        if (Object.keys(found).length > 0) return
+
+        const value = parseNum(intensityValue)
         try {
             await complete.mutateAsync({
                 sessionId,
@@ -161,7 +199,7 @@ export function CompleteSetModal({
             <form onSubmit={submit} className="mt-5 space-y-4">
                 <OutcomeChoice outcome={outcome} onChange={setOutcome} />
 
-                <div className="flex flex-wrap items-end gap-2.5">
+                <div className="flex flex-wrap items-start gap-2.5">
                     <label className="space-y-1">
                         <span className="block font-mono text-[10px] uppercase tracking-widest text-text-dim">
                             {t('weightLabel', { units })}
@@ -174,9 +212,14 @@ export function CompleteSetModal({
                                 min={0}
                                 value={weight}
                                 onChange={(e) => setWeight(e.target.value)}
+                                onBlur={() => validateOnBlur('weight')}
+                                aria-invalid={errors['weight'] ? true : undefined}
                                 placeholder="0"
                             />
                         </div>
+                        {errors['weight'] ? (
+                            <p className="max-w-[6rem] text-[10px] leading-tight text-ember">{errors['weight']}</p>
+                        ) : null}
                     </label>
 
                     <label className="space-y-1">
@@ -190,9 +233,14 @@ export function CompleteSetModal({
                                 min={0}
                                 value={reps}
                                 onChange={(e) => setReps(e.target.value)}
+                                onBlur={() => validateOnBlur('reps')}
+                                aria-invalid={errors['reps'] ? true : undefined}
                                 placeholder="0"
                             />
                         </div>
+                        {errors['reps'] ? (
+                            <p className="max-w-[6rem] text-[10px] leading-tight text-ember">{errors['reps']}</p>
+                        ) : null}
                     </label>
 
                     <label className="space-y-1">
@@ -200,7 +248,11 @@ export function CompleteSetModal({
                             {t('intensity')}
                         </span>
                         <div className="w-24">
-                            <Select value={intensity} onChange={(e) => setIntensity(e.target.value as Intensity)}>
+                            <Select
+                                value={intensity}
+                                onChange={(e) => setIntensity(e.target.value as Intensity)}
+                                onBlur={() => validateOnBlur('intensity')}
+                            >
                                 <option value="none">{t('none')}</option>
                                 <option value="rpe">RPE</option>
                                 <option value="rir">RIR</option>
@@ -221,9 +273,16 @@ export function CompleteSetModal({
                                     min={0}
                                     value={intensityValue}
                                     onChange={(e) => setIntensityValue(e.target.value)}
+                                    onBlur={() => validateOnBlur('intensity')}
+                                    aria-invalid={errors['intensity'] ? true : undefined}
                                     placeholder="—"
                                 />
                             </div>
+                            {errors['intensity'] ? (
+                                <p className="max-w-[6rem] text-[10px] leading-tight text-ember">
+                                    {errors['intensity']}
+                                </p>
+                            ) : null}
                         </label>
                     ) : null}
                 </div>

@@ -88,6 +88,28 @@ export function validatePlanned(text: string, field: PlannedField, units: Units)
     return null
 }
 
+/**
+ * Validate a performed value — a single number, never a range: you lifted what
+ * you lifted. Blank is valid (the field is optional). Same bounds as the planned
+ * side, but a hyphenated range is rejected as a format error.
+ */
+export function validateScalar(text: string, field: PlannedField, units: Units): PlannedErrorCode | null {
+    const trimmed = text.trim()
+    if (trimmed === '') {
+        return null
+    }
+    if (!PART.test(trimmed)) {
+        return 'format'
+    }
+
+    const value = Number(trimmed.replace(',', '.'))
+    if (!withinBounds({ min: value, max: value }, field, units)) {
+        return 'bounds'
+    }
+
+    return null
+}
+
 /** The i18n key (in the `workouts` namespace) for a validation code on a field. */
 export function rangeErrorKey(code: PlannedErrorCode, field: PlannedField): string {
     if (code === 'format') return 'errRangeFormat'
@@ -103,6 +125,13 @@ export function rangeErrorKey(code: PlannedErrorCode, field: PlannedField): stri
         case 'rir':
             return 'errRangeRir'
     }
+}
+
+/** Like `rangeErrorKey`, but for a performed (single-value) field: its `format`
+ *  error asks for a plain number instead of a range. */
+export function scalarErrorKey(code: PlannedErrorCode, field: PlannedField): string {
+    if (code === 'format') return 'errNumFormat'
+    return rangeErrorKey(code, field)
 }
 
 // ── Draft-set helpers shared by the template + mesocycle builders ──────────
