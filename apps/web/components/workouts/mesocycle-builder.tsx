@@ -22,6 +22,7 @@ import {
     useWorkoutTemplates,
 } from '@/lib/graphql/hooks/use-workout-templates'
 import { useEnterExit } from '@/lib/hooks/use-enter-exit'
+import { displayNumber, formatRange, formatWeightRange, type RangeValue } from '@/lib/range'
 import { kgTo, type Units, unitsOf } from '@/lib/units'
 import { Field, Input } from '@/components/ui/field'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
@@ -86,10 +87,35 @@ function numberOrNull(value: string): number | null {
     return Number.isFinite(n) ? n : null
 }
 
+/** Trim the field to text, or null when blank — the API parses `5` / `5-8`. */
+function textOrNull(value: string): string | null {
+    const trimmed = value.trim()
+    return trimmed === '' ? null : trimmed
+}
+
 /** Round a display-unit value to a tidy 2-decimal string (drops float noise). */
 function weightToInput(kg: number | null, units: Units): string {
     if (kg === null) return ''
     return String(Math.round(kgTo(units, kg) * 100) / 100)
+}
+
+/**
+ * Add `increment` to a weight-range field, bound by bound: `50-55` + 5 → `55-60`,
+ * `50` + 5 → `55`. A field that isn't a plain number/range (blank, or something
+ * the user is mid-typing) is left untouched, so progressing a week never mangles it.
+ */
+function bumpWeightText(text: string, increment: number): string {
+    if (increment === 0) return text
+
+    const bounds = text.split('-').map((part) => part.trim())
+    const numbers = bounds.map(Number)
+    if (bounds.some((part) => part === '') || numbers.some((n) => !Number.isFinite(n))) {
+        return text
+    }
+
+    const bumped = numbers.map((n) => displayNumber(n + increment))
+
+    return bumped[0] === bumped[1] ? bumped[0]! : bumped.join('-')
 }
 
 /** A YYYY-MM-DD string (for <input type="date">) from an ISO datetime, or ''. */
@@ -105,8 +131,11 @@ function weekdayLabel(offset: number, locale: string): string {
     return new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(d)
 }
 
-/** Map a set's planned targets (kg) to an editable draft set (display units). */
-function setToDraft(
+/**
+ * Map an AI proposal's set (single-value targets in kg) to an editable draft set.
+ * The model proposes numbers, not ranges — so this stays the scalar path.
+ */
+function aiSetToDraft(
     set: {
         plannedWeightKg: number | null
         plannedReps: number | null
@@ -126,6 +155,27 @@ function setToDraft(
     }
 }
 
+/** Map a programmed set's planned ranges (kg) to an editable draft set (`5` / `5-8`). */
+function rangeSetToDraft(
+    set: {
+        plannedWeightKg: RangeValue | null
+        plannedReps: RangeValue | null
+        rpe: RangeValue | null
+        rir: RangeValue | null
+        notes: string | null
+    },
+    units: Units,
+): DraftSet {
+    return {
+        key: newKey(),
+        weight: formatWeightRange(set.plannedWeightKg, units),
+        reps: formatRange(set.plannedReps),
+        intensityKind: set.rpe ? 'rpe' : set.rir ? 'rir' : 'none',
+        intensity: formatRange(set.rpe ?? set.rir),
+        notes: set.notes ?? '',
+    }
+}
+
 /** Build the editable draft tree from a loaded mesocycle (kg → display units). */
 function draftFromMesocycle(mesocycle: MesocycleData, units: Units): DraftWeek[] {
     return mesocycle.microcycles.map((week) => ({
@@ -139,7 +189,7 @@ function draftFromMesocycle(mesocycle: MesocycleData, units: Units): DraftWeek[]
                 key: newKey(),
                 exerciseId: exercise.exerciseId,
                 notes: exercise.notes ?? '',
-                sets: exercise.sets.map((set) => setToDraft(set, units)),
+                sets: exercise.sets.map((set) => rangeSetToDraft(set, units)),
             })),
         })),
     }))
@@ -151,7 +201,7 @@ function templateToDraftExercises(template: WorkoutTemplateData, units: Units): 
         key: newKey(),
         exerciseId: exercise.exerciseId,
         notes: exercise.notes ?? '',
-        sets: exercise.sets.map((set) => setToDraft(set, units)),
+        sets: exercise.sets.map((set) => rangeSetToDraft(set, units)),
     }))
 }
 
@@ -170,7 +220,7 @@ function daysFromAiProposal(proposal: AiMesocycleDraft, units: Units): DraftDay[
                 key: newKey(),
                 exerciseId: exercise.exerciseId,
                 notes: exercise.notes ?? '',
-                sets: exercise.sets.map((set) => setToDraft(set, units)),
+                sets: exercise.sets.map((set) => aiSetToDraft(set, units)),
             })),
         }))
 }
@@ -298,14 +348,11 @@ export function MesocycleBuilder({
                         key: newKey(),
                         exerciseId: exercise.exerciseId,
                         notes: exercise.notes,
-                        sets: exercise.sets.map((set) => {
-                            const base = numberOrNull(set.weight)
-                            const bumped =
-                                base !== null && increment !== 0
-                                    ? String(Math.round((base + increment) * 100) / 100)
-                                    : set.weight
-                            return { ...set, key: newKey(), weight: bumped }
-                        }),
+                        sets: exercise.sets.map((set) => ({
+                            ...set,
+                            key: newKey(),
+                            weight: bumpWeightText(set.weight, increment),
+                        })),
                     })),
                 })),
             }
@@ -389,10 +436,10 @@ export function MesocycleBuilder({
                         notes: exercise.notes.trim() === '' ? null : exercise.notes.trim(),
                         sets: exercise.sets.map((set) => ({
                             unit: units,
-                            plannedWeight: numberOrNull(set.weight),
-                            plannedReps: numberOrNull(set.reps),
-                            rpe: set.intensityKind === 'rpe' ? numberOrNull(set.intensity) : null,
-                            rir: set.intensityKind === 'rir' ? numberOrNull(set.intensity) : null,
+                            plannedWeight: textOrNull(set.weight),
+                            plannedReps: textOrNull(set.reps),
+                            rpe: set.intensityKind === 'rpe' ? textOrNull(set.intensity) : null,
+                            rir: set.intensityKind === 'rir' ? textOrNull(set.intensity) : null,
                             notes: set.notes.trim() === '' ? null : set.notes.trim(),
                         })),
                     })),
@@ -1059,26 +1106,26 @@ function SetRow({
     onRemove: () => void
 }) {
     const t = useTranslations('templates')
+    const tw = useTranslations('workouts')
     return (
         <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-center gap-2">
             <span className="text-right font-mono text-xs text-text-faint">{index}</span>
+            {/* Text, not number: a range like `50-55` needs the hyphen the numeric
+                keypad hides. `inputMode="decimal"` still brings up digits on mobile. */}
             <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="any"
-                min={0}
                 value={set.weight}
                 onChange={(e) => onPatch({ weight: e.target.value })}
-                placeholder="—"
+                placeholder={tw('rangePlaceholder')}
                 className={cellClass}
             />
             <input
-                type="number"
+                type="text"
                 inputMode="numeric"
-                min={1}
                 value={set.reps}
                 onChange={(e) => onPatch({ reps: e.target.value })}
-                placeholder="—"
+                placeholder={tw('rangePlaceholder')}
                 className={cellClass}
             />
             <div className="flex items-center gap-1.5">
@@ -1093,9 +1140,8 @@ function SetRow({
                     <option value="rir">RIR</option>
                 </select>
                 <input
-                    type="number"
+                    type="text"
                     inputMode="decimal"
-                    step={set.intensityKind === 'rpe' ? '0.5' : '1'}
                     value={set.intensity}
                     onChange={(e) => onPatch({ intensity: e.target.value })}
                     disabled={set.intensityKind === 'none'}

@@ -14,6 +14,7 @@ import {
     useUpdateSet,
 } from '@/lib/graphql/hooks/use-workouts'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
+import { formatRange, formatWeightRange } from '@/lib/range'
 import { formatWeight, kgTo, type Units } from '@/lib/units'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Check, ChevronDown, Close, Pencil, Plus } from '@/components/ui/icons'
@@ -30,8 +31,8 @@ function intensitySuffix(set: WorkoutSetData): string {
 }
 
 function plannedIntensitySuffix(set: WorkoutSetData): string {
-    if (set.plannedRpe !== null) return ` @${set.plannedRpe}`
-    if (set.plannedRir !== null) return ` · ${set.plannedRir} RIR`
+    if (set.plannedRpe) return ` @${formatRange(set.plannedRpe)}`
+    if (set.plannedRir) return ` · ${formatRange(set.plannedRir)} RIR`
     return ''
 }
 
@@ -76,10 +77,12 @@ function SetRow({
                     pending={update.isPending}
                     showOutcome
                     initial={{
-                        plannedWeight: set.plannedWeightKg === null ? null : kgTo(units, set.plannedWeightKg),
-                        plannedReps: set.plannedReps,
-                        plannedRpe: set.plannedRpe,
-                        plannedRir: set.plannedRir,
+                        // Planned targets seed as range text in display units; an
+                        // absent one must be null, not '' — the form reads '' as present.
+                        plannedWeight: set.plannedWeightKg ? formatWeightRange(set.plannedWeightKg, units) : null,
+                        plannedReps: set.plannedReps ? formatRange(set.plannedReps) : null,
+                        plannedRpe: set.plannedRpe ? formatRange(set.plannedRpe) : null,
+                        plannedRir: set.plannedRir ? formatRange(set.plannedRir) : null,
                         weight: set.weightKg === null ? null : kgTo(units, set.weightKg),
                         reps: set.reps,
                         rpe: set.rpe,
@@ -132,7 +135,8 @@ function SetRow({
                 {hasPlanned ? (
                     <div className="text-xs text-text-faint">
                         <span className="mr-1.5 text-[10px] uppercase tracking-widest">{t('planPrefix')}</span>
-                        {formatWeight(set.plannedWeightKg, units)} × {set.plannedReps ?? '—'}
+                        {formatWeightRange(set.plannedWeightKg, units, '—')} {units} ×{' '}
+                        {formatRange(set.plannedReps, { empty: '—' })}
                         {plannedIntensitySuffix(set)}
                     </div>
                 ) : null}

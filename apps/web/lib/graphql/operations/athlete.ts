@@ -120,8 +120,14 @@ export const AthleteExerciseSessionHistoryDocument = graphql(`
             performedAt
             status
             sets {
-                plannedWeightKg
-                plannedReps
+                plannedWeightKg {
+                    min
+                    max
+                }
+                plannedReps {
+                    min
+                    max
+                }
                 weightKg
                 reps
                 rpe

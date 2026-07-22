@@ -14,7 +14,8 @@ import {
     useUpdateWorkoutTemplate,
     useWorkoutTemplate,
 } from '@/lib/graphql/hooks/use-workout-templates'
-import { kgTo, type Units, unitsOf } from '@/lib/units'
+import { formatRange, formatWeightRange } from '@/lib/range'
+import { type Units, unitsOf } from '@/lib/units'
 import { Field, Input } from '@/components/ui/field'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
@@ -48,15 +49,8 @@ function emptySet(): DraftSet {
     return { key: newKey(), weight: '', reps: '', intensityKind: 'none', intensity: '', notes: '' }
 }
 
-/** Round a display-unit value to a tidy 2-decimal string for editing (drops
- *  float noise from unit conversion; no trailing zeros). */
-function weightToInput(kg: number | null, units: Units): string {
-    if (kg === null) return ''
-    const v = kgTo(units, kg)
-    return String(Math.round(v * 100) / 100)
-}
-
-/** Build the editable draft from a loaded template (kg → display units). */
+/** Build the editable draft from a loaded template (kg → display units), each
+ *  planned target seeded as its range text (`5` or `5-8`). */
 function draftFromTemplate(template: WorkoutTemplateData, units: Units): DraftExercise[] {
     return template.exercises.map((exercise) => ({
         key: newKey(),
@@ -64,20 +58,19 @@ function draftFromTemplate(template: WorkoutTemplateData, units: Units): DraftEx
         notes: exercise.notes ?? '',
         sets: exercise.sets.map((set) => ({
             key: newKey(),
-            weight: weightToInput(set.plannedWeightKg, units),
-            reps: set.plannedReps !== null ? String(set.plannedReps) : '',
-            intensityKind: set.rpe !== null ? 'rpe' : set.rir !== null ? 'rir' : 'none',
-            intensity: set.rpe !== null ? String(set.rpe) : set.rir !== null ? String(set.rir) : '',
+            weight: formatWeightRange(set.plannedWeightKg, units),
+            reps: formatRange(set.plannedReps),
+            intensityKind: set.rpe ? 'rpe' : set.rir ? 'rir' : 'none',
+            intensity: formatRange(set.rpe ?? set.rir),
             notes: set.notes ?? '',
         })),
     }))
 }
 
-function numberOrNull(value: string): number | null {
+/** Trim the field to text, or null when blank — the API parses `5` / `5-8`. */
+function textOrNull(value: string): string | null {
     const trimmed = value.trim()
-    if (trimmed === '') return null
-    const n = Number(trimmed)
-    return Number.isFinite(n) ? n : null
+    return trimmed === '' ? null : trimmed
 }
 
 /**
@@ -189,10 +182,10 @@ export function TemplateBuilder({
                 notes: exercise.notes.trim() === '' ? null : exercise.notes.trim(),
                 sets: exercise.sets.map((set) => ({
                     unit: units,
-                    plannedWeight: numberOrNull(set.weight),
-                    plannedReps: numberOrNull(set.reps),
-                    rpe: set.intensityKind === 'rpe' ? numberOrNull(set.intensity) : null,
-                    rir: set.intensityKind === 'rir' ? numberOrNull(set.intensity) : null,
+                    plannedWeight: textOrNull(set.weight),
+                    plannedReps: textOrNull(set.reps),
+                    rpe: set.intensityKind === 'rpe' ? textOrNull(set.intensity) : null,
+                    rir: set.intensityKind === 'rir' ? textOrNull(set.intensity) : null,
                     notes: set.notes.trim() === '' ? null : set.notes.trim(),
                 })),
             })),
@@ -416,26 +409,26 @@ function SetRow({
     onRemove: () => void
 }) {
     const t = useTranslations('templates')
+    const tw = useTranslations('workouts')
     return (
         <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-center gap-2">
             <span className="text-right font-mono text-xs text-text-faint">{index}</span>
+            {/* Text, not number: a range like `50-55` needs the hyphen the numeric
+                keypad hides. `inputMode="decimal"` still brings up digits on mobile. */}
             <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="any"
-                min={0}
                 value={set.weight}
                 onChange={(e) => onPatch({ weight: e.target.value })}
-                placeholder="—"
+                placeholder={tw('rangePlaceholder')}
                 className={cellClass}
             />
             <input
-                type="number"
+                type="text"
                 inputMode="numeric"
-                min={1}
                 value={set.reps}
                 onChange={(e) => onPatch({ reps: e.target.value })}
-                placeholder="—"
+                placeholder={tw('rangePlaceholder')}
                 className={cellClass}
             />
             <div className="flex items-center gap-1.5">
@@ -450,9 +443,8 @@ function SetRow({
                     <option value="rir">RIR</option>
                 </select>
                 <input
-                    type="number"
+                    type="text"
                     inputMode="decimal"
-                    step={set.intensityKind === 'rpe' ? '0.5' : '1'}
                     value={set.intensity}
                     onChange={(e) => onPatch({ intensity: e.target.value })}
                     disabled={set.intensityKind === 'none'}

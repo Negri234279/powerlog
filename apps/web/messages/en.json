@@ -525,6 +525,7 @@
         "weightLabel": "Weight ({units})",
         "reps": "Reps",
         "intensity": "Intensity",
+        "rangePlaceholder": "5 or 5-8",
         "none": "None",
         "rpeRange": "RPE (0–10)",
         "rir": "RIR",

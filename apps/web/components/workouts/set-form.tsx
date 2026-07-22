@@ -10,13 +10,17 @@ import { TrackedButton } from '@/components/ui/tracked'
 /** How the set went, as the form models it — `pending` rather than a null. */
 export type OutcomeValue = 'pending' | 'success' | 'failed'
 
-/** A set's editable values, in the user's display unit (weight) + unitless intensity. */
+/**
+ * A set's editable values. Planned targets are ranges carried as their `5` /
+ * `5-8` text (weight in the user's display unit); performed values are single
+ * numbers, because a set that happened has one weight and one rep count.
+ */
 export interface SetValues {
-    /** Programmed targets (optional). */
-    plannedWeight: number | null
-    plannedReps: number | null
-    plannedRpe: number | null
-    plannedRir: number | null
+    /** Programmed targets (optional), as range text. */
+    plannedWeight: string | null
+    plannedReps: string | null
+    plannedRpe: string | null
+    plannedRir: string | null
     weight: number | null
     reps: number | null
     rpe: number | null
@@ -45,6 +49,12 @@ function parseNum(value: string): number | null {
     return Number.isFinite(n) ? n : null
 }
 
+/** Trim to text, or null when blank — the API parses `5` / `5-8` for planned targets. */
+function textOrNull(value: string): string | null {
+    const trimmed = value.trim()
+    return trimmed === '' ? null : trimmed
+}
+
 /** Seed a number input: round to 2 decimals (drops float noise from unit
  *  conversion, e.g. 224.9996 → 225) so the field shows a clean value. */
 function toInput(value: number | null | undefined): string {
@@ -52,9 +62,10 @@ function toInput(value: number | null | undefined): string {
     return String(Math.round(value * 100) / 100)
 }
 
-function startIntensity(rpe: number | null, rir: number | null): Intensity {
-    if (rpe !== null) return 'rpe'
-    if (rir !== null) return 'rir'
+/** Which intensity a set carries — works for a performed number or a planned range text. */
+function startIntensity(rpe: unknown, rir: unknown): Intensity {
+    if (rpe !== null && rpe !== undefined) return 'rpe'
+    if (rir !== null && rir !== undefined) return 'rir'
     return 'none'
 }
 
@@ -85,12 +96,15 @@ function IntensityFields({
     onKindChange,
     value,
     onValueChange,
+    range = false,
 }: {
     label: string
     kind: Intensity
     onKindChange: (kind: Intensity) => void
     value: string
     onValueChange: (value: string) => void
+    /** Planned side: the value is a range (`7-8`), so the field takes text. */
+    range?: boolean
 }) {
     const t = useTranslations('workouts')
 
@@ -109,15 +123,25 @@ function IntensityFields({
             {kind !== 'none' ? (
                 <NumberField label={kind === 'rpe' ? t('rpeRange') : t('rir')}>
                     <div className="w-20">
-                        <Input
-                            type="number"
-                            inputMode="decimal"
-                            step={kind === 'rpe' ? '0.5' : '1'}
-                            min={0}
-                            value={value}
-                            onChange={(e) => onValueChange(e.target.value)}
-                            placeholder="—"
-                        />
+                        {range ? (
+                            <Input
+                                type="text"
+                                inputMode="decimal"
+                                value={value}
+                                onChange={(e) => onValueChange(e.target.value)}
+                                placeholder={t('rangePlaceholder')}
+                            />
+                        ) : (
+                            <Input
+                                type="number"
+                                inputMode="decimal"
+                                step={kind === 'rpe' ? '0.5' : '1'}
+                                min={0}
+                                value={value}
+                                onChange={(e) => onValueChange(e.target.value)}
+                                placeholder="—"
+                            />
+                        )}
                     </div>
                 </NumberField>
             ) : null}
@@ -151,8 +175,8 @@ export function SetForm({
 }) {
     const t = useTranslations('workouts')
     const start = initial ?? EMPTY
-    const [plannedWeight, setPlannedWeight] = useState(toInput(start.plannedWeight))
-    const [plannedReps, setPlannedReps] = useState(start.plannedReps?.toString() ?? '')
+    const [plannedWeight, setPlannedWeight] = useState(start.plannedWeight ?? '')
+    const [plannedReps, setPlannedReps] = useState(start.plannedReps ?? '')
     const [weight, setWeight] = useState(toInput(start.weight))
     const [reps, setReps] = useState(start.reps?.toString() ?? '')
     const [intensity, setIntensity] = useState<Intensity>(startIntensity(start.rpe, start.rir))
@@ -160,20 +184,17 @@ export function SetForm({
     const [plannedIntensity, setPlannedIntensity] = useState<Intensity>(
         startIntensity(start.plannedRpe, start.plannedRir),
     )
-    const [plannedIntensityValue, setPlannedIntensityValue] = useState(
-        (start.plannedRpe ?? start.plannedRir)?.toString() ?? '',
-    )
+    const [plannedIntensityValue, setPlannedIntensityValue] = useState(start.plannedRpe ?? start.plannedRir ?? '')
     const [outcome, setOutcome] = useState<OutcomeValue>(start.outcome ?? 'pending')
 
     function submit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const value = parseNum(intensityValue)
-        const plannedValue = parseNum(plannedIntensityValue)
         onSubmit({
-            plannedWeight: parseNum(plannedWeight),
-            plannedReps: parseNum(plannedReps),
-            plannedRpe: plannedIntensity === 'rpe' ? plannedValue : null,
-            plannedRir: plannedIntensity === 'rir' ? plannedValue : null,
+            plannedWeight: textOrNull(plannedWeight),
+            plannedReps: textOrNull(plannedReps),
+            plannedRpe: plannedIntensity === 'rpe' ? textOrNull(plannedIntensityValue) : null,
+            plannedRir: plannedIntensity === 'rir' ? textOrNull(plannedIntensityValue) : null,
             weight: parseNum(weight),
             reps: parseNum(reps),
             rpe: intensity === 'rpe' ? value : null,
@@ -236,16 +257,15 @@ export function SetForm({
             </FieldRow>
 
             <FieldRow label={t('plannedSection')}>
+                {/* Planned targets take text so a range like `50-55` keeps its hyphen. */}
                 <NumberField label={t('weightLabel', { units })}>
                     <div className="w-24">
                         <Input
-                            type="number"
+                            type="text"
                             inputMode="decimal"
-                            step="any"
-                            min={0}
                             value={plannedWeight}
                             onChange={(e) => setPlannedWeight(e.target.value)}
-                            placeholder="—"
+                            placeholder={t('rangePlaceholder')}
                         />
                     </div>
                 </NumberField>
@@ -253,12 +273,11 @@ export function SetForm({
                 <NumberField label={t('reps')}>
                     <div className="w-20">
                         <Input
-                            type="number"
+                            type="text"
                             inputMode="numeric"
-                            min={0}
                             value={plannedReps}
                             onChange={(e) => setPlannedReps(e.target.value)}
-                            placeholder="—"
+                            placeholder={t('rangePlaceholder')}
                         />
                     </div>
                 </NumberField>
@@ -269,6 +288,7 @@ export function SetForm({
                     onKindChange={setPlannedIntensity}
                     value={plannedIntensityValue}
                     onValueChange={setPlannedIntensityValue}
+                    range
                 />
             </FieldRow>
 

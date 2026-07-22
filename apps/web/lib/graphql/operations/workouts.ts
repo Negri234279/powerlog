@@ -21,10 +21,22 @@ export const WorkoutSessionFieldsFragment = graphql(`
             sets {
                 id
                 order
-                plannedWeightKg
-                plannedReps
-                plannedRpe
-                plannedRir
+                plannedWeightKg {
+                    min
+                    max
+                }
+                plannedReps {
+                    min
+                    max
+                }
+                plannedRpe {
+                    min
+                    max
+                }
+                plannedRir {
+                    min
+                    max
+                }
                 weightKg
                 reps
                 rpe
@@ -157,8 +169,14 @@ export const ExerciseSessionHistoryDocument = graphql(`
             performedAt
             status
             sets {
-                plannedWeightKg
-                plannedReps
+                plannedWeightKg {
+                    min
+                    max
+                }
+                plannedReps {
+                    min
+                    max
+                }
                 weightKg
                 reps
                 rpe

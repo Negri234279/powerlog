@@ -7,6 +7,7 @@ import { cn } from '@/lib/cn'
 import { type AthleteHistoryItem, useAthleteHistory, useAthleteSession } from '@/lib/graphql/hooks/use-athlete'
 import { useExercises } from '@/lib/graphql/hooks/use-workouts'
 import { formatSessionDate } from '@/lib/format-date'
+import { formatRange as formatTargetRange, formatWeightRange } from '@/lib/range'
 import { formatWeight, type Units } from '@/lib/units'
 import { backParam } from '@/lib/workouts/back-param'
 import { formatRange, groupByWeek } from '@/lib/workouts/period'
@@ -75,10 +76,24 @@ function SessionPanel({
                         ) : (
                             entry.sets.map((set) => {
                                 const logged = set.weightKg !== null && set.reps !== null
-                                const weight = logged ? set.weightKg : set.plannedWeightKg
-                                const reps = logged ? set.reps : set.plannedReps
-                                const intensity =
-                                    set.rpe !== null ? `RPE ${set.rpe}` : set.rir !== null ? `RIR ${set.rir}` : null
+                                // Done: the single numbers lifted. Planned: the ranges
+                                // programmed (`50-55 × 5-8`), shown until the set is done.
+                                const main = logged
+                                    ? `${formatWeight(set.weightKg, units)} × ${set.reps}`
+                                    : set.plannedWeightKg && set.plannedReps
+                                      ? `${formatWeightRange(set.plannedWeightKg, units)} ${units} × ${formatTargetRange(set.plannedReps)}`
+                                      : null
+                                const intensity = logged
+                                    ? set.rpe !== null
+                                        ? `RPE ${set.rpe}`
+                                        : set.rir !== null
+                                          ? `RIR ${set.rir}`
+                                          : null
+                                    : set.plannedRpe
+                                      ? `RPE ${formatTargetRange(set.plannedRpe)}`
+                                      : set.plannedRir
+                                        ? `RIR ${formatTargetRange(set.plannedRir)}`
+                                        : null
 
                                 return (
                                     <div key={set.id} className="flex items-center gap-3 text-sm tabular-nums">
@@ -86,10 +101,8 @@ function SessionPanel({
                                             {set.order}
                                         </span>
                                         <span className="text-text">
-                                            {weight !== null && reps !== null
-                                                ? `${formatWeight(weight, units)} × ${reps}`
-                                                : '—'}
-                                            {!logged && weight !== null ? (
+                                            {main ?? '—'}
+                                            {!logged && main !== null ? (
                                                 <span className="text-text-faint"> · {t('plannedSuffix')}</span>
                                             ) : null}
                                         </span>

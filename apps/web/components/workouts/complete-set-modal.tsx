@@ -6,6 +6,7 @@ import { type SubmitEvent, useId, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { type WorkoutSetData, useCompleteSet } from '@/lib/graphql/hooks/use-workouts'
+import { formatRange, formatWeightRange, rangeMin } from '@/lib/range'
 import { kgTo, type Units } from '@/lib/units'
 import { FormError } from '@/components/ui/form-error'
 import { Input, Select } from '@/components/ui/field'
@@ -33,15 +34,18 @@ function toInput(value: number | null): string {
  * beforehand, else the target they were given. Prefilling from the plan is the
  * point — the common case is "I did exactly what it said", which should be one
  * click, and a deviation is an edit away.
+ *
+ * A performed value is a single number; a planned one is a range, so the prefill
+ * starts at its floor (`5-8` → 5) — the number to beat, which the athlete edits up.
  */
 function seed(set: WorkoutSetData, units: Units) {
-    const weightKg = set.weightKg ?? set.plannedWeightKg
-    const rpe = set.rpe ?? set.plannedRpe
-    const rir = set.rir ?? set.plannedRir
+    const weightKg = set.weightKg ?? rangeMin(set.plannedWeightKg)
+    const rpe = set.rpe ?? rangeMin(set.plannedRpe)
+    const rir = set.rir ?? rangeMin(set.plannedRir)
 
     return {
         weight: toInput(weightKg === null ? null : kgTo(units, weightKg)),
-        reps: (set.reps ?? set.plannedReps)?.toString() ?? '',
+        reps: (set.reps ?? rangeMin(set.plannedReps))?.toString() ?? '',
         intensity: (rpe !== null ? 'rpe' : rir !== null ? 'rir' : 'none') as Intensity,
         intensityValue: (rpe ?? rir)?.toString() ?? '',
     }
@@ -147,11 +151,10 @@ export function CompleteSetModal({
 
             {planned ? (
                 <p className="mt-1 font-mono text-sm tabular-nums text-text-dim">
-                    {t('planPrefix')}{' '}
-                    {toInput(set.plannedWeightKg === null ? null : kgTo(units, set.plannedWeightKg)) || '—'} {units} ×{' '}
-                    {set.plannedReps ?? '—'}
-                    {set.plannedRpe !== null ? ` @${set.plannedRpe}` : ''}
-                    {set.plannedRir !== null ? ` · ${set.plannedRir} RIR` : ''}
+                    {t('planPrefix')} {formatWeightRange(set.plannedWeightKg, units, '—')} {units} ×{' '}
+                    {formatRange(set.plannedReps, { empty: '—' })}
+                    {set.plannedRpe ? ` @${formatRange(set.plannedRpe)}` : ''}
+                    {set.plannedRir ? ` · ${formatRange(set.plannedRir)} RIR` : ''}
                 </p>
             ) : null}
 

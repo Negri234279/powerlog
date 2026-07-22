@@ -24,6 +24,7 @@ import { formatSessionDate, todayLocalIso } from '@/lib/format-date'
 import { backParam } from '@/lib/workouts/back-param'
 import { formatRange, groupByWeek } from '@/lib/workouts/period'
 import { useHistoryFilters } from '@/lib/workouts/use-history-filters'
+import { formatRange as formatTargetRange, formatWeightRange } from '@/lib/range'
 import { formatWeight, type Units, unitsOf } from '@/lib/units'
 import { EditSessionModal } from '@/components/workouts/edit-session-modal'
 import { HistoryFilterBar } from '@/components/workouts/history-filter-bar'
@@ -69,24 +70,27 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 function SetLine({ set, units }: { set: WorkoutSetData; units: Units }) {
     const t = useTranslations('workouts')
     const hasActual = set.weightKg !== null && set.reps !== null
-    const weight = hasActual ? set.weightKg : set.plannedWeightKg
-    const reps = hasActual ? set.reps : set.plannedReps
     const intensity = set.rpe !== null ? `RPE ${set.rpe}` : set.rir !== null ? `RIR ${set.rir}` : null
     // Once actuals are logged, still surface the programmed target alongside them.
     const hasPlanned = set.plannedWeightKg !== null || set.plannedReps !== null
+    // Done: the single numbers lifted. Planned: the ranges programmed (`50-55 × 5-8`).
+    const main = hasActual
+        ? `${formatWeight(set.weightKg, units)} × ${set.reps}`
+        : set.plannedWeightKg && set.plannedReps
+          ? `${formatWeightRange(set.plannedWeightKg, units)} ${units} × ${formatTargetRange(set.plannedReps)}`
+          : null
 
     return (
         <div className="flex items-center gap-3 text-sm tabular-nums">
             <span className="w-4 shrink-0 text-right font-mono text-xs text-text-faint">{set.order}</span>
             <span className="text-text">
-                {weight !== null && reps !== null ? `${formatWeight(weight, units)} × ${reps}` : '—'}
-                {!hasActual && weight !== null ? (
-                    <span className="text-text-faint"> · {t('plannedSuffix')}</span>
-                ) : null}
+                {main ?? '—'}
+                {!hasActual && main !== null ? <span className="text-text-faint"> · {t('plannedSuffix')}</span> : null}
             </span>
             {hasActual && hasPlanned ? (
                 <span className="font-mono text-xs text-text-faint">
-                    {t('planPrefix')} {formatWeight(set.plannedWeightKg, units)} × {set.plannedReps ?? '—'}
+                    {t('planPrefix')} {formatWeightRange(set.plannedWeightKg, units, '—')} {units} ×{' '}
+                    {formatTargetRange(set.plannedReps, { empty: '—' })}
                 </span>
             ) : null}
             {intensity ? <span className="text-text-dim">{intensity}</span> : null}

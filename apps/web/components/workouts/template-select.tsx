@@ -11,7 +11,8 @@ import {
     useWorkoutTemplate,
     useWorkoutTemplates,
 } from '@/lib/graphql/hooks/use-workout-templates'
-import { formatWeight, type Units, unitsOf } from '@/lib/units'
+import { formatRange, formatWeightRange, type RangeValue } from '@/lib/range'
+import { type Units, unitsOf } from '@/lib/units'
 import { Modal } from '@/components/ui/modal'
 import { ChevronDown, Close, Dumbbell, Search } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
@@ -296,18 +297,19 @@ function TemplatePreview({ id }: { id: string }) {
     )
 }
 
-/** A compact programmed-set label, e.g. "100kg×5 @RPE8" / "×8" / "100kg". */
+/** A compact programmed-set label, e.g. "100kg×5 @RPE8" / "×5-8" / "50-55kg". */
 function formatSet(
-    set: { plannedWeightKg: number | null; plannedReps: number | null; rpe: number | null; rir: number | null },
+    set: {
+        plannedWeightKg: RangeValue | null
+        plannedReps: RangeValue | null
+        rpe: RangeValue | null
+        rir: RangeValue | null
+    },
     units: Units,
 ): string {
-    const weight = set.plannedWeightKg !== null ? formatWeight(set.plannedWeightKg, units) : null
-    const core =
-        weight && set.plannedReps !== null
-            ? `${weight}×${set.plannedReps}`
-            : set.plannedReps !== null
-              ? `×${set.plannedReps}`
-              : (weight ?? '—')
-    const intensity = set.rpe !== null ? ` @RPE${set.rpe}` : set.rir !== null ? ` @RIR${set.rir}` : ''
+    const weight = set.plannedWeightKg ? `${formatWeightRange(set.plannedWeightKg, units)}${units}` : null
+    const reps = set.plannedReps ? formatRange(set.plannedReps) : null
+    const core = weight && reps ? `${weight}×${reps}` : reps ? `×${reps}` : (weight ?? '—')
+    const intensity = set.rpe ? ` @RPE${formatRange(set.rpe)}` : set.rir ? ` @RIR${formatRange(set.rir)}` : ''
     return `${core}${intensity}`
 }
