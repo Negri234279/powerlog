@@ -16,6 +16,7 @@ import {
 } from '@/lib/graphql/hooks/use-workout-templates'
 import { formatRange, formatWeightRange } from '@/lib/range'
 import { type Units, unitsOf } from '@/lib/units'
+import { type PlannedErrorCode, type PlannedField, validatePlanned } from '@/lib/workouts/planned-validation'
 import { Field, Input } from '@/components/ui/field'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
@@ -73,6 +74,27 @@ function textOrNull(value: string): string | null {
     return trimmed === '' ? null : trimmed
 }
 
+/** The editable planned cells of a set, in column order. */
+type SetField = 'weight' | 'reps' | 'intensity'
+const SET_FIELDS: SetField[] = ['weight', 'reps', 'intensity']
+
+/**
+ * What to validate for one set cell: the error-map key, the domain rule to apply,
+ * and the text to check. Intensity resolves to RPE or RIR by the set's kind, and
+ * yields null when 'none' (nothing to validate, and its error must be cleared).
+ */
+function fieldSpec(set: DraftSet, field: SetField): { key: string; planned: PlannedField; text: string } | null {
+    if (field === 'weight') return { key: `${set.key}.weight`, planned: 'weight', text: set.weight }
+    if (field === 'reps') return { key: `${set.key}.reps`, planned: 'reps', text: set.reps }
+    if (set.intensityKind === 'none') return null
+    return { key: `${set.key}.intensity`, planned: set.intensityKind === 'rpe' ? 'rpe' : 'rir', text: set.intensity }
+}
+
+/** Stable error-map key for a cell, whatever its current validation state. */
+function fieldKey(setKey: string, field: SetField): string {
+    return `${setKey}.${field}`
+}
+
 /**
  * Create/edit a workout template as a whole tree: name + notes + exercises, each
  * with programmed sets (weight/reps/RPE-or-RIR/notes). Weights are entered in the
@@ -107,6 +129,63 @@ export function TemplateBuilder({
     // Kept alongside the message so a plan refusal can render an upgrade CTA instead.
     const [rawError, setRawError] = useState<unknown>(null)
     const [picking, setPicking] = useState(false)
+    // Per-field client validation messages, keyed by 'name' and `${setKey}.<field>`.
+    // A field validates on blur; Save re-checks every field at once so the whole
+    // form's problems surface together, not one back-end error at a time.
+    const [errors, setErrors] = useState<Record<string, string>>({})
+
+    /** Localized message for a validation code on a given planned field. */
+    function messageFor(code: PlannedErrorCode, planned: PlannedField): string {
+        if (code === 'format') return tw('errRangeFormat')
+        if (code === 'reversed') return tw('errRangeReversed')
+        if (planned === 'reps') return tw('errRangeReps')
+        if (planned === 'weight') return tw('errRangeWeight')
+        if (planned === 'rpe') return tw('errRangeRpe')
+        return tw('errRangeRir')
+    }
+
+    /** Validate a single set cell (on blur), setting or clearing just its error. */
+    function validateField(set: DraftSet, field: SetField) {
+        const spec = fieldSpec(set, field)
+        const code = spec ? validatePlanned(spec.text, spec.planned, units) : null
+
+        setErrors((prev) => {
+            const next = { ...prev }
+            delete next[fieldKey(set.key, field)]
+            if (spec && code) next[spec.key] = messageFor(code, spec.planned)
+            return next
+        })
+    }
+
+    /** Validate the name on blur (required), setting or clearing its error. */
+    function validateName() {
+        setErrors((prev) => {
+            const next = { ...prev }
+            if (name.trim() === '') next['name'] = t('nameRequired')
+            else delete next['name']
+            return next
+        })
+    }
+
+    /** Check the whole form at once — the name plus every set cell — and return
+     *  the complete error map, so Save can reveal all problems in one pass. */
+    function collectErrors(): Record<string, string> {
+        const found: Record<string, string> = {}
+        if (name.trim() === '') found['name'] = t('nameRequired')
+
+        for (const exercise of draft) {
+            for (const set of exercise.sets) {
+                for (const field of SET_FIELDS) {
+                    const spec = fieldSpec(set, field)
+                    if (!spec) continue
+                    const code = validatePlanned(spec.text, spec.planned, units)
+                    if (code) found[spec.key] = messageFor(code, spec.planned)
+                }
+            }
+        }
+
+        return found
+    }
 
     // Seed the form from the loaded template (once it arrives, for edit mode).
     const [seeded, setSeeded] = useState(false)
@@ -169,8 +248,13 @@ export function TemplateBuilder({
     async function onSave() {
         setError(null)
         setRawError(null)
-        if (name.trim() === '') {
-            setError(t('nameRequired'))
+
+        // Validate the whole form up front and show every problem together, rather
+        // than letting the back-end reject one field at a time.
+        const found = collectErrors()
+        setErrors(found)
+        if (Object.keys(found).length > 0) {
+            setError(t('fixErrors'))
             return
         }
 
@@ -233,11 +317,13 @@ export function TemplateBuilder({
                 <div className="rounded-2xl bg-shell p-1.5 ring-1 ring-hairline">
                     <div className="inset-hi flex flex-col gap-4 rounded-[calc(1rem-0.25rem)] bg-surface p-5 sm:flex-row">
                         <div className="w-full sm:w-72">
-                            <Field label={t('name')} htmlFor="tmpl-name">
+                            <Field label={t('name')} htmlFor="tmpl-name" error={errors['name']}>
                                 <Input
                                     id="tmpl-name"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
+                                    onBlur={validateName}
+                                    aria-invalid={errors['name'] ? true : undefined}
                                     placeholder={t('namePlaceholder')}
                                 />
                             </Field>
@@ -261,11 +347,13 @@ export function TemplateBuilder({
                         exercise={exercise}
                         name={nameById.get(exercise.exerciseId) ?? tw('exercise')}
                         units={units}
+                        errors={errors}
                         onRemove={() => removeExercise(exercise.key)}
                         onNotes={(value) => patchExercise(exercise.key, { notes: value })}
                         onAddSet={() => addSet(exercise.key)}
                         onPatchSet={(setKey, patch) => patchSet(exercise.key, setKey, patch)}
                         onRemoveSet={(setKey) => removeSet(exercise.key, setKey)}
+                        onValidateSet={validateField}
                     />
                 ))}
 
@@ -322,20 +410,24 @@ function ExerciseCard({
     exercise,
     name,
     units,
+    errors,
     onRemove,
     onNotes,
     onAddSet,
     onPatchSet,
     onRemoveSet,
+    onValidateSet,
 }: {
     exercise: DraftExercise
     name: string
     units: Units
+    errors: Record<string, string>
     onRemove: () => void
     onNotes: (value: string) => void
     onAddSet: () => void
     onPatchSet: (setKey: string, patch: Partial<DraftSet>) => void
     onRemoveSet: (setKey: string) => void
+    onValidateSet: (set: DraftSet, field: SetField) => void
 }) {
     const t = useTranslations('templates')
     const tw = useTranslations('workouts')
@@ -375,8 +467,10 @@ function ExerciseCard({
                             key={set.key}
                             set={set}
                             index={index + 1}
+                            errors={errors}
                             onPatch={(patch) => onPatchSet(set.key, patch)}
                             onRemove={() => onRemoveSet(set.key)}
+                            onBlurField={(field) => onValidateSet(set, field)}
                         />
                     ))}
                 </div>
@@ -397,61 +491,96 @@ function ExerciseCard({
 const cellClass =
     'w-full rounded-xl bg-bg/60 px-3 py-2 text-sm text-text ring-1 ring-hairline outline-none transition-colors duration-300 placeholder:text-text-faint focus:ring-ember/50'
 
+function CellError({ message }: { message?: string }) {
+    if (!message) return null
+    return <p className="mt-1 px-1 text-[10px] leading-tight text-ember">{message}</p>
+}
+
 function SetRow({
     set,
     index,
+    errors,
     onPatch,
     onRemove,
+    onBlurField,
 }: {
     set: DraftSet
     index: number
+    errors: Record<string, string>
     onPatch: (patch: Partial<DraftSet>) => void
     onRemove: () => void
+    onBlurField: (field: SetField) => void
 }) {
     const t = useTranslations('templates')
     const tw = useTranslations('workouts')
+    const weightError = errors[fieldKey(set.key, 'weight')]
+    const repsError = errors[fieldKey(set.key, 'reps')]
+    const intensityError = errors[fieldKey(set.key, 'intensity')]
+
+    // items-start so the row number and remove button stay aligned to the inputs
+    // even when an error message grows a cell taller.
     return (
-        <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-center gap-2">
-            <span className="text-right font-mono text-xs text-text-faint">{index}</span>
+        <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-start gap-2">
+            <span className="pt-2 text-right font-mono text-xs text-text-faint">{index}</span>
             {/* Text, not number: a range like `50-55` needs the hyphen the numeric
                 keypad hides. `inputMode="decimal"` still brings up digits on mobile. */}
-            <input
-                type="text"
-                inputMode="decimal"
-                value={set.weight}
-                onChange={(e) => onPatch({ weight: e.target.value })}
-                placeholder={tw('rangePlaceholder')}
-                className={cellClass}
-            />
-            <input
-                type="text"
-                inputMode="numeric"
-                value={set.reps}
-                onChange={(e) => onPatch({ reps: e.target.value })}
-                placeholder={tw('rangePlaceholder')}
-                className={cellClass}
-            />
-            <div className="flex items-center gap-1.5">
-                <select
-                    value={set.intensityKind}
-                    onChange={(e) => onPatch({ intensityKind: e.target.value as IntensityKind, intensity: '' })}
-                    className={cn(cellClass, 'appearance-none')}
-                    aria-label={t('intensityType')}
-                >
-                    <option value="none">—</option>
-                    <option value="rpe">RPE</option>
-                    <option value="rir">RIR</option>
-                </select>
+            <div className="min-w-0">
                 <input
                     type="text"
                     inputMode="decimal"
-                    value={set.intensity}
-                    onChange={(e) => onPatch({ intensity: e.target.value })}
-                    disabled={set.intensityKind === 'none'}
-                    placeholder={set.intensityKind === 'none' ? '' : '0'}
-                    className={cn(cellClass, 'w-16 disabled:opacity-40')}
-                    aria-label={t('intensityValue')}
+                    value={set.weight}
+                    onChange={(e) => onPatch({ weight: e.target.value })}
+                    onBlur={() => onBlurField('weight')}
+                    aria-invalid={weightError ? true : undefined}
+                    placeholder={tw('rangePlaceholder')}
+                    className={cn(cellClass, weightError && 'ring-ember/60 focus:ring-ember/70')}
                 />
+                <CellError message={weightError} />
+            </div>
+            <div className="min-w-0">
+                <input
+                    type="text"
+                    inputMode="numeric"
+                    value={set.reps}
+                    onChange={(e) => onPatch({ reps: e.target.value })}
+                    onBlur={() => onBlurField('reps')}
+                    aria-invalid={repsError ? true : undefined}
+                    placeholder={tw('rangePlaceholder')}
+                    className={cn(cellClass, repsError && 'ring-ember/60 focus:ring-ember/70')}
+                />
+                <CellError message={repsError} />
+            </div>
+            <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                    <select
+                        value={set.intensityKind}
+                        onChange={(e) => onPatch({ intensityKind: e.target.value as IntensityKind, intensity: '' })}
+                        onBlur={() => onBlurField('intensity')}
+                        className={cn(cellClass, 'appearance-none')}
+                        aria-label={t('intensityType')}
+                    >
+                        <option value="none">—</option>
+                        <option value="rpe">RPE</option>
+                        <option value="rir">RIR</option>
+                    </select>
+                    <input
+                        type="text"
+                        inputMode="decimal"
+                        value={set.intensity}
+                        onChange={(e) => onPatch({ intensity: e.target.value })}
+                        onBlur={() => onBlurField('intensity')}
+                        disabled={set.intensityKind === 'none'}
+                        aria-invalid={intensityError ? true : undefined}
+                        placeholder={set.intensityKind === 'none' ? '' : '0'}
+                        className={cn(
+                            cellClass,
+                            'w-16 disabled:opacity-40',
+                            intensityError && 'ring-ember/60 focus:ring-ember/70',
+                        )}
+                        aria-label={t('intensityValue')}
+                    />
+                </div>
+                <CellError message={intensityError} />
             </div>
             <TrackedButton
                 analyticsId="template-remove-set"
