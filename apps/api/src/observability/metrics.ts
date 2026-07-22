@@ -225,12 +225,16 @@ export const metricsProviders = [
         help: 'Count of AI generations queued, by kind.',
         labelNames: ['kind'],
     }),
+    // No exemplars, deliberately: this is observed from the worker with a plain
+    // `observe(labels, value)`, and prom-client swaps that method for the
+    // single-object `observeWithExemplar` as soon as exemplars are on — the two
+    // do not mix. Nothing is lost: the same work is already exemplared as
+    // `RunAiGenerationCommand` on the CQRS histogram, which is the same span.
     makeHistogramProvider({
         name: METRIC.aiGenerationDuration,
         help: 'End-to-end duration of AI generations in seconds, queue wait included.',
         labelNames: ['kind', 'status'],
         buckets: LLM_DURATION_BUCKETS,
-        enableExemplars: true,
     }),
     // Tokens billed to the user's own provider account, split by direction.
     // The cost is theirs (BYOK); this is a usage signal, not a billing source.

@@ -126,11 +126,17 @@ export class RunAiGenerationHandler implements ICommandHandler<RunAiGenerationCo
         }
     }
 
-    /** Record the outcome and tell the browser to come and look. */
+    /**
+     * Tell the browser to come and look, then record the outcome.
+     *
+     * That order is not cosmetic. Everything here runs *after* the result is
+     * safely persisted, so all of it is a side effect — but one of those side
+     * effects is the only thing that ends the athlete's wait, and the others are
+     * for us. Observability failing must not cost the user their answer; it did
+     * exactly that once, when a misconfigured histogram threw and took the push
+     * with it.
+     */
     private settle(generation: AiGenerationAggregate): void {
-        const seconds = (generation.updatedAt.getTime() - generation.createdAt.getTime()) / 1000
-        this.metrics.recordSettled(generation.kind.value, generation.status.value, seconds)
-
         const event = new AiGenerationSettledIntegrationEvent(
             generation.userId,
             generation.id,
@@ -139,6 +145,9 @@ export class RunAiGenerationHandler implements ICommandHandler<RunAiGenerationCo
             generation.draftId,
         )
         this.events.publish(event)
+
+        const seconds = (generation.updatedAt.getTime() - generation.createdAt.getTime()) / 1000
+        this.metrics.recordSettled(generation.kind.value, generation.status.value, seconds)
 
         this.logger.info(
             {

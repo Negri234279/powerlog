@@ -22,12 +22,22 @@ export class RecordingAiGenerationQueue extends AiGenerationQueue {
 export class RecordingAiGenerationMetrics extends AiGenerationMetrics {
     readonly queued: string[] = []
     readonly settled: { kind: string; status: string; durationSeconds: number }[] = []
+    private broken = false
+
+    /** Simulate a misconfigured metric — prom-client throws on a bad observation. */
+    breakIt(): void {
+        this.broken = true
+    }
 
     recordQueued(kind: string): void {
+        if (this.broken) throw new Error('Value is not a valid number: undefined')
+
         this.queued.push(kind)
     }
 
     recordSettled(kind: string, status: string, durationSeconds: number): void {
+        if (this.broken) throw new Error('Value is not a valid number: undefined')
+
         this.settled.push({ kind, status, durationSeconds })
     }
 }

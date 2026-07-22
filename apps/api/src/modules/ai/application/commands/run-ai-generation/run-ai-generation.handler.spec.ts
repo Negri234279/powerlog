@@ -104,6 +104,20 @@ describe('RunAiGenerationHandler', () => {
         expect(event?.userId).toBe(generation.userId)
     })
 
+    it('tells the browser even when recording the metric blows up', async () => {
+        // This happened: a misconfigured histogram threw and took the push with it,
+        // leaving the tab waiting for an answer that was already sitting in the
+        // database. Observability is not allowed to cost the athlete their result.
+        const generation = AiGenerationMother.mesocycle(mesocycleRequest(), { now: QUEUED_AT })
+        generations.seed(generation)
+        metrics.breakIt()
+
+        await expect(handler.execute(new RunAiGenerationCommand(generation.id))).rejects.toThrow()
+
+        expect((await generations.findById(generation.id))?.status.value).toBe('succeeded')
+        expect(events.firstOf(AiGenerationSettledIntegrationEvent)?.draftId).toBe(DRAFT_ID)
+    })
+
     it('drops a duplicated job instead of calling the provider twice', async () => {
         const generation = AiGenerationMother.mesocycle(mesocycleRequest(), { now: QUEUED_AT })
         generation.start(QUEUED_AT)
