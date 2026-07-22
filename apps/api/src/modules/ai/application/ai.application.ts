@@ -3,6 +3,8 @@ import { AcceptPlanDraftHandler } from './commands/accept-plan-draft/accept-plan
 import { DeleteAiProviderKeyHandler } from './commands/delete-ai-provider-key/delete-ai-provider-key.handler'
 import { DiscardMesocycleDraftHandler } from './commands/discard-mesocycle-draft/discard-mesocycle-draft.handler'
 import { DiscardPlanDraftHandler } from './commands/discard-plan-draft/discard-plan-draft.handler'
+import { ForkMesocycleDraftHandler } from './commands/fork-mesocycle-draft/fork-mesocycle-draft.handler'
+import { ForkPlanDraftHandler } from './commands/fork-plan-draft/fork-plan-draft.handler'
 import { GenerateMesocycleDraftHandler } from './commands/generate-mesocycle-draft/generate-mesocycle-draft.handler'
 import { GenerateSessionPlanDraftHandler } from './commands/generate-session-plan-draft/generate-session-plan-draft.handler'
 import { RefineMesocycleDraftHandler } from './commands/refine-mesocycle-draft/refine-mesocycle-draft.handler'
@@ -11,6 +13,7 @@ import { SetAiProviderDefaultHandler } from './commands/set-ai-provider-default/
 import { SetAiProviderEnabledHandler } from './commands/set-ai-provider-enabled/set-ai-provider-enabled.handler'
 import { SetAiProviderKeyHandler } from './commands/set-ai-provider-key/set-ai-provider-key.handler'
 import { UpdateAiProviderModelHandler } from './commands/update-ai-provider-model/update-ai-provider-model.handler'
+import { LinkMesocycleOnCreatedFromDraft } from './event-handlers/link-mesocycle-on-created-from-draft.handler'
 import { RecordAiUsageHandler } from './event-handlers/record-ai-usage.handler'
 import { RemoveAiConfigsOnUserDeleted } from './event-handlers/remove-ai-configs-on-user-deleted.handler'
 import { GetMesocycleDraftByIdHandler } from './queries/get-mesocycle-draft-by-id/get-mesocycle-draft-by-id.handler'
@@ -41,6 +44,8 @@ export const AI_COMMAND_HANDLERS = [
     RefineMesocycleDraftHandler,
     AcceptMesocycleDraftHandler,
     DiscardMesocycleDraftHandler,
+    ForkPlanDraftHandler,
+    ForkMesocycleDraftHandler,
 ]
 
 /** CQRS query handlers for the AI module. */
@@ -55,8 +60,11 @@ export const AI_QUERY_HANDLERS = [
     GetMesocycleDraftByIdHandler,
 ]
 
-/** Event handlers: user-deletion erasure + the async usage meter. */
-export const AI_EVENT_HANDLERS = [RemoveAiConfigsOnUserDeleted, RecordAiUsageHandler]
+/**
+ * Event handlers: user-deletion erasure, the async usage meter, and stamping a
+ * draft with the block it became.
+ */
+export const AI_EVENT_HANDLERS = [RemoveAiConfigsOnUserDeleted, RecordAiUsageHandler, LinkMesocycleOnCreatedFromDraft]
 
 /** Application-layer services (not CQRS handlers). */
 export const AI_APPLICATION_SERVICES = [AiProviderResolver, AiConversation, SetPrescriber, MesocycleDesigner]

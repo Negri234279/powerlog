@@ -10,6 +10,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import * as schema from '../../../database/schema'
 import { AiMesocycleDraftMother, AiPlanDraftMother } from '../../../../tests/mothers/ai'
 import type { AiDraftSummaryRow } from '../application/ports/ai-draft-history.read-model'
+import { AiPlanDraftAggregate } from '../domain/entities/ai-plan-draft.entity'
 import { DrizzleAiDraftHistoryReadModel } from '../infrastructure/persistence/read-models/drizzle-ai-draft-history.read-model'
 import { DrizzleAiMesocycleDraftRepository } from '../infrastructure/persistence/repositories/drizzle-ai-mesocycle-draft.repository'
 import { DrizzleAiPlanDraftRepository } from '../infrastructure/persistence/repositories/drizzle-ai-plan-draft.repository'
@@ -179,6 +180,49 @@ describe('AI draft history (integration)', () => {
         const page = await history.list({ userId, limit: 10, sessionId: randomUUID(), athleteId: randomUUID() })
 
         expect(page.items).toEqual([])
+    })
+
+    it('carries the chain on a forked draft', async () => {
+        const userId = randomUUID()
+        const source = AiPlanDraftMother.persistable({ userId })
+        source.accept(NOW)
+        await plans.save(source)
+        const fork = AiPlanDraftAggregate.fork({
+            id: randomUUID(),
+            source,
+            provider: source.provider,
+            model: source.model,
+            rationaleId: randomUUID(),
+            now: NOW,
+        })
+        await plans.save(fork)
+
+        const page = await history.list({ userId, limit: 10 })
+
+        expect(page.items.find((item) => item.id === fork.id)?.parentDraftId).toBe(source.id)
+        expect(page.items.find((item) => item.id === source.id)?.parentDraftId).toBeNull()
+    })
+
+    it('erases a chain of forks on account deletion, self-reference and all', async () => {
+        const userId = randomUUID()
+        const source = AiPlanDraftMother.persistable({ userId })
+        source.accept(NOW)
+        await plans.save(source)
+        const fork = AiPlanDraftAggregate.fork({
+            id: randomUUID(),
+            source,
+            provider: source.provider,
+            model: source.model,
+            rationaleId: randomUUID(),
+            now: NOW,
+        })
+        await plans.save(fork)
+
+        // The parent FK is self-referential; deleting parent and child in one
+        // statement must not trip over it.
+        await plans.deleteAllByUser(userId)
+
+        expect((await history.list({ userId, limit: 10 })).items).toEqual([])
     })
 
     it('does not leak another user’s drafts', async () => {

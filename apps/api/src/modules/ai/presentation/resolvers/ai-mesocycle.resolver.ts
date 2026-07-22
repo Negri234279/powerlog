@@ -9,6 +9,7 @@ import { JwtCookieGuard } from '../../../../auth/jwt-cookie.guard'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import { AcceptMesocycleDraftCommand } from '../../application/commands/accept-mesocycle-draft/accept-mesocycle-draft.command'
 import { DiscardMesocycleDraftCommand } from '../../application/commands/discard-mesocycle-draft/discard-mesocycle-draft.command'
+import { ForkMesocycleDraftCommand } from '../../application/commands/fork-mesocycle-draft/fork-mesocycle-draft.command'
 import { GenerateMesocycleDraftCommand } from '../../application/commands/generate-mesocycle-draft/generate-mesocycle-draft.command'
 import { RefineMesocycleDraftCommand } from '../../application/commands/refine-mesocycle-draft/refine-mesocycle-draft.command'
 import { GetMesocycleDraftQuery } from '../../application/queries/get-mesocycle-draft/get-mesocycle-draft.query'
@@ -90,6 +91,19 @@ export class AiMesocycleResolver {
         const command = new AcceptMesocycleDraftCommand(user.userId, draftId)
 
         return toType(await this.commandBus.execute<AcceptMesocycleDraftCommand, AiMesocycleDraftView>(command))
+    }
+
+    @Mutation(() => AiMesocycleDraftType, {
+        description:
+            'Pick a past block design back up: opens a new draft carrying its week. Supersedes any open draft for the same trainee.',
+    })
+    async forkMesocycleDraft(
+        @CurrentUser() user: AuthUser,
+        @Args('draftId', { type: () => ID }, new ZodValidationPipe(uuidSchema)) draftId: string,
+    ): Promise<AiMesocycleDraftType> {
+        const command = new ForkMesocycleDraftCommand(user.userId, draftId)
+
+        return toType(await this.commandBus.execute<ForkMesocycleDraftCommand, AiMesocycleDraftView>(command))
     }
 
     @Mutation(() => Boolean, { description: 'Throw away a draft.' })

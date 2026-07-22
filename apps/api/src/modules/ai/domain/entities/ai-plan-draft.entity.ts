@@ -39,6 +39,11 @@ export interface AiPlanDraftProps {
     status: PlanDraftStatusVO
     sets: PlanDraftSet[]
     messages: AiPlanMessageEntity[]
+    /**
+     * The resolved draft this one was forked from, if any. Provenance only — the
+     * fork stands on its own, so nothing about it reads through the parent.
+     */
+    parentDraftId: string | null
     createdAt: Date
     updatedAt: Date
 }
@@ -71,6 +76,8 @@ export class AiPlanDraftAggregate {
         rationaleId: string
         /** What the athlete told the model when asking for it, if anything. */
         request?: { id: string; content: string }
+        /** Set when this draft continues a resolved one. */
+        parentDraftId?: string | null
         now: Date
     }): AiPlanDraftAggregate {
         assertIntensityIsUnambiguous(input.sets)
@@ -106,13 +113,61 @@ export class AiPlanDraftAggregate {
                     createdAt: input.now,
                 }),
             ],
+            parentDraftId: input.parentDraftId ?? null,
             createdAt: input.now,
             updatedAt: input.now,
         })
     }
 
+    /**
+     * Continue a conversation that was already resolved. The proposal is carried
+     * over so the athlete picks up where they left off, and the model's reasoning
+     * behind it opens the new thread — but the thread itself starts fresh rather
+     * than being copied: a fork is a new conversation about an old answer, not a
+     * replay of an old one.
+     *
+     * The source may be in any state. Forking an *open* draft is allowed and
+     * harmless; what the caller must not do is leave two open drafts on one
+     * session, which the partial unique index would refuse anyway.
+     */
+    static fork(input: {
+        id: string
+        source: AiPlanDraftAggregate
+        /** The caller's current provider — a fork may well run on a different model. */
+        provider: AiProviderVO
+        model: string
+        rationaleId: string
+        now: Date
+    }): AiPlanDraftAggregate {
+        const source = input.source
+
+        return AiPlanDraftAggregate.create({
+            id: input.id,
+            userId: source.userId,
+            sessionId: source.sessionId,
+            entryId: source.entryId,
+            provider: input.provider,
+            model: input.model,
+            sets: source.sets.map((set) => ({ ...set })),
+            rationale: source.lastRationale,
+            rationaleId: input.rationaleId,
+            parentDraftId: source.id,
+            now: input.now,
+        })
+    }
+
     static rehydrate(props: AiPlanDraftProps): AiPlanDraftAggregate {
         return new AiPlanDraftAggregate(props)
+    }
+
+    /**
+     * The model's reasoning behind the current proposal — the last thing it said.
+     * Every draft is born with one, so there is always an answer.
+     */
+    private get lastRationale(): string {
+        const assistant = [...this.props.messages].reverse().find((message) => message.role === 'assistant')
+
+        return assistant?.content ?? ''
     }
 
     /** Record what the athlete asked for, before the model answers it. */
@@ -184,6 +239,9 @@ export class AiPlanDraftAggregate {
     }
     get messages(): readonly AiPlanMessageEntity[] {
         return this.props.messages
+    }
+    get parentDraftId(): string | null {
+        return this.props.parentDraftId
     }
     get createdAt(): Date {
         return this.props.createdAt

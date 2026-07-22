@@ -83,6 +83,7 @@ export class DrizzleAiDraftHistoryReadModel extends AiDraftHistoryReadModel {
                 sessionId: sql<string | null>`${aiPlanDrafts.sessionId}`.as('session_id'),
                 athleteId: sql<string | null>`null::uuid`.as('athlete_id'),
                 name: sql<string | null>`null::text`.as('name'),
+                parentDraftId: sql<string | null>`${aiPlanDrafts.parentDraftId}`.as('parent_draft_id'),
                 // `${aiPlanDrafts}."id"`, not `${aiPlanDrafts.id}`: with a single
                 // table in the FROM, drizzle renders a column reference bare (`"id"`),
                 // and inside a correlated subquery that binds to the *messages* table
@@ -120,6 +121,7 @@ export class DrizzleAiDraftHistoryReadModel extends AiDraftHistoryReadModel {
                 athleteId: sql<string | null>`${aiMesocycleDrafts.athleteId}`.as('athlete_id'),
                 // The proposed block name lives inside the jsonb proposal.
                 name: sql<string | null>`${aiMesocycleDrafts.content}->>'name'`.as('name'),
+                parentDraftId: sql<string | null>`${aiMesocycleDrafts.parentDraftId}`.as('parent_draft_id'),
                 // Qualified on purpose — see the note on the session branch.
                 title: sql<string | null>`(
                     select m."content" from "ai_mesocycle_draft_messages" m

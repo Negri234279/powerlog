@@ -7,5 +7,8 @@ export class CreateMesocycleCommand {
         /** Set when a coach builds the block for one of their athletes: the athlete
          *  owns it, the coach is stamped as its planner (and is the one who edits it). */
         public readonly athleteId?: string,
+        /** Set when the block was built from an AI draft, so the draft can record
+         *  what it produced. */
+        public readonly fromAiDraftId?: string | null,
     ) {}
 }

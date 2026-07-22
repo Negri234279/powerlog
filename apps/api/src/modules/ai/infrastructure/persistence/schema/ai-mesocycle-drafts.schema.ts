@@ -1,5 +1,15 @@
 import { sql } from 'drizzle-orm'
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import {
+    type AnyPgColumn,
+    index,
+    integer,
+    jsonb,
+    pgTable,
+    text,
+    timestamp,
+    uniqueIndex,
+    uuid,
+} from 'drizzle-orm/pg-core'
 
 import type { MesocycleDraftProposal } from '../../../domain/entities/ai-mesocycle-draft.entity'
 import { aiPlanDraftStatusEnum, aiPlanMessageRoleEnum } from './ai-plan-drafts.schema'
@@ -35,6 +45,15 @@ export const aiMesocycleDrafts = pgTable(
         // is a different draft, and the history should say which was which.
         model: text('model').notNull(),
         status: aiPlanDraftStatusEnum('status').notNull().default('open'),
+        // The draft this one continues, when the athlete picked an old conversation
+        // back up. Self-reference, nulled rather than cascaded: losing the ancestor
+        // must never take the fork with it.
+        parentDraftId: uuid('parent_draft_id').references((): AnyPgColumn => aiMesocycleDrafts.id, {
+            onDelete: 'set null',
+        }),
+        // The block this draft became, once it was taken into the builder and
+        // created. Soft reference (no FK) — it belongs to the workouts module.
+        mesocycleId: uuid('mesocycle_id'),
         weeks: integer('weeks').notNull(),
         trainingDays: integer('training_days').array().notNull(),
         goal: text('goal'),

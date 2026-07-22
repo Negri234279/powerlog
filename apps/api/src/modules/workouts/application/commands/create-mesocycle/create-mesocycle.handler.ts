@@ -3,6 +3,7 @@ import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { MesocycleAssignedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-assigned.integration-event'
+import { MesocycleCreatedFromAiDraftIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-created-from-ai-draft.integration-event'
 import { MesocycleAggregate } from '../../../domain/entities/mesocycle.entity'
 import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
 import { ExerciseRepository } from '../../../domain/repositories/exercise.repository'
@@ -60,6 +61,14 @@ export class CreateMesocycleHandler implements ICommandHandler<CreateMesocycleCo
         if (athleteId !== undefined) {
             this.eventBus.publish(
                 new MesocycleAssignedIntegrationEvent(command.userId, athleteId, mesocycle.id, mesocycle.name.value),
+            )
+        }
+
+        // Tells the AI module which block its draft became. Announced rather than
+        // called: workouts must not know that module exists.
+        if (command.fromAiDraftId) {
+            this.eventBus.publish(
+                new MesocycleCreatedFromAiDraftIntegrationEvent(command.userId, command.fromAiDraftId, mesocycle.id),
             )
         }
 

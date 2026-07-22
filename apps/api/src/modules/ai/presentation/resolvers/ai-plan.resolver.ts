@@ -9,6 +9,7 @@ import { JwtCookieGuard } from '../../../../auth/jwt-cookie.guard'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import { AcceptPlanDraftCommand } from '../../application/commands/accept-plan-draft/accept-plan-draft.command'
 import { DiscardPlanDraftCommand } from '../../application/commands/discard-plan-draft/discard-plan-draft.command'
+import { ForkPlanDraftCommand } from '../../application/commands/fork-plan-draft/fork-plan-draft.command'
 import { GenerateSessionPlanDraftCommand } from '../../application/commands/generate-session-plan-draft/generate-session-plan-draft.command'
 import { RefinePlanDraftCommand } from '../../application/commands/refine-plan-draft/refine-plan-draft.command'
 import { GetSessionPlanDraftQuery } from '../../application/queries/get-session-plan-draft/get-session-plan-draft.query'
@@ -85,6 +86,19 @@ export class AiPlanResolver {
         const command = new AcceptPlanDraftCommand(user.userId, draftId)
 
         return toType(await this.commandBus.execute<AcceptPlanDraftCommand, AiPlanDraftView>(command))
+    }
+
+    @Mutation(() => AiPlanDraftType, {
+        description:
+            'Pick a past conversation back up: opens a new draft carrying its proposal. Supersedes any open draft on the session.',
+    })
+    async forkPlanDraft(
+        @CurrentUser() user: AuthUser,
+        @Args('draftId', { type: () => ID }, new ZodValidationPipe(uuidSchema)) draftId: string,
+    ): Promise<AiPlanDraftType> {
+        const command = new ForkPlanDraftCommand(user.userId, draftId)
+
+        return toType(await this.commandBus.execute<ForkPlanDraftCommand, AiPlanDraftView>(command))
     }
 
     @Mutation(() => Boolean, { description: 'Throw away a draft without touching the session.' })

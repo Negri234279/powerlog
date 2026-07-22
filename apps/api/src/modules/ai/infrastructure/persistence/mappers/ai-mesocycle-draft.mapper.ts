@@ -33,6 +33,8 @@ export const AiMesocycleDraftMapper = {
                     createdAt: message.createdAt,
                 }),
             ),
+            parentDraftId: draft.parentDraftId,
+            mesocycleId: draft.mesocycleId,
             createdAt: draft.createdAt,
             updatedAt: draft.updatedAt,
         })
@@ -50,6 +52,8 @@ export const AiMesocycleDraftMapper = {
             trainingDays: [...draft.trainingDays],
             goal: draft.goal,
             content: draft.proposal,
+            parentDraftId: draft.parentDraftId,
+            mesocycleId: draft.mesocycleId,
             createdAt: draft.createdAt,
             updatedAt: draft.updatedAt,
         }

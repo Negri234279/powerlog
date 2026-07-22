@@ -15,6 +15,7 @@ import {
     NotLinkedToAthleteError,
 } from '../../../domain/errors/workouts.errors'
 import type { MesocycleContentRaw } from '../../mesocycle-content'
+import { MesocycleCreatedFromAiDraftIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-created-from-ai-draft.integration-event'
 import { CreateMesocycleCommand } from './create-mesocycle.command'
 import { CreateMesocycleHandler } from './create-mesocycle.handler'
 
@@ -29,6 +30,7 @@ function setup(coachLinks = new FakeCoachLinks()) {
     const mesocycles = new InMemoryMesocycleRepository()
     const exercises = new InMemoryExerciseRepository([SQUAT])
     const entitlements = new FakeEntitlements()
+    const events = new RecordingEventBus()
     const handler = new CreateMesocycleHandler(
         mesocycles,
         exercises,
@@ -36,9 +38,9 @@ function setup(coachLinks = new FakeCoachLinks()) {
         entitlements,
         new FakeClock(NOW),
         new FakeIdGenerator(),
-        new RecordingEventBus().asEventBus(),
+        events.asEventBus(),
     )
-    return { mesocycles, entitlements, handler }
+    return { mesocycles, entitlements, events, handler }
 }
 
 function content(overrides: Partial<MesocycleContentRaw> = {}): MesocycleContentRaw {
@@ -224,5 +226,28 @@ describe('CreateMesocycleHandler', () => {
         await handler.execute(new CreateMesocycleCommand(COACH, content()))
 
         expect(mesocycles.size).toBe(2)
+    })
+
+    it('tells the AI module which block its draft became', async () => {
+        const { handler, events } = setup()
+        const command = new CreateMesocycleCommand(OWNER, content(), undefined, 'draft-1')
+
+        const view = await handler.execute(command)
+
+        const announced = events.published.find(
+            (event): event is MesocycleCreatedFromAiDraftIntegrationEvent =>
+                event instanceof MesocycleCreatedFromAiDraftIntegrationEvent,
+        )
+        expect(announced).toMatchObject({ userId: OWNER, draftId: 'draft-1', mesocycleId: view.id })
+    })
+
+    it('says nothing about AI drafts when the block was built by hand', async () => {
+        const { handler, events } = setup()
+
+        await handler.execute(new CreateMesocycleCommand(OWNER, content()))
+
+        expect(events.published.some((event) => event instanceof MesocycleCreatedFromAiDraftIntegrationEvent)).toBe(
+            false,
+        )
     })
 })

@@ -48,6 +48,8 @@ export interface AiDraftSummaryRow {
     athleteId: string | null
     /** The name the model proposed for the block; null on session drafts. */
     name: string | null
+    /** The resolved draft this one continues, if any — the line shows the chain. */
+    parentDraftId: string | null
     /**
      * What the athlete asked for in their own words — the first `user` turn. Null
      * when the draft was generated without a request, which is the common case for

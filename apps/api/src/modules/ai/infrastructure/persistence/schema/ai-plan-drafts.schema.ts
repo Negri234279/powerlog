@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+    type AnyPgColumn,
     doublePrecision,
     index,
     integer,
@@ -37,6 +38,12 @@ export const aiPlanDrafts = pgTable(
         // model is a different draft, and the history should say which was which.
         model: text('model').notNull(),
         status: aiPlanDraftStatusEnum('status').notNull().default('open'),
+        // The draft this one continues, when the athlete picked an old conversation
+        // back up. Self-reference, nulled rather than cascaded: losing the ancestor
+        // must never take the fork with it.
+        parentDraftId: uuid('parent_draft_id').references((): AnyPgColumn => aiPlanDrafts.id, {
+            onDelete: 'set null',
+        }),
         createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },

@@ -33,6 +33,7 @@ import { MesocycleSummaryType, MesocycleType } from '../types/mesocycle.type'
 import { WorkoutSessionType } from '../types/workout-session.type'
 
 const uuidArg = z.string().uuid()
+const optionalUuidArg = uuidArg.optional()
 const searchArg = z.string().trim().min(1).max(100).optional()
 const dateArg = z.string().date().optional()
 
@@ -68,8 +69,10 @@ export class MesocycleResolver {
     async createMesocycle(
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(mesocycleSchema)) input: MesocycleInput,
+        @Args('fromAiDraftId', { type: () => ID, nullable: true }, new ZodValidationPipe(optionalUuidArg))
+        fromAiDraftId?: string,
     ): Promise<MesocycleView> {
-        const command = new CreateMesocycleCommand(user.userId, input)
+        const command = new CreateMesocycleCommand(user.userId, input, undefined, fromAiDraftId)
         return this.commandBus.execute(command)
     }
 
@@ -82,8 +85,10 @@ export class MesocycleResolver {
         @CurrentUser() user: AuthUser,
         @Args('athleteId', { type: () => ID }, new ZodValidationPipe(uuidArg)) athleteId: string,
         @Args('input', new ZodValidationPipe(mesocycleSchema)) input: MesocycleInput,
+        @Args('fromAiDraftId', { type: () => ID, nullable: true }, new ZodValidationPipe(optionalUuidArg))
+        fromAiDraftId?: string,
     ): Promise<MesocycleView> {
-        const command = new CreateMesocycleCommand(user.userId, input, athleteId)
+        const command = new CreateMesocycleCommand(user.userId, input, athleteId, fromAiDraftId)
         return this.commandBus.execute(command)
     }
 

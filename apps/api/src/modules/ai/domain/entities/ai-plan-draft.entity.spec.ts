@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { AiPlanDraftMother, planDraftSet } from '../../../../../tests/mothers/ai'
 import { AiPlanDraftNotOpenError, ConflictingPlanIntensityError } from '../errors/ai-plan.errors'
+import { AiPlanDraftAggregate } from './ai-plan-draft.entity'
 
 const LATER = new Date('2026-02-01T00:00:00.000Z')
 
@@ -69,5 +70,60 @@ describe('AiPlanDraftAggregate', () => {
         draft.discard(LATER)
 
         expect(() => draft.accept(LATER)).toThrow(AiPlanDraftNotOpenError)
+    })
+
+    describe('forking a resolved conversation', () => {
+        const forkOf = (source: ReturnType<typeof AiPlanDraftMother.open>) =>
+            AiPlanDraftAggregate.fork({
+                id: 'fork-1',
+                source,
+                provider: source.provider,
+                model: 'gpt-5',
+                rationaleId: 'message-fork',
+                now: LATER,
+            })
+
+        it('opens a new draft on the same session, carrying the proposal', () => {
+            const source = AiPlanDraftMother.open()
+            source.accept(LATER)
+
+            const fork = forkOf(source)
+
+            expect(fork.status.value).toBe('open')
+            expect(fork.sessionId).toBe(source.sessionId)
+            expect(fork.entryId).toBe(source.entryId)
+            expect(fork.sets).toEqual(source.sets)
+            expect(fork.parentDraftId).toBe(source.id)
+        })
+
+        it('copies the sets rather than sharing them', () => {
+            const source = AiPlanDraftMother.open()
+            source.accept(LATER)
+            const fork = forkOf(source)
+
+            fork.revise([planDraftSet({ plannedReps: 12 })], revision, LATER)
+
+            // Revising the fork must not rewrite the record of what was accepted.
+            expect(source.sets[0]?.plannedReps).toBe(5)
+        })
+
+        it('starts a fresh thread opened by the reasoning behind the carried proposal', () => {
+            const source = AiPlanDraftMother.open({ request: 'more volume on bench' })
+            source.accept(LATER)
+
+            const fork = forkOf(source)
+
+            expect(fork.messages).toHaveLength(1)
+            expect(fork.messages[0]?.role).toBe('assistant')
+            expect(fork.messages[0]?.content).toBe(source.messages.at(-1)?.content)
+        })
+
+        it('is refinable, unlike the resolved draft it continues', () => {
+            const source = AiPlanDraftMother.open()
+            source.accept(LATER)
+            const fork = forkOf(source)
+
+            expect(() => fork.addMessage({ id: 'm', role: 'user', content: 'lighter' }, LATER)).not.toThrow()
+        })
     })
 })

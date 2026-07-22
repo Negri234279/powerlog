@@ -37,6 +37,7 @@ export const AiPlanDraftMapper = {
                     createdAt: message.createdAt,
                 }),
             ),
+            parentDraftId: draft.parentDraftId,
             createdAt: draft.createdAt,
             updatedAt: draft.updatedAt,
         })
@@ -51,6 +52,7 @@ export const AiPlanDraftMapper = {
             provider: draft.provider.value,
             model: draft.model,
             status: draft.status.value,
+            parentDraftId: draft.parentDraftId,
             createdAt: draft.createdAt,
             updatedAt: draft.updatedAt,
         }

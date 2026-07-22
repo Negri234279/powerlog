@@ -33,6 +33,9 @@ export class AiDraftSummaryType {
     @Field(() => String, { nullable: true, description: 'The block name the model proposed; null on session drafts.' })
     name!: string | null
 
+    @Field(() => ID, { nullable: true, description: 'The resolved draft this one continues, if any.' })
+    parentDraftId!: string | null
+
     @Field(() => String, {
         nullable: true,
         description: 'What the athlete asked for, in their own words; null when the draft was generated unprompted.',

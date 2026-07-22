@@ -352,6 +352,9 @@ type AiDraftSummary {
   """The block name the model proposed; null on session drafts."""
   name: String
 
+  """The resolved draft this one continues, if any."""
+  parentDraftId: ID
+
   """"openai" or "anthropic"."""
   provider: String!
 
@@ -377,6 +380,9 @@ type AiMesocycleDraft {
   days: [AiMesocycleDraftDay!]!
   goal: String
   id: ID!
+
+  """The block this draft became, once it was created."""
+  mesocycleId: ID
   messages: [AiMesocycleDraftMessage!]!
 
   """The model that produced this proposal."""
@@ -384,6 +390,9 @@ type AiMesocycleDraft {
 
   """The name the model proposed for the block."""
   name: String!
+
+  """The resolved draft this one continues, if any."""
+  parentDraftId: ID
 
   """"openai" or "anthropic"."""
   provider: String!
@@ -455,6 +464,9 @@ type AiPlanDraft {
 
   """The model that produced this proposal."""
   model: String!
+
+  """The resolved draft this one continues, if any."""
+  parentDraftId: ID
 
   """"openai" or "anthropic"."""
   provider: String!
@@ -1176,13 +1188,13 @@ type Mutation {
   """
   Build a mesocycle for one of your athletes: they own it, you plan it (coaches only).
   """
-  createAthleteMesocycle(athleteId: ID!, input: MesocycleInput!): Mesocycle!
+  createAthleteMesocycle(athleteId: ID!, fromAiDraftId: ID, input: MesocycleInput!): Mesocycle!
 
   """Create a catalog exercise."""
   createExercise(input: CreateExerciseInput!): Exercise!
 
   """Create a mesocycle (weeks → days → programmed sets)."""
-  createMesocycle(input: MesocycleInput!): Mesocycle!
+  createMesocycle(fromAiDraftId: ID, input: MesocycleInput!): Mesocycle!
 
   """Create a plan. Born `draft` unless told otherwise."""
   createPlan(input: CreatePlanInput!): ID!
@@ -1247,6 +1259,16 @@ type Mutation {
   Email a password-reset link (always succeeds, even if the email is unknown).
   """
   forgotPassword(email: String!): Boolean!
+
+  """
+  Pick a past block design back up: opens a new draft carrying its week. Supersedes any open draft for the same trainee.
+  """
+  forkMesocycleDraft(draftId: ID!): AiMesocycleDraft!
+
+  """
+  Pick a past conversation back up: opens a new draft carrying its proposal. Supersedes any open draft on the session.
+  """
+  forkPlanDraft(draftId: ID!): AiPlanDraft!
 
   """
   Ask the default AI provider to design a training block. Supersedes any open draft for the same trainee.

@@ -78,6 +78,17 @@ export interface AiMesocycleDraftProps {
     goal: string | null
     proposal: MesocycleDraftProposal
     messages: AiPlanMessageEntity[]
+    /**
+     * The resolved draft this one was forked from, if any. Provenance only — the
+     * fork stands on its own, so nothing about it reads through the parent.
+     */
+    parentDraftId: string | null
+    /**
+     * The block this draft became. Null until it is taken into the builder and
+     * actually created — accepting alone does not create anything, so the id is
+     * only knowable later.
+     */
+    mesocycleId: string | null
     createdAt: Date
     updatedAt: Date
 }
@@ -115,6 +126,8 @@ export class AiMesocycleDraftAggregate {
         rationaleId: string
         /** The athlete's free-text request, if they wrote one. */
         request?: { id: string; content: string } | null
+        /** Set when this draft continues a resolved one. */
+        parentDraftId?: string | null
         now: Date
     }): AiMesocycleDraftAggregate {
         assertWeeksInRange(input.weeks)
@@ -153,9 +166,57 @@ export class AiMesocycleDraftAggregate {
                     createdAt: input.now,
                 }),
             ],
+            parentDraftId: input.parentDraftId ?? null,
+            mesocycleId: null,
             createdAt: input.now,
             updatedAt: input.now,
         })
+    }
+
+    /**
+     * Continue a conversation that was already resolved. The proposed week and the
+     * athlete's structured request (weeks, training days, goal) are carried over,
+     * and the model's reasoning behind the week opens the new thread — but the
+     * thread starts fresh rather than being copied. That is deliberate: threads are
+     * capped at `MESOCYCLE_DRAFT_LIMITS.messages`, so copying a long conversation
+     * would hand the athlete a fork with no room left to say anything.
+     */
+    static fork(input: {
+        id: string
+        source: AiMesocycleDraftAggregate
+        /** The caller's current provider — a fork may well run on a different model. */
+        provider: AiProviderVO
+        model: string
+        rationaleId: string
+        now: Date
+    }): AiMesocycleDraftAggregate {
+        const source = input.source
+
+        return AiMesocycleDraftAggregate.create({
+            id: input.id,
+            userId: source.userId,
+            athleteId: source.athleteId,
+            provider: input.provider,
+            model: input.model,
+            weeks: source.weeks,
+            trainingDays: [...source.trainingDays],
+            goal: source.goal,
+            proposal: source.proposal,
+            rationale: source.lastRationale,
+            rationaleId: input.rationaleId,
+            parentDraftId: source.id,
+            now: input.now,
+        })
+    }
+
+    /**
+     * The model's reasoning behind the current week — the last thing it said.
+     * Every draft is born with one, so there is always an answer.
+     */
+    private get lastRationale(): string {
+        const assistant = [...this.props.messages].reverse().find((message) => message.role === 'assistant')
+
+        return assistant?.content ?? ''
     }
 
     static rehydrate(props: AiMesocycleDraftProps): AiMesocycleDraftAggregate {
@@ -218,6 +279,18 @@ export class AiMesocycleDraftAggregate {
         this.props.updatedAt = now
     }
 
+    /**
+     * Record the block this draft became. Write-once and status-agnostic: the
+     * builder may create the block before or after the draft is accepted, and a
+     * second creation from the same draft must not rewrite history.
+     */
+    linkMesocycle(mesocycleId: string, now: Date): void {
+        if (this.props.mesocycleId !== null) return
+
+        this.props.mesocycleId = mesocycleId
+        this.props.updatedAt = now
+    }
+
     discard(now: Date): void {
         this.requireOpen()
 
@@ -263,6 +336,12 @@ export class AiMesocycleDraftAggregate {
     }
     get messages(): readonly AiPlanMessageEntity[] {
         return this.props.messages
+    }
+    get parentDraftId(): string | null {
+        return this.props.parentDraftId
+    }
+    get mesocycleId(): string | null {
+        return this.props.mesocycleId
     }
     get createdAt(): Date {
         return this.props.createdAt
