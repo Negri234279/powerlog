@@ -18,6 +18,7 @@ import { Clock } from './application/ports/clock.port'
 import { IdGenerator } from './application/ports/id-generator.port'
 import { ModelPricing } from './application/ports/model-pricing.port'
 import { SecretCipher } from './application/ports/secret-cipher.port'
+import { AiGenerationRepository } from './domain/repositories/ai-generation.repository'
 import { AiMesocycleDraftRepository } from './domain/repositories/ai-mesocycle-draft.repository'
 import { AiPlanDraftRepository } from './domain/repositories/ai-plan-draft.repository'
 import { AiProviderConfigRepository } from './domain/repositories/ai-provider-config.repository'
@@ -25,6 +26,7 @@ import { AiUsageRepository } from './domain/repositories/ai-usage.repository'
 import { AesGcmSecretCipher } from './infrastructure/crypto/aes-gcm-secret-cipher'
 import { UuidGenerator } from './infrastructure/id/uuid-generator'
 import { DrizzleAiDraftHistoryReadModel } from './infrastructure/persistence/read-models/drizzle-ai-draft-history.read-model'
+import { DrizzleAiGenerationRepository } from './infrastructure/persistence/repositories/drizzle-ai-generation.repository'
 import { DrizzleAiMesocycleDraftRepository } from './infrastructure/persistence/repositories/drizzle-ai-mesocycle-draft.repository'
 import { DrizzleAiPlanDraftRepository } from './infrastructure/persistence/repositories/drizzle-ai-plan-draft.repository'
 import { DrizzleAiProviderConfigRepository } from './infrastructure/persistence/repositories/drizzle-ai-provider-config.repository'
@@ -41,6 +43,7 @@ const ADAPTERS: Provider[] = [
     { provide: AiProviderConfigRepository, useClass: DrizzleAiProviderConfigRepository },
     { provide: AiPlanDraftRepository, useClass: DrizzleAiPlanDraftRepository },
     { provide: AiMesocycleDraftRepository, useClass: DrizzleAiMesocycleDraftRepository },
+    { provide: AiGenerationRepository, useClass: DrizzleAiGenerationRepository },
     { provide: AiUsageRepository, useClass: DrizzleAiUsageRepository },
     { provide: AiDraftHistoryReadModel, useClass: DrizzleAiDraftHistoryReadModel },
     { provide: ModelPricing, useClass: StaticModelPricing },

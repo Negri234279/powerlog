@@ -19,6 +19,18 @@ export class AiGenerationAlreadySettledError extends AiSettingsError {
     }
 }
 
+/**
+ * The same thing is already being generated. Raised when two requests for one
+ * scope race past the check and meet at the unique index — the athlete is told
+ * to wait for the answer they are already paying for, not charged twice.
+ */
+export class AiGenerationAlreadyInFlightError extends AiSettingsError {
+    readonly code = 'AI_GENERATION_ALREADY_IN_FLIGHT'
+    constructor() {
+        super('That is already being generated. Wait for it to finish.')
+    }
+}
+
 /** A worker picked up a generation that was not waiting to be run. */
 export class AiGenerationNotQueuedError extends AiSettingsError {
     readonly code = 'AI_GENERATION_NOT_QUEUED'

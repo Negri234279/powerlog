@@ -428,6 +428,13 @@
       "when": 1784721817960,
       "tag": "0060_gray_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1784740104273,
+      "tag": "0061_bored_wraith",
+      "breakpoints": true
     }
   ]
 }
