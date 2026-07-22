@@ -54,10 +54,16 @@ export const AiMesocycleDraftFieldsFragment = graphql(`
     }
 `)
 
+/**
+ * Queues the design and returns the job, not the draft: the whole exercise
+ * catalog goes into the prompt and a full week comes back, which is the slowest
+ * of the four AI jobs. The draft is read back once it succeeds.
+ */
 export const GenerateMesocycleDraftDocument = graphql(`
     mutation GenerateMesocycleDraft($input: GenerateMesocycleDraftInput!) {
         generateMesocycleDraft(input: $input) {
-            ...AiMesocycleDraftFields
+            id
+            status
         }
     }
 `)
@@ -65,7 +71,8 @@ export const GenerateMesocycleDraftDocument = graphql(`
 export const RefineMesocycleDraftDocument = graphql(`
     mutation RefineMesocycleDraft($input: RefineMesocycleDraftInput!) {
         refineMesocycleDraft(input: $input) {
-            ...AiMesocycleDraftFields
+            id
+            status
         }
     }
 `)

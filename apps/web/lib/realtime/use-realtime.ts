@@ -25,6 +25,10 @@ const INVALIDATES = {
     // The checkout redirect cannot be trusted (the subscription is created by the
     // webhook), so this is what actually tells the open tab that the money landed.
     subscription_updated: [['myPlan'], ['myInvoices'], ['notifications']],
+    // An AI job finished. The tab that asked is already waiting on it, but this is
+    // what reaches the OTHER tabs — and the one that was reopened while the job
+    // ran — without any of them polling for a draft they don't know about yet.
+    ai_generation_settled: [['sessionPlanDraft'], ['mesocycleDraft'], ['aiDraftCount'], ['aiDraftHistory']],
 } as const satisfies Record<string, readonly string[][]>
 
 type RealtimeEventType = keyof typeof INVALIDATES

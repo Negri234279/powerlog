@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { MesocycleDraftQuery } from '@/lib/graphql/__generated__/graphql'
+import { waitForGeneration } from '@/lib/graphql/ai-generation'
 import { gqlRequest } from '@/lib/graphql/client'
 import {
     AcceptMesocycleDraftDocument,
@@ -40,16 +41,33 @@ export function useMesocycleDraft(enabled: boolean, athleteId?: string) {
 }
 
 /**
- * Generating and refining reach the user's provider and take seconds, so the
- * fresh draft is written straight into the cache instead of triggering a refetch
- * that would ask the server for what we already hold.
+ * The block the finished job designed. Read back rather than returned by the
+ * mutation: the API answers with a job now, because designing a week is the
+ * slowest of the AI calls.
+ */
+async function draftOf(athleteId?: string): Promise<AiMesocycleDraft | null> {
+    return (await gqlRequest(MesocycleDraftDocument, { athleteId })).mesocycleDraft ?? null
+}
+
+/**
+ * Generating and refining queue a job and then wait for it. The mutation stays
+ * pending for the whole wait — which is what the athlete is doing — but the
+ * browser no longer holds a minute-long request open: the work belongs to the
+ * server, and leaving the page no longer throws away what was already paid for.
+ *
+ * A job that fails rejects with the API's code, so the existing error handling
+ * (upgrade CTA vs message) keeps working unchanged.
  */
 export function useGenerateMesocycleDraft() {
     const qc = useQueryClient()
 
     return useMutation({
-        mutationFn: async (input: GenerateMesocycleVariables) =>
-            (await gqlRequest(GenerateMesocycleDraftDocument, { input })).generateMesocycleDraft,
+        mutationFn: async (input: GenerateMesocycleVariables) => {
+            const queued = await gqlRequest(GenerateMesocycleDraftDocument, { input })
+            await waitForGeneration(queued.generateMesocycleDraft.id)
+
+            return draftOf(input.athleteId)
+        },
         onSuccess: (draft, input) => qc.setQueryData(draftKey(input.athleteId), draft),
     })
 }
@@ -58,8 +76,12 @@ export function useRefineMesocycleDraft(athleteId?: string) {
     const qc = useQueryClient()
 
     return useMutation({
-        mutationFn: async (input: { draftId: string; message: string }) =>
-            (await gqlRequest(RefineMesocycleDraftDocument, { input })).refineMesocycleDraft,
+        mutationFn: async (input: { draftId: string; message: string }) => {
+            const queued = await gqlRequest(RefineMesocycleDraftDocument, { input })
+            await waitForGeneration(queued.refineMesocycleDraft.id)
+
+            return draftOf(athleteId)
+        },
         onSuccess: (draft) => qc.setQueryData(draftKey(athleteId), draft),
     })
 }

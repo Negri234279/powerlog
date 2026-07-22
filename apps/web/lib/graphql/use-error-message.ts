@@ -4,6 +4,8 @@ import { ClientError } from 'graphql-request'
 import { useTranslations } from 'next-intl'
 import { useCallback } from 'react'
 
+import { AiGenerationFailedError } from '@/lib/graphql/ai-generation'
+
 /**
  * Returns a function that turns a GraphQL/network error into a localized,
  * user-safe message. It maps the API's stable `extensions.code` to a translated
@@ -22,6 +24,11 @@ export function useErrorMessage() {
 
     return useCallback(
         (error: unknown): string => {
+            // A generation that failed after the mutation had already returned. It
+            // carries the same stable codes, so it gets the same translations.
+            if (error instanceof AiGenerationFailedError) {
+                return t.has(error.code) ? t(error.code) : t('generic')
+            }
             if (error instanceof ClientError) {
                 const first = error.response.errors?.[0]
                 const code = typeof first?.extensions?.['code'] === 'string' ? first.extensions['code'] : null
