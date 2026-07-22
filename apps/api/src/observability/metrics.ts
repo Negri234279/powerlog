@@ -54,6 +54,8 @@ export const METRIC = {
     billingWebhooksPendingReplay: 'powerlog_billing_webhooks_pending_replay',
     billingDrift: 'powerlog_billing_drift',
     revenueCents: 'powerlog_revenue_cents_total',
+    aiGenerationsQueued: 'powerlog_ai_generations_queued_total',
+    aiGenerationDuration: 'powerlog_ai_generation_duration_seconds',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -211,6 +213,22 @@ export const metricsProviders = [
         name: METRIC.llmRequestDuration,
         help: 'Duration of LLM provider calls in seconds.',
         labelNames: ['provider', 'operation', 'status'],
+        buckets: LLM_DURATION_BUCKETS,
+        enableExemplars: true,
+    }),
+    // The async generation queue. `queued` counts what was asked for; the
+    // histogram measures wait + run, which is the number that says whether the
+    // work could ever have fitted inside a request. `kind` and `status` are
+    // bounded enums — no ids, no models.
+    makeCounterProvider({
+        name: METRIC.aiGenerationsQueued,
+        help: 'Count of AI generations queued, by kind.',
+        labelNames: ['kind'],
+    }),
+    makeHistogramProvider({
+        name: METRIC.aiGenerationDuration,
+        help: 'End-to-end duration of AI generations in seconds, queue wait included.',
+        labelNames: ['kind', 'status'],
         buckets: LLM_DURATION_BUCKETS,
         enableExemplars: true,
     }),

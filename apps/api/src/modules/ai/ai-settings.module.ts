@@ -1,4 +1,6 @@
 import { Module, type Provider } from '@nestjs/common'
+import { CommandBus } from '@nestjs/cqrs'
+import { PinoLogger } from 'nestjs-pino'
 
 import { CommandBusSessionPlanApplier } from '../../planning/command-bus-session-plan-applier'
 import { QueryBusMesocycleDesignContextReader } from '../../planning/query-bus-mesocycle-design-context-reader'
@@ -6,6 +8,7 @@ import { QueryBusSessionPlanContextReader } from '../../planning/query-bus-sessi
 import { MesocycleDesignContextReader } from '../../shared/contracts/mesocycle-design-context'
 import { SessionPlanApplier } from '../../shared/contracts/session-plan-applier'
 import { SessionPlanContextReader } from '../../shared/contracts/session-plan-context'
+import { BullQueueFactory } from '../../queue/bull-queue.factory'
 import { AuthModule } from '../auth/auth.module'
 import {
     AI_APPLICATION_SERVICES,
@@ -14,6 +17,8 @@ import {
     AI_QUERY_HANDLERS,
 } from './application/ai.application'
 import { AiDraftHistoryReadModel } from './application/ports/ai-draft-history.read-model'
+import { AiGenerationMetrics } from './application/ports/ai-generation-metrics.port'
+import { AiGenerationQueue } from './application/ports/ai-generation-queue.port'
 import { Clock } from './application/ports/clock.port'
 import { IdGenerator } from './application/ports/id-generator.port'
 import { ModelPricing } from './application/ports/model-pricing.port'
@@ -25,6 +30,7 @@ import { AiProviderConfigRepository } from './domain/repositories/ai-provider-co
 import { AiUsageRepository } from './domain/repositories/ai-usage.repository'
 import { AesGcmSecretCipher } from './infrastructure/crypto/aes-gcm-secret-cipher'
 import { UuidGenerator } from './infrastructure/id/uuid-generator'
+import { PrometheusAiGenerationMetrics } from './infrastructure/metrics/prometheus-ai-generation-metrics'
 import { DrizzleAiDraftHistoryReadModel } from './infrastructure/persistence/read-models/drizzle-ai-draft-history.read-model'
 import { DrizzleAiGenerationRepository } from './infrastructure/persistence/repositories/drizzle-ai-generation.repository'
 import { DrizzleAiMesocycleDraftRepository } from './infrastructure/persistence/repositories/drizzle-ai-mesocycle-draft.repository'
@@ -32,6 +38,8 @@ import { DrizzleAiPlanDraftRepository } from './infrastructure/persistence/repos
 import { DrizzleAiProviderConfigRepository } from './infrastructure/persistence/repositories/drizzle-ai-provider-config.repository'
 import { DrizzleAiUsageRepository } from './infrastructure/persistence/repositories/drizzle-ai-usage.repository'
 import { StaticModelPricing } from './infrastructure/pricing/static-model-pricing'
+import { BullAiGenerationQueue } from './infrastructure/queue/bull-ai-generation.queue'
+import { InProcessAiGenerationQueue } from './infrastructure/queue/in-process-ai-generation.queue'
 import { SystemClock } from './infrastructure/time/system-clock'
 import { AI_RESOLVERS } from './presentation/ai.presentation'
 
@@ -47,11 +55,24 @@ const ADAPTERS: Provider[] = [
     { provide: AiUsageRepository, useClass: DrizzleAiUsageRepository },
     { provide: AiDraftHistoryReadModel, useClass: DrizzleAiDraftHistoryReadModel },
     { provide: ModelPricing, useClass: StaticModelPricing },
+    { provide: AiGenerationMetrics, useClass: PrometheusAiGenerationMetrics },
     // Cross-module contracts, bridged over the CQRS buses and handled by workouts.
     { provide: SessionPlanContextReader, useClass: QueryBusSessionPlanContextReader },
     { provide: SessionPlanApplier, useClass: CommandBusSessionPlanApplier },
     { provide: MesocycleDesignContextReader, useClass: QueryBusMesocycleDesignContextReader },
 ]
+
+/** BullMQ when Redis is configured, in-process otherwise — see AiGenerationQueue.
+ *  The shared BullQueueFactory owns the connections and their shutdown;
+ *  `available` mirrors whether Redis is set. */
+const GENERATION_QUEUE: Provider = {
+    provide: AiGenerationQueue,
+    inject: [BullQueueFactory, CommandBus, PinoLogger],
+    useFactory: (queues: BullQueueFactory, commandBus: CommandBus, logger: PinoLogger): AiGenerationQueue =>
+        queues.available
+            ? new BullAiGenerationQueue(queues, commandBus, logger)
+            : new InProcessAiGenerationQueue(commandBus, logger),
+}
 
 /**
  * Two things: the user's BYOK provider configuration (keys encrypted at rest),
@@ -67,6 +88,7 @@ const ADAPTERS: Provider[] = [
     imports: [AuthModule],
     providers: [
         ...ADAPTERS,
+        GENERATION_QUEUE,
         ...AI_APPLICATION_SERVICES,
         ...AI_COMMAND_HANDLERS,
         ...AI_QUERY_HANDLERS,
