@@ -5,10 +5,10 @@ import {
     type TemplateScope,
     WorkoutTemplateAggregate,
 } from '../../../src/modules/workouts/domain/entities/workout-template.entity'
-import { RepsVO } from '../../../src/modules/workouts/domain/value-objects/reps.vo'
-import { RpeVO } from '../../../src/modules/workouts/domain/value-objects/rpe.vo'
+import { RepsRangeVO } from '../../../src/modules/workouts/domain/value-objects/reps-range.vo'
+import { RpeRangeVO } from '../../../src/modules/workouts/domain/value-objects/rpe-range.vo'
 import { TemplateNameVO } from '../../../src/modules/workouts/domain/value-objects/template-name.vo'
-import { WeightVO } from '../../../src/modules/workouts/domain/value-objects/weight.vo'
+import { WeightRangeVO } from '../../../src/modules/workouts/domain/value-objects/weight-range.vo'
 
 const NOW = new Date('2026-01-01T00:00:00.000Z')
 
@@ -32,8 +32,12 @@ export const WorkoutTemplateMother = {
                     exerciseId,
                     notes: 'top set then backoff',
                     sets: [
-                        { plannedWeight: WeightVO.create(100), plannedReps: RepsVO.create(5), rpe: RpeVO.create(8) },
-                        { plannedWeight: WeightVO.create(90), plannedReps: RepsVO.create(8) },
+                        {
+                            plannedWeight: WeightRangeVO.create(100),
+                            plannedReps: RepsRangeVO.create(5),
+                            rpe: RpeRangeVO.create(8),
+                        },
+                        { plannedWeight: WeightRangeVO.create(90), plannedReps: RepsRangeVO.create(8) },
                     ],
                 },
             ],

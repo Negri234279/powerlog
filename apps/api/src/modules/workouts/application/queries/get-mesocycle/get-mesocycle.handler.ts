@@ -5,17 +5,18 @@ import type { MesocycleAggregate } from '../../../domain/entities/mesocycle.enti
 import type { MesocycleStatus } from '../../../domain/mesocycle-status'
 import { MesocycleRepository } from '../../../domain/repositories/mesocycle.repository'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
+import { type RangeView, toRangeView } from '../../range-view'
 import { requireReadableMesocycle } from '../../require-manageable-mesocycle'
 import { GetMesocycleQuery } from './get-mesocycle.query'
 
-/** Read models (decoupled from the aggregate). Weights are kg. */
+/** Read models (decoupled from the aggregate). Weights are kg; targets are ranges. */
 export interface MesocycleDaySetView {
     id: string
     order: number
-    plannedWeightKg: number | null
-    plannedReps: number | null
-    rpe: number | null
-    rir: number | null
+    plannedWeightKg: RangeView | null
+    plannedReps: RangeView | null
+    rpe: RangeView | null
+    rir: RangeView | null
     notes: string | null
 }
 
@@ -92,10 +93,10 @@ export function toMesocycleView(mesocycle: MesocycleAggregate, generatedWeeks: n
                     sets: exercise.sets.map((set) => ({
                         id: set.id,
                         order: set.order,
-                        plannedWeightKg: set.plannedWeight?.value ?? null,
-                        plannedReps: set.plannedReps?.value ?? null,
-                        rpe: set.rpe?.value ?? null,
-                        rir: set.rir?.value ?? null,
+                        plannedWeightKg: toRangeView(set.plannedWeight),
+                        plannedReps: toRangeView(set.plannedReps),
+                        rpe: toRangeView(set.rpe),
+                        rir: toRangeView(set.rir),
                         notes: set.notes,
                     })),
                 })),

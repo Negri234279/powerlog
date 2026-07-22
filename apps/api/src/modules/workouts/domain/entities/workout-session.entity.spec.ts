@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+﻿import { randomUUID } from 'node:crypto'
 
 import { describe, expect, it } from 'vitest'
 
@@ -7,9 +7,13 @@ import {
     ExerciseEntryNotFoundError,
     WorkoutSetNotFoundError,
 } from '../errors/workouts.errors'
+import { RepsRangeVO } from '../value-objects/reps-range.vo'
 import { RepsVO } from '../value-objects/reps.vo'
+import { RirRangeVO } from '../value-objects/rir-range.vo'
 import { RirVO } from '../value-objects/rir.vo'
+import { RpeRangeVO } from '../value-objects/rpe-range.vo'
 import { RpeVO } from '../value-objects/rpe.vo'
+import { WeightRangeVO } from '../value-objects/weight-range.vo'
 import { WeightVO } from '../value-objects/weight.vo'
 import { WorkoutSessionAggregate } from './workout-session.entity'
 
@@ -20,7 +24,7 @@ function newSession() {
     return WorkoutSessionAggregate.create({ id: randomUUID(), userId: 'u-1', performedAt: NOW, now: NOW })
 }
 
-describe('WorkoutSessionAggregate — marking sets done', () => {
+describe('WorkoutSessionAggregate â€” marking sets done', () => {
     function sessionWithProgrammedSet() {
         const session = newSession()
         const entry = session.addEntry({ id: 'e-1', exerciseId: 'x-1' }, NOW)
@@ -28,9 +32,9 @@ describe('WorkoutSessionAggregate — marking sets done', () => {
             entry.id,
             {
                 id: 's-1',
-                plannedWeight: WeightVO.create(100),
-                plannedReps: RepsVO.create(5),
-                plannedRpe: RpeVO.create(8),
+                plannedWeight: WeightRangeVO.create(100),
+                plannedReps: RepsRangeVO.create(5),
+                plannedRpe: RpeRangeVO.create(8),
             },
             NOW,
         )
@@ -45,7 +49,7 @@ describe('WorkoutSessionAggregate — marking sets done', () => {
     it('records what was performed without touching the targets it deviates from', () => {
         const { session, entryId, setId } = sessionWithProgrammedSet()
 
-        // Told 100×5 @8; managed 95×5 and it felt like a 9.5.
+        // Told 100Ã—5 @8; managed 95Ã—5 and it felt like a 9.5.
         session.completeSet(
             entryId,
             setId,
@@ -58,13 +62,13 @@ describe('WorkoutSessionAggregate — marking sets done', () => {
         expect(set.outcome).toBe('failed')
         expect(set.weight?.value).toBe(95)
         expect(set.rpe?.value).toBe(9.5)
-        expect(set.plannedWeight?.value).toBe(100)
-        expect(set.plannedRpe?.value).toBe(8)
+        expect(set.plannedWeight?.min.value).toBe(100)
+        expect(set.plannedRpe?.min.value).toBe(8)
         expect(set.e1rmKg).toBeCloseTo(110.83, 2)
         expect(session.updatedAt).toEqual(LATER)
     })
 
-    it('marks a set failed with nothing logged — failing can mean it never went up', () => {
+    it('marks a set failed with nothing logged â€” failing can mean it never went up', () => {
         const { session, entryId, setId } = sessionWithProgrammedSet()
 
         session.completeSet(entryId, setId, 'failed', {}, LATER)
@@ -101,7 +105,11 @@ describe('WorkoutSessionAggregate — marking sets done', () => {
         const entry = session.addEntry({ id: 'e-1', exerciseId: 'x-1' }, NOW)
 
         expect(() =>
-            session.addSet(entry.id, { id: 's-1', plannedRpe: RpeVO.create(8), plannedRir: RirVO.create(2) }, NOW),
+            session.addSet(
+                entry.id,
+                { id: 's-1', plannedRpe: RpeRangeVO.create(8), plannedRir: RirRangeVO.create(2) },
+                NOW,
+            ),
         ).toThrow(ConflictingIntensityError)
     })
 
@@ -128,7 +136,7 @@ describe('WorkoutSessionAggregate', () => {
         expect(session.updatedAt).toEqual(LATER)
     })
 
-    it('derives e1RM from the actual weight × reps, leaving planned-only sets null', () => {
+    it('derives e1RM from the actual weight Ã— reps, leaving planned-only sets null', () => {
         const session = newSession()
         const entry = session.addEntry({ id: 'e-1', exerciseId: 'x-1' }, NOW)
 
@@ -139,7 +147,7 @@ describe('WorkoutSessionAggregate', () => {
         )
         const plannedOnly = session.addSet(
             entry.id,
-            { id: 's-2', plannedWeight: WeightVO.create(120), plannedReps: RepsVO.create(3) },
+            { id: 's-2', plannedWeight: WeightRangeVO.create(120), plannedReps: RepsRangeVO.create(3) },
             NOW,
         )
 

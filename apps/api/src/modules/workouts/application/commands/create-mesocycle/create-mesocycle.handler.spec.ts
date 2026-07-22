@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 
 import { ExerciseMother } from '../../../../../../tests/mothers/workouts'
 import {
@@ -59,8 +59,8 @@ function content(overrides: Partial<MesocycleContentRaw> = {}): MesocycleContent
                             {
                                 exerciseId: SQUAT.id,
                                 sets: [
-                                    { plannedWeight: 100, plannedReps: 5, rpe: 8 },
-                                    { plannedWeight: 90, plannedReps: 8 },
+                                    { plannedWeight: '100', plannedReps: '5', rpe: '8' },
+                                    { plannedWeight: '90', plannedReps: '8' },
                                 ],
                             },
                         ],
@@ -72,7 +72,7 @@ function content(overrides: Partial<MesocycleContentRaw> = {}): MesocycleContent
                 days: [
                     {
                         dayOffset: 0,
-                        exercises: [{ exerciseId: SQUAT.id, sets: [{ plannedWeight: 105, plannedReps: 5 }] }],
+                        exercises: [{ exerciseId: SQUAT.id, sets: [{ plannedWeight: '105', plannedReps: '5' }] }],
                     },
                 ],
             },
@@ -93,7 +93,11 @@ describe('CreateMesocycleHandler', () => {
         const day1 = view.microcycles[0]!.days[0]!
         expect(day1.dayOffset).toBe(0)
         expect(day1.exercises[0]!.sets.map((s) => s.order)).toEqual([1, 2])
-        expect(day1.exercises[0]!.sets[0]).toMatchObject({ plannedWeightKg: 100, plannedReps: 5, rpe: 8 })
+        expect(day1.exercises[0]!.sets[0]).toMatchObject({
+            plannedWeightKg: { min: 100, max: 100 },
+            plannedReps: { min: 5, max: 5 },
+            rpe: { min: 8, max: 8 },
+        })
         expect(view.createdAt).toEqual(NOW)
         expect(await mesocycles.findById(view.id)).not.toBeNull()
     })
@@ -129,7 +133,7 @@ describe('CreateMesocycleHandler', () => {
                                 exercises: [
                                     {
                                         exerciseId: SQUAT.id,
-                                        sets: [{ unit: 'lb', plannedWeight: 225, plannedReps: 3 }],
+                                        sets: [{ unit: 'lb', plannedWeight: '225', plannedReps: '3' }],
                                     },
                                 ],
                             },
@@ -139,7 +143,7 @@ describe('CreateMesocycleHandler', () => {
             }),
         )
 
-        expect(view.microcycles[0]!.days[0]!.exercises[0]!.sets[0]!.plannedWeightKg).toBeCloseTo(102.06, 2)
+        expect(view.microcycles[0]!.days[0]!.exercises[0]!.sets[0]!.plannedWeightKg?.min).toBeCloseTo(102.06, 2)
     })
 
     it('rejects a mesocycle referencing an unknown exercise', async () => {
@@ -165,7 +169,9 @@ describe('CreateMesocycleHandler', () => {
                     name: 'X',
                     microcycles: [
                         {
-                            days: [{ dayOffset: 0, exercises: [{ exerciseId: SQUAT.id, sets: [{ rpe: 8, rir: 2 }] }] }],
+                            days: [
+                                { dayOffset: 0, exercises: [{ exerciseId: SQUAT.id, sets: [{ rpe: '8', rir: '2' }] }] },
+                            ],
                         },
                     ],
                 }),
@@ -215,14 +221,14 @@ describe('CreateMesocycleHandler', () => {
 
     it("counts a coach's own blocks apart from the ones they build for athletes", async () => {
         // A coach at their coaching cap of 1 (one block already for the athlete) can
-        // still build a block for THEMSELVES — that draws on the athlete plan.
+        // still build a block for THEMSELVES â€” that draws on the athlete plan.
         const links = new FakeCoachLinks()
         links.link(COACH, ATHLETE)
         const { mesocycles, entitlements, handler } = setup(links)
         entitlements.onCoach({ planSessions: true, maxMesocycles: 1 }).onAthlete({ maxMesocycles: null })
 
         await handler.execute(new CreateMesocycleCommand(COACH, content(), ATHLETE))
-        // Their own block is fine — different scope, different plan.
+        // Their own block is fine â€” different scope, different plan.
         await handler.execute(new CreateMesocycleCommand(COACH, content()))
 
         expect(mesocycles.size).toBe(2)

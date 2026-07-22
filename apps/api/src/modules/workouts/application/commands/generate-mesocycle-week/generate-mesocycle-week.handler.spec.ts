@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 
 import { MesocycleMother } from '../../../../../../tests/mothers/workouts'
 import {
@@ -17,7 +17,7 @@ import {
     MesocycleWeekNotFoundError,
 } from '../../../domain/errors/workouts.errors'
 import { MesocycleNameVO } from '../../../domain/value-objects/mesocycle-name.vo'
-import { RepsVO } from '../../../domain/value-objects/reps.vo'
+import { RepsRangeVO } from '../../../domain/value-objects/reps-range.vo'
 import { MesocycleWeekGeneratedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-week-generated.integration-event'
 import { GenerateMesocycleWeekCommand } from './generate-mesocycle-week.command'
 import { GenerateMesocycleWeekHandler } from './generate-mesocycle-week.handler'
@@ -48,7 +48,7 @@ function setup(
 }
 
 describe('GenerateMesocycleWeekHandler', () => {
-    it('generates a week into dated planned sessions with the day’s programmed sets', async () => {
+    it('generates a week into dated planned sessions with the dayâ€™s programmed sets', async () => {
         const { sessions, handler } = setup()
 
         const views = await handler.execute(new GenerateMesocycleWeekCommand(OWNER, 'm-1', 1))
@@ -56,14 +56,14 @@ describe('GenerateMesocycleWeekHandler', () => {
         expect(views).toHaveLength(1)
         const session = views[0]!
         expect(session).toMatchObject({ userId: OWNER, status: 'planned', mesocycleId: 'm-1', mesocycleWeek: 1 })
-        // startDate = 2026-01-05, week 1 day offset 0 → noon UTC that day.
+        // startDate = 2026-01-05, week 1 day offset 0 â†’ noon UTC that day.
         expect(session.performedAt.toISOString()).toBe('2026-01-05T12:00:00.000Z')
-        expect(session.entries[0]!.sets.map((s) => s.plannedWeightKg)).toEqual([100, 90])
+        expect(session.entries[0]!.sets.map((s) => s.plannedWeightKg?.min)).toEqual([100, 90])
         expect(session.entries[0]!.sets.every((s) => s.weightKg === null)).toBe(true)
         expect(await sessions.generatedWeeks('m-1')).toEqual([1])
     })
 
-    it('generates the athlete’s sessions when the coach runs a block they plan for them', async () => {
+    it('generates the athleteâ€™s sessions when the coach runs a block they plan for them', async () => {
         const coached = MesocycleMother.withTree(EXERCISE, { id: 'm-1', ownerId: OWNER, plannedByUserId: COACH })
         const { handler } = setup(coached, new FakeCoachLinks().link(COACH, OWNER))
 
@@ -73,7 +73,7 @@ describe('GenerateMesocycleWeekHandler', () => {
         expect(session).toMatchObject({ userId: OWNER, plannedByUserId: COACH, status: 'planned' })
     })
 
-    it('announces the week once, so the athlete’s open app refreshes itself', async () => {
+    it('announces the week once, so the athleteâ€™s open app refreshes itself', async () => {
         const coached = MesocycleMother.withTree(EXERCISE, { id: 'm-1', ownerId: OWNER, plannedByUserId: COACH })
         const { handler, events } = setup(coached, new FakeCoachLinks().link(COACH, OWNER))
 
@@ -91,7 +91,7 @@ describe('GenerateMesocycleWeekHandler', () => {
         })
     })
 
-    it('stays quiet when an athlete generates their own week — they already know', async () => {
+    it('stays quiet when an athlete generates their own week â€” they already know', async () => {
         const { handler, events } = setup()
 
         await handler.execute(new GenerateMesocycleWeekCommand(OWNER, 'm-1', 1))
@@ -137,7 +137,7 @@ describe('GenerateMesocycleWeekHandler', () => {
         )
 
         await handler.execute(new GenerateMesocycleWeekCommand(OWNER, 'm-1', 1, null, true))
-        // Replace drops the old planned session and recreates it — still one for week 1.
+        // Replace drops the old planned session and recreates it â€” still one for week 1.
         expect(sessions.all().filter((s) => s.mesocycleWeek === 1)).toHaveLength(1)
     })
 
@@ -157,7 +157,7 @@ describe('GenerateMesocycleWeekHandler', () => {
                     days: [
                         {
                             dayOffset: 0,
-                            exercises: [{ exerciseId: EXERCISE, sets: [{ plannedReps: RepsVO.create(5) }] }],
+                            exercises: [{ exerciseId: EXERCISE, sets: [{ plannedReps: RepsRangeVO.create(5) }] }],
                         },
                     ],
                 },

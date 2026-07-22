@@ -6,10 +6,10 @@ import type { PrescribedSet } from '../../../../../shared/contracts/session-plan
 import type { WorkoutSetFields } from '../../../domain/entities/workout-set.entity'
 import { ExerciseEntryNotFoundError, WorkoutSessionNotFoundError } from '../../../domain/errors/workouts.errors'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
-import { RepsVO } from '../../../domain/value-objects/reps.vo'
-import { RirVO } from '../../../domain/value-objects/rir.vo'
-import { RpeVO } from '../../../domain/value-objects/rpe.vo'
-import { WeightVO } from '../../../domain/value-objects/weight.vo'
+import { RepsRangeVO } from '../../../domain/value-objects/reps-range.vo'
+import { RirRangeVO } from '../../../domain/value-objects/rir-range.vo'
+import { RpeRangeVO } from '../../../domain/value-objects/rpe-range.vo'
+import { WeightRangeVO } from '../../../domain/value-objects/weight-range.vo'
 import { Clock } from '../../ports/clock.port'
 import { IdGenerator } from '../../ports/id-generator.port'
 import { requireManageableSession } from '../../require-manageable-session'
@@ -90,13 +90,15 @@ function groupByEntry(sets: readonly PrescribedSet[]): Map<string, PrescribedSet
 }
 
 function fieldsOf(prescribed: PrescribedSet): WorkoutSetFields {
+    // The model prescribes one number per target, so each lands as a range whose
+    // bounds coincide — the same thing a coach typing `5` gets.
     const fields: WorkoutSetFields = {
-        plannedWeight: prescribed.plannedWeightKg === null ? null : WeightVO.create(prescribed.plannedWeightKg),
-        plannedReps: prescribed.plannedReps === null ? null : RepsVO.create(prescribed.plannedReps),
+        plannedWeight: prescribed.plannedWeightKg === null ? null : WeightRangeVO.create(prescribed.plannedWeightKg),
+        plannedReps: prescribed.plannedReps === null ? null : RepsRangeVO.create(prescribed.plannedReps),
         // The model prescribes a target intensity — it cannot know what the
         // athlete will feel, so this never touches the performed rpe/rir.
-        plannedRpe: prescribed.rpe === null ? null : RpeVO.create(prescribed.rpe),
-        plannedRir: prescribed.rir === null ? null : RirVO.create(prescribed.rir),
+        plannedRpe: prescribed.rpe === null ? null : RpeRangeVO.create(prescribed.rpe),
+        plannedRir: prescribed.rir === null ? null : RirRangeVO.create(prescribed.rir),
     }
     // `undefined` leaves the athlete's own note alone; a string replaces it.
     if (prescribed.notes !== null) fields.notes = prescribed.notes

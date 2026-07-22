@@ -1,18 +1,18 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 
 import { FakeClock, FakeSetMetrics, InMemoryWorkoutSessionRepository } from '../../../../../../tests/doubles/workouts'
 import { FakeCoachLinks } from '../../../../../../tests/doubles/shared'
 import { WorkoutSessionMother } from '../../../../../../tests/mothers/workouts'
 import { ConflictingIntensityError, WorkoutSessionNotFoundError } from '../../../domain/errors/workouts.errors'
-import { RepsVO } from '../../../domain/value-objects/reps.vo'
-import { RpeVO } from '../../../domain/value-objects/rpe.vo'
-import { WeightVO } from '../../../domain/value-objects/weight.vo'
+import { RepsRangeVO } from '../../../domain/value-objects/reps-range.vo'
+import { RpeRangeVO } from '../../../domain/value-objects/rpe-range.vo'
+import { WeightRangeVO } from '../../../domain/value-objects/weight-range.vo'
 import { CompleteSetCommand } from './complete-set.command'
 import { CompleteSetHandler } from './complete-set.handler'
 
 const NOW = new Date('2026-01-01T00:00:00.000Z')
 
-/** A session holding one set programmed at 100 kg × 5 @ RPE 8. */
+/** A session holding one set programmed at 100 kg Ã— 5 @ RPE 8. */
 function setup(options: { plannedBy?: string } = {}) {
     const session = WorkoutSessionMother.empty({ id: 's-1', userId: 'u-1', plannedByUserId: options.plannedBy })
     const entry = session.addEntry({ id: 'e-1', exerciseId: 'x-1' }, NOW)
@@ -20,9 +20,9 @@ function setup(options: { plannedBy?: string } = {}) {
         entry.id,
         {
             id: 'set-1',
-            plannedWeight: WeightVO.create(100),
-            plannedReps: RepsVO.create(5),
-            plannedRpe: RpeVO.create(8),
+            plannedWeight: WeightRangeVO.create(100),
+            plannedReps: RepsRangeVO.create(5),
+            plannedRpe: RpeRangeVO.create(8),
         },
         NOW,
     )
@@ -58,14 +58,18 @@ describe('CompleteSetHandler', () => {
     it('keeps the prescription the athlete deviated from', async () => {
         const { handler } = setup()
 
-        // Told 100×5 @8, managed 95.
+        // Told 100Ã—5 @8, managed 95.
         const view = await handler.execute(
             new CompleteSetCommand('u-1', 's-1', 'e-1', 'set-1', 'failed', { weight: 95, reps: 5, rpe: 9.5 }),
         )
 
         const set = view.entries[0]!.sets[0]!
         expect(set).toMatchObject({ outcome: 'failed', weightKg: 95, rpe: 9.5 })
-        expect(set).toMatchObject({ plannedWeightKg: 100, plannedReps: 5, plannedRpe: 8 })
+        expect(set).toMatchObject({
+            plannedWeightKg: { min: 100, max: 100 },
+            plannedReps: { min: 5, max: 5 },
+            plannedRpe: { min: 8, max: 8 },
+        })
     })
 
     it('counts the outcome', async () => {

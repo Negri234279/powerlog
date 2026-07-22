@@ -1,4 +1,4 @@
-import type { INestApplication } from '@nestjs/common'
+﻿import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import cookieParser from 'cookie-parser'
@@ -69,7 +69,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
     // profiles is listed explicitly: it references users by a *soft* id (no FK, to
-    // keep the modules apart), so CASCADE doesn't reach it — and a leftover profile
+    // keep the modules apart), so CASCADE doesn't reach it â€” and a leftover profile
     // keeps its handle taken, failing the next test's register.
     await pool.query(
         // `subscriptions` has a soft reference to users (no FK across modules), so
@@ -102,7 +102,7 @@ async function registerUser(email: string): Promise<string> {
 }
 
 /**
- * Register, store a (stubbed) provider key and make it the default — and put the
+ * Register, store a (stubbed) provider key and make it the default â€” and put the
  * user on a plan that includes AI. The key alone is not enough: AI is a paid
  * feature and a fresh account lands on the free plan.
  *
@@ -129,7 +129,7 @@ const DRAFT_FIELDS = `id status weeks trainingDays goal name
     days { dayOffset label exercises { exerciseId slug name sets { order plannedWeightKg plannedReps rpe rir notes } } }
     messages { role content }`
 
-/** Queue a block. Returns the mutation response — the job, not the draft. */
+/** Queue a block. Returns the mutation response â€” the job, not the draft. */
 function generate(access: string, prompt = 'Squat focus.'): Promise<request.Response> {
     return gql(
         `mutation { generateMesocycleDraft(input: {
@@ -149,7 +149,7 @@ function generateFor(access: string, athleteId: string): Promise<request.Respons
     )
 }
 
-/** Queue a block and wait for the answer — what the athlete actually experiences. */
+/** Queue a block and wait for the answer â€” what the athlete actually experiences. */
 async function generateAndSettle(access: string, prompt = 'Squat focus.'): Promise<SettledGeneration> {
     const queued = await generate(access, prompt)
     expect(queued.body.errors).toBeUndefined()
@@ -175,7 +175,7 @@ async function openDraft(access: string, athleteId?: string) {
     return res.body.data.mesocycleDraft
 }
 
-/** Every "e1RM <kg> kg" the prompt carried — whose numbers reached the model. */
+/** Every "e1RM <kg> kg" the prompt carried â€” whose numbers reached the model. */
 function e1rmsIn(prompt: string): number[] {
     return [...prompt.matchAll(/e1RM ([\d.]+) kg/g)].map((match) => Number(match[1]))
 }
@@ -190,7 +190,7 @@ async function anExerciseId(access: string): Promise<string> {
     return res.body.data.exercises[0].id
 }
 
-/** A completed session of one exercise at one weight — what builds an e1RM. */
+/** A completed session of one exercise at one weight â€” what builds an e1RM. */
 async function aCompletedSessionOf(access: string, exerciseId: string, weight: number): Promise<void> {
     const created = await gql(`mutation { createWorkoutSession { id } }`, access)
     const sessionId: string = created.body.data.createWorkoutSession.id
@@ -318,7 +318,7 @@ describe('AI mesocycle drafts via GraphQL', () => {
         expect(openai.completeCalls[0]?.messages[0]?.content).toContain('<athlete_request>')
     })
 
-    it('validates the block’s shape before the model is ever called', async () => {
+    it('validates the blockâ€™s shape before the model is ever called', async () => {
         const access = await anAthleteWithAi('shape@example.com')
 
         const tooLong = await gql(
@@ -342,7 +342,7 @@ describe('AI mesocycle drafts via GraphQL', () => {
 
     it('tells an athlete with no provider configured, before charging them a wait', async () => {
         // On a plan that includes AI but with no key of their own: the plan gate runs
-        // first (a free user is told to upgrade, not to add a key — see the
+        // first (a free user is told to upgrade, not to add a key â€” see the
         // entitlements e2e), so the missing key is only reachable from a paid plan.
         const access = await registerUser('nokey@example.com')
         await grantPlan(app, pool, await userIdOf(access), 'athlete-pro')
@@ -359,7 +359,7 @@ describe('AI mesocycle drafts via GraphQL', () => {
         expect(res.body.errors[0].extensions.code).toBe('UNAUTHENTICATED')
     })
 
-    it('never serves another athlete’s draft', async () => {
+    it('never serves another athleteâ€™s draft', async () => {
         const owner = await anAthleteWithAi('owner@example.com')
         const draftId = (await generateAndSettle(owner)).draftId
 
@@ -370,7 +370,7 @@ describe('AI mesocycle drafts via GraphQL', () => {
     })
 })
 
-describe('AI mesocycle — a coach designing for an athlete', () => {
+describe('AI mesocycle â€” a coach designing for an athlete', () => {
     it("anchors the block on the ATHLETE's lifts, never the coach's, and hands it to them", async () => {
         const { coachAccess, athlete } = await linkedPairWithAi()
 
@@ -384,8 +384,8 @@ describe('AI mesocycle — a coach designing for an athlete', () => {
         expect(generation.status).toBe('succeeded')
         expect((await openDraft(coachAccess, athlete.userId)).athleteId).toBe(athlete.userId)
 
-        // The prompt lists "<slug> | e1RM <kg> kg" per known lift. The athlete's 100×5
-        // is ~117 kg; the coach's 200×5 would be ~233. Comparing against a threshold
+        // The prompt lists "<slug> | e1RM <kg> kg" per known lift. The athlete's 100Ã—5
+        // is ~117 kg; the coach's 200Ã—5 would be ~233. Comparing against a threshold
         // rather than an exact number keeps this honest about e1RM rounding.
         const e1rms = e1rmsIn(JSON.stringify(openai.completeCalls.at(-1)))
         expect(e1rms.length).toBeGreaterThan(0)
@@ -414,7 +414,7 @@ describe('AI mesocycle — a coach designing for an athlete', () => {
         expect(openai.completeCalls).toHaveLength(0)
     })
 
-    it('keeps one open draft per athlete — designing for one does not wipe the other', async () => {
+    it('keeps one open draft per athlete â€” designing for one does not wipe the other', async () => {
         const { coachAccess, athlete, second } = await linkedPairWithAi()
 
         const first = await generateForAndSettle(coachAccess, athlete.userId)

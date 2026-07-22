@@ -1,4 +1,4 @@
-import type { INestApplication } from '@nestjs/common'
+﻿import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import cookieParser from 'cookie-parser'
@@ -38,7 +38,7 @@ beforeAll(async () => {
 
     // SSE needs a real socket the test can read from as the response streams, so
     // unlike the other e2e suites this one listens on an ephemeral port and talks
-    // to it with fetch (supertest buffers until the response ends — an SSE stream
+    // to it with fetch (supertest buffers until the response ends â€” an SSE stream
     // never does).
     await app.listen(0)
     baseUrl = await app.getUrl()
@@ -59,7 +59,7 @@ beforeEach(async () => {
     )
 })
 
-// ── helpers ───────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function setCookies(res: request.Response): string[] {
     const raw = res.headers['set-cookie']
     return Array.isArray(raw) ? raw : raw ? [raw] : []
@@ -125,7 +125,7 @@ function openStream(cookie?: string) {
                 }
             }
         } catch {
-            // Aborted by the test — nothing to do.
+            // Aborted by the test â€” nothing to do.
         }
 
         return res
@@ -173,15 +173,15 @@ describe('Realtime stream (SSE)', () => {
         const invited = await gql(`mutation { inviteAthlete(email: "athlete@example.com") { id } }`, coachAccess)
         const invitationId: string = invited.body.data.inviteAthlete.id
 
-        // The coach is sitting on /coaching with the stream open…
+        // The coach is sitting on /coaching with the stream openâ€¦
         const coachStream = openStream(coachAccess)
         expect(await coachStream.status()).toBe(200)
 
-        // …the athlete accepts from their own device…
+        // â€¦the athlete accepts from their own deviceâ€¦
         const accepted = await gql(`mutation { acceptInvitation(id: "${invitationId}") { status } }`, athlete.access)
         expect(accepted.body.errors).toBeUndefined()
 
-        // …and the coach's page learns about it without reloading.
+        // â€¦and the coach's page learns about it without reloading.
         expect(await coachStream.next()).toEqual({ type: 'athlete_linked' })
 
         await coachStream.close()
@@ -206,7 +206,7 @@ describe('Realtime stream (SSE)', () => {
             `mutation { createAthleteMesocycle(athleteId: "${athlete.userId}", input: {
                 name: "Block", startDate: "2026-03-02", microcycles: [
                     { label: "W1", days: [{ dayOffset: 0, exercises: [
-                        { exerciseId: "${exerciseId}", sets: [{ plannedReps: 5 }] }
+                        { exerciseId: "${exerciseId}", sets: [{ plannedReps: "5" }] }
                     ] }] }
                 ]
             }) { id } }`,
@@ -215,18 +215,18 @@ describe('Realtime stream (SSE)', () => {
         expect(block.body.errors).toBeUndefined()
         const mesocycleId: string = block.body.data.createAthleteMesocycle.id
 
-        // The athlete is looking at /workouts with the stream open…
+        // The athlete is looking at /workouts with the stream openâ€¦
         const athleteStream = openStream(athlete.access)
         expect(await athleteStream.status()).toBe(200)
 
-        // …the coach materializes week 1 into their log…
+        // â€¦the coach materializes week 1 into their logâ€¦
         const generated = await gql(
             `mutation { generateMesocycleWeek(input: { mesocycleId: "${mesocycleId}", week: 1 }) { id status } }`,
             coachAccess,
         )
         expect(generated.body.errors).toBeUndefined()
 
-        // …and the list refreshes itself instead of showing yesterday's plan.
+        // â€¦and the list refreshes itself instead of showing yesterday's plan.
         expect(await athleteStream.next()).toEqual({ type: 'session_planned' })
 
         await athleteStream.close()
@@ -249,7 +249,7 @@ describe('Realtime stream (SSE)', () => {
             athlete.access,
         )
 
-        // The whole coach↔athlete exchange happened; the bystander must see none of it.
+        // The whole coachâ†”athlete exchange happened; the bystander must see none of it.
         await expect(bystanderStream.next(500)).rejects.toThrow(/no realtime event/)
 
         await bystanderStream.close()

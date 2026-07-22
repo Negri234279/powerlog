@@ -98,17 +98,20 @@ describe('Workout templates via GraphQL', () => {
                 name: "Upper A",
                 notes: "Push",
                 exercises: [{ exerciseId: "${exerciseId}", sets: [
-                    { unit: "lb", plannedWeight: 225, plannedReps: 5, rpe: 8 },
-                    { plannedReps: 8 }
+                    { unit: "lb", plannedWeight: "225", plannedReps: "5", rpe: "8" },
+                    { plannedReps: "6-8" }
                 ] }]
-            }) { id name exercises { order exerciseId sets { order plannedWeightKg plannedReps rpe } } } }`,
+            }) { id name exercises { order exerciseId sets { order
+                plannedWeightKg { min max } plannedReps { min max } rpe { min max } } } } }`,
             access,
         )
         expect(created.body.errors).toBeUndefined()
         const templateId: string = created.body.data.createWorkoutTemplate.id
-        const firstSet = created.body.data.createWorkoutTemplate.exercises[0].sets[0]
-        expect(firstSet.plannedWeightKg).toBe(102.06)
-        expect(firstSet.rpe).toBe(8)
+        const sets = created.body.data.createWorkoutTemplate.exercises[0].sets
+        expect(sets[0].plannedWeightKg).toEqual({ min: 102.06, max: 102.06 })
+        expect(sets[0].rpe).toEqual({ min: 8, max: 8 })
+        // The range survives the round trip that the single value takes.
+        expect(sets[1].plannedReps).toEqual({ min: 6, max: 8 })
 
         const listed = await gql(`query { workoutTemplates { id name exerciseCount setCount } }`, access)
         expect(listed.body.errors).toBeUndefined()
@@ -117,7 +120,8 @@ describe('Workout templates via GraphQL', () => {
 
         const session = await gql(
             `mutation { createSessionFromTemplate(input: { templateId: "${templateId}", notes: "wk1" }) {
-                id status notes entries { exerciseId sets { plannedWeightKg plannedReps weightKg reps e1rmKg } } } }`,
+                id status notes entries { exerciseId sets {
+                    plannedWeightKg { min max } plannedReps { min max } weightKg reps e1rmKg } } } }`,
             access,
         )
         expect(session.body.errors).toBeUndefined()
@@ -126,11 +130,13 @@ describe('Workout templates via GraphQL', () => {
         expect(s.entries[0].exerciseId).toBe(exerciseId)
         // Programmed copied; performed empty.
         expect(s.entries[0].sets[0]).toMatchObject({
-            plannedWeightKg: 102.06,
+            plannedWeightKg: { min: 102.06, max: 102.06 },
             weightKg: null,
             reps: null,
             e1rmKg: null,
         })
+        // …and the coach's range reaches the athlete's session intact.
+        expect(s.entries[0].sets[1].plannedReps).toEqual({ min: 6, max: 8 })
     })
 
     it('updates and deletes a template, and hides another user’s template', async () => {

@@ -11,7 +11,14 @@
  * for the model would only add a rounding step and a chance to get it wrong.
  */
 
-/** A set as currently programmed in the planned session (targets, no results). */
+/**
+ * A set as currently programmed in the planned session (targets, no results).
+ *
+ * Targets can be ranges (`5-8`), but the model is handed a single number — the
+ * floor of the range — and prescribes single numbers back. Teaching it to read
+ * and write ranges is a separate change; until then this stays the narrow
+ * contract it has always been rather than a half-migrated one.
+ */
 export interface PlannedSetContext {
     setId: string
     order: number

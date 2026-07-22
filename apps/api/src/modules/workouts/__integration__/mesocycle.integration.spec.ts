@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+﻿import { randomUUID } from 'node:crypto'
 
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { sql } from 'drizzle-orm'
@@ -17,7 +17,7 @@ import { GetMesocycleQuery } from '../application/queries/get-mesocycle/get-meso
 import { GetMesocycleHandler } from '../application/queries/get-mesocycle/get-mesocycle.handler'
 import type { MesocycleContentInput } from '../domain/entities/mesocycle.entity'
 import { MesocycleNameVO } from '../domain/value-objects/mesocycle-name.vo'
-import { RepsVO } from '../domain/value-objects/reps.vo'
+import { RepsRangeVO } from '../domain/value-objects/reps-range.vo'
 import { UuidGenerator } from '../infrastructure/id/uuid-generator'
 import { DrizzleMesocycleListReadModel } from '../infrastructure/persistence/read-models/drizzle-mesocycle-list.read-model'
 import { DrizzleMesocycleRepository } from '../infrastructure/persistence/repositories/drizzle-mesocycle.repository'
@@ -63,7 +63,7 @@ function content(name: string, weeks: number, setCount: number): MesocycleConten
                     exercises: [
                         {
                             exerciseId,
-                            sets: Array.from({ length: setCount }, () => ({ plannedReps: RepsVO.create(5) })),
+                            sets: Array.from({ length: setCount }, () => ({ plannedReps: RepsRangeVO.create(5) })),
                         },
                     ],
                 },
@@ -91,9 +91,9 @@ describe('Mesocycle persistence (integration)', () => {
         expect(week1Day.dayOffset).toBe(0)
         expect(week1Day.exercises[0]!.exerciseId).toBe(exerciseId)
         expect(week1Day.exercises[0]!.sets.map((s) => s.order)).toEqual([1, 2])
-        expect(week1Day.exercises[0]!.sets[0]!.plannedWeight?.value).toBe(100)
-        expect(week1Day.exercises[0]!.sets[0]!.rpe?.value).toBe(8)
-        expect(found!.microcycles[1]!.days[0]!.exercises[0]!.sets[0]!.plannedWeight?.value).toBe(105)
+        expect(week1Day.exercises[0]!.sets[0]!.plannedWeight?.min.value).toBe(100)
+        expect(week1Day.exercises[0]!.sets[0]!.rpe?.min.value).toBe(8)
+        expect(found!.microcycles[1]!.days[0]!.exercises[0]!.sets[0]!.plannedWeight?.min.value).toBe(105)
     })
 
     it('replaces children on re-save (whole-tree upsert)', async () => {
@@ -120,7 +120,7 @@ describe('Mesocycle persistence (integration)', () => {
         expect(await db.select().from(schema.mesocycleMicrocycles)).toHaveLength(0)
     })
 
-    it('deleteAllByOwner erases only that owner’s mesocycles (with cascade)', async () => {
+    it('deleteAllByOwner erases only that ownerâ€™s mesocycles (with cascade)', async () => {
         const ownerId = randomUUID()
         const own = MesocycleMother.withTree(exerciseId, { ownerId })
         const survivor = MesocycleMother.withTree(exerciseId, { ownerId: randomUUID() })
@@ -133,7 +133,7 @@ describe('Mesocycle persistence (integration)', () => {
         expect(await mesocycles.findById(survivor.id)).not.toBeNull()
     })
 
-    it('lists the owner’s mesocycles with week/day rollups and name search', async () => {
+    it('lists the ownerâ€™s mesocycles with week/day rollups and name search', async () => {
         const ownerId = randomUUID()
         await mesocycles.save(MesocycleMother.withTree(exerciseId, { ownerId, content: content('Alpha', 1, 1) }))
         await mesocycles.save(MesocycleMother.withTree(exerciseId, { ownerId, content: content('Zebra', 2, 1) }))
@@ -176,7 +176,7 @@ describe('Mesocycle generation (integration)', () => {
         expect(persisted!.status).toBe('planned')
         expect(persisted!.mesocycleId).toBe(mesocycle.id)
         expect(persisted!.mesocycleWeek).toBe(1)
-        expect(persisted!.entries[0]!.sets[0]!.plannedWeight?.value).toBe(100)
+        expect(persisted!.entries[0]!.sets[0]!.plannedWeight?.min.value).toBe(100)
 
         const detail = await new GetMesocycleHandler(mesocycles, sessions, new FakeCoachLinks()).execute(
             new GetMesocycleQuery(ownerId, mesocycle.id),

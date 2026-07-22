@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+﻿import { randomUUID } from 'node:crypto'
 
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -67,11 +67,11 @@ describe('ApplySessionPlanHandler', () => {
 
         const sets = setsOf((await sessions.findById(session.id))!)
         expect(sets).toHaveLength(2)
-        expect(sets[0]!.plannedWeight?.value).toBe(100)
-        expect(sets[1]!.plannedWeight?.value).toBe(90)
+        expect(sets[0]!.plannedWeight?.min.value).toBe(100)
+        expect(sets[1]!.plannedWeight?.min.value).toBe(90)
         // A prescription is a target: it lands in plannedRir, never in the rir
         // the athlete will report once they've actually done the set.
-        expect(sets[1]!.plannedRir?.value).toBe(2)
+        expect(sets[1]!.plannedRir?.min.value).toBe(2)
         expect(sets[1]!.rir).toBeNull()
     })
 
@@ -92,7 +92,7 @@ describe('ApplySessionPlanHandler', () => {
         const sets = setsOf((await sessions.findById(session.id))!)
         expect(sets).toHaveLength(4)
         expect(sets.map((set) => set.order)).toEqual([1, 2, 3, 4])
-        expect(sets[3]!.plannedWeight?.value).toBe(85)
+        expect(sets[3]!.plannedWeight?.min.value).toBe(85)
         // A created set is planned-only: nothing performed on it.
         expect(sets[3]!.weight).toBeNull()
     })
@@ -139,7 +139,7 @@ describe('ApplySessionPlanHandler', () => {
         expect(first.reps).toBeNull()
     })
 
-    it('leaves the athlete’s own note alone when the plan carries none', async () => {
+    it('leaves the athleteâ€™s own note alone when the plan carries none', async () => {
         const session = plannedSession()
         await sessions.save(session)
         const entryId = entryOf(session).id
@@ -180,7 +180,7 @@ describe('ApplySessionPlanHandler', () => {
         expect(setsOf((await sessions.findById(session.id))!)[0]!.plannedWeight).toBeNull()
     })
 
-    it('refuses to program another user’s session', async () => {
+    it('refuses to program another userâ€™s session', async () => {
         const session = plannedSession({ userId: randomUUID() })
         await sessions.save(session)
         const command = new ApplySessionPlanCommand(USER_ID, session.id, [prescribe(entryOf(session).id, 1)])
@@ -188,7 +188,7 @@ describe('ApplySessionPlanHandler', () => {
         await expect(buildHandler().execute(command)).rejects.toThrow(WorkoutSessionNotFoundError)
     })
 
-    it('lets the coach who planned it write the plan onto the athlete’s session', async () => {
+    it('lets the coach who planned it write the plan onto the athleteâ€™s session', async () => {
         const athleteId = randomUUID()
         const session = plannedSession({ userId: athleteId, plannedByUserId: USER_ID })
         await sessions.save(session)
@@ -198,8 +198,8 @@ describe('ApplySessionPlanHandler', () => {
         await buildHandler().execute(command)
 
         const saved = await sessions.findById(session.id)
-        expect(setsOf(saved!)[0]!.plannedWeight?.value).toBe(100)
-        expect(setsOf(saved!)[0]!.plannedReps?.value).toBe(5)
+        expect(setsOf(saved!)[0]!.plannedWeight?.min.value).toBe(100)
+        expect(setsOf(saved!)[0]!.plannedReps?.min.value).toBe(5)
     })
 
     it('refuses a coach who no longer coaches the athlete', async () => {

@@ -1,7 +1,8 @@
-import { Field, Float, ID, InputType, Int } from '@nestjs/graphql'
+import { Field, ID, InputType, Int } from '@nestjs/graphql'
 import { z } from 'zod'
 
 import { MESOCYCLE_STATUSES } from '../../domain/mesocycle-status'
+import { RANGE_DESCRIPTION, rangeText } from './range-input'
 
 const uuid = z.string().uuid()
 const notes = z.string().trim().max(2000).nullable().optional()
@@ -13,17 +14,20 @@ export class MesocycleDaySetInput {
     @Field(() => String, { nullable: true, description: 'Weight unit of the inputs: kg | lb (default kg).' })
     unit?: string | null
 
-    @Field(() => Float, { nullable: true })
-    plannedWeight?: number | null
+    @Field(() => String, { nullable: true, description: RANGE_DESCRIPTION })
+    plannedWeight?: string | null
 
-    @Field(() => Int, { nullable: true })
-    plannedReps?: number | null
+    @Field(() => String, { nullable: true, description: RANGE_DESCRIPTION })
+    plannedReps?: string | null
 
-    @Field(() => Float, { nullable: true, description: 'Target RPE 0–10 in half-point steps.' })
-    rpe?: number | null
+    @Field(() => String, { nullable: true, description: `Target RPE 0–10 in half-point steps. ${RANGE_DESCRIPTION}` })
+    rpe?: string | null
 
-    @Field(() => Int, { nullable: true, description: 'Target reps in reserve (alternative to RPE).' })
-    rir?: number | null
+    @Field(() => String, {
+        nullable: true,
+        description: `Target reps in reserve (alternative to RPE). ${RANGE_DESCRIPTION}`,
+    })
+    rir?: string | null
 
     @Field(() => String, { nullable: true })
     notes?: string | null
@@ -31,10 +35,10 @@ export class MesocycleDaySetInput {
 
 const setSchema = z.object({
     unit: z.enum(['kg', 'lb']).nullable().optional(),
-    plannedWeight: z.number().nonnegative().nullable().optional(),
-    plannedReps: z.number().int().nullable().optional(),
-    rpe: z.number().nullable().optional(),
-    rir: z.number().int().nullable().optional(),
+    plannedWeight: rangeText,
+    plannedReps: rangeText,
+    rpe: rangeText,
+    rir: rangeText,
     notes,
 })
 

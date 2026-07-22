@@ -1,4 +1,4 @@
-import type { INestApplication } from '@nestjs/common'
+﻿import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import cookieParser from 'cookie-parser'
@@ -82,14 +82,14 @@ afterAll(async () => {
 beforeEach(async () => {
     await pool.query(
         // `subscriptions` holds a soft reference to users (no FK across modules), so
-        // TRUNCATE ... CASCADE on users does not reach it — it must be named. The
+        // TRUNCATE ... CASCADE on users does not reach it â€” it must be named. The
         // `plans` catalog is seeded by migration and deliberately survives.
         'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, workout_sessions, ai_plan_drafts, ai_generations, ai_provider_configs, notifications, subscriptions RESTART IDENTITY CASCADE',
     )
     openai.reset()
 })
 
-// ── helpers ───────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function setCookies(res: request.Response): string[] {
     const raw = res.headers['set-cookie']
     return Array.isArray(raw) ? raw : raw ? [raw] : []
@@ -115,7 +115,7 @@ async function register(email: string): Promise<{ access: string; userId: string
 }
 
 /**
- * Store a (stubbed) provider key and make it the default — BYOK is per user —
+ * Store a (stubbed) provider key and make it the default â€” BYOK is per user â€”
  * and put the user on a plan that includes AI. The key alone is not enough: AI is
  * a paid feature, and a fresh account is on the free plan.
  */
@@ -135,7 +135,7 @@ async function anExerciseId(access: string): Promise<string> {
     return res.body.data.exercises[0].id
 }
 
-/** A completed session of one exercise at one weight — the marks the model sees. */
+/** A completed session of one exercise at one weight â€” the marks the model sees. */
 async function aCompletedSessionOf(access: string, exerciseId: string, weight: number): Promise<void> {
     const created = await gql(`mutation { createWorkoutSession { id } }`, access)
     const sessionId: string = created.body.data.createWorkoutSession.id
@@ -170,7 +170,7 @@ async function linkedPair(): Promise<{ coachAccess: string; athlete: { access: s
     return { coachAccess, athlete }
 }
 
-describe('AI session plan — a coach programming for an athlete', () => {
+describe('AI session plan â€” a coach programming for an athlete', () => {
     it("feeds the model the ATHLETE's marks and writes the plan onto their session", async () => {
         const { coachAccess, athlete } = await linkedPair()
 
@@ -218,7 +218,7 @@ describe('AI session plan — a coach programming for an athlete', () => {
         //
         // Asserted over the parsed payload, so weights are compared as numbers.
         // A substring search over the serialized request cannot express this: the
-        // prompt embeds entry ids, and a hex UUID like "2d1b200a-…" contains "200",
+        // prompt embeds entry ids, and a hex UUID like "2d1b200a-â€¦" contains "200",
         // which failed this assertion at random for reasons having nothing to do
         // with whose history was used.
         const weights = historyWeightsIn(openai.completeCalls.at(-1))
@@ -226,21 +226,21 @@ describe('AI session plan — a coach programming for an athlete', () => {
         expect(weights).toContain(100)
         expect(weights).not.toContain(200)
 
-        // Accepting writes the targets onto the athlete's session — the coach is the
+        // Accepting writes the targets onto the athlete's session â€” the coach is the
         // one running this, so the draft is theirs, but the session stays the athlete's.
         const accepted = await gql(`mutation { acceptPlanDraft(draftId: "${draftId}") { status } }`, coachAccess)
         expect(accepted.body.errors).toBeUndefined()
 
         const session = await gql(
-            `query { athleteWorkoutSession(athleteId: "${athlete.userId}", id: "${sessionId}") { userId entries { sets { plannedWeightKg plannedReps plannedRpe rpe outcome } } } }`,
+            `query { athleteWorkoutSession(athleteId: "${athlete.userId}", id: "${sessionId}") { userId entries { sets { plannedWeightKg { min max } plannedReps { min max } plannedRpe { min max } rpe outcome } } } }`,
             coachAccess,
         )
         expect(session.body.data.athleteWorkoutSession.userId).toBe(athlete.userId)
         expect(session.body.data.athleteWorkoutSession.entries[0].sets[0]).toMatchObject({
-            plannedWeightKg: 105,
-            plannedReps: 5,
+            plannedWeightKg: { min: 105, max: 105 },
+            plannedReps: { min: 5, max: 5 },
             // The whole set is a target the athlete has yet to attempt.
-            plannedRpe: 8,
+            plannedRpe: { min: 8, max: 8 },
             rpe: null,
             outcome: null,
         })

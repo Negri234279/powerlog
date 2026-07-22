@@ -42,7 +42,7 @@ describe('PlanSessionFromTemplateHandler', () => {
 
         expect(view).toMatchObject({ userId: ATHLETE, plannedByUserId: COACH, status: 'planned', notes: 'block 1' })
         expect(view.entries[0]?.sets).toHaveLength(2)
-        expect(view.entries[0]?.sets[0]).toMatchObject({ plannedWeightKg: 100, weightKg: null })
+        expect(view.entries[0]?.sets[0]).toMatchObject({ plannedWeightKg: { min: 100, max: 100 }, weightKg: null })
         expect(await sessions.findById(view.id)).not.toBeNull()
     })
 

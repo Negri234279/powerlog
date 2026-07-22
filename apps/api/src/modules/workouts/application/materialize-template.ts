@@ -1,18 +1,18 @@
 import type { WorkoutSessionAggregate } from '../domain/entities/workout-session.entity'
 import type { WorkoutTemplateAggregate } from '../domain/entities/workout-template.entity'
-import type { RepsVO } from '../domain/value-objects/reps.vo'
-import type { RirVO } from '../domain/value-objects/rir.vo'
-import type { RpeVO } from '../domain/value-objects/rpe.vo'
-import type { WeightVO } from '../domain/value-objects/weight.vo'
+import type { RepsRangeVO } from '../domain/value-objects/reps-range.vo'
+import type { RirRangeVO } from '../domain/value-objects/rir-range.vo'
+import type { RpeRangeVO } from '../domain/value-objects/rpe-range.vo'
+import type { WeightRangeVO } from '../domain/value-objects/weight-range.vo'
 import type { IdGenerator } from './ports/id-generator.port'
 
 /** A programmed set (planned targets only) — the shape template + mesocycle-day
  *  sets share, so both can be materialized through the same helper. */
 export interface ProgrammedSet {
-    plannedWeight: WeightVO | null
-    plannedReps: RepsVO | null
-    rpe: RpeVO | null
-    rir: RirVO | null
+    plannedWeight: WeightRangeVO | null
+    plannedReps: RepsRangeVO | null
+    rpe: RpeRangeVO | null
+    rir: RirRangeVO | null
     notes: string | null
 }
 

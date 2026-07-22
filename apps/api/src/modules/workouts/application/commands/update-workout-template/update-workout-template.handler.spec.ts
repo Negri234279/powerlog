@@ -32,7 +32,7 @@ describe('UpdateWorkoutTemplateHandler', () => {
             new UpdateWorkoutTemplateCommand(OWNER, 't-1', {
                 name: 'Upper B',
                 notes: null,
-                exercises: [{ exerciseId: SQUAT.id, sets: [{ plannedReps: 3 }] }],
+                exercises: [{ exerciseId: SQUAT.id, sets: [{ plannedReps: '3' }] }],
             }),
         )
 

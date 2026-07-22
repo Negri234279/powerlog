@@ -43,9 +43,9 @@ describe('AssignMesocycleToAthleteHandler', () => {
         expect(view.id).not.toBe(source.id)
         expect(view.microcycles).toHaveLength(source.microcycles.length)
         expect(view.microcycles[0]!.days[0]!.exercises[0]!.sets[0]).toMatchObject({
-            plannedWeightKg: 100,
-            plannedReps: 5,
-            rpe: 8,
+            plannedWeightKg: { min: 100, max: 100 },
+            plannedReps: { min: 5, max: 5 },
+            rpe: { min: 8, max: 8 },
         })
 
         const copy = await mesocycles.findById(view.id)

@@ -830,10 +830,10 @@ type ExerciseHistorySet {
   e1rmKg: Float
 
   """Programmed target reps, if any."""
-  plannedReps: Int
+  plannedReps: IntRange
 
   """Programmed target weight (kg), if any."""
-  plannedWeightKg: Float
+  plannedWeightKg: FloatRange
   reps: Int!
   rir: Int
   rpe: Float
@@ -868,6 +868,11 @@ type ExerciseStats {
 
   """Σ weight·reps (kg) over logged sets."""
   totalVolumeKg: Float!
+}
+
+type FloatRange {
+  max: Float!
+  min: Float!
 }
 
 type GatewayStatus {
@@ -933,6 +938,11 @@ input GenerateSessionPlanDraftInput {
   sessionId: ID!
 }
 
+type IntRange {
+  max: Int!
+  min: Int!
+}
+
 type IntensityBucket {
   sets: Int!
 
@@ -959,14 +969,22 @@ scalar JSON
 input LogSetInput {
   entryId: ID!
   notes: String
-  plannedReps: Int
 
-  """Target reps in reserve (alternative to planned RPE)."""
-  plannedRir: Int
+  """A number or a range: "5" or "5-8"."""
+  plannedReps: String
 
-  """Target RPE 0–10 in half-point steps."""
-  plannedRpe: Float
-  plannedWeight: Float
+  """
+  Target reps in reserve (alternative to planned RPE). A number or a range: "5" or "5-8".
+  """
+  plannedRir: String
+
+  """
+  Target RPE 0–10 in half-point steps. A number or a range: "5" or "5-8".
+  """
+  plannedRpe: String
+
+  """A number or a range: "5" or "5-8"."""
+  plannedWeight: String
   reps: Int
 
   """Reps in reserve (alternative to RPE)."""
@@ -1053,22 +1071,30 @@ type MesocycleDaySet {
   id: ID!
   notes: String
   order: Int!
-  plannedReps: Int
-  plannedWeightKg: Float
-  rir: Int
-  rpe: Float
+  plannedReps: IntRange
+  plannedWeightKg: FloatRange
+  rir: IntRange
+  rpe: FloatRange
 }
 
 input MesocycleDaySetInput {
   notes: String
-  plannedReps: Int
-  plannedWeight: Float
 
-  """Target reps in reserve (alternative to RPE)."""
-  rir: Int
+  """A number or a range: "5" or "5-8"."""
+  plannedReps: String
 
-  """Target RPE 0–10 in half-point steps."""
-  rpe: Float
+  """A number or a range: "5" or "5-8"."""
+  plannedWeight: String
+
+  """
+  Target reps in reserve (alternative to RPE). A number or a range: "5" or "5-8".
+  """
+  rir: String
+
+  """
+  Target RPE 0–10 in half-point steps. A number or a range: "5" or "5-8".
+  """
+  rpe: String
 
   """Weight unit of the inputs: kg | lb (default kg)."""
   unit: String
@@ -2227,14 +2253,22 @@ input TemplateExerciseInput {
 
 input TemplateSetInput {
   notes: String
-  plannedReps: Int
-  plannedWeight: Float
 
-  """Target reps in reserve (alternative to RPE)."""
-  rir: Int
+  """A number or a range: "5" or "5-8"."""
+  plannedReps: String
 
-  """Target RPE 0–10 in half-point steps."""
-  rpe: Float
+  """A number or a range: "5" or "5-8"."""
+  plannedWeight: String
+
+  """
+  Target reps in reserve (alternative to RPE). A number or a range: "5" or "5-8".
+  """
+  rir: String
+
+  """
+  Target RPE 0–10 in half-point steps. A number or a range: "5" or "5-8".
+  """
+  rpe: String
 
   """Weight unit of the inputs: kg | lb (default kg)."""
   unit: String
@@ -2376,14 +2410,22 @@ input UpdateSetInput {
   success | failed; null sends the set back to pending. Absent leaves it as it is.
   """
   outcome: String
-  plannedReps: Int
 
-  """Target reps in reserve (alternative to planned RPE)."""
-  plannedRir: Int
+  """A number or a range: "5" or "5-8"."""
+  plannedReps: String
 
-  """Target RPE 0–10 in half-point steps."""
-  plannedRpe: Float
-  plannedWeight: Float
+  """
+  Target reps in reserve (alternative to planned RPE). A number or a range: "5" or "5-8".
+  """
+  plannedRir: String
+
+  """
+  Target RPE 0–10 in half-point steps. A number or a range: "5" or "5-8".
+  """
+  plannedRpe: String
+
+  """A number or a range: "5" or "5-8"."""
+  plannedWeight: String
   reps: Int
 
   """Reps in reserve (alternative to RPE)."""
@@ -2496,14 +2538,14 @@ type WorkoutSet {
 
   """success | failed; null while the set is still pending."""
   outcome: String
-  plannedReps: Int
+  plannedReps: IntRange
 
   """Target RIR, if the set was programmed with one."""
-  plannedRir: Int
+  plannedRir: IntRange
 
   """Target RPE, if the set was programmed with one."""
-  plannedRpe: Float
-  plannedWeightKg: Float
+  plannedRpe: FloatRange
+  plannedWeightKg: FloatRange
   reps: Int
   rir: Int
   rpe: Float
@@ -2538,10 +2580,10 @@ type WorkoutTemplateSet {
   id: ID!
   notes: String
   order: Int!
-  plannedReps: Int
-  plannedWeightKg: Float
-  rir: Int
-  rpe: Float
+  plannedReps: IntRange
+  plannedWeightKg: FloatRange
+  rir: IntRange
+  rpe: FloatRange
 }
 
 type WorkoutTemplateSummary {

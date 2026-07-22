@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 
 import { ConflictingIntensityError } from '../errors/workouts.errors'
-import { RepsVO } from '../value-objects/reps.vo'
-import { RirVO } from '../value-objects/rir.vo'
-import { RpeVO } from '../value-objects/rpe.vo'
+import { RepsRangeVO } from '../value-objects/reps-range.vo'
+import { RirRangeVO } from '../value-objects/rir-range.vo'
+import { RpeRangeVO } from '../value-objects/rpe-range.vo'
 import { TemplateNameVO } from '../value-objects/template-name.vo'
-import { WeightVO } from '../value-objects/weight.vo'
+import { WeightRangeVO } from '../value-objects/weight-range.vo'
 import { type TemplateContentInput, WorkoutTemplateAggregate } from './workout-template.entity'
 
 const NOW = new Date('2026-03-01T10:00:00.000Z')
@@ -24,11 +24,11 @@ function content(overrides: Partial<TemplateContentInput> = {}): TemplateContent
             {
                 exerciseId: 'ex-1',
                 sets: [
-                    { plannedWeight: WeightVO.create(100), plannedReps: RepsVO.create(5) },
-                    { plannedWeight: WeightVO.create(90), plannedReps: RepsVO.create(8) },
+                    { plannedWeight: WeightRangeVO.create(100), plannedReps: RepsRangeVO.create(5) },
+                    { plannedWeight: WeightRangeVO.create(90), plannedReps: RepsRangeVO.create(8) },
                 ],
             },
-            { exerciseId: 'ex-2', sets: [{ plannedReps: RepsVO.create(12) }] },
+            { exerciseId: 'ex-2', sets: [{ plannedReps: RepsRangeVO.create(12) }] },
         ],
         ...overrides,
     }
@@ -66,7 +66,7 @@ describe('WorkoutTemplateAggregate', () => {
     it('rejects a set programmed with both RPE and RIR', () => {
         expect(() =>
             create({
-                exercises: [{ exerciseId: 'ex-1', sets: [{ rpe: RpeVO.create(8), rir: RirVO.create(2) }] }],
+                exercises: [{ exerciseId: 'ex-1', sets: [{ rpe: RpeRangeVO.create(8), rir: RirRangeVO.create(2) }] }],
             }),
         ).toThrow(ConflictingIntensityError)
     })
@@ -78,7 +78,7 @@ describe('WorkoutTemplateAggregate', () => {
             content({
                 name: TemplateNameVO.create('Upper B'),
                 notes: null,
-                exercises: [{ exerciseId: 'ex-9', sets: [{ plannedReps: RepsVO.create(3) }] }],
+                exercises: [{ exerciseId: 'ex-9', sets: [{ plannedReps: RepsRangeVO.create(3) }] }],
             }),
             sequentialIds(),
             LATER,

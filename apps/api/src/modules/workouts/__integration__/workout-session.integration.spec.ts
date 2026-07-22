@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+﻿import { randomUUID } from 'node:crypto'
 
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { eq, sql } from 'drizzle-orm'
@@ -54,7 +54,7 @@ describe('WorkoutSession persistence (integration)', () => {
         expect(entry!.sets.map((s) => s.order)).toEqual([1, 2])
 
         const [top, backoff] = entry!.sets
-        expect(top!.plannedWeight?.value).toBe(100)
+        expect(top!.plannedWeight?.min.value).toBe(100)
         expect(top!.weight?.value).toBe(102.5)
         expect(top!.reps?.value).toBe(5)
         expect(top!.rpe?.value).toBe(8)
@@ -94,11 +94,11 @@ describe('WorkoutSession persistence (integration)', () => {
         expect(remainingSets).toHaveLength(0)
     })
 
-    it('deleteAllByUser erases only that user’s sessions (with cascade), keeping others', async () => {
+    it('deleteAllByUser erases only that userâ€™s sessions (with cascade), keeping others', async () => {
         const userId = randomUUID()
         const other = randomUUID()
         const own = WorkoutSessionMother.withTree(exerciseId, { userId })
-        // Owned by another athlete but planned by `userId` (coach) — must survive.
+        // Owned by another athlete but planned by `userId` (coach) â€” must survive.
         const planned = WorkoutSessionMother.empty({ userId: other, plannedByUserId: userId })
         await sessions.save(own)
         await sessions.save(WorkoutSessionMother.withTree(exerciseId, { userId }))

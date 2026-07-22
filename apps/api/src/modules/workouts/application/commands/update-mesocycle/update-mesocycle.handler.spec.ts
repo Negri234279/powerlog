@@ -39,7 +39,7 @@ function coachedBlock() {
 const newContent: MesocycleContentRaw = {
     name: 'Strength Block',
     goal: 'strength',
-    microcycles: [{ days: [{ dayOffset: 3, exercises: [{ exerciseId: SQUAT.id, sets: [{ plannedReps: 3 }] }] }] }],
+    microcycles: [{ days: [{ dayOffset: 3, exercises: [{ exerciseId: SQUAT.id, sets: [{ plannedReps: '3' }] }] }] }],
 }
 
 describe('UpdateMesocycleHandler', () => {

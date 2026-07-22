@@ -1,13 +1,13 @@
-import { randomUUID } from 'node:crypto'
+﻿import { randomUUID } from 'node:crypto'
 
 import {
     type MesocycleContentInput,
     MesocycleAggregate,
 } from '../../../src/modules/workouts/domain/entities/mesocycle.entity'
 import { MesocycleNameVO } from '../../../src/modules/workouts/domain/value-objects/mesocycle-name.vo'
-import { RepsVO } from '../../../src/modules/workouts/domain/value-objects/reps.vo'
-import { RpeVO } from '../../../src/modules/workouts/domain/value-objects/rpe.vo'
-import { WeightVO } from '../../../src/modules/workouts/domain/value-objects/weight.vo'
+import { RepsRangeVO } from '../../../src/modules/workouts/domain/value-objects/reps-range.vo'
+import { RpeRangeVO } from '../../../src/modules/workouts/domain/value-objects/rpe-range.vo'
+import { WeightRangeVO } from '../../../src/modules/workouts/domain/value-objects/weight-range.vo'
 
 const NOW = new Date('2026-01-01T00:00:00.000Z')
 
@@ -45,11 +45,11 @@ export const MesocycleMother = {
                                     notes: 'top set then backoff',
                                     sets: [
                                         {
-                                            plannedWeight: WeightVO.create(100),
-                                            plannedReps: RepsVO.create(5),
-                                            rpe: RpeVO.create(8),
+                                            plannedWeight: WeightRangeVO.create(100),
+                                            plannedReps: RepsRangeVO.create(5),
+                                            rpe: RpeRangeVO.create(8),
                                         },
-                                        { plannedWeight: WeightVO.create(90), plannedReps: RepsVO.create(8) },
+                                        { plannedWeight: WeightRangeVO.create(90), plannedReps: RepsRangeVO.create(8) },
                                     ],
                                 },
                             ],
@@ -67,9 +67,9 @@ export const MesocycleMother = {
                                     exerciseId,
                                     sets: [
                                         {
-                                            plannedWeight: WeightVO.create(105),
-                                            plannedReps: RepsVO.create(5),
-                                            rpe: RpeVO.create(8),
+                                            plannedWeight: WeightRangeVO.create(105),
+                                            plannedReps: RepsRangeVO.create(5),
+                                            rpe: RpeRangeVO.create(8),
                                         },
                                     ],
                                 },

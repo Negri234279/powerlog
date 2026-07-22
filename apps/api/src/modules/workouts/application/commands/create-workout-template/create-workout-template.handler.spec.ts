@@ -9,7 +9,12 @@ import {
 } from '../../../../../../tests/doubles/workouts'
 import { FakeEntitlements } from '../../../../../../tests/doubles/shared'
 import { PlanLimitReachedError } from '../../../../../shared/contracts/entitlements'
-import { ConflictingIntensityError, ExerciseNotFoundError } from '../../../domain/errors/workouts.errors'
+import {
+    ConflictingIntensityError,
+    ExerciseNotFoundError,
+    MalformedRangeError,
+    ReversedRangeError,
+} from '../../../domain/errors/workouts.errors'
 import type { TemplateContentRaw } from '../../template-content'
 import { CreateWorkoutTemplateCommand } from './create-workout-template.command'
 import { CreateWorkoutTemplateHandler } from './create-workout-template.handler'
@@ -42,11 +47,11 @@ function content(overrides: Partial<TemplateContentRaw> = {}): TemplateContentRa
             {
                 exerciseId: SQUAT.id,
                 sets: [
-                    { plannedWeight: 100, plannedReps: 5, rpe: 8 },
-                    { plannedWeight: 90, plannedReps: 8 },
+                    { plannedWeight: '100', plannedReps: '5', rpe: '8' },
+                    { plannedWeight: '90', plannedReps: '8' },
                 ],
             },
-            { exerciseId: BENCH.id, sets: [{ plannedReps: 12 }] },
+            { exerciseId: BENCH.id, sets: [{ plannedReps: '12' }] },
         ],
         ...overrides,
     }
@@ -62,7 +67,11 @@ describe('CreateWorkoutTemplateHandler', () => {
         expect(view.exercises.map((e) => e.order)).toEqual([1, 2])
         expect(view.exercises[0]?.exerciseId).toBe(SQUAT.id)
         expect(view.exercises[0]?.sets.map((s) => s.order)).toEqual([1, 2])
-        expect(view.exercises[0]?.sets[0]).toMatchObject({ plannedWeightKg: 100, plannedReps: 5, rpe: 8 })
+        expect(view.exercises[0]?.sets[0]).toMatchObject({
+            plannedWeightKg: { min: 100, max: 100 },
+            plannedReps: { min: 5, max: 5 },
+            rpe: { min: 8, max: 8 },
+        })
         expect(view.createdAt).toEqual(NOW)
         expect(await templates.findById(view.id)).not.toBeNull()
     })
@@ -73,11 +82,55 @@ describe('CreateWorkoutTemplateHandler', () => {
         const view = await handler.execute(
             new CreateWorkoutTemplateCommand(OWNER, {
                 name: 'Heavy',
-                exercises: [{ exerciseId: SQUAT.id, sets: [{ unit: 'lb', plannedWeight: 225, plannedReps: 3 }] }],
+                exercises: [{ exerciseId: SQUAT.id, sets: [{ unit: 'lb', plannedWeight: '225', plannedReps: '3' }] }],
             }),
         )
 
-        expect(view.exercises[0]?.sets[0]?.plannedWeightKg).toBeCloseTo(102.06, 2)
+        expect(view.exercises[0]?.sets[0]?.plannedWeightKg?.min).toBeCloseTo(102.06, 2)
+    })
+
+    it('converts both ends of a pound range, so a range stays a range in kilograms', async () => {
+        const { handler } = setup()
+
+        const view = await handler.execute(
+            new CreateWorkoutTemplateCommand(OWNER, {
+                name: 'Heavy',
+                exercises: [
+                    { exerciseId: SQUAT.id, sets: [{ unit: 'lb', plannedWeight: '225-245', plannedReps: '3-5' }] },
+                ],
+            }),
+        )
+
+        const set = view.exercises[0]?.sets[0]
+        expect(set?.plannedWeightKg?.min).toBeCloseTo(102.06, 2)
+        expect(set?.plannedWeightKg?.max).toBeCloseTo(111.13, 2)
+        expect(set?.plannedReps).toEqual({ min: 3, max: 5 })
+    })
+
+    it('rejects a planned target that is neither a number nor a range', async () => {
+        const { handler } = setup()
+
+        await expect(
+            handler.execute(
+                new CreateWorkoutTemplateCommand(
+                    OWNER,
+                    content({ exercises: [{ exerciseId: SQUAT.id, sets: [{ plannedReps: 'al fallo' }] }] }),
+                ),
+            ),
+        ).rejects.toBeInstanceOf(MalformedRangeError)
+    })
+
+    it('rejects a planned range written backwards', async () => {
+        const { handler } = setup()
+
+        await expect(
+            handler.execute(
+                new CreateWorkoutTemplateCommand(
+                    OWNER,
+                    content({ exercises: [{ exerciseId: SQUAT.id, sets: [{ plannedReps: '8-5' }] }] }),
+                ),
+            ),
+        ).rejects.toBeInstanceOf(ReversedRangeError)
     })
 
     it('rejects a template referencing an unknown exercise', async () => {
@@ -98,7 +151,7 @@ describe('CreateWorkoutTemplateHandler', () => {
             handler.execute(
                 new CreateWorkoutTemplateCommand(
                     OWNER,
-                    content({ exercises: [{ exerciseId: SQUAT.id, sets: [{ rpe: 8, rir: 2 }] }] }),
+                    content({ exercises: [{ exerciseId: SQUAT.id, sets: [{ rpe: '8', rir: '2' }] }] }),
                 ),
             ),
         ).rejects.toBeInstanceOf(ConflictingIntensityError)

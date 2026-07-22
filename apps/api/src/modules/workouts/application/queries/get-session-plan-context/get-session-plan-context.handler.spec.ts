@@ -39,8 +39,10 @@ const historyRow = (): ExerciseSessionHistoryRow => ({
     exerciseNotes: 'belt from set 2',
     sets: [
         {
-            plannedWeightKg: 100,
-            plannedReps: 5,
+            plannedWeightKgMin: 100,
+            plannedWeightKgMax: 100,
+            plannedRepsMin: 5,
+            plannedRepsMax: 5,
             weightKg: 102.5,
             reps: 5,
             rpe: 8,

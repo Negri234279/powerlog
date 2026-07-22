@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+﻿import { randomUUID } from 'node:crypto'
 
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { eq, sql } from 'drizzle-orm'
@@ -10,7 +10,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import * as schema from '../../../database/schema'
 import { WorkoutSessionMother } from '../../../../tests/mothers/workouts'
 import { WorkoutSessionAggregate } from '../domain/entities/workout-session.entity'
+import { RepsRangeVO } from '../domain/value-objects/reps-range.vo'
 import { RepsVO } from '../domain/value-objects/reps.vo'
+import { WeightRangeVO } from '../domain/value-objects/weight-range.vo'
 import { WeightVO } from '../domain/value-objects/weight.vo'
 import type { SetOutcome } from '../domain/set-outcome'
 import { DrizzleTrainingDashboardReadModel } from '../infrastructure/persistence/read-models/drizzle-training-dashboard.read-model'
@@ -59,8 +61,8 @@ function sessionWith(spec: {
                 entry.id,
                 {
                     id,
-                    plannedWeight: set.plannedWeight === undefined ? null : WeightVO.create(set.plannedWeight),
-                    plannedReps: set.plannedReps === undefined ? null : RepsVO.create(set.plannedReps),
+                    plannedWeight: set.plannedWeight === undefined ? null : WeightRangeVO.create(set.plannedWeight),
+                    plannedReps: set.plannedReps === undefined ? null : RepsRangeVO.create(set.plannedReps),
                     weight: set.weight === undefined ? null : WeightVO.create(set.weight),
                     reps: set.reps === undefined ? null : RepsVO.create(set.reps),
                 },
@@ -200,9 +202,9 @@ describe('Athlete execution (integration)', () => {
                 sessionWith({
                     performedAt: new Date('2026-03-01T00:00:00Z'),
                     sets: [
-                        // Programmed 100×5 = 500, did 110×5 = 550.
+                        // Programmed 100Ã—5 = 500, did 110Ã—5 = 550.
                         { plannedWeight: 100, plannedReps: 5, weight: 110, reps: 5, outcome: 'success' },
-                        // Programmed 100×5 = 500, did 90×5 = 450.
+                        // Programmed 100Ã—5 = 500, did 90Ã—5 = 450.
                         { plannedWeight: 100, plannedReps: 5, weight: 90, reps: 5, outcome: 'success' },
                     ],
                 }),
@@ -220,7 +222,7 @@ describe('Athlete execution (integration)', () => {
                     performedAt: new Date('2026-03-01T00:00:00Z'),
                     sets: [
                         { plannedWeight: 100, plannedReps: 5, weight: 100, reps: 5, outcome: 'success' },
-                        // Programmed but never performed — the athlete stopped early.
+                        // Programmed but never performed â€” the athlete stopped early.
                         { plannedWeight: 100, plannedReps: 5 },
                     ],
                 }),
@@ -264,7 +266,7 @@ describe('Athlete execution (integration)', () => {
                     performedAt: new Date('2026-02-10T00:00:00Z'),
                     sets: [{ weight: 100, reps: 5, outcome: 'success' }],
                 }),
-                // Current window: [Mar 1, …]
+                // Current window: [Mar 1, â€¦]
                 sessionWith({
                     performedAt: new Date('2026-03-10T00:00:00Z'),
                     sets: [{ weight: 100, reps: 10, outcome: 'success' }],
@@ -299,7 +301,7 @@ describe('Athlete execution (integration)', () => {
 
     describe('weekly series', () => {
         it('should_show_when_the_athlete_slipped_not_just_how_much', async () => {
-            // Two weeks kept, one missed entirely — the same 2/3 that the
+            // Two weeks kept, one missed entirely â€” the same 2/3 that the
             // aggregate rate would flatten into a single number.
             await save(
                 sessionWith({ performedAt: new Date('2026-03-02T00:00:00Z'), plannedByUserId: COACH }),
@@ -349,7 +351,7 @@ describe('Athlete execution (integration)', () => {
 
         it('should_keep_a_week_that_only_has_one_of_the_two_halves', async () => {
             // A missed session has no sets, so it exists only in the adherence
-            // query — the merge has to carry it through with zeroed load.
+            // query â€” the merge has to carry it through with zeroed load.
             await save(
                 sessionWith({
                     performedAt: new Date('2026-03-02T00:00:00Z'),

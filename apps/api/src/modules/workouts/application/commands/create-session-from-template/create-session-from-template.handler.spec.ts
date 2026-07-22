@@ -47,8 +47,8 @@ describe('CreateSessionFromTemplateHandler', () => {
         expect(sets).toHaveLength(2)
         // Programmed targets are copied; performed values + e1RM stay empty.
         expect(sets[0]).toMatchObject({
-            plannedWeightKg: 100,
-            plannedReps: 5,
+            plannedWeightKg: { min: 100, max: 100 },
+            plannedReps: { min: 5, max: 5 },
             weightKg: null,
             reps: null,
             e1rmKg: null,
