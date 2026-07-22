@@ -14,6 +14,7 @@ import {
 } from '@/lib/graphql/hooks/use-workouts'
 import { formatWeight, unitsOf } from '@/lib/units'
 import { DistributionChart, IntensityChart, StrengthTrendChart, WeeklyVolumeChart } from '@/components/charts'
+import { WorkoutsTabs } from '@/components/workouts/workouts-tabs'
 import { ExecutionCharts } from '@/components/workouts/stats/execution-charts'
 import { ExecutionSection } from '@/components/workouts/stats/execution-section'
 import { PopNumber } from '@/components/ui/pop-number'
@@ -117,7 +118,6 @@ function Cell({ label, children, className }: { label: string; children: React.R
 
 export default function ExerciseStatsPage() {
     const t = useTranslations('stats')
-    const tw = useTranslations('workouts')
     const tt = useTranslations('taxonomy')
     const { data: me } = useMe()
     const units = unitsOf(me?.units)
@@ -181,20 +181,16 @@ export default function ExerciseStatsPage() {
 
     return (
         <div className="max-w-6xl">
-            <TrackedLink
-                analyticsId="stats-breadcrumb-workouts"
-                href="/workouts"
-                className="font-mono text-eyebrow uppercase text-text-faint transition-colors duration-300 hover:text-text-dim"
-            >
-                {tw('breadcrumbWorkouts')}
-            </TrackedLink>
-
-            <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-wrap items-end justify-between gap-4">
                 <TextsReveal>
                     <h1 className="font-display text-display">{t('title')}</h1>
                     <p className="mt-3 max-w-lg text-body text-text-dim">{t('intro')}</p>
                 </TextsReveal>
                 <RangeToggle range={range} onChange={setRange} />
+            </div>
+
+            <div className="mt-8">
+                <WorkoutsTabs />
             </div>
 
             {isEmpty ? (

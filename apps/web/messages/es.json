@@ -403,6 +403,14 @@
     "workouts": {
         "training": "Entrenamiento",
         "title": "Entrenamientos",
+        "tabs": {
+            "label": "Secciones de entrenamiento",
+            "sessions": "Sesiones",
+            "mesocycles": "Mesociclos",
+            "templates": "Plantillas",
+            "stats": "Analíticas",
+            "ai": "IA"
+        },
         "templates": "Plantillas",
         "mesocycles": "Mesociclos",
         "analytics": "Analíticas",

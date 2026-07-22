@@ -14,6 +14,7 @@ import {
 } from '@/lib/graphql/hooks/use-workout-templates'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { TemplateBuilder } from '@/components/workouts/template-builder'
+import { WorkoutsTabs } from '@/components/workouts/workouts-tabs'
 import { ClearableSearch } from '@/components/ui/clearable-search'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
@@ -155,15 +156,7 @@ export default function TemplatesPage() {
 
     return (
         <div>
-            <TrackedLink
-                analyticsId="templates-breadcrumb-workouts"
-                href="/workouts"
-                className="font-mono text-eyebrow uppercase text-text-faint transition-colors duration-300 hover:text-text-dim"
-            >
-                {tw('breadcrumbWorkouts')}
-            </TrackedLink>
-
-            <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-wrap items-end justify-between gap-4">
                 <TextsReveal>
                     <p className="font-mono text-eyebrow uppercase text-text-faint">{tw('training')}</p>
                     <h1 className="mt-1 font-display text-display">{tw('templates')}</h1>
@@ -176,6 +169,10 @@ export default function TemplatesPage() {
                 >
                     <Plus className="size-4" /> {t('newTemplate')}
                 </TrackedButton>
+            </div>
+
+            <div className="mt-8">
+                <WorkoutsTabs />
             </div>
 
             {isPlanRefusal(startRawError) ? (

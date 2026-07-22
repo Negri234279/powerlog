@@ -8,6 +8,7 @@ import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { type MesocycleSummary, useDeleteMesocycle, useMesocycles } from '@/lib/graphql/hooks/use-mesocycles'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { MesocycleBuilder } from '@/components/workouts/mesocycle-builder'
+import { WorkoutsTabs } from '@/components/workouts/workouts-tabs'
 import { ClearableSearch } from '@/components/ui/clearable-search'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Target, Plus } from '@/components/ui/icons'
@@ -125,15 +126,7 @@ export default function MesocyclesPage() {
 
     return (
         <div>
-            <TrackedLink
-                analyticsId="mesocycles-breadcrumb-workouts"
-                href="/workouts"
-                className="font-mono text-eyebrow uppercase text-text-faint transition-colors duration-300 hover:text-text-dim"
-            >
-                {tw('breadcrumbWorkouts')}
-            </TrackedLink>
-
-            <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-wrap items-end justify-between gap-4">
                 <TextsReveal>
                     <p className="font-mono text-eyebrow uppercase text-text-faint">{tw('training')}</p>
                     <h1 className="mt-1 font-display text-display">{t('title')}</h1>
@@ -146,6 +139,10 @@ export default function MesocyclesPage() {
                 >
                     <Plus className="size-4" /> {t('newMesocycle')}
                 </TrackedButton>
+            </div>
+
+            <div className="mt-8">
+                <WorkoutsTabs />
             </div>
 
             {(items.length > 0 || hasSearch) && !isLoading ? (

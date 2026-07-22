@@ -36,7 +36,8 @@ import { FormError } from '@/components/ui/form-error'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
 import { Field, Input, Select } from '@/components/ui/field'
-import { Calendar, ChartLine, ChevronDown, Dumbbell, Plus, Search, Target } from '@/components/ui/icons'
+import { Calendar, ChevronDown, Plus, Search } from '@/components/ui/icons'
+import { WorkoutsTabs } from '@/components/workouts/workouts-tabs'
 import { Menu } from '@/components/ui/menu'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
@@ -353,30 +354,6 @@ export default function WorkoutsPage() {
                     <h1 className="mt-3 font-display text-display">{t('title')}</h1>
                 </TextsReveal>
                 <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                    <TrackedLink
-                        analyticsId="workouts-templates-link"
-                        href="/workouts/templates"
-                        className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
-                    >
-                        <Dumbbell className="size-4" />
-                        {t('templates')}
-                    </TrackedLink>
-                    <TrackedLink
-                        analyticsId="workouts-mesocycles-link"
-                        href="/workouts/mesocycles"
-                        className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
-                    >
-                        <Target className="size-4" />
-                        {t('mesocycles')}
-                    </TrackedLink>
-                    <TrackedLink
-                        analyticsId="workouts-stats-link"
-                        href="/workouts/stats"
-                        className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
-                    >
-                        <ChartLine className="size-4" />
-                        {t('analytics')}
-                    </TrackedLink>
                     <TrackedButton
                         analyticsId="session-create-open"
                         type="button"
@@ -387,6 +364,10 @@ export default function WorkoutsPage() {
                         {t('session')}
                     </TrackedButton>
                 </div>
+            </div>
+
+            <div className="mt-8">
+                <WorkoutsTabs />
             </div>
 
             {creating ? (

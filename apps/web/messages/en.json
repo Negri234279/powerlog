@@ -403,6 +403,14 @@
     "workouts": {
         "training": "Training",
         "title": "Workouts",
+        "tabs": {
+            "label": "Training sections",
+            "sessions": "Sessions",
+            "mesocycles": "Mesocycles",
+            "templates": "Templates",
+            "stats": "Analytics",
+            "ai": "AI"
+        },
         "templates": "Templates",
         "mesocycles": "Mesocycles",
         "analytics": "Analytics",
