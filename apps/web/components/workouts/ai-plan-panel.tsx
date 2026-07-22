@@ -119,7 +119,17 @@ export function AiPlanPanel({
         if (!draft) return
         void run(
             () => accept.mutateAsync(draft.id),
-            () => track('ai_plan_accepted', {}),
+            () => {
+                track('ai_plan_accepted', {})
+                // The work is done — the targets are on the session now, and the
+                // session itself is what the athlete wants to look at. Collapsing
+                // only on success: a failed accept must leave the proposal on
+                // screen, or the athlete loses what they were deciding about.
+                //
+                // Discarding deliberately does NOT collapse: saying no to a
+                // proposal usually means wanting another one.
+                setOpen(false)
+            },
         )
     }
 

@@ -56,14 +56,26 @@ export function useRefinePlanDraft(sessionId: string) {
     })
 }
 
-/** Accepting writes the targets onto the session, so both caches are stale. */
+/**
+ * Resolving a draft moves it out of the session and into the history. Both are
+ * stale afterwards, so both are invalidated — otherwise the "previous plans"
+ * link keeps showing a count taken before the draft was resolved, and only a
+ * manual reload brings it up to date.
+ */
+function onDraftResolved(qc: ReturnType<typeof useQueryClient>, sessionId: string): void {
+    qc.setQueryData(draftKey(sessionId), null)
+    void qc.invalidateQueries({ queryKey: ['aiDraftCount'] })
+    void qc.invalidateQueries({ queryKey: ['aiDraftHistory'] })
+}
+
+/** Accepting writes the targets onto the session, so its cache is stale too. */
 export function useAcceptPlanDraft(sessionId: string) {
     const qc = useQueryClient()
 
     return useMutation({
         mutationFn: (draftId: string) => gqlRequest(AcceptPlanDraftDocument, { draftId }),
         onSuccess: () => {
-            qc.setQueryData(draftKey(sessionId), null)
+            onDraftResolved(qc, sessionId)
             void qc.invalidateQueries({ queryKey: ['workoutSession', sessionId] })
         },
     })
@@ -74,6 +86,6 @@ export function useDiscardPlanDraft(sessionId: string) {
 
     return useMutation({
         mutationFn: (draftId: string) => gqlRequest(DiscardPlanDraftDocument, { draftId }),
-        onSuccess: () => qc.setQueryData(draftKey(sessionId), null),
+        onSuccess: () => onDraftResolved(qc, sessionId),
     })
 }

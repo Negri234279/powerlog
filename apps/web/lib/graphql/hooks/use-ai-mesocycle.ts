@@ -69,12 +69,22 @@ export function useRefineMesocycleDraft(athleteId?: string) {
  * slot. The proposal itself is already in hand — the builder is seeded from it —
  * so the cache is simply cleared.
  */
+/**
+ * Resolving a draft moves it out of the builder and into the history, so the
+ * history and its counts are stale — see the session panel's twin.
+ */
+function onDraftResolved(qc: ReturnType<typeof useQueryClient>, athleteId?: string): void {
+    qc.setQueryData(draftKey(athleteId), null)
+    void qc.invalidateQueries({ queryKey: ['aiDraftCount'] })
+    void qc.invalidateQueries({ queryKey: ['aiDraftHistory'] })
+}
+
 export function useAcceptMesocycleDraft(athleteId?: string) {
     const qc = useQueryClient()
 
     return useMutation({
         mutationFn: (draftId: string) => gqlRequest(AcceptMesocycleDraftDocument, { draftId }),
-        onSuccess: () => qc.setQueryData(draftKey(athleteId), null),
+        onSuccess: () => onDraftResolved(qc, athleteId),
     })
 }
 
@@ -83,6 +93,6 @@ export function useDiscardMesocycleDraft(athleteId?: string) {
 
     return useMutation({
         mutationFn: (draftId: string) => gqlRequest(DiscardMesocycleDraftDocument, { draftId }),
-        onSuccess: () => qc.setQueryData(draftKey(athleteId), null),
+        onSuccess: () => onDraftResolved(qc, athleteId),
     })
 }

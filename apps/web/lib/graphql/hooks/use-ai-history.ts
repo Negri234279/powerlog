@@ -65,10 +65,14 @@ export function useAiDraftHistory(filters: AiHistoryFilters = {}) {
 }
 
 /**
- * How many past conversations exist for one session — the count on the panels'
+ * How many *past* conversations exist for one session — the count on the panels'
  * "previous" link. Deliberately not a total: the feed carries no count, and one
  * small page answers the only question the affordance asks — is there anything
  * back there, and roughly how much.
+ *
+ * Open drafts are excluded, and that is the whole point of the word "previous":
+ * the draft the panel is showing right now is not somewhere to go back to. It is
+ * filtered client-side because the API takes one status, and "resolved" is two.
  */
 export function useAiDraftCount(filters: AiHistoryFilters = {}) {
     const kind = kindArg(filters.kind)
@@ -77,7 +81,7 @@ export function useAiDraftCount(filters: AiHistoryFilters = {}) {
         queryKey: ['aiDraftCount', { kind: kind ?? 'all', sessionId: filters.sessionId ?? null }],
         queryFn: () =>
             gqlRequest(AiDraftHistoryDocument, { limit: 10, kind, sessionId: filters.sessionId }).then((r) => ({
-                count: r.aiDraftHistory.items.length,
+                count: r.aiDraftHistory.items.filter((draft) => draft.status !== 'open').length,
                 more: r.aiDraftHistory.hasNextPage,
             })),
     })
