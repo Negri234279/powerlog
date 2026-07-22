@@ -38,6 +38,24 @@ export class InvalidRirError extends WorkoutsError {
     }
 }
 
+/** A planned value that is neither a number nor a `min-max` range. */
+export class MalformedRangeError extends WorkoutsError {
+    readonly code = 'MALFORMED_RANGE'
+
+    constructor() {
+        super('A planned value must be a number or a range like 5-8.')
+    }
+}
+
+/** A planned range written backwards (`8-5`). */
+export class ReversedRangeError extends WorkoutsError {
+    readonly code = 'REVERSED_RANGE'
+
+    constructor() {
+        super('The start of a planned range cannot be greater than its end.')
+    }
+}
+
 export class ConflictingIntensityError extends WorkoutsError {
     readonly code = 'CONFLICTING_INTENSITY'
 
