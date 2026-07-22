@@ -31,6 +31,17 @@ export class AiGenerationAlreadyInFlightError extends AiSettingsError {
     }
 }
 
+/**
+ * Nothing could be handed the job. The row is failed rather than left waiting
+ * for a worker that will never come, so the scope is free to be asked for again.
+ */
+export class AiGenerationQueueUnavailableError extends AiSettingsError {
+    readonly code = 'AI_GENERATION_QUEUE_UNAVAILABLE'
+    constructor() {
+        super('Generations are unavailable right now. Try again in a moment.')
+    }
+}
+
 /** A worker picked up a generation that was not waiting to be run. */
 export class AiGenerationNotQueuedError extends AiSettingsError {
     readonly code = 'AI_GENERATION_NOT_QUEUED'
