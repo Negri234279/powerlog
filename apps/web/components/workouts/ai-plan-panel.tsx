@@ -8,8 +8,9 @@ import { FormError } from '@/components/ui/form-error'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Bolt } from '@/components/ui/icons'
+import { ProposedSets } from '@/components/ai/proposed-sets'
 import { TrackedButton } from '@/components/ui/tracked'
-import { kgTo, type Units } from '@/lib/units'
+import { type Units } from '@/lib/units'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import {
     type AiPlanDraft,
@@ -24,16 +25,6 @@ import type { WorkoutSessionData } from '@/lib/graphql/hooks/use-workouts'
 
 type Entries = NonNullable<WorkoutSessionData>['entries']
 type ProposedSet = AiPlanDraft['sets'][number]
-
-/** "102.5kg × 5 @8" / "90kg × 8 · RIR 2" — the same shape as a logged set. */
-function formatTarget(set: ProposedSet, units: Units): string {
-    const weight = set.plannedWeightKg === null ? '—' : `${Number(kgTo(units, set.plannedWeightKg).toFixed(1))}${units}`
-    const base = `${weight} × ${set.plannedReps ?? '—'}`
-    if (set.rpe !== null) return `${base} @${set.rpe}`
-    if (set.rir !== null) return `${base} · RIR ${set.rir}`
-
-    return base
-}
 
 /**
  * The AI's proposal for a planned session: what it would program for each set,
@@ -193,27 +184,7 @@ export function AiPlanPanel({
 
                 {draft ? (
                     <div className="mt-6 space-y-6">
-                        <div className="space-y-4">
-                            {proposalByEntry.map((entry) => (
-                                <div key={entry.entryId}>
-                                    <p className="font-mono text-eyebrow uppercase text-text-dim">{entry.name}</p>
-                                    <ul className="mt-2 space-y-1">
-                                        {entry.sets.map((proposed) => (
-                                            <li
-                                                key={proposed.order}
-                                                className="flex flex-wrap items-baseline gap-x-3 text-sm text-text"
-                                            >
-                                                <span className="font-mono text-text-faint">{proposed.order}</span>
-                                                <span>{formatTarget(proposed, units)}</span>
-                                                {proposed.notes ? (
-                                                    <span className="text-text-dim">— {proposed.notes}</span>
-                                                ) : null}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
-                        </div>
+                        <ProposedSets entries={proposalByEntry} units={units} />
 
                         <div className="space-y-3 rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
                             {draft.messages.map((message) => (

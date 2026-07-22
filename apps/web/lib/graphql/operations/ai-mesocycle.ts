@@ -47,6 +47,9 @@ export const AiMesocycleDraftFieldsFragment = graphql(`
             content
             createdAt
         }
+        parentDraftId
+        mesocycleId
+        createdAt
         updatedAt
     }
 `)

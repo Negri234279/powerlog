@@ -579,6 +579,23 @@
             "noMatchesTitle": "Aún no hay planes de tipo {kind}",
             "noMatchesBody": "Nada coincide con este filtro. Quítalo para ver todo lo que has pedido.",
             "clearFilter": "Quitar filtro"
+        },
+        "thread": {
+            "you": "Tú",
+            "label": "Conversación, {count} mensajes"
+        },
+        "detail": {
+            "breadcrumb": "← Historial de IA",
+            "proposal": "La propuesta",
+            "weeks": "{count, plural, one {# semana} other {# semanas}}",
+            "viewSession": "Ver sesión",
+            "viewMesocycle": "Ver bloque",
+            "sessionGone": "La sesión para la que era se ha borrado.",
+            "readOnlyAccepted": "Aceptado: sus objetivos se escribieron en tu entrenamiento. Esta conversación ya no cambia.",
+            "readOnlyDiscarded": "Descartado: no se escribió nada. Esta conversación ya no cambia.",
+            "notFoundTitle": "Este plan no está aquí",
+            "notFoundBody": "No existe, o no es tuyo.",
+            "backToHistory": "Volver al historial"
         }
     },
     "mesocycles": {

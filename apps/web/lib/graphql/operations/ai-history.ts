@@ -30,3 +30,20 @@ export const AiDraftHistoryDocument = graphql(`
         }
     }
 `)
+
+/**
+ * One conversation by id. The URL carries an id but not its kind, so both are
+ * asked at once and whichever answers is the draft — the queries are nullable
+ * precisely so "not this kind" is an answer rather than an error. Both null
+ * means it does not exist, or is not the caller's.
+ */
+export const AiDraftDetailDocument = graphql(`
+    query AiDraftDetail($draftId: ID!) {
+        planDraftById(draftId: $draftId) {
+            ...AiPlanDraftFields
+        }
+        mesocycleDraftById(draftId: $draftId) {
+            ...AiMesocycleDraftFields
+        }
+    }
+`)

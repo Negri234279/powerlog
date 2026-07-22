@@ -73,28 +73,32 @@ export class AiHistoryResolver {
     }
 
     @Query(() => AiPlanDraftType, {
-        description: 'One session draft by id, whatever its status — the history’s detail view.',
+        nullable: true,
+        description:
+            'One session draft by id, whatever its status — the history’s detail view. Null when it is not a session draft, does not exist, or is not yours.',
     })
     async planDraftById(
         @CurrentUser() user: AuthUser,
         @Args('draftId', { type: () => ID }, new ZodValidationPipe(uuidSchema)) draftId: string,
-    ): Promise<AiPlanDraftType> {
+    ): Promise<AiPlanDraftType | null> {
         const query = new GetPlanDraftQuery(user.userId, draftId)
-        const view = await this.queryBus.execute<GetPlanDraftQuery, AiPlanDraftView>(query)
+        const view = await this.queryBus.execute<GetPlanDraftQuery, AiPlanDraftView | null>(query)
 
-        return Object.assign(new AiPlanDraftType(), view)
+        return view ? Object.assign(new AiPlanDraftType(), view) : null
     }
 
     @Query(() => AiMesocycleDraftType, {
-        description: 'One mesocycle draft by id, whatever its status — the history’s detail view.',
+        nullable: true,
+        description:
+            'One mesocycle draft by id, whatever its status — the history’s detail view. Null when it is not a mesocycle draft, does not exist, or is not yours.',
     })
     async mesocycleDraftById(
         @CurrentUser() user: AuthUser,
         @Args('draftId', { type: () => ID }, new ZodValidationPipe(uuidSchema)) draftId: string,
-    ): Promise<AiMesocycleDraftType> {
+    ): Promise<AiMesocycleDraftType | null> {
         const query = new GetMesocycleDraftByIdQuery(user.userId, draftId)
-        const view = await this.queryBus.execute<GetMesocycleDraftByIdQuery, AiMesocycleDraftView>(query)
+        const view = await this.queryBus.execute<GetMesocycleDraftByIdQuery, AiMesocycleDraftView | null>(query)
 
-        return Object.assign(new AiMesocycleDraftType(), view)
+        return view ? Object.assign(new AiMesocycleDraftType(), view) : null
     }
 }

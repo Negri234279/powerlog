@@ -1935,9 +1935,9 @@ type Query {
   mesocycleDraft(athleteId: ID): AiMesocycleDraft
 
   """
-  One mesocycle draft by id, whatever its status — the history’s detail view.
+  One mesocycle draft by id, whatever its status — the history’s detail view. Null when it is not a mesocycle draft, does not exist, or is not yours.
   """
-  mesocycleDraftById(draftId: ID!): AiMesocycleDraft!
+  mesocycleDraftById(draftId: ID!): AiMesocycleDraft
 
   """
   The caller's mesocycles (newest first), with cheap rollups; optional name search.
@@ -2002,9 +2002,9 @@ type Query {
   ping: String!
 
   """
-  One session draft by id, whatever its status — the history’s detail view.
+  One session draft by id, whatever its status — the history’s detail view. Null when it is not a session draft, does not exist, or is not yours.
   """
-  planDraftById(draftId: ID!): AiPlanDraft!
+  planDraftById(draftId: ID!): AiPlanDraft
 
   """The proposal awaiting a decision on this session, if any."""
   sessionPlanDraft(sessionId: ID!): AiPlanDraft

@@ -579,6 +579,23 @@
             "noMatchesTitle": "No {kind} plans yet",
             "noMatchesBody": "Nothing matches this filter. Clear it to see everything you've asked for.",
             "clearFilter": "Clear filter"
+        },
+        "thread": {
+            "you": "You",
+            "label": "Conversation, {count} messages"
+        },
+        "detail": {
+            "breadcrumb": "← AI history",
+            "proposal": "The proposal",
+            "weeks": "{count, plural, one {# week} other {# weeks}}",
+            "viewSession": "View session",
+            "viewMesocycle": "View block",
+            "sessionGone": "The session this was for has been deleted.",
+            "readOnlyAccepted": "Accepted — its targets were written to your training. This conversation can't change.",
+            "readOnlyDiscarded": "Discarded — nothing was written. This conversation can't change.",
+            "notFoundTitle": "This plan isn't here",
+            "notFoundBody": "It doesn't exist, or it isn't yours.",
+            "backToHistory": "Back to AI history"
         }
     },
     "mesocycles": {

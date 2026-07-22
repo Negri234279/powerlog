@@ -35,6 +35,8 @@ export const AiPlanDraftFieldsFragment = graphql(`
             content
             createdAt
         }
+        parentDraftId
+        createdAt
         updatedAt
     }
 `)
