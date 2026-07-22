@@ -543,6 +543,44 @@
         "historyLoadError": "No se pudo cargar el historial.",
         "noPrevious": "Aún no hay sesiones anteriores registradas."
     },
+    "aiHistory": {
+        "title": "Historial de IA",
+        "intro": "Todos los planes que le has pedido a la IA, incluidos los que descartaste.",
+        "loadMore": "Ver más",
+        "loading": "Cargando…",
+        "messages": "{count, plural, one {# mensaje} other {# mensajes}}",
+        "forAthlete": "para {name}",
+        "anAthlete": "para un atleta",
+        "cardAria": "{status} {kind}: {title}, {model}",
+        "kind": {
+            "session": "Sesión",
+            "mesocycle": "Bloque"
+        },
+        "status": {
+            "open": "Abierto",
+            "accepted": "Aceptado",
+            "discarded": "Descartado"
+        },
+        "untitled": {
+            "session": "Plan de sesión · sin petición",
+            "mesocycle": "Bloque de entrenamiento · sin petición"
+        },
+        "filters": {
+            "label": "Filtrar por tipo",
+            "all": "Todos",
+            "session": "Sesiones",
+            "mesocycle": "Bloques"
+        },
+        "empty": {
+            "title": "Aquí no hay nada todavía",
+            "body": "Todos los planes que le pidas a la IA se guardan aquí, incluidos los que descartes. Pide uno y aparecerá.",
+            "designBlock": "Diseñar un bloque con IA",
+            "fromSession": "Los planes de sesión salen de una sesión →",
+            "noMatchesTitle": "Aún no hay planes de tipo {kind}",
+            "noMatchesBody": "Nada coincide con este filtro. Quítalo para ver todo lo que has pedido.",
+            "clearFilter": "Quitar filtro"
+        }
+    },
     "mesocycles": {
         "eyebrow": "Mesociclo",
         "title": "Mesociclos",

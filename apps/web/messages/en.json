@@ -543,6 +543,44 @@
         "historyLoadError": "Couldn’t load history.",
         "noPrevious": "No previous sessions logged yet."
     },
+    "aiHistory": {
+        "title": "AI history",
+        "intro": "Every plan you've asked the AI for — including the ones you turned down.",
+        "loadMore": "Load more",
+        "loading": "Loading…",
+        "messages": "{count, plural, one {# message} other {# messages}}",
+        "forAthlete": "for {name}",
+        "anAthlete": "for an athlete",
+        "cardAria": "{status} {kind}: {title}, {model}",
+        "kind": {
+            "session": "Session",
+            "mesocycle": "Block"
+        },
+        "status": {
+            "open": "Open",
+            "accepted": "Accepted",
+            "discarded": "Discarded"
+        },
+        "untitled": {
+            "session": "Session plan · no request",
+            "mesocycle": "Training block · no request"
+        },
+        "filters": {
+            "label": "Filter by kind",
+            "all": "All",
+            "session": "Sessions",
+            "mesocycle": "Blocks"
+        },
+        "empty": {
+            "title": "Nothing here yet",
+            "body": "Every plan you ask the AI for is kept here — including the ones you discarded. Ask for one and it shows up.",
+            "designBlock": "Design a block with AI",
+            "fromSession": "Session plans start from a session →",
+            "noMatchesTitle": "No {kind} plans yet",
+            "noMatchesBody": "Nothing matches this filter. Clear it to see everything you've asked for.",
+            "clearFilter": "Clear filter"
+        }
+    },
     "mesocycles": {
         "eyebrow": "Mesocycle",
         "title": "Mesocycles",
