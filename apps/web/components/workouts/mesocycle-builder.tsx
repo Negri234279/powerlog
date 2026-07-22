@@ -24,6 +24,14 @@ import {
 import { useEnterExit } from '@/lib/hooks/use-enter-exit'
 import { displayNumber, formatRange, formatWeightRange, type RangeValue } from '@/lib/range'
 import { kgTo, type Units, unitsOf } from '@/lib/units'
+import {
+    fieldKey,
+    fieldSpec,
+    rangeErrorKey,
+    SET_FIELDS,
+    type SetField,
+    validatePlanned,
+} from '@/lib/workouts/planned-validation'
 import { Field, Input } from '@/components/ui/field'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
@@ -284,6 +292,57 @@ export function MesocycleBuilder({
     // Which week (if any) has its AI fill panel open. One at a time: the server
     // holds a single open draft per user, so two panels would share one proposal.
     const [aiWeekKey, setAiWeekKey] = useState<string | null>(null)
+    // Per-field client validation messages, keyed by 'name' and `${setKey}.<field>`.
+    // A field validates on blur; Save re-checks every field at once so the whole
+    // block's problems surface together, not one back-end error at a time.
+    const [errors, setErrors] = useState<Record<string, string>>({})
+
+    /** Validate a single set cell (on blur), setting or clearing just its error. */
+    function validateField(set: DraftSet, field: SetField) {
+        const spec = fieldSpec(set, field)
+        const code = spec ? validatePlanned(spec.text, spec.planned, units) : null
+
+        setErrors((prev) => {
+            const next = { ...prev }
+            delete next[fieldKey(set.key, field)]
+            if (spec && code) next[spec.key] = tw(rangeErrorKey(code, spec.planned))
+            return next
+        })
+    }
+
+    /** Validate the name on blur (required), setting or clearing its error. */
+    function validateName() {
+        setErrors((prev) => {
+            const next = { ...prev }
+            if (name.trim() === '') next['name'] = t('nameRequired')
+            else delete next['name']
+            return next
+        })
+    }
+
+    /** Check the whole block at once — the name plus every set cell across all
+     *  weeks/days — and return the complete error map, so Save reveals it in one pass. */
+    function collectErrors(): Record<string, string> {
+        const found: Record<string, string> = {}
+        if (name.trim() === '') found['name'] = t('nameRequired')
+
+        for (const week of weeks) {
+            for (const day of week.days) {
+                for (const exercise of day.exercises) {
+                    for (const set of exercise.sets) {
+                        for (const field of SET_FIELDS) {
+                            const spec = fieldSpec(set, field)
+                            if (!spec) continue
+                            const code = validatePlanned(spec.text, spec.planned, units)
+                            if (code) found[spec.key] = tw(rangeErrorKey(code, spec.planned))
+                        }
+                    }
+                }
+            }
+        }
+
+        return found
+    }
 
     // Seed from the loaded mesocycle once (edit mode).
     const [seeded, setSeeded] = useState(false)
@@ -416,8 +475,13 @@ export function MesocycleBuilder({
     async function onSave() {
         setError(null)
         setRawError(null)
-        if (name.trim() === '') {
-            setError(t('nameRequired'))
+
+        // Validate the whole block up front and show every problem together, rather
+        // than letting the back-end reject one field at a time.
+        const found = collectErrors()
+        setErrors(found)
+        if (Object.keys(found).length > 0) {
+            setError(t('fixErrors'))
             return
         }
 
@@ -490,11 +554,13 @@ export function MesocycleBuilder({
 
             <div className="mt-6 rounded-2xl bg-shell p-1.5 ring-1 ring-hairline">
                 <div className="inset-hi grid gap-4 rounded-[calc(1rem-0.25rem)] bg-surface p-5 sm:grid-cols-2">
-                    <Field label={t('name')} htmlFor="meso-name">
+                    <Field label={t('name')} htmlFor="meso-name" error={errors['name']}>
                         <Input
                             id="meso-name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
+                            onBlur={validateName}
+                            aria-invalid={errors['name'] ? true : undefined}
                             placeholder={t('namePlaceholder')}
                         />
                     </Field>
@@ -554,6 +620,8 @@ export function MesocycleBuilder({
                         onPatchDay={(dayKey, patch) => patchDay(week.key, dayKey, patch)}
                         onRemoveDay={(dayKey) => removeDay(week.key, dayKey)}
                         onDayExercises={(dayKey, updater) => setDayExercises(week.key, dayKey, updater)}
+                        errors={errors}
+                        onValidateSet={validateField}
                     />
                 ))}
             </div>
@@ -753,6 +821,8 @@ function WeekCard({
     onPatchDay,
     onRemoveDay,
     onDayExercises,
+    errors,
+    onValidateSet,
 }: {
     week: DraftWeek
     index: number
@@ -772,6 +842,8 @@ function WeekCard({
     onPatchDay: (dayKey: string, patch: Partial<DraftDay>) => void
     onRemoveDay: (dayKey: string) => void
     onDayExercises: (dayKey: string, updater: (exercises: DraftExercise[]) => DraftExercise[]) => void
+    errors: Record<string, string>
+    onValidateSet: (set: DraftSet, field: SetField) => void
 }) {
     const t = useTranslations('mesocycles')
     // Days are shown one at a time via tabs; the active tab is tracked by position
@@ -861,6 +933,8 @@ function WeekCard({
                                 setActiveIndex((i) => Math.max(0, Math.min(i, week.days.length - 2)))
                             }}
                             onExercises={(updater) => onDayExercises(activeDay.key, updater)}
+                            errors={errors}
+                            onValidateSet={onValidateSet}
                         />
                     </div>
                 ) : (
@@ -903,6 +977,8 @@ function DayCard({
     onPatch,
     onRemove,
     onExercises,
+    errors,
+    onValidateSet,
 }: {
     day: DraftDay
     index: number
@@ -913,6 +989,8 @@ function DayCard({
     onPatch: (patch: Partial<DraftDay>) => void
     onRemove: () => void
     onExercises: (updater: (exercises: DraftExercise[]) => DraftExercise[]) => void
+    errors: Record<string, string>
+    onValidateSet: (set: DraftSet, field: SetField) => void
 }) {
     const t = useTranslations('mesocycles')
     const tw = useTranslations('workouts')
@@ -987,6 +1065,8 @@ function DayCard({
                         units={units}
                         onPatch={(patch) => patchExercise(exercise.key, patch)}
                         onRemove={() => removeExercise(exercise.key)}
+                        errors={errors}
+                        onValidateSet={onValidateSet}
                     />
                 ))}
                 {day.exercises.length === 0 ? <p className="text-sm text-text-faint">{t('noExercisesYet')}</p> : null}
@@ -1024,12 +1104,16 @@ function ExerciseBlock({
     units,
     onPatch,
     onRemove,
+    errors,
+    onValidateSet,
 }: {
     exercise: DraftExercise
     name: string
     units: Units
     onPatch: (patch: Partial<DraftExercise>) => void
     onRemove: () => void
+    errors: Record<string, string>
+    onValidateSet: (set: DraftSet, field: SetField) => void
 }) {
     const t = useTranslations('mesocycles')
     const tw = useTranslations('workouts')
@@ -1076,8 +1160,10 @@ function ExerciseBlock({
                         key={set.key}
                         set={set}
                         index={index + 1}
+                        errors={errors}
                         onPatch={(patch) => patchSet(set.key, patch)}
                         onRemove={() => removeSet(set.key)}
+                        onBlurField={(field) => onValidateSet(set, field)}
                     />
                 ))}
             </div>
@@ -1094,61 +1180,96 @@ function ExerciseBlock({
     )
 }
 
+function CellError({ message }: { message?: string }) {
+    if (!message) return null
+    return <p className="mt-1 px-1 text-[10px] leading-tight text-ember">{message}</p>
+}
+
 function SetRow({
     set,
     index,
+    errors,
     onPatch,
     onRemove,
+    onBlurField,
 }: {
     set: DraftSet
     index: number
+    errors: Record<string, string>
     onPatch: (patch: Partial<DraftSet>) => void
     onRemove: () => void
+    onBlurField: (field: SetField) => void
 }) {
     const t = useTranslations('templates')
     const tw = useTranslations('workouts')
+    const weightError = errors[fieldKey(set.key, 'weight')]
+    const repsError = errors[fieldKey(set.key, 'reps')]
+    const intensityError = errors[fieldKey(set.key, 'intensity')]
+
+    // items-start so the row number and remove button stay aligned to the inputs
+    // even when an error message grows a cell taller.
     return (
-        <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-center gap-2">
-            <span className="text-right font-mono text-xs text-text-faint">{index}</span>
+        <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-start gap-2">
+            <span className="pt-2 text-right font-mono text-xs text-text-faint">{index}</span>
             {/* Text, not number: a range like `50-55` needs the hyphen the numeric
                 keypad hides. `inputMode="decimal"` still brings up digits on mobile. */}
-            <input
-                type="text"
-                inputMode="decimal"
-                value={set.weight}
-                onChange={(e) => onPatch({ weight: e.target.value })}
-                placeholder={tw('rangePlaceholder')}
-                className={cellClass}
-            />
-            <input
-                type="text"
-                inputMode="numeric"
-                value={set.reps}
-                onChange={(e) => onPatch({ reps: e.target.value })}
-                placeholder={tw('rangePlaceholder')}
-                className={cellClass}
-            />
-            <div className="flex items-center gap-1.5">
-                <select
-                    value={set.intensityKind}
-                    onChange={(e) => onPatch({ intensityKind: e.target.value as IntensityKind, intensity: '' })}
-                    className={cn(cellClass, 'appearance-none')}
-                    aria-label={t('intensityType')}
-                >
-                    <option value="none">—</option>
-                    <option value="rpe">RPE</option>
-                    <option value="rir">RIR</option>
-                </select>
+            <div className="min-w-0">
                 <input
                     type="text"
                     inputMode="decimal"
-                    value={set.intensity}
-                    onChange={(e) => onPatch({ intensity: e.target.value })}
-                    disabled={set.intensityKind === 'none'}
-                    placeholder={set.intensityKind === 'none' ? '' : '0'}
-                    className={cn(cellClass, 'w-16 disabled:opacity-40')}
-                    aria-label={t('intensityValue')}
+                    value={set.weight}
+                    onChange={(e) => onPatch({ weight: e.target.value })}
+                    onBlur={() => onBlurField('weight')}
+                    aria-invalid={weightError ? true : undefined}
+                    placeholder={tw('rangePlaceholder')}
+                    className={cn(cellClass, weightError && 'ring-ember/60 focus:ring-ember/70')}
                 />
+                <CellError message={weightError} />
+            </div>
+            <div className="min-w-0">
+                <input
+                    type="text"
+                    inputMode="numeric"
+                    value={set.reps}
+                    onChange={(e) => onPatch({ reps: e.target.value })}
+                    onBlur={() => onBlurField('reps')}
+                    aria-invalid={repsError ? true : undefined}
+                    placeholder={tw('rangePlaceholder')}
+                    className={cn(cellClass, repsError && 'ring-ember/60 focus:ring-ember/70')}
+                />
+                <CellError message={repsError} />
+            </div>
+            <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                    <select
+                        value={set.intensityKind}
+                        onChange={(e) => onPatch({ intensityKind: e.target.value as IntensityKind, intensity: '' })}
+                        onBlur={() => onBlurField('intensity')}
+                        className={cn(cellClass, 'appearance-none')}
+                        aria-label={t('intensityType')}
+                    >
+                        <option value="none">—</option>
+                        <option value="rpe">RPE</option>
+                        <option value="rir">RIR</option>
+                    </select>
+                    <input
+                        type="text"
+                        inputMode="decimal"
+                        value={set.intensity}
+                        onChange={(e) => onPatch({ intensity: e.target.value })}
+                        onBlur={() => onBlurField('intensity')}
+                        disabled={set.intensityKind === 'none'}
+                        aria-invalid={intensityError ? true : undefined}
+                        placeholder={set.intensityKind === 'none' ? '' : '0'}
+                        className={cn(
+                            cellClass,
+                            'w-16 disabled:opacity-40',
+                            intensityError && 'ring-ember/60 focus:ring-ember/70',
+                        )}
+                        aria-label={t('intensityValue')}
+                    />
+                </div>
+                <CellError message={intensityError} />
             </div>
             <TrackedButton
                 analyticsId="mesocycle-remove-set"

@@ -631,6 +631,7 @@
         "startDate": "Start date",
         "notesPlaceholder": "Optional notes",
         "nameRequired": "A name is required.",
+        "fixErrors": "Fix the highlighted fields before saving.",
         "loadingMesocycle": "Loading mesocycle…",
         "loadError": "Couldn’t load this mesocycle.",
         "addWeek": "Add week",

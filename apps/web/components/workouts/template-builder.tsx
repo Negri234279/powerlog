@@ -16,7 +16,14 @@ import {
 } from '@/lib/graphql/hooks/use-workout-templates'
 import { formatRange, formatWeightRange } from '@/lib/range'
 import { type Units, unitsOf } from '@/lib/units'
-import { type PlannedErrorCode, type PlannedField, validatePlanned } from '@/lib/workouts/planned-validation'
+import {
+    fieldKey,
+    fieldSpec,
+    rangeErrorKey,
+    SET_FIELDS,
+    type SetField,
+    validatePlanned,
+} from '@/lib/workouts/planned-validation'
 import { Field, Input } from '@/components/ui/field'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
@@ -74,27 +81,6 @@ function textOrNull(value: string): string | null {
     return trimmed === '' ? null : trimmed
 }
 
-/** The editable planned cells of a set, in column order. */
-type SetField = 'weight' | 'reps' | 'intensity'
-const SET_FIELDS: SetField[] = ['weight', 'reps', 'intensity']
-
-/**
- * What to validate for one set cell: the error-map key, the domain rule to apply,
- * and the text to check. Intensity resolves to RPE or RIR by the set's kind, and
- * yields null when 'none' (nothing to validate, and its error must be cleared).
- */
-function fieldSpec(set: DraftSet, field: SetField): { key: string; planned: PlannedField; text: string } | null {
-    if (field === 'weight') return { key: `${set.key}.weight`, planned: 'weight', text: set.weight }
-    if (field === 'reps') return { key: `${set.key}.reps`, planned: 'reps', text: set.reps }
-    if (set.intensityKind === 'none') return null
-    return { key: `${set.key}.intensity`, planned: set.intensityKind === 'rpe' ? 'rpe' : 'rir', text: set.intensity }
-}
-
-/** Stable error-map key for a cell, whatever its current validation state. */
-function fieldKey(setKey: string, field: SetField): string {
-    return `${setKey}.${field}`
-}
-
 /**
  * Create/edit a workout template as a whole tree: name + notes + exercises, each
  * with programmed sets (weight/reps/RPE-or-RIR/notes). Weights are entered in the
@@ -134,16 +120,6 @@ export function TemplateBuilder({
     // form's problems surface together, not one back-end error at a time.
     const [errors, setErrors] = useState<Record<string, string>>({})
 
-    /** Localized message for a validation code on a given planned field. */
-    function messageFor(code: PlannedErrorCode, planned: PlannedField): string {
-        if (code === 'format') return tw('errRangeFormat')
-        if (code === 'reversed') return tw('errRangeReversed')
-        if (planned === 'reps') return tw('errRangeReps')
-        if (planned === 'weight') return tw('errRangeWeight')
-        if (planned === 'rpe') return tw('errRangeRpe')
-        return tw('errRangeRir')
-    }
-
     /** Validate a single set cell (on blur), setting or clearing just its error. */
     function validateField(set: DraftSet, field: SetField) {
         const spec = fieldSpec(set, field)
@@ -152,7 +128,7 @@ export function TemplateBuilder({
         setErrors((prev) => {
             const next = { ...prev }
             delete next[fieldKey(set.key, field)]
-            if (spec && code) next[spec.key] = messageFor(code, spec.planned)
+            if (spec && code) next[spec.key] = tw(rangeErrorKey(code, spec.planned))
             return next
         })
     }
@@ -179,7 +155,7 @@ export function TemplateBuilder({
                     const spec = fieldSpec(set, field)
                     if (!spec) continue
                     const code = validatePlanned(spec.text, spec.planned, units)
-                    if (code) found[spec.key] = messageFor(code, spec.planned)
+                    if (code) found[spec.key] = tw(rangeErrorKey(code, spec.planned))
                 }
             }
         }

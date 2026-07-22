@@ -631,6 +631,7 @@
         "startDate": "Fecha de inicio",
         "notesPlaceholder": "Notas opcionales",
         "nameRequired": "El nombre es obligatorio.",
+        "fixErrors": "Corrige los campos marcados antes de guardar.",
         "loadingMesocycle": "Cargando mesociclo…",
         "loadError": "No se pudo cargar este mesociclo.",
         "addWeek": "Añadir semana",

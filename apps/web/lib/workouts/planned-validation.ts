@@ -76,12 +76,85 @@ export function validatePlanned(text: string, field: PlannedField, units: Units)
     if (!bounds) {
         return 'format'
     }
+
     if (bounds.min > bounds.max) {
         return 'reversed'
     }
+
     if (!withinBounds(bounds, field, units)) {
         return 'bounds'
     }
 
     return null
+}
+
+/** The i18n key (in the `workouts` namespace) for a validation code on a field. */
+export function rangeErrorKey(code: PlannedErrorCode, field: PlannedField): string {
+    if (code === 'format') return 'errRangeFormat'
+    if (code === 'reversed') return 'errRangeReversed'
+
+    switch (field) {
+        case 'reps':
+            return 'errRangeReps'
+        case 'weight':
+            return 'errRangeWeight'
+        case 'rpe':
+            return 'errRangeRpe'
+        case 'rir':
+            return 'errRangeRir'
+    }
+}
+
+// ── Draft-set helpers shared by the template + mesocycle builders ──────────
+
+export type IntensityKind = 'none' | 'rpe' | 'rir'
+
+/** The shape both builders' draft sets share (they carry extra fields too). */
+export interface PlannedSetDraft {
+    key: string
+    weight: string
+    reps: string
+    intensityKind: IntensityKind
+    intensity: string
+}
+
+/** The editable planned cells of a set, in column order. */
+export type SetField = 'weight' | 'reps' | 'intensity'
+export const SET_FIELDS: SetField[] = ['weight', 'reps', 'intensity']
+
+/**
+ * What to validate for one set cell: the error-map key, the domain rule to apply,
+ * and the text to check. Intensity resolves to RPE or RIR by the set's kind, and
+ * yields null when 'none' (nothing to validate, and its error must be cleared).
+ */
+export function fieldSpec(
+    set: PlannedSetDraft,
+    field: SetField,
+): { key: string; planned: PlannedField; text: string } | null {
+    if (field === 'weight')
+        return {
+            key: fieldKey(set.key, 'weight'),
+            planned: 'weight',
+            text: set.weight,
+        }
+
+    if (field === 'reps')
+        return {
+            key: fieldKey(set.key, 'reps'),
+            planned: 'reps',
+            text: set.reps,
+        }
+
+    if (set.intensityKind === 'none') return null
+
+    return {
+        key: fieldKey(set.key, 'intensity'),
+        planned: set.intensityKind === 'rpe' ? 'rpe' : 'rir',
+        text: set.intensity,
+    }
+}
+
+/** Stable error-map key for a cell, whatever its current validation state. */
+export function fieldKey(setKey: string, field: SetField): string {
+    return `${setKey}.${field}`
 }
