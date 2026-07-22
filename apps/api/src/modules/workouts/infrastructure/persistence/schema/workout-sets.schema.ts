@@ -10,6 +10,10 @@ export const setOutcomeEnum = pgEnum('set_outcome', SET_OUTCOMES)
  * (`planned_*`, intensity included) from performed (`weight_kg`/`reps`/`rpe`/`rir`)
  * values; `e1rm_kg` is the denormalised Epley estimate from the actual
  * performance. `outcome` is NULL while the set is pending. Weights are kg.
+ *
+ * Each planned target is a range stored as its two bounds (`5` is `min = max = 5`),
+ * carried over from whatever programmed it. The performed values never are —
+ * you lifted what you lifted.
  */
 export const workoutSets = pgTable(
     'workout_sets',
@@ -19,10 +23,14 @@ export const workoutSets = pgTable(
             .notNull()
             .references(() => workoutExerciseEntries.id, { onDelete: 'cascade' }),
         order: integer('order').notNull(),
-        plannedWeightKg: doublePrecision('planned_weight_kg'),
-        plannedReps: integer('planned_reps'),
-        plannedRpe: doublePrecision('planned_rpe'),
-        plannedRir: integer('planned_rir'),
+        plannedWeightKgMin: doublePrecision('planned_weight_kg_min'),
+        plannedWeightKgMax: doublePrecision('planned_weight_kg_max'),
+        plannedRepsMin: integer('planned_reps_min'),
+        plannedRepsMax: integer('planned_reps_max'),
+        plannedRpeMin: doublePrecision('planned_rpe_min'),
+        plannedRpeMax: doublePrecision('planned_rpe_max'),
+        plannedRirMin: integer('planned_rir_min'),
+        plannedRirMax: integer('planned_rir_max'),
         weightKg: doublePrecision('weight_kg'),
         reps: integer('reps'),
         rpe: doublePrecision('rpe'),

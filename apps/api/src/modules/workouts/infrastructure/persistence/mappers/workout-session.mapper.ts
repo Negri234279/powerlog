@@ -1,13 +1,18 @@
 import { ExerciseEntryEntity } from '../../../domain/entities/exercise-entry.entity'
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { WorkoutSetEntity } from '../../../domain/entities/workout-set.entity'
+import { RepsRangeVO } from '../../../domain/value-objects/reps-range.vo'
 import { RepsVO } from '../../../domain/value-objects/reps.vo'
+import { RirRangeVO } from '../../../domain/value-objects/rir-range.vo'
 import { RirVO } from '../../../domain/value-objects/rir.vo'
+import { RpeRangeVO } from '../../../domain/value-objects/rpe-range.vo'
 import { RpeVO } from '../../../domain/value-objects/rpe.vo'
+import { WeightRangeVO } from '../../../domain/value-objects/weight-range.vo'
 import { WeightVO } from '../../../domain/value-objects/weight.vo'
 import type { workoutExerciseEntries } from '../schema/workout-exercise-entries.schema'
 import type { workoutSessions } from '../schema/workout-sessions.schema'
 import type { workoutSets } from '../schema/workout-sets.schema'
+import { rangeFromColumns } from './range-columns'
 
 type SessionRow = typeof workoutSessions.$inferSelect
 type EntryRow = typeof workoutExerciseEntries.$inferSelect
@@ -39,10 +44,14 @@ export const WorkoutSessionMapper = {
                     id: set.id,
                     entryId: entry.id,
                     order: set.order,
-                    plannedWeightKg: set.plannedWeight?.value ?? null,
-                    plannedReps: set.plannedReps?.value ?? null,
-                    plannedRpe: set.plannedRpe?.value ?? null,
-                    plannedRir: set.plannedRir?.value ?? null,
+                    plannedWeightKgMin: set.plannedWeight?.min.value ?? null,
+                    plannedWeightKgMax: set.plannedWeight?.max.value ?? null,
+                    plannedRepsMin: set.plannedReps?.min.value ?? null,
+                    plannedRepsMax: set.plannedReps?.max.value ?? null,
+                    plannedRpeMin: set.plannedRpe?.min.value ?? null,
+                    plannedRpeMax: set.plannedRpe?.max.value ?? null,
+                    plannedRirMin: set.plannedRir?.min.value ?? null,
+                    plannedRirMax: set.plannedRir?.max.value ?? null,
                     weightKg: set.weight?.value ?? null,
                     reps: set.reps?.value ?? null,
                     rpe: set.rpe?.value ?? null,
@@ -91,10 +100,20 @@ export const WorkoutSessionMapper = {
                     WorkoutSetEntity.rehydrate({
                         id: setRow.id,
                         order: setRow.order,
-                        plannedWeight: setRow.plannedWeightKg !== null ? WeightVO.create(setRow.plannedWeightKg) : null,
-                        plannedReps: setRow.plannedReps !== null ? RepsVO.create(setRow.plannedReps) : null,
-                        plannedRpe: setRow.plannedRpe !== null ? RpeVO.create(setRow.plannedRpe) : null,
-                        plannedRir: setRow.plannedRir !== null ? RirVO.create(setRow.plannedRir) : null,
+                        plannedWeight: rangeFromColumns(
+                            setRow.plannedWeightKgMin,
+                            setRow.plannedWeightKgMax,
+                            (min, max) => WeightRangeVO.create(min, max),
+                        ),
+                        plannedReps: rangeFromColumns(setRow.plannedRepsMin, setRow.plannedRepsMax, (min, max) =>
+                            RepsRangeVO.create(min, max),
+                        ),
+                        plannedRpe: rangeFromColumns(setRow.plannedRpeMin, setRow.plannedRpeMax, (min, max) =>
+                            RpeRangeVO.create(min, max),
+                        ),
+                        plannedRir: rangeFromColumns(setRow.plannedRirMin, setRow.plannedRirMax, (min, max) =>
+                            RirRangeVO.create(min, max),
+                        ),
                         weight: setRow.weightKg !== null ? WeightVO.create(setRow.weightKg) : null,
                         reps: setRow.reps !== null ? RepsVO.create(setRow.reps) : null,
                         rpe: setRow.rpe !== null ? RpeVO.create(setRow.rpe) : null,

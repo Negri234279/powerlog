@@ -1,31 +1,31 @@
 import { ConflictingIntensityError } from '../errors/workouts.errors'
-import type { RepsVO } from '../value-objects/reps.vo'
-import type { RirVO } from '../value-objects/rir.vo'
-import type { RpeVO } from '../value-objects/rpe.vo'
-import type { WeightVO } from '../value-objects/weight.vo'
+import type { RepsRangeVO } from '../value-objects/reps-range.vo'
+import type { RirRangeVO } from '../value-objects/rir-range.vo'
+import type { RpeRangeVO } from '../value-objects/rpe-range.vo'
+import type { WeightRangeVO } from '../value-objects/weight-range.vo'
 
 export interface MesocycleDaySetProps {
     id: string
     order: number
-    /** Programmed targets (all optional). */
-    plannedWeight: WeightVO | null
-    plannedReps: RepsVO | null
+    /** Programmed targets (all optional), each a range — `5` or `5-8`. */
+    plannedWeight: WeightRangeVO | null
+    plannedReps: RepsRangeVO | null
     /** Target intensity: at most one of RPE / RIR. */
-    rpe: RpeVO | null
-    rir: RirVO | null
+    rpe: RpeRangeVO | null
+    rir: RirRangeVO | null
     notes: string | null
 }
 
 /** Mutable fields when creating a programmed set (`order`, `id` are managed). */
 export interface MesocycleDaySetFields {
-    plannedWeight?: WeightVO | null
-    plannedReps?: RepsVO | null
-    rpe?: RpeVO | null
-    rir?: RirVO | null
+    plannedWeight?: WeightRangeVO | null
+    plannedReps?: RepsRangeVO | null
+    rpe?: RpeRangeVO | null
+    rir?: RirRangeVO | null
     notes?: string | null
 }
 
-function assertSingleIntensity(rpe: RpeVO | null, rir: RirVO | null): void {
+function assertSingleIntensity(rpe: RpeRangeVO | null, rir: RirRangeVO | null): void {
     if (rpe && rir) {
         throw new ConflictingIntensityError()
     }
@@ -66,19 +66,19 @@ export class MesocycleDaySetEntity {
         return this.props.order
     }
 
-    get plannedWeight(): WeightVO | null {
+    get plannedWeight(): WeightRangeVO | null {
         return this.props.plannedWeight
     }
 
-    get plannedReps(): RepsVO | null {
+    get plannedReps(): RepsRangeVO | null {
         return this.props.plannedReps
     }
 
-    get rpe(): RpeVO | null {
+    get rpe(): RpeRangeVO | null {
         return this.props.rpe
     }
 
-    get rir(): RirVO | null {
+    get rir(): RirRangeVO | null {
         return this.props.rir
     }
 

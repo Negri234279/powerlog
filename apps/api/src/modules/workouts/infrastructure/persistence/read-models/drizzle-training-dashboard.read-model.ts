@@ -155,11 +155,14 @@ export class DrizzleTrainingDashboardReadModel extends TrainingDashboardReadMode
         // Sets carry no date of their own — every window test rides on the
         // session they belong to, hence the same two joins as everywhere else.
         const volume = sql`${workoutSets.weightKg} * ${workoutSets.reps}`
-        const plannedLoad = sql`${workoutSets.plannedWeightKg} * ${workoutSets.plannedReps}`
+        // The floor of the planned range, not its midpoint: a plan of "5-8" asks
+        // for 5 and offers 8, so 5 is what falling short is measured against —
+        // and for a single value (min = max) this is the number it always was.
+        const plannedLoad = sql`${workoutSets.plannedWeightKgMin} * ${workoutSets.plannedRepsMin}`
         // A planned set left unperformed inside a completed session counts as
         // zero executed, not as absent — that gap is exactly what this measures.
         const actualLoad = sql`coalesce(${workoutSets.weightKg}, 0) * coalesce(${workoutSets.reps}, 0)`
-        const hasPlan = and(isNotNull(workoutSets.plannedWeightKg), isNotNull(workoutSets.plannedReps))!
+        const hasPlan = and(isNotNull(workoutSets.plannedWeightKgMin), isNotNull(workoutSets.plannedRepsMin))!
         const sumWhere = (expr: SQL, condition: SQL) =>
             sql<number>`coalesce(sum(${expr}) filter (where ${condition}), 0)`
 
@@ -244,12 +247,12 @@ export class DrizzleTrainingDashboardReadModel extends TrainingDashboardReadMode
             )
             .groupBy(bucket)
 
-        const hasPlan = and(isNotNull(workoutSets.plannedWeightKg), isNotNull(workoutSets.plannedReps))!
+        const hasPlan = and(isNotNull(workoutSets.plannedWeightKgMin), isNotNull(workoutSets.plannedRepsMin))!
 
         const load = this.db
             .select({
                 bucketStart: bucket,
-                plannedLoadKg: sql<number>`coalesce(sum(${workoutSets.plannedWeightKg} * ${workoutSets.plannedReps}), 0)`,
+                plannedLoadKg: sql<number>`coalesce(sum(${workoutSets.plannedWeightKgMin} * ${workoutSets.plannedRepsMin}), 0)`,
                 actualLoadKg: sql<number>`coalesce(sum(coalesce(${workoutSets.weightKg}, 0) * coalesce(${workoutSets.reps}, 0)), 0)`,
             })
             .from(workoutSets)

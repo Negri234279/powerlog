@@ -1,20 +1,24 @@
 import { epleyOneRepMax } from '../e1rm'
 import { ConflictingIntensityError } from '../errors/workouts.errors'
 import type { SetOutcome } from '../set-outcome'
+import type { RepsRangeVO } from '../value-objects/reps-range.vo'
 import type { RepsVO } from '../value-objects/reps.vo'
+import type { RirRangeVO } from '../value-objects/rir-range.vo'
 import type { RirVO } from '../value-objects/rir.vo'
+import type { RpeRangeVO } from '../value-objects/rpe-range.vo'
 import type { RpeVO } from '../value-objects/rpe.vo'
+import type { WeightRangeVO } from '../value-objects/weight-range.vo'
 import type { WeightVO } from '../value-objects/weight.vo'
 
 export interface WorkoutSetProps {
     id: string
     order: number
-    /** Programmed targets (optional). */
-    plannedWeight: WeightVO | null
-    plannedReps: RepsVO | null
+    /** Programmed targets (optional), each a range — `5` or `5-8`. */
+    plannedWeight: WeightRangeVO | null
+    plannedReps: RepsRangeVO | null
     /** Target intensity: at most one of RPE / RIR. */
-    plannedRpe: RpeVO | null
-    plannedRir: RirVO | null
+    plannedRpe: RpeRangeVO | null
+    plannedRir: RirRangeVO | null
     /** Actually performed (optional until logged). */
     weight: WeightVO | null
     reps: RepsVO | null
@@ -35,10 +39,10 @@ export interface WorkoutSetProps {
  * move, and naming it `null` sends the set back to pending.
  */
 export interface WorkoutSetFields {
-    plannedWeight?: WeightVO | null
-    plannedReps?: RepsVO | null
-    plannedRpe?: RpeVO | null
-    plannedRir?: RirVO | null
+    plannedWeight?: WeightRangeVO | null
+    plannedReps?: RepsRangeVO | null
+    plannedRpe?: RpeRangeVO | null
+    plannedRir?: RirRangeVO | null
     weight?: WeightVO | null
     reps?: RepsVO | null
     rpe?: RpeVO | null
@@ -51,7 +55,8 @@ function deriveE1rm(weight: WeightVO | null, reps: RepsVO | null): number | null
     return weight && reps ? epleyOneRepMax(weight.value, reps.value) : null
 }
 
-function assertSingleIntensity(rpe: RpeVO | null, rir: RirVO | null): void {
+/** Guards both pairs: planned (ranges) and performed (single values). */
+function assertSingleIntensity(rpe: object | null, rir: object | null): void {
     if (rpe && rir) {
         throw new ConflictingIntensityError()
     }
@@ -133,19 +138,19 @@ export class WorkoutSetEntity {
         return this.props.order
     }
 
-    get plannedWeight(): WeightVO | null {
+    get plannedWeight(): WeightRangeVO | null {
         return this.props.plannedWeight
     }
 
-    get plannedReps(): RepsVO | null {
+    get plannedReps(): RepsRangeVO | null {
         return this.props.plannedReps
     }
 
-    get plannedRpe(): RpeVO | null {
+    get plannedRpe(): RpeRangeVO | null {
         return this.props.plannedRpe
     }
 
-    get plannedRir(): RirVO | null {
+    get plannedRir(): RirRangeVO | null {
         return this.props.plannedRir
     }
 

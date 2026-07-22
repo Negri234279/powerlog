@@ -34,8 +34,10 @@ export class DrizzleExerciseSessionHistoryReadModel extends ExerciseSessionHisto
         // The inner joins drop sessions/entries without logged sets, so GROUP BY +
         // LIMIT counts *sessions* directly (no fan-out over sets).
         const sets = sql<ExerciseSessionHistorySet[]>`json_agg(json_build_object(
-            'plannedWeightKg', ${workoutSets.plannedWeightKg},
-            'plannedReps', ${workoutSets.plannedReps},
+            'plannedWeightKgMin', ${workoutSets.plannedWeightKgMin},
+            'plannedWeightKgMax', ${workoutSets.plannedWeightKgMax},
+            'plannedRepsMin', ${workoutSets.plannedRepsMin},
+            'plannedRepsMax', ${workoutSets.plannedRepsMax},
             'weightKg', ${workoutSets.weightKg},
             'reps', ${workoutSets.reps},
             'rpe', ${workoutSets.rpe},
@@ -76,8 +78,10 @@ export class DrizzleExerciseSessionHistoryReadModel extends ExerciseSessionHisto
             sessionNotes: row.sessionNotes,
             exerciseNotes: row.exerciseNotes,
             sets: row.sets.map((set) => ({
-                plannedWeightKg: set.plannedWeightKg === null ? null : Number(set.plannedWeightKg),
-                plannedReps: set.plannedReps === null ? null : Number(set.plannedReps),
+                plannedWeightKgMin: set.plannedWeightKgMin === null ? null : Number(set.plannedWeightKgMin),
+                plannedWeightKgMax: set.plannedWeightKgMax === null ? null : Number(set.plannedWeightKgMax),
+                plannedRepsMin: set.plannedRepsMin === null ? null : Number(set.plannedRepsMin),
+                plannedRepsMax: set.plannedRepsMax === null ? null : Number(set.plannedRepsMax),
                 weightKg: Number(set.weightKg),
                 reps: Number(set.reps),
                 rpe: set.rpe === null ? null : Number(set.rpe),
