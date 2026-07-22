@@ -85,10 +85,15 @@ function compare(a: RosterRow, b: RosterRow, sort: RosterSort, direction: SortDi
             const rank =
                 (ATTENTION_RANK[a.metrics?.attention ?? 'none'] ?? 3) -
                 (ATTENTION_RANK[b.metrics?.attention ?? 'none'] ?? 3)
-            if (rank !== 0) return rank
 
-            // Within a tier, the one who has been away longest is the one to call.
-            return compareNullable(lastSessionKey(b), lastSessionKey(a), 'asc')
+            // `rank` is already most-urgent-first, which is the descending sense.
+            // Ascending flips it — a healthy-first read of the same list, and the
+            // reason this header toggles like every other one instead of being an
+            // arrow that promises a change it never makes.
+            if (rank !== 0) return direction === 'asc' ? -rank : rank
+
+            // Within a tier, longest away first when descending.
+            return compareNullable(lastSessionKey(a), lastSessionKey(b), direction)
         }
     }
 }
