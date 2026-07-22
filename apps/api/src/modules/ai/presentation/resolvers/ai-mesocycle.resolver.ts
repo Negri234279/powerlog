@@ -10,13 +10,15 @@ import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import { AcceptMesocycleDraftCommand } from '../../application/commands/accept-mesocycle-draft/accept-mesocycle-draft.command'
 import { DiscardMesocycleDraftCommand } from '../../application/commands/discard-mesocycle-draft/discard-mesocycle-draft.command'
 import { ForkMesocycleDraftCommand } from '../../application/commands/fork-mesocycle-draft/fork-mesocycle-draft.command'
-import { GenerateMesocycleDraftCommand } from '../../application/commands/generate-mesocycle-draft/generate-mesocycle-draft.command'
-import { RefineMesocycleDraftCommand } from '../../application/commands/refine-mesocycle-draft/refine-mesocycle-draft.command'
+import { QueueMesocycleGenerationCommand } from '../../application/commands/queue-mesocycle-generation/queue-mesocycle-generation.command'
+import { QueueMesocycleRefinementCommand } from '../../application/commands/queue-mesocycle-refinement/queue-mesocycle-refinement.command'
 import { GetMesocycleDraftQuery } from '../../application/queries/get-mesocycle-draft/get-mesocycle-draft.query'
+import type { AiGenerationView } from '../../application/views/ai-generation.view'
 import type { AiMesocycleDraftView } from '../../application/views/ai-mesocycle-draft.view'
 import { GenerateMesocycleDraftInput, generateMesocycleDraftSchema } from '../inputs/generate-mesocycle-draft.input'
 import { RefineMesocycleDraftInput, refineMesocycleDraftSchema } from '../inputs/refine-mesocycle-draft.input'
 import { optionalUuidSchema, uuidSchema } from '../inputs/uuid.schema'
+import { AiGenerationType } from '../types/ai-generation.type'
 import { AiMesocycleDraftType } from '../types/ai-mesocycle-draft.type'
 
 /**
@@ -49,16 +51,16 @@ export class AiMesocycleResolver {
         return view ? toType(view) : null
     }
 
-    @Mutation(() => AiMesocycleDraftType, {
+    @Mutation(() => AiGenerationType, {
         description:
-            'Ask the default AI provider to design a training block. Supersedes any open draft for the same trainee.',
+            'Queue a request to design a training block. Returns the job; watch it and read `draftId` when it succeeds. Supersedes any open draft for the same trainee.',
     })
     @Throttle({ default: { limit: 5, ttl: 60_000 } })
     async generateMesocycleDraft(
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(generateMesocycleDraftSchema)) input: GenerateMesocycleDraftInput,
-    ): Promise<AiMesocycleDraftType> {
-        const command = new GenerateMesocycleDraftCommand(
+    ): Promise<AiGenerationType> {
+        const command = new QueueMesocycleGenerationCommand(
             user.userId,
             input.weeks,
             input.trainingDays,
@@ -67,18 +69,18 @@ export class AiMesocycleResolver {
             input.athleteId ?? null,
         )
 
-        return toType(await this.commandBus.execute<GenerateMesocycleDraftCommand, AiMesocycleDraftView>(command))
+        return toGeneration(await this.commandBus.execute<QueueMesocycleGenerationCommand, AiGenerationView>(command))
     }
 
-    @Mutation(() => AiMesocycleDraftType, { description: 'Ask the model to revise an open draft.' })
+    @Mutation(() => AiGenerationType, { description: 'Queue a revision of an open draft.' })
     @Throttle({ default: { limit: 10, ttl: 60_000 } })
     async refineMesocycleDraft(
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(refineMesocycleDraftSchema)) input: RefineMesocycleDraftInput,
-    ): Promise<AiMesocycleDraftType> {
-        const command = new RefineMesocycleDraftCommand(user.userId, input.draftId, input.message)
+    ): Promise<AiGenerationType> {
+        const command = new QueueMesocycleRefinementCommand(user.userId, input.draftId, input.message)
 
-        return toType(await this.commandBus.execute<RefineMesocycleDraftCommand, AiMesocycleDraftView>(command))
+        return toGeneration(await this.commandBus.execute<QueueMesocycleRefinementCommand, AiGenerationView>(command))
     }
 
     @Mutation(() => AiMesocycleDraftType, {
@@ -118,3 +120,4 @@ export class AiMesocycleResolver {
 }
 
 const toType = (view: AiMesocycleDraftView): AiMesocycleDraftType => Object.assign(new AiMesocycleDraftType(), view)
+const toGeneration = (view: AiGenerationView): AiGenerationType => Object.assign(new AiGenerationType(), view)

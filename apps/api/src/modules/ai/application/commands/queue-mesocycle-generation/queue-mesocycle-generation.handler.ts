@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 
 import { Entitlements } from '../../../../../shared/contracts/entitlements'
+import { MesocycleDesignContextReader } from '../../../../../shared/contracts/mesocycle-design-context'
 import { MesocycleDesigner } from '../../services/mesocycle-designer.service'
 import { AiGenerationQueueing } from '../../services/ai-generation-queueing.service'
 import type { AiGenerationView } from '../../views/ai-generation.view'
@@ -11,9 +12,9 @@ import { QueueMesocycleGenerationCommand } from './queue-mesocycle-generation.co
  * whole exercise catalog goes into the prompt and a full training week comes
  * back — so it is the one that least belongs inside a request.
  *
- * The plan gate and the provider key are checked here so a plan without AI, or a
- * missing key, is refused in the mutation. The worker re-checks both
- * ({@link GenerateMesocycleDraftHandler} is the authority).
+ * The plan gate, the coach↔athlete link and the provider key are checked here so
+ * none of them is discovered half a minute later through a failed job. The worker
+ * re-checks all of it ({@link GenerateMesocycleDraftHandler} is the authority).
  */
 @CommandHandler(QueueMesocycleGenerationCommand)
 export class QueueMesocycleGenerationHandler implements ICommandHandler<
@@ -21,6 +22,7 @@ export class QueueMesocycleGenerationHandler implements ICommandHandler<
     AiGenerationView
 > {
     constructor(
+        private readonly context: MesocycleDesignContextReader,
         private readonly designer: MesocycleDesigner,
         private readonly entitlements: Entitlements,
         private readonly queueing: AiGenerationQueueing,
@@ -31,6 +33,12 @@ export class QueueMesocycleGenerationHandler implements ICommandHandler<
         // draws on your athlete plan.
         const audience = command.athleteId ? 'coach' : 'athlete'
         await this.entitlements.assertFeature(command.userId, audience, 'ai')
+
+        // Deliberately read twice — here and in the job. It is the read that says
+        // whether the coach may design for this athlete at all, and being told
+        // "you do not coach them" belongs in the mutation, not in a failure the
+        // athlete waits half a minute for.
+        await this.context.read(command.userId, command.athleteId)
 
         await this.designer.resolveConfig(command.userId)
 

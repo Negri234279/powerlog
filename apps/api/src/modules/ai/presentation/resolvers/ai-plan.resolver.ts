@@ -10,9 +10,10 @@ import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import { AcceptPlanDraftCommand } from '../../application/commands/accept-plan-draft/accept-plan-draft.command'
 import { DiscardPlanDraftCommand } from '../../application/commands/discard-plan-draft/discard-plan-draft.command'
 import { ForkPlanDraftCommand } from '../../application/commands/fork-plan-draft/fork-plan-draft.command'
-import { GenerateSessionPlanDraftCommand } from '../../application/commands/generate-session-plan-draft/generate-session-plan-draft.command'
-import { RefinePlanDraftCommand } from '../../application/commands/refine-plan-draft/refine-plan-draft.command'
+import { QueueSessionPlanGenerationCommand } from '../../application/commands/queue-session-plan-generation/queue-session-plan-generation.command'
+import { QueueSessionPlanRefinementCommand } from '../../application/commands/queue-session-plan-refinement/queue-session-plan-refinement.command'
 import { GetSessionPlanDraftQuery } from '../../application/queries/get-session-plan-draft/get-session-plan-draft.query'
+import type { AiGenerationView } from '../../application/views/ai-generation.view'
 import type { AiPlanDraftView } from '../../application/views/ai-plan-draft.view'
 import {
     GenerateSessionPlanDraftInput,
@@ -20,11 +21,13 @@ import {
 } from '../inputs/generate-session-plan-draft.input'
 import { RefinePlanDraftInput, refinePlanDraftSchema } from '../inputs/refine-plan-draft.input'
 import { uuidSchema } from '../inputs/uuid.schema'
+import { AiGenerationType } from '../types/ai-generation.type'
 import { AiPlanDraftType } from '../types/ai-plan-draft.type'
 
 /**
  * AI-programmed sessions. Generating and refining each cost a call to the user's
- * own provider — and a slow one — so both are throttled well below the default.
+ * own provider — and a slow one — so both are throttled well below the default,
+ * and both are queued rather than run inside the request.
  */
 @Resolver(() => AiPlanDraftType)
 @UseGuards(JwtCookieGuard)
@@ -48,34 +51,34 @@ export class AiPlanResolver {
         return view ? toType(view) : null
     }
 
-    @Mutation(() => AiPlanDraftType, {
+    @Mutation(() => AiGenerationType, {
         description:
-            'Ask the default AI provider to program a planned session, or one exercise of it. Supersedes any open draft.',
+            'Queue a request to program a planned session, or one exercise of it. Returns the job; watch it and read `draftId` when it succeeds. Supersedes any open draft.',
     })
     @Throttle({ default: { limit: 10, ttl: 60_000 } })
     async generateSessionPlanDraft(
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(generateSessionPlanDraftSchema)) input: GenerateSessionPlanDraftInput,
-    ): Promise<AiPlanDraftType> {
-        const command = new GenerateSessionPlanDraftCommand(
+    ): Promise<AiGenerationType> {
+        const command = new QueueSessionPlanGenerationCommand(
             user.userId,
             input.sessionId,
             input.entryId ?? null,
             input.extraInfo ?? null,
         )
 
-        return toType(await this.commandBus.execute<GenerateSessionPlanDraftCommand, AiPlanDraftView>(command))
+        return toGeneration(await this.commandBus.execute<QueueSessionPlanGenerationCommand, AiGenerationView>(command))
     }
 
-    @Mutation(() => AiPlanDraftType, { description: 'Ask the model to revise an open draft.' })
+    @Mutation(() => AiGenerationType, { description: 'Queue a revision of an open draft.' })
     @Throttle({ default: { limit: 20, ttl: 60_000 } })
     async refinePlanDraft(
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(refinePlanDraftSchema)) input: RefinePlanDraftInput,
-    ): Promise<AiPlanDraftType> {
-        const command = new RefinePlanDraftCommand(user.userId, input.draftId, input.message)
+    ): Promise<AiGenerationType> {
+        const command = new QueueSessionPlanRefinementCommand(user.userId, input.draftId, input.message)
 
-        return toType(await this.commandBus.execute<RefinePlanDraftCommand, AiPlanDraftView>(command))
+        return toGeneration(await this.commandBus.execute<QueueSessionPlanRefinementCommand, AiGenerationView>(command))
     }
 
     @Mutation(() => AiPlanDraftType, { description: 'Write the draft’s targets onto its session.' })
@@ -113,3 +116,4 @@ export class AiPlanResolver {
 }
 
 const toType = (view: AiPlanDraftView): AiPlanDraftType => Object.assign(new AiPlanDraftType(), view)
+const toGeneration = (view: AiGenerationView): AiGenerationType => Object.assign(new AiGenerationType(), view)

@@ -371,6 +371,26 @@ type AiDraftSummary {
   updatedAt: DateTime!
 }
 
+type AiGeneration {
+  createdAt: DateTime!
+
+  """The draft it produced; null until it succeeds."""
+  draftId: ID
+
+  """Why it failed, as a stable error code; null unless it failed."""
+  failureCode: String
+  id: ID!
+
+  """
+  "session_plan", "session_plan_refinement", "mesocycle" or "mesocycle_refinement".
+  """
+  kind: String!
+
+  """"queued", "running", "succeeded" or "failed"."""
+  status: String!
+  updatedAt: DateTime!
+}
+
 type AiMesocycleDraft {
   """The athlete it was designed for; null → your own block."""
   athleteId: ID
@@ -1271,9 +1291,9 @@ type Mutation {
   forkPlanDraft(draftId: ID!): AiPlanDraft!
 
   """
-  Ask the default AI provider to design a training block. Supersedes any open draft for the same trainee.
+  Queue a request to design a training block. Returns the job; watch it and read `draftId` when it succeeds. Supersedes any open draft for the same trainee.
   """
-  generateMesocycleDraft(input: GenerateMesocycleDraftInput!): AiMesocycleDraft!
+  generateMesocycleDraft(input: GenerateMesocycleDraftInput!): AiGeneration!
 
   """
   Generate one week of a mesocycle into dated planned sessions (one per training day).
@@ -1281,9 +1301,9 @@ type Mutation {
   generateMesocycleWeek(input: GenerateMesocycleWeekInput!): [WorkoutSession!]!
 
   """
-  Ask the default AI provider to program a planned session, or one exercise of it. Supersedes any open draft.
+  Queue a request to program a planned session, or one exercise of it. Returns the job; watch it and read `draftId` when it succeeds. Supersedes any open draft.
   """
-  generateSessionPlanDraft(input: GenerateSessionPlanDraftInput!): AiPlanDraft!
+  generateSessionPlanDraft(input: GenerateSessionPlanDraftInput!): AiGeneration!
 
   """
   Invite an athlete by email (coaches only). Works whether or not they have an account yet.
@@ -1320,11 +1340,11 @@ type Mutation {
   """
   planWorkoutSession(input: PlanWorkoutSessionInput!): WorkoutSession!
 
-  """Ask the model to revise an open draft."""
-  refineMesocycleDraft(input: RefineMesocycleDraftInput!): AiMesocycleDraft!
+  """Queue a revision of an open draft."""
+  refineMesocycleDraft(input: RefineMesocycleDraftInput!): AiGeneration!
 
-  """Ask the model to revise an open draft."""
-  refinePlanDraft(input: RefinePlanDraftInput!): AiPlanDraft!
+  """Queue a revision of an open draft."""
+  refinePlanDraft(input: RefinePlanDraftInput!): AiGeneration!
 
   """Rotate the session using the refresh cookie."""
   refresh: Me!
@@ -1828,6 +1848,9 @@ type Query {
     sessionId: ID
     status: String
   ): AiDraftHistoryPage!
+
+  """Where one of your AI generations got to."""
+  aiGeneration(id: ID!): AiGeneration!
 
   """Models the stored key may call, fetched live from the provider."""
   aiModels(provider: String!): [AiModel!]!

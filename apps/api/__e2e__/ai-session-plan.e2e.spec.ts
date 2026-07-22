@@ -17,6 +17,7 @@ import { Mailer } from '../src/mail/mailer.port'
 import { StubLlmProviderClient, stubRegistry } from '../tests/doubles/ai'
 import { FakeMailer } from '../tests/doubles/shared'
 import { grantPlan } from './helpers/grant-plan'
+import { settleGeneration } from './helpers/settle-generation'
 
 let container: StartedPostgreSqlContainer
 let app: INestApplication
@@ -83,7 +84,7 @@ beforeEach(async () => {
         // `subscriptions` holds a soft reference to users (no FK across modules), so
         // TRUNCATE ... CASCADE on users does not reach it — it must be named. The
         // `plans` catalog is seeded by migration and deliberately survives.
-        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, workout_sessions, ai_plan_drafts, ai_provider_configs, notifications, subscriptions RESTART IDENTITY CASCADE',
+        'TRUNCATE TABLE users, profiles, coach_athlete_invitations, coach_athlete, workout_sessions, ai_plan_drafts, ai_generations, ai_provider_configs, notifications, subscriptions RESTART IDENTITY CASCADE',
     )
     openai.reset()
 })
@@ -202,12 +203,16 @@ describe('AI session plan — a coach programming for an athlete', () => {
             }),
         )
 
-        const generated = await gql(
+        const queued = await gql(
             `mutation { generateSessionPlanDraft(input: { sessionId: "${sessionId}" }) { id status } }`,
             coachAccess,
         )
-        expect(generated.body.errors).toBeUndefined()
-        const draftId: string = generated.body.data.generateSessionPlanDraft.id
+        expect(queued.body.errors).toBeUndefined()
+        expect(queued.body.data.generateSessionPlanDraft.status).toBe('queued')
+
+        const generation = await settleGeneration(gql, coachAccess, queued.body.data.generateSessionPlanDraft.id)
+        expect(generation.status).toBe('succeeded')
+        const draftId: string = generation.draftId!
 
         // What actually went to the model: the athlete's 100kg, never the coach's 200.
         //

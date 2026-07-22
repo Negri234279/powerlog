@@ -8,6 +8,7 @@ import { RedisRealtimeBus } from './bus/redis-realtime.bus'
 import { PushOnCoachInvitationCreated } from './event-handlers/push-on-coach-invitation-created.handler'
 import { PushOnCoachLinkEstablished } from './event-handlers/push-on-coach-link-established.handler'
 import { PushOnCoachLinkRemoved } from './event-handlers/push-on-coach-link-removed.handler'
+import { PushOnAiGenerationSettled } from './event-handlers/push-on-ai-generation-settled.handler'
 import { PushOnMesocycleAssigned } from './event-handlers/push-on-mesocycle-assigned.handler'
 import { PushOnMesocycleWeekGenerated } from './event-handlers/push-on-mesocycle-week-generated.handler'
 import { PushOnSessionPlanned } from './event-handlers/push-on-session-planned.handler'
@@ -25,6 +26,7 @@ const EVENT_HANDLERS: Provider[] = [
     PushOnMesocycleAssigned,
     PushOnMesocycleWeekGenerated,
     PushOnSessionPlanned,
+    PushOnAiGenerationSettled,
 ]
 
 /** Redis when it's configured, in-process otherwise — see RealtimeBus. Nest runs
