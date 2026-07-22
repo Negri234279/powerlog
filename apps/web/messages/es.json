@@ -93,14 +93,13 @@
             "reasonStale": "Sin entrenar hace {days} días",
             "reasonNeverTrained": "Nunca ha entrenado",
             "reasonMissed": "{count, plural, one {# sesión perdida} other {# sesiones perdidas}}",
-            "searchPlaceholder": "Buscar atleta",
-            "filterAll": "Todos",
+            "searchPlaceholder": "Buscar por nombre o @usuario",
             "filterAttention": "Atención",
             "filterThisWeek": "Esta semana",
             "sortLabel": "Ordenar:",
             "sortBy": "Ordenar por {column}",
             "sort": {
-                "attention": "Atención",
+                "attention": "Urgencia",
                 "name": "Nombre",
                 "last": "Última sesión",
                 "adherence": "Adherencia",
@@ -108,9 +107,22 @@
             },
             "noAttention": "Nadie necesita atención. Buen trabajo.",
             "noMatches": "Ningún atleta coincide con «{query}».",
-            "clearSearch": "Limpiar filtros",
             "metricsError": "No se pudieron cargar los datos de entrenamiento. El listado sigue funcionando.",
-            "resultsAnnouncement": "{total} atletas, {attention} necesitan atención"
+            "resultsAnnouncement": "{total} atletas, {attention} necesitan atención",
+            "attentionReason": {
+                "stale": "Sin entrenar",
+                "neverTrained": "Nunca entrenó",
+                "lowAdherence": "Baja adherencia"
+            },
+            "filterAttentionAria": "Filtrar por motivo de atención",
+            "athleteCount": "{count, plural, one {# atleta} other {# atletas}}",
+            "rangeAria": "Rango de datos",
+            "resultCount": "{visible} de {total} atletas",
+            "needsMetrics": "Requiere datos de entrenamiento",
+            "removeFilter": "Quitar filtro: {filter}",
+            "clearAll": "Limpiar todo",
+            "noMatchesFilters": "Ningún atleta coincide con los filtros.",
+            "noSessionsThisWeek": "No hay sesiones programadas en los próximos 7 días."
         },
         "athleteStats": {
             "lastSession": "Última sesión",

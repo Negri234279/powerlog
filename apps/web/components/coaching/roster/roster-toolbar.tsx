@@ -1,11 +1,15 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import type { RefObject } from 'react'
 
 import { ClearableSearch } from '@/components/ui/clearable-search'
+import { FilterChip } from '@/components/ui/filter-chip'
+import { Menu } from '@/components/ui/menu'
 import { SlidingTabs } from '@/components/ui/sliding-tabs'
 
-import type { RosterFilter, RosterSort } from './use-roster'
+import { AttentionFilter } from './attention-filter'
+import type { AttentionReason, RosterCounts, RosterSort } from './use-roster'
 
 export type RangeKey = 'all' | '30d' | '90d' | '1y'
 
@@ -18,90 +22,123 @@ export const ROSTER_RANGES: ReadonlyArray<{ key: RangeKey; labelKey: string; day
 
 const SORTS: readonly RosterSort[] = ['attention', 'last', 'adherence', 'next', 'name']
 
-/**
- * Search, status segments and range scope.
- *
- * Not rendered at all below six athletes — you don't filter a list you can see
- * entirely, and three controls above four rows is chrome outweighing content.
- * The mobile sort `<select>` exists because the card list has no column headers
- * to click; on desktop the headers *are* the control.
- */
-export function RosterToolbar({
-    query,
-    onQuery,
-    filter,
-    onFilter,
-    counts,
-    range,
-    onRange,
-    sort,
-    onSort,
-    metricsReady,
-}: {
+export interface ToolbarState {
     query: string
     onQuery: (value: string) => void
-    filter: RosterFilter
-    onFilter: (value: RosterFilter) => void
-    counts: { all: number; attention: number; thisWeek: number }
+    attention: readonly AttentionReason[]
+    onAttention: (next: AttentionReason[]) => void
+    week: boolean
+    onWeek: (next: boolean) => void
     range: RangeKey
     onRange: (value: RangeKey) => void
     sort: RosterSort
     onSort: (value: RosterSort) => void
+}
+
+/**
+ * Search, filters and the measurement window.
+ *
+ * Everything renders at every roster size. An earlier version hid search, the
+ * week toggle and the mobile sort below six athletes on the grounds that a short
+ * list needs no filtering — which sounds reasonable and is wrong twice over. It
+ * hides the feature from exactly the coaches most likely to go looking for it,
+ * and since the sortable column headers only exist from `md` up, gating the
+ * mobile sort left small rosters with no way to sort on a phone at all.
+ *
+ * The range tabs are deliberately not shaped like the filter chips: they don't
+ * remove rows, they change what the numbers mean.
+ */
+export function RosterToolbar({
+    state,
+    counts,
+    metricsReady,
+    searchFocusRef,
+    disabledHintId,
+}: {
+    state: ToolbarState
+    counts: RosterCounts
     metricsReady: boolean
+    searchFocusRef?: RefObject<(() => void) | null>
+    disabledHintId?: string
 }) {
     const t = useTranslations('coaching.roster')
     const ts = useTranslations('stats')
 
-    // Until metrics land the counts are unknown — "Atención 0" would be a claim,
-    // "Atención —" is the truth.
-    const count = (value: number) => (metricsReady ? String(value) : '—')
+    const rangeItems = ROSTER_RANGES.map((r) => ({ value: r.key, label: ts(r.labelKey) }))
 
     return (
         <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-                <SlidingTabs
-                    analyticsId="roster-filter"
-                    value={filter}
-                    onChange={(value) => onFilter(value as RosterFilter)}
-                    items={[
-                        { value: 'all', label: `${t('filterAll')} ${count(counts.all)}` },
-                        { value: 'attention', label: `${t('filterAttention')} ${count(counts.attention)}` },
-                        { value: 'thisWeek', label: `${t('filterThisWeek')} ${count(counts.thisWeek)}` },
-                    ]}
+            {/* Mobile: one scrolling rail of pills. Desktop: a single row with the
+                scope pushed to the far side. */}
+            <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
+                <AttentionFilter
+                    selected={state.attention}
+                    onChange={state.onAttention}
+                    counts={counts.attention}
+                    ready={metricsReady}
+                    describedBy={metricsReady ? undefined : disabledHintId}
                 />
 
-                <div className="min-w-[12rem] flex-1">
-                    <ClearableSearch
-                        analyticsId="roster-search"
-                        value={query}
-                        onChange={onQuery}
-                        placeholder={t('searchPlaceholder')}
+                <FilterChip
+                    analyticsId="roster-filter-week"
+                    label={t('filterThisWeek')}
+                    count={metricsReady ? String(counts.week) : '—'}
+                    active={state.week}
+                    disabled={!metricsReady}
+                    aria-pressed={state.week}
+                    aria-describedby={metricsReady ? undefined : disabledHintId}
+                    onClick={() => state.onWeek(!state.week)}
+                />
+
+                {/* Sorting has no header row to click below `md`. */}
+                <span className="md:hidden">
+                    <Menu
+                        analyticsId="roster-sort-mobile"
+                        label={t('sortLabel')}
+                        trigger={t(`sort.${state.sort}`)}
+                        items={SORTS.map((option) => ({
+                            label: t(`sort.${option}`),
+                            onSelect: () => state.onSort(option),
+                            analyticsId: `roster-sort-mobile-${option}`,
+                        }))}
                     />
-                </div>
+                </span>
 
-                <SlidingTabs
-                    analyticsId="roster-range"
-                    value={range}
-                    onChange={(value) => onRange(value as RangeKey)}
-                    items={ROSTER_RANGES.map((r) => ({ value: r.key, label: ts(r.labelKey) }))}
-                />
+                {/* A SlidingTabs inside a scrolling rail is a nested scroll, so the
+                    scope collapses to a menu on small screens. */}
+                <span className="md:hidden">
+                    <Menu
+                        analyticsId="roster-range-menu"
+                        label={t('rangeAria')}
+                        trigger={ts(ROSTER_RANGES.find((r) => r.key === state.range)?.labelKey ?? 'range30')}
+                        items={rangeItems.map((item) => ({
+                            label: item.label,
+                            onSelect: () => state.onRange(item.value as RangeKey),
+                            analyticsId: `roster-range-menu-${item.value}`,
+                        }))}
+                    />
+                </span>
+
+                <span className="ml-auto hidden md:block">
+                    <SlidingTabs
+                        analyticsId="roster-range"
+                        ariaLabel={t('rangeAria')}
+                        value={state.range}
+                        onChange={(value) => state.onRange(value as RangeKey)}
+                        items={rangeItems}
+                    />
+                </span>
             </div>
 
-            <div className="md:hidden">
-                <label className="flex items-center gap-2 text-sm text-text-dim">
-                    {t('sortLabel')}
-                    <select
-                        value={sort}
-                        onChange={(event) => onSort(event.target.value as RosterSort)}
-                        className="flex-1 appearance-none rounded-full bg-bg/60 px-4 py-2 text-sm text-text ring-1 ring-hairline outline-none focus:ring-ember/50"
-                    >
-                        {SORTS.map((option) => (
-                            <option key={option} value={option}>
-                                {t(`sort.${option}`)}
-                            </option>
-                        ))}
-                    </select>
-                </label>
+            <div className="md:max-w-80">
+                <ClearableSearch
+                    analyticsId="roster-search"
+                    value={state.query}
+                    onChange={state.onQuery}
+                    placeholder={t('searchPlaceholder')}
+                    shortcut
+                    focusRef={searchFocusRef}
+                />
             </div>
         </div>
     )

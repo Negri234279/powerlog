@@ -93,14 +93,13 @@
             "reasonStale": "Hasn't trained in {days} days",
             "reasonNeverTrained": "Has never trained",
             "reasonMissed": "{count, plural, one {# missed session} other {# missed sessions}}",
-            "searchPlaceholder": "Search athlete",
-            "filterAll": "All",
+            "searchPlaceholder": "Search name or @handle",
             "filterAttention": "Attention",
             "filterThisWeek": "This week",
             "sortLabel": "Sort:",
             "sortBy": "Sort by {column}",
             "sort": {
-                "attention": "Attention",
+                "attention": "Urgency",
                 "name": "Name",
                 "last": "Last session",
                 "adherence": "Adherence",
@@ -108,9 +107,22 @@
             },
             "noAttention": "Nobody needs attention. Good work.",
             "noMatches": "No athlete matches «{query}».",
-            "clearSearch": "Clear filters",
             "metricsError": "Couldn't load training data. The roster still works.",
-            "resultsAnnouncement": "{total} athletes, {attention} need attention"
+            "resultsAnnouncement": "{total} athletes, {attention} need attention",
+            "attentionReason": {
+                "stale": "Not training",
+                "neverTrained": "Never trained",
+                "lowAdherence": "Low adherence"
+            },
+            "filterAttentionAria": "Filter by attention reason",
+            "athleteCount": "{count, plural, one {# athlete} other {# athletes}}",
+            "rangeAria": "Data range",
+            "resultCount": "{visible} of {total} athletes",
+            "needsMetrics": "Requires training data",
+            "removeFilter": "Remove filter: {filter}",
+            "clearAll": "Clear all",
+            "noMatchesFilters": "No athlete matches the filters.",
+            "noSessionsThisWeek": "No sessions scheduled in the next 7 days."
         },
         "athleteStats": {
             "lastSession": "Last session",

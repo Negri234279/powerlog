@@ -1,21 +1,18 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 import { type CoachUser, useMyAthleteRoster } from '@/lib/graphql/hooks/use-coaching'
 import { QueryError } from '@/components/ui/query-error'
 import { Skeleton } from '@/components/ui/skeleton'
-import { TrackedButton } from '@/components/ui/tracked'
 
 import { RosterCards } from './roster-cards'
+import { RosterEmpty } from './roster-empty'
 import { RosterTable } from './roster-table'
 import { type RangeKey, ROSTER_RANGES, RosterToolbar } from './roster-toolbar'
-import { type RosterFilter, type RosterSort, type SortDirection, useRoster } from './use-roster'
-
-/** Below this many athletes the toolbar is more chrome than the list is content. */
-const TOOLBAR_THRESHOLD = 6
+import { type AttentionReason, type RosterSort, type SortDirection, useRoster } from './use-roster'
 
 function isoDaysAgo(days: number): string {
     const date = new Date()
@@ -36,13 +33,16 @@ function isoDaysAgo(days: number): string {
  */
 export function AthleteRoster({ athletes }: { athletes: readonly CoachUser[] }) {
     const t = useTranslations('coaching.roster')
+    const disabledHintId = useId()
+    const focusSearch = useRef<(() => void) | null>(null)
 
     // 30 days, deliberately unlike the athlete detail's 90: this screen asks
     // "what's happening now", and a 90-day adherence smooths over exactly the
     // athlete who fell off a fortnight ago.
     const [range, setRange] = useState<RangeKey>('30d')
     const [query, setQuery] = useState('')
-    const [filter, setFilter] = useState<RosterFilter>('all')
+    const [attention, setAttention] = useState<AttentionReason[]>([])
+    const [week, setWeek] = useState(false)
     const [sort, setSort] = useState<RosterSort>('attention')
     const [direction, setDirection] = useState<SortDirection>('desc')
 
@@ -52,7 +52,7 @@ export function AthleteRoster({ athletes }: { athletes: readonly CoachUser[] }) 
     const metrics = useMyAthleteRoster(from, athletes.length > 0)
     const metricsReady = metrics.data !== undefined
 
-    const { rows, counts } = useRoster(athletes, metrics.data, { query, filter, sort, direction })
+    const { rows, counts } = useRoster(athletes, metrics.data, { query, attention, week, sort, direction })
 
     // No "don't resort under the user" guard is needed: sort is explicit state,
     // so when metrics land the list re-sorts by whatever column they chose. The
@@ -68,33 +68,39 @@ export function AthleteRoster({ athletes }: { athletes: readonly CoachUser[] }) 
         setDirection(firstDirection)
     }
 
-    function onFilter(next: RosterFilter) {
-        setFilter(next)
-        // "Todos" is also the way back to the default ordering.
-        if (next === 'all' && sort !== 'attention') {
-            setSort('attention')
-            setDirection('desc')
-        }
+    function clearAll() {
+        setQuery('')
+        setAttention([])
+        setWeek(false)
     }
 
     const refetching = metrics.isFetching && metricsReady
+    const filtering = query.trim() !== '' || attention.length > 0 || week
 
     return (
         <div className="space-y-4">
-            {athletes.length >= TOOLBAR_THRESHOLD ? (
-                <RosterToolbar
-                    query={query}
-                    onQuery={setQuery}
-                    filter={filter}
-                    onFilter={onFilter}
-                    counts={counts}
-                    range={range}
-                    onRange={setRange}
-                    sort={sort}
-                    onSort={setSort}
-                    metricsReady={metricsReady}
-                />
-            ) : null}
+            <RosterToolbar
+                state={{
+                    query,
+                    onQuery: setQuery,
+                    attention,
+                    onAttention: setAttention,
+                    week,
+                    onWeek: setWeek,
+                    range,
+                    onRange: setRange,
+                    sort,
+                    onSort: setSort,
+                }}
+                counts={counts}
+                metricsReady={metricsReady}
+                searchFocusRef={focusSearch}
+                disabledHintId={disabledHintId}
+            />
+
+            <p id={disabledHintId} className="sr-only">
+                {t('needsMetrics')}
+            </p>
 
             {/* A metrics failure must not cost the coach the roster: identity still
                 renders and every athlete stays reachable. One retry, not one per row. */}
@@ -106,27 +112,26 @@ export function AthleteRoster({ athletes }: { athletes: readonly CoachUser[] }) 
                 />
             ) : null}
 
-            <p className="text-xs text-text-faint">{t('scopeNote')}</p>
+            <p className="text-xs text-text-faint">
+                {/* Only claim a subset when one is actually in force — "24 of 24" is
+                    noise on an unfiltered list. */}
+                {filtering ? `${t('resultCount', { visible: counts.visible, total: counts.total })} · ` : ''}
+                {t('scopeNote')}
+            </p>
 
             {rows.length === 0 ? (
-                <div className="rounded-2xl bg-bg/40 p-6 text-center ring-1 ring-hairline">
-                    <p className="text-sm text-text-dim">
-                        {filter === 'attention' ? t('noAttention') : t('noMatches', { query })}
-                    </p>
-                    {filter !== 'attention' ? (
-                        <TrackedButton
-                            analyticsId="roster-search-clear-empty"
-                            type="button"
-                            onClick={() => {
-                                setQuery('')
-                                setFilter('all')
-                            }}
-                            className="mt-3 rounded-full bg-white/[0.06] px-4 py-2 text-sm text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
-                        >
-                            {t('clearSearch')}
-                        </TrackedButton>
-                    ) : null}
-                </div>
+                <RosterEmpty
+                    query={query}
+                    attention={attention}
+                    week={week}
+                    onClearQuery={() => {
+                        setQuery('')
+                        focusSearch.current?.()
+                    }}
+                    onClearAttention={setAttention}
+                    onClearWeek={() => setWeek(false)}
+                    onClearAll={clearAll}
+                />
             ) : (
                 <div
                     aria-busy={refetching}
@@ -145,7 +150,7 @@ export function AthleteRoster({ athletes }: { athletes: readonly CoachUser[] }) 
 
             {/* One polite announcement per result change, not one per row. */}
             <p aria-live="polite" className="sr-only">
-                {t('resultsAnnouncement', { total: rows.length, attention: counts.attention })}
+                {t('resultsAnnouncement', { total: counts.visible, attention: counts.attention.any })}
             </p>
         </div>
     )

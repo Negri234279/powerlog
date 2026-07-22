@@ -4,12 +4,17 @@ import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 import { useEnterExit } from '@/lib/hooks/use-enter-exit'
-import { Check, ChevronDown } from './icons'
+import { FilterChip } from './filter-chip'
+import { Check } from './icons'
 import { TrackedButton } from './tracked'
 
 export interface MultiSelectOption {
     value: string
     label: string
+    /** Shown right-aligned; a string so callers can render `—` before data lands. */
+    count?: string | null
+    /** The count with its unit, for screen readers ("4 athletes"). */
+    countLabel?: string
 }
 
 /**
@@ -22,6 +27,10 @@ export function MultiSelect({
     selected,
     onChange,
     analyticsId,
+    badge,
+    disabled = false,
+    ariaLabel,
+    describedBy,
 }: {
     label: string
     options: MultiSelectOption[]
@@ -30,6 +39,17 @@ export function MultiSelect({
     /** Stable id for the trigger's `ui_click`; option toggles share
      *  `<id>-option` (option values are dynamic — never put them in the id). */
     analyticsId: string
+    /**
+     * What the trigger's number shows. Defaults to how many options are ticked,
+     * which is right for independent tags — but a facet over a partition wants to
+     * report *matched items* instead, and only the caller can count those. The
+     * active styling still follows the selection, not this.
+     */
+    badge?: string | null
+    disabled?: boolean
+    /** The visible label changes with the selection, so it can't be the name. */
+    ariaLabel?: string
+    describedBy?: string
 }) {
     const [open, setOpen] = useState(false)
     const { mounted, className: stateClass } = useEnterExit(open)
@@ -62,30 +82,27 @@ export function MultiSelect({
 
     return (
         <div ref={ref} className="relative">
-            <TrackedButton
+            <FilterChip
                 analyticsId={analyticsId}
-                type="button"
+                label={label}
+                count={badge === undefined ? (count > 0 ? String(count) : undefined) : badge}
+                active={count > 0}
+                disabled={disabled}
+                expandable
+                expanded={open}
                 onClick={() => setOpen((o) => !o)}
-                aria-expanded={open}
-                className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm ring-1 transition-colors duration-300',
-                    count > 0
-                        ? 'bg-ember/10 text-ember ring-ember/30'
-                        : 'text-text-dim ring-hairline hover:bg-white/[0.04] hover:text-text',
-                )}
-            >
-                {label}
-                {count > 0 ? <span className="font-mono text-xs tabular-nums">{count}</span> : null}
-                <ChevronDown className={cn('size-3.5 transition-transform duration-300', open && 'rotate-180')} />
-            </TrackedButton>
+                aria-label={ariaLabel}
+                aria-describedby={describedBy}
+            />
 
             {mounted ? (
                 <div
                     role="listbox"
                     aria-multiselectable
+                    aria-label={ariaLabel}
                     data-origin="top-left"
                     className={cn(
-                        't-dropdown absolute left-0 top-full z-30 mt-1 max-h-64 min-w-44 overflow-y-auto rounded-2xl bg-shell p-1 shadow-xl ring-1 ring-hairline',
+                        't-dropdown absolute left-0 top-full z-30 mt-1 max-h-64 min-w-52 overflow-y-auto rounded-2xl bg-shell p-1 shadow-xl ring-1 ring-hairline',
                         stateClass,
                     )}
                 >
@@ -114,6 +131,15 @@ export function MultiSelect({
                                     {active ? <Check className="size-3" /> : null}
                                 </span>
                                 {option.label}
+                                {option.count !== undefined && option.count !== null ? (
+                                    <span className="ml-auto font-mono text-xs tabular-nums text-text-faint">
+                                        {/* The bare number would be read as part of
+                                            the label ("Sin entrenar 4"); the unit
+                                            only exists for screen readers. */}
+                                        <span aria-hidden>{option.count}</span>
+                                        <span className="sr-only">{option.countLabel ?? option.count}</span>
+                                    </span>
+                                ) : null}
                             </TrackedButton>
                         )
                     })}

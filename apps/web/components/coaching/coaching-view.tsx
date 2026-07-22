@@ -315,14 +315,23 @@ export function CoachingView({ initialRole }: { initialRole: SessionRole | null 
                         title={t('athletesTitle')}
                         subtitle={t('athletesSubtitle')}
                         action={
-                            <TrackedButton
-                                analyticsId="coaching-invite-open"
-                                type="button"
-                                onClick={() => setInviting(true)}
-                                className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white/[0.06] px-4 py-2 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
-                            >
-                                <Plus className="size-4" /> {t('inviteTitle')}
-                            </TrackedButton>
+                            <span className="flex items-center gap-3">
+                                {/* The roster's total used to be a "Todos {n}" filter
+                                    segment; it isn't a filter, so it lives here. */}
+                                {athleteList.length > 0 ? (
+                                    <span className="font-mono text-xs tabular-nums text-text-faint">
+                                        {t('roster.athleteCount', { count: athleteList.length })}
+                                    </span>
+                                ) : null}
+                                <TrackedButton
+                                    analyticsId="coaching-invite-open"
+                                    type="button"
+                                    onClick={() => setInviting(true)}
+                                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white/[0.06] px-4 py-2 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
+                                >
+                                    <Plus className="size-4" /> {t('inviteTitle')}
+                                </TrackedButton>
+                            </span>
                         }
                     />
                     {athletes.isLoading ? (

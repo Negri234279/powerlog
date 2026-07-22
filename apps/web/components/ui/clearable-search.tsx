@@ -1,6 +1,6 @@
 'use client'
 
-import { type MouseEvent, type PointerEvent, useRef, useState } from 'react'
+import { type MouseEvent, type PointerEvent, type RefObject, useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/cn'
 import { Close, Search } from './icons'
@@ -51,6 +51,8 @@ export function ClearableSearch({
     placeholder,
     className,
     analyticsId,
+    shortcut = false,
+    focusRef,
 }: {
     value: string
     onChange: (value: string) => void
@@ -58,8 +60,17 @@ export function ClearableSearch({
     className?: string
     /** Stable id for this search field; the clear button emits `<id>-clear`. */
     analyticsId: string
+    /**
+     * Bind `/` to focus this field, and show the key as a hint while it's empty
+     * and unfocused. For lists a user searches repeatedly; pointless on touch,
+     * so the hint is hidden below `md`.
+     */
+    shortcut?: boolean
+    /** Lets a caller (an empty state, say) put the cursor back in the field. */
+    focusRef?: RefObject<(() => void) | null>
 }) {
     const inputRef = useRef<HTMLInputElement>(null)
+    const [focused, setFocused] = useState(false)
     const mirrorRef = useRef<HTMLDivElement>(null)
     const placeholderRef = useRef<HTMLDivElement>(null)
     const glowRef = useRef<HTMLDivElement>(null)
@@ -68,6 +79,31 @@ export function ClearableSearch({
     const [mirrorText, setMirrorText] = useState('')
 
     const hasValue = value.length > 0
+
+    useEffect(() => {
+        if (focusRef) focusRef.current = () => inputRef.current?.focus()
+    }, [focusRef])
+
+    // `/` is a shortcut, never a hijack: typing a slash into any field — this one
+    // included — must insert a slash.
+    useEffect(() => {
+        if (!shortcut) return
+
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return
+
+            const target = event.target as HTMLElement | null
+            const tag = target?.tagName
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
+
+            event.preventDefault()
+            inputRef.current?.focus()
+        }
+
+        document.addEventListener('keydown', onKey)
+
+        return () => document.removeEventListener('keydown', onKey)
+    }, [shortcut])
 
     function buildGlow(text: string): string {
         const canvas = document.createElement('canvas').getContext('2d')
@@ -204,9 +240,27 @@ export function ClearableSearch({
                 type="text"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                // Escape clears what you typed; a second Escape gets you out. The
+                // other order would trap a keyboard user who only wanted to leave.
+                onKeyDown={(e) => {
+                    if (e.key !== 'Escape') return
+                    if (hasValue) clear()
+                    else inputRef.current?.blur()
+                }}
                 aria-label={placeholder}
                 className="w-full bg-transparent py-1.5 pl-10 pr-9 text-sm text-text caret-ember outline-none"
             />
+
+            {shortcut && !hasValue && !focused ? (
+                <span
+                    aria-hidden
+                    className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-hairline px-1.5 py-0.5 font-mono text-[10px] text-text-faint md:block"
+                >
+                    /
+                </span>
+            ) : null}
             <div ref={mirrorRef} className="t-clear-mirror pl-10 pr-9 text-sm text-text" aria-hidden>
                 {(clearing ? mirrorText : value).replace(/ /g, NBSP)}
             </div>

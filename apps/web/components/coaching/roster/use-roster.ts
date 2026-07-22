@@ -5,7 +5,15 @@ import { useMemo } from 'react'
 import type { CoachUser, RosterEntry } from '@/lib/graphql/hooks/use-coaching'
 import { fullName } from '@/lib/user-name'
 
-export type RosterFilter = 'all' | 'attention' | 'thisWeek'
+/**
+ * The reasons an athlete can be flagged. `none` is deliberately absent: it is
+ * the absence of a reason, and offering "Attention: no problems" as a filter
+ * option is a contradiction on the pill. If coaches ever want "show me who's
+ * fine", that is a different facet, not a fourth entry here.
+ */
+export const ATTENTION_REASONS = ['stale', 'neverTrained', 'lowAdherence'] as const
+export type AttentionReason = (typeof ATTENTION_REASONS)[number]
+
 export type RosterSort = 'attention' | 'name' | 'last' | 'adherence' | 'next'
 export type SortDirection = 'asc' | 'desc'
 
@@ -98,10 +106,45 @@ function compare(a: RosterRow, b: RosterRow, sort: RosterSort, direction: SortDi
     }
 }
 
+export interface RosterFilters {
+    query: string
+    /** Attention reasons to keep. Empty means "don't filter by attention". */
+    attention: readonly AttentionReason[]
+    /** Only athletes with a session inside the next week. */
+    week: boolean
+}
+
+export interface RosterCounts {
+    total: number
+    visible: number
+    /** Per reason, plus the union of all three. */
+    attention: Record<AttentionReason, number> & { any: number }
+    week: number
+}
+
 export interface RosterView {
     rows: RosterRow[]
-    /** Counts over the whole roster, unaffected by search or filter. */
-    counts: { all: number; attention: number; thisWeek: number }
+    counts: RosterCounts
+}
+
+function matchesQuery(row: RosterRow, needle: string): boolean {
+    if (needle === '') return true
+
+    return normalize(`${row.user.username} ${row.name ?? ''}`).includes(needle)
+}
+
+function matchesWeek(row: RosterRow): boolean {
+    const days = daysUntil(row.metrics?.nextSessionAt)
+
+    return days !== null && days <= THIS_WEEK_DAYS
+}
+
+function matchesAttention(row: RosterRow, reasons: readonly AttentionReason[]): boolean {
+    if (reasons.length === 0) return true
+    const attention = row.metrics?.attention
+    if (attention === undefined || attention === 'none') return false
+
+    return reasons.includes(attention as AttentionReason)
 }
 
 /**
@@ -110,11 +153,16 @@ export interface RosterView {
  * Everything is client-side on purpose: the domain bound is a coach's client
  * list, so even a big roster is a few dozen rows. Paging or server-side sorting
  * would cost a round trip per click to order data already in memory.
+ *
+ * The three filters AND together. **Within** attention the reasons OR — which is
+ * only safe because an athlete carries exactly one of them, so the facet is a
+ * partition: the per-reason counts are disjoint and sum exactly to `any`, and no
+ * athlete can ever be counted twice.
  */
 export function useRoster(
     athletes: readonly CoachUser[],
     metrics: readonly RosterEntry[] | undefined,
-    options: { query: string; filter: RosterFilter; sort: RosterSort; direction: SortDirection },
+    options: RosterFilters & { sort: RosterSort; direction: SortDirection },
 ): RosterView {
     const byAthlete = useMemo(() => new Map((metrics ?? []).map((entry) => [entry.athleteId, entry])), [metrics])
 
@@ -128,37 +176,47 @@ export function useRoster(
         [athletes, byAthlete],
     )
 
-    const counts = useMemo(
-        () => ({
-            all: rows.length,
-            attention: rows.filter((row) => row.metrics && row.metrics.attention !== 'none').length,
-            thisWeek: rows.filter((row) => {
-                const days = daysUntil(row.metrics?.nextSessionAt)
-                return days !== null && days <= THIS_WEEK_DAYS
-            }).length,
-        }),
-        [rows],
-    )
+    const { query, attention, week } = options
+    const needle = normalize(query.trim())
 
     const visible = useMemo(() => {
-        const needle = normalize(options.query.trim())
-
-        const filtered = rows.filter((row) => {
-            if (options.filter === 'attention' && (!row.metrics || row.metrics.attention === 'none')) return false
-            if (options.filter === 'thisWeek') {
-                const days = daysUntil(row.metrics?.nextSessionAt)
-                if (days === null || days > THIS_WEEK_DAYS) return false
-            }
-            if (needle === '') return true
-
-            return normalize(`${row.user.username} ${row.name ?? ''}`).includes(needle)
-        })
+        const filtered = rows.filter(
+            (row) => matchesAttention(row, attention) && (!week || matchesWeek(row)) && matchesQuery(row, needle),
+        )
 
         // A stable final tie-break keeps the order from shuffling between refetches.
         return [...filtered].sort(
             (a, b) => compare(a, b, options.sort, options.direction) || a.user.username.localeCompare(b.user.username),
         )
-    }, [rows, options.query, options.filter, options.sort, options.direction])
+    }, [rows, needle, attention, week, options.sort, options.direction])
+
+    /**
+     * Each facet counts with the *other* controls applied but its own selection
+     * ignored. That's what makes the numbers predictive — "tick this and you get
+     * four" — rather than self-referential, where a ticked option would only ever
+     * report itself and the unticked ones would all read zero.
+     */
+    const counts = useMemo<RosterCounts>(() => {
+        const forAttention = rows.filter((row) => (!week || matchesWeek(row)) && matchesQuery(row, needle))
+        const byReason = { stale: 0, neverTrained: 0, lowAdherence: 0 }
+
+        for (const row of forAttention) {
+            const reason = row.metrics?.attention
+            if (reason && reason !== 'none') byReason[reason as AttentionReason] += 1
+        }
+
+        return {
+            total: rows.length,
+            visible: visible.length,
+            attention: {
+                ...byReason,
+                any: byReason.stale + byReason.neverTrained + byReason.lowAdherence,
+            },
+            week: rows.filter(
+                (row) => matchesAttention(row, attention) && matchesQuery(row, needle) && matchesWeek(row),
+            ).length,
+        }
+    }, [rows, visible.length, needle, attention, week])
 
     return { rows: visible, counts }
 }

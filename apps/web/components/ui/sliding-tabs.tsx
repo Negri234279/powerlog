@@ -26,11 +26,14 @@ export function SlidingTabs({
     onChange,
     className,
     analyticsId,
+    ariaLabel,
 }: {
     items: SlidingTabsItem[]
     value: string
     onChange: (value: string) => void
     className?: string
+    /** Names the tablist. Without it a screen reader announces a bare "tab list". */
+    ariaLabel?: string
     /** Stable id prefix; each tab emits `<id>-<value>` (values are code-defined
      *  literals, so the set stays bounded). */
     analyticsId: string
@@ -87,7 +90,7 @@ export function SlidingTabs({
             ref={wrapRef}
             className="w-fit max-w-full overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-            <div ref={barRef} role="tablist" className={cn('t-tabs', className)}>
+            <div ref={barRef} role="tablist" aria-label={ariaLabel} className={cn('t-tabs', className)}>
                 <span ref={pillRef} className="t-tabs-pill" aria-hidden="true" />
                 {items.map((item) => (
                     <TrackedButton
