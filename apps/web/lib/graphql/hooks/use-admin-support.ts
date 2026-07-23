@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type {
     AdminSupportTicketQuery as AdminSupportTicketQ,
@@ -16,22 +16,26 @@ export type SupportTicketDetail = NonNullable<AdminSupportTicketQ['adminSupportT
 export type SupportMessage = SupportTicketDetail['messages'][number]
 
 const TICKETS_KEY = ['adminSupportTickets']
+const PAGE_SIZE = 30
 
+/** Filterable support inbox, offset-paginated for infinite scroll. */
 export function useAdminSupportTickets(filter: { statuses?: string[]; categories?: string[]; search?: string }) {
-    return useQuery({
-        queryKey: [
-            ...TICKETS_KEY,
-            filter.statuses?.join(',') ?? '',
-            filter.categories?.join(',') ?? '',
-            filter.search ?? '',
-        ],
-        queryFn: () =>
+    return useInfiniteQuery({
+        queryKey: [...TICKETS_KEY, filter],
+        queryFn: ({ pageParam }) =>
             gqlRequest(AdminSupportTicketsDocument, {
                 statuses: filter.statuses?.length ? filter.statuses : null,
                 categories: filter.categories?.length ? filter.categories : null,
-                search: filter.search || null,
-                limit: 50,
+                search: filter.search?.trim() ? filter.search.trim() : null,
+                limit: PAGE_SIZE,
+                offset: pageParam,
             }).then((r) => r.adminSupportTickets),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage) => {
+            const next = lastPage.offset + lastPage.rows.length
+            return next < lastPage.total ? next : undefined
+        },
+        placeholderData: keepPreviousData,
     })
 }
 

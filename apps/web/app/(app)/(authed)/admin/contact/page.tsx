@@ -1,7 +1,7 @@
 'use client'
 
 import { useLocale, useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { type SupportTicketRow, useAdminSupportTickets } from '@/lib/graphql/hooks/use-admin-support'
 import { formatNumericDateTime } from '@/lib/format-date'
@@ -35,11 +35,31 @@ export default function AdminContactPage() {
 
     const patch = (next: Partial<Filters>) => setFilters((current) => ({ ...current, ...next }))
 
-    const { data, isLoading } = useAdminSupportTickets({
+    const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useAdminSupportTickets({
         statuses: filters.statuses,
         categories: filters.categories,
         search: debouncedSearch || undefined,
     })
+
+    const rows = data?.pages.flatMap((page) => page.rows) ?? []
+    const total = data?.pages[0]?.total ?? 0
+
+    // Infinite scroll: load the next page when the sentinel scrolls into view.
+    const sentinelRef = useRef<HTMLDivElement>(null)
+    useEffect(() => {
+        const el = sentinelRef.current
+        if (!el || !hasNextPage) return
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting && !isFetchingNextPage) void fetchNextPage()
+            },
+            { rootMargin: '400px' },
+        )
+        observer.observe(el)
+
+        return () => observer.disconnect()
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
     return (
         <div>
@@ -85,15 +105,25 @@ export default function AdminContactPage() {
             <div className="mt-6 space-y-2">
                 {isLoading ? (
                     Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-20 rounded-2xl" />)
-                ) : data?.rows.length ? (
-                    data.rows.map((ticket) => <TicketRow key={ticket.id} ticket={ticket} />)
+                ) : rows.length ? (
+                    rows.map((ticket) => <TicketRow key={ticket.id} ticket={ticket} />)
                 ) : (
                     <p className="text-sm text-text-faint">{t('empty')}</p>
                 )}
+
+                {isFetchingNextPage
+                    ? Array.from({ length: 2 }).map((_, index) => (
+                          <Skeleton key={`more-${index}`} className="h-20 rounded-2xl" />
+                      ))
+                    : null}
             </div>
 
-            {data ? (
-                <p className="mt-4 font-mono text-xs text-text-faint">{t('total', { total: data.total })}</p>
+            {/* The observer fires ~400px early so the next page is usually in before
+                the user reaches the end. */}
+            <div ref={sentinelRef} aria-hidden />
+
+            {!isLoading && total > 0 ? (
+                <p className="mt-4 font-mono text-xs text-text-faint">{t('total', { total })}</p>
             ) : null}
         </div>
     )
