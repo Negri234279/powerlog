@@ -1709,21 +1709,13 @@
                 "tag": "The coach",
                 "title": "Plans the work",
                 "body": "Build the session straight into your athlete’s log — authorized only for the lifters you actually coach.",
-                "lines": [
-                    "Invite athlete by @username",
-                    "Assign a planned session",
-                    "Set targets per set"
-                ]
+                "lines": ["Invite athlete by @username", "Assign a planned session", "Set targets per set"]
             },
             "athlete": {
                 "tag": "The athlete",
                 "title": "Logs the truth",
                 "body": "Open what your coach planned, train it, and record what actually moved. The history is yours forever.",
-                "lines": [
-                    "See planned sessions in the bell",
-                    "Log the real weight × reps",
-                    "PRs surface automatically"
-                ]
+                "lines": ["See planned sessions in the bell", "Log the real weight × reps", "PRs surface automatically"]
             }
         },
         "cta": {
@@ -1810,9 +1802,7 @@
                 },
                 {
                     "heading": "Data we collect",
-                    "body": [
-                        "We collect the following categories of personal data:"
-                    ],
+                    "body": ["We collect the following categories of personal data:"],
                     "bullets": [
                         "Account data: email address, display name and an encrypted (hashed) password.",
                         "Profile data: avatar image, preferred units, language and role (athlete or coach).",
@@ -1855,9 +1845,7 @@
                 },
                 {
                     "heading": "Your rights",
-                    "body": [
-                        "You may exercise the following rights at any time by contacting us at {email}:"
-                    ],
+                    "body": ["You may exercise the following rights at any time by contacting us at {email}:"],
                     "bullets": [
                         "Access to your data.",
                         "Rectification of inaccurate data.",
@@ -1913,9 +1901,7 @@
                 },
                 {
                     "heading": "Plans, subscriptions and payments",
-                    "body": [
-                        "Some features require a paid subscription. By subscribing you agree that:"
-                    ],
+                    "body": ["Some features require a paid subscription. By subscribing you agree that:"],
                     "bullets": [
                         "Subscriptions renew automatically at the end of each billing period until cancelled.",
                         "You can cancel at any time and keep access until the end of the period you have already paid for.",
@@ -1932,9 +1918,7 @@
                 },
                 {
                     "heading": "Acceptable use",
-                    "body": [
-                        "You agree not to:"
-                    ],
+                    "body": ["You agree not to:"],
                     "bullets": [
                         "Use the service for any unlawful purpose or in breach of these terms.",
                         "Attempt to access accounts or data that are not yours.",
@@ -1986,9 +1970,7 @@
                 },
                 {
                     "heading": "Contact",
-                    "body": [
-                        "For any question about these terms, write to us at {email}."
-                    ]
+                    "body": ["For any question about these terms, write to us at {email}."]
                 }
             ]
         },
@@ -2005,26 +1987,16 @@
                 },
                 {
                     "heading": "Cookies we use",
-                    "body": [
-                        "We use the following categories:"
-                    ],
+                    "body": ["We use the following categories:"],
                     "table": {
-                        "head": [
-                            "Cookie / technology",
-                            "Purpose",
-                            "Type"
-                        ],
+                        "head": ["Cookie / technology", "Purpose", "Type"],
                         "rows": [
                             [
                                 "Authentication (access & refresh tokens)",
                                 "Keep you signed in securely",
                                 "Strictly necessary"
                             ],
-                            [
-                                "NEXT_LOCALE",
-                                "Remember your language preference",
-                                "Preferences"
-                            ],
+                            ["NEXT_LOCALE", "Remember your language preference", "Preferences"],
                             [
                                 "Analytics & performance (Grafana Faro)",
                                 "Understand usage and improve the product",
@@ -2135,7 +2107,7 @@
         "title": "Contact us",
         "intro": "Have a question, found a bug or want to suggest something? Send us a message and we’ll get back to you by email.",
         "nameLabel": "Name",
-        "namePlaceholder": "Your name (optional)",
+        "namePlaceholder": "Your name",
         "emailLabel": "Email",
         "emailPlaceholder": "you@example.com",
         "categoryLabel": "Category",
@@ -2154,6 +2126,12 @@
             "account": "Account & access",
             "feature": "Feature request",
             "other": "Other"
+        },
+        "errors": {
+            "name": "Please enter your name.",
+            "email": "Please enter a valid email address.",
+            "subject": "The subject must be between 3 and 150 characters.",
+            "message": "The message must be at least 10 characters."
         }
     }
 }

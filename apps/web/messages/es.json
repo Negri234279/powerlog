@@ -1709,11 +1709,7 @@
                 "tag": "El entrenador",
                 "title": "Planifica el trabajo",
                 "body": "Construye la sesión directamente en el registro de tu atleta, con permiso solo para los levantadores que de verdad entrenas.",
-                "lines": [
-                    "Invita al atleta por @usuario",
-                    "Asigna una sesión planificada",
-                    "Fija objetivos por serie"
-                ]
+                "lines": ["Invita al atleta por @usuario", "Asigna una sesión planificada", "Fija objetivos por serie"]
             },
             "athlete": {
                 "tag": "El atleta",
@@ -1810,9 +1806,7 @@
                 },
                 {
                     "heading": "Datos que tratamos",
-                    "body": [
-                        "Recopilamos las siguientes categorías de datos personales:"
-                    ],
+                    "body": ["Recopilamos las siguientes categorías de datos personales:"],
                     "bullets": [
                         "Datos de cuenta: correo electrónico, nombre visible y una contraseña cifrada (con hash).",
                         "Datos de perfil: avatar, unidades preferidas, idioma y rol (atleta o entrenador).",
@@ -1855,9 +1849,7 @@
                 },
                 {
                     "heading": "Tus derechos",
-                    "body": [
-                        "Puedes ejercer los siguientes derechos en cualquier momento escribiendo a {email}:"
-                    ],
+                    "body": ["Puedes ejercer los siguientes derechos en cualquier momento escribiendo a {email}:"],
                     "bullets": [
                         "Acceso a tus datos.",
                         "Rectificación de datos inexactos.",
@@ -1913,9 +1905,7 @@
                 },
                 {
                     "heading": "Planes, suscripciones y pagos",
-                    "body": [
-                        "Algunas funcionalidades requieren una suscripción de pago. Al suscribirte aceptas que:"
-                    ],
+                    "body": ["Algunas funcionalidades requieren una suscripción de pago. Al suscribirte aceptas que:"],
                     "bullets": [
                         "Las suscripciones se renuevan automáticamente al final de cada periodo de facturación hasta que las canceles.",
                         "Puedes cancelar en cualquier momento y conservar el acceso hasta el final del periodo que ya has pagado.",
@@ -1932,9 +1922,7 @@
                 },
                 {
                     "heading": "Uso aceptable",
-                    "body": [
-                        "Te comprometes a no:"
-                    ],
+                    "body": ["Te comprometes a no:"],
                     "bullets": [
                         "Usar el servicio con fines ilícitos o incumpliendo estos términos.",
                         "Intentar acceder a cuentas o datos que no sean tuyos.",
@@ -1986,9 +1974,7 @@
                 },
                 {
                     "heading": "Contacto",
-                    "body": [
-                        "Para cualquier cuestión sobre estos términos, escríbenos a {email}."
-                    ]
+                    "body": ["Para cualquier cuestión sobre estos términos, escríbenos a {email}."]
                 }
             ]
         },
@@ -2005,26 +1991,16 @@
                 },
                 {
                     "heading": "Cookies que utilizamos",
-                    "body": [
-                        "Utilizamos las siguientes categorías:"
-                    ],
+                    "body": ["Utilizamos las siguientes categorías:"],
                     "table": {
-                        "head": [
-                            "Cookie / tecnología",
-                            "Finalidad",
-                            "Tipo"
-                        ],
+                        "head": ["Cookie / tecnología", "Finalidad", "Tipo"],
                         "rows": [
                             [
                                 "Autenticación (tokens de acceso y refresco)",
                                 "Mantener tu sesión iniciada de forma segura",
                                 "Estrictamente necesaria"
                             ],
-                            [
-                                "NEXT_LOCALE",
-                                "Recordar tu preferencia de idioma",
-                                "Preferencias"
-                            ],
+                            ["NEXT_LOCALE", "Recordar tu preferencia de idioma", "Preferencias"],
                             [
                                 "Analítica y rendimiento (Grafana Faro)",
                                 "Entender el uso y mejorar el producto",
@@ -2135,7 +2111,7 @@
         "title": "Contacto",
         "intro": "¿Tienes una duda, has encontrado un fallo o quieres sugerir algo? Escríbenos y te responderemos por correo.",
         "nameLabel": "Nombre",
-        "namePlaceholder": "Tu nombre (opcional)",
+        "namePlaceholder": "Tu nombre",
         "emailLabel": "Correo",
         "emailPlaceholder": "tu@ejemplo.com",
         "categoryLabel": "Categoría",
@@ -2154,6 +2130,12 @@
             "account": "Cuenta y acceso",
             "feature": "Sugerencia",
             "other": "Otro"
+        },
+        "errors": {
+            "name": "Introduce tu nombre.",
+            "email": "Introduce una dirección de correo válida.",
+            "subject": "El asunto debe tener entre 3 y 150 caracteres.",
+            "message": "El mensaje debe tener al menos 10 caracteres."
         }
     }
 }
