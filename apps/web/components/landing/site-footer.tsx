@@ -1,5 +1,7 @@
-import { getTranslations } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 
+import type { Locale } from '@/lib/i18n/config'
+import { isLegalDoc, LEGAL_PATHS } from '@/lib/legal'
 import { Mark } from '@/components/ui/icons'
 import { TrackedLink } from '@/components/ui/tracked'
 import { LocaleSwitcher } from './locale-switcher'
@@ -9,12 +11,23 @@ import { LocaleSwitcher } from './locale-switcher'
 // per locale without moving the `footer-*` click events.
 const COLUMNS = [
     { id: 'product', titleKey: 'colProduct', items: ['features', 'analytics', 'coaching', 'pricing'] },
-    { id: 'company', titleKey: 'colCompany', items: ['about', 'changelog', 'careers', 'contact'] },
-    { id: 'legal', titleKey: 'colLegal', items: ['privacy', 'terms', 'security'] },
+    { id: 'company', titleKey: 'colCompany', items: ['about', 'changelog', 'careers', 'contact', 'faq'] },
+    { id: 'legal', titleKey: 'colLegal', items: ['privacy', 'terms', 'cookies', 'security'] },
 ] as const
+
+// Product items are anchors into the landing; legal docs (privacy/terms/cookies/faq)
+// have their own localized pages. Everything else isn't built yet, so it stays inert.
+const ANCHORS = new Set(['features', 'analytics', 'coaching', 'pricing'])
+
+function hrefFor(item: string, locale: Locale): string {
+    if (isLegalDoc(item)) return LEGAL_PATHS[locale][item]
+    if (ANCHORS.has(item)) return `${locale === 'es' ? '/es' : '/'}#${item}`
+    return '#'
+}
 
 export async function SiteFooter() {
     const t = await getTranslations('landing.footer')
+    const locale = (await getLocale()) as Locale
 
     return (
         <footer className="border-t border-hairline px-6 py-16 md:px-8">
@@ -37,7 +50,7 @@ export async function SiteFooter() {
                                 <li key={item}>
                                     <TrackedLink
                                         analyticsId={`footer-${item}`}
-                                        href="#"
+                                        href={hrefFor(item, locale)}
                                         className="text-body text-text-dim transition-colors hover:text-text"
                                     >
                                         {t(`${col.id}.${item}`)}

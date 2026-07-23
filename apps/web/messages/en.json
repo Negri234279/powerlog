@@ -1747,14 +1747,333 @@
                 "about": "About",
                 "changelog": "Changelog",
                 "careers": "Careers",
-                "contact": "Contact"
+                "contact": "Contact",
+                "faq": "FAQ"
             },
             "legal": {
                 "privacy": "Privacy",
                 "terms": "Terms",
-                "security": "Security"
+                "security": "Security",
+                "cookies": "Cookies"
             },
             "builtForBar": "Built for the bar"
         }
+    },
+    "legal": {
+        "updatedLabel": "Last updated",
+        "reviewNotice": "This is a general template and does not constitute legal advice. Have it reviewed by a qualified professional before publishing.",
+        "privacy": {
+            "title": "Privacy Policy",
+            "updated": "2026-07-23",
+            "intro": "This Privacy Policy explains how powerlog collects, uses and protects your personal data when you use our website and application. We process your data in accordance with the EU General Data Protection Regulation (GDPR) and Spanish Organic Law 3/2018 (LOPDGDD).",
+            "sections": [
+                {
+                    "heading": "Data controller",
+                    "body": [
+                        "The controller of your personal data is Rafa Garcia, with registered address at Cordoba, Spain, Spain. For any question about this policy or your data, write to us at {email}."
+                    ]
+                },
+                {
+                    "heading": "Data we collect",
+                    "body": ["We collect the following categories of personal data:"],
+                    "bullets": [
+                        "Account data: email address, display name and an encrypted (hashed) password.",
+                        "Profile data: avatar image, preferred units, language and role (athlete or coach).",
+                        "Training data: workouts, sessions, exercises, sets, weights, RPE and related notes you log.",
+                        "Billing data: your subscription plan and payment status. Card details are handled directly by our payment providers (Stripe and PayPal) and are never stored on our servers.",
+                        "Technical and usage data: IP address, device and browser information, pages visited and product interactions, collected for analytics, performance and security."
+                    ]
+                },
+                {
+                    "heading": "Purposes and legal basis",
+                    "body": [
+                        "We process your data for the following purposes and on the following legal bases under Article 6 GDPR:"
+                    ],
+                    "bullets": [
+                        "Providing the service and managing your account — performance of the contract with you.",
+                        "Processing subscriptions and payments — performance of the contract and compliance with legal obligations.",
+                        "Product analytics and performance monitoring — your consent and/or our legitimate interest in improving the service.",
+                        "Security, fraud prevention and abuse detection — our legitimate interest and legal obligations.",
+                        "Service communications (e.g. email verification, billing notices) — performance of the contract."
+                    ]
+                },
+                {
+                    "heading": "Recipients and processors",
+                    "body": [
+                        "We share data only with providers that process it on our behalf under a data processing agreement:"
+                    ],
+                    "bullets": [
+                        "Payment processing: Stripe and PayPal.",
+                        "Transactional email: our email delivery provider.",
+                        "Hosting and infrastructure: our cloud and server providers.",
+                        "Analytics and telemetry: our self-hosted observability stack and product-analytics provider."
+                    ],
+                    "note": "Some providers may process data outside the European Economic Area. In such cases, transfers are protected by appropriate safeguards such as the European Commission's Standard Contractual Clauses."
+                },
+                {
+                    "heading": "Data retention",
+                    "body": [
+                        "We keep your personal data for as long as your account is active. When you delete your account, we erase or anonymise your data within a reasonable period, except where we must retain certain records (e.g. invoices) to comply with legal obligations."
+                    ]
+                },
+                {
+                    "heading": "Your rights",
+                    "body": ["You may exercise the following rights at any time by contacting us at {email}:"],
+                    "bullets": [
+                        "Access to your data.",
+                        "Rectification of inaccurate data.",
+                        "Erasure ('right to be forgotten').",
+                        "Restriction of processing.",
+                        "Data portability.",
+                        "Objection to processing based on legitimate interest."
+                    ],
+                    "note": "You also have the right to lodge a complaint with the Spanish Data Protection Agency (AEPD, www.aepd.es) if you believe your rights have not been respected."
+                },
+                {
+                    "heading": "Security",
+                    "body": [
+                        "We apply technical and organisational measures to protect your data, including encryption in transit, hashed passwords and tokens, signed authentication tokens and strict access controls."
+                    ]
+                },
+                {
+                    "heading": "Minors",
+                    "body": [
+                        "The service is not directed to children under 14. We do not knowingly collect data from minors below the age required by applicable law."
+                    ]
+                },
+                {
+                    "heading": "Changes to this policy",
+                    "body": [
+                        "We may update this policy from time to time. Material changes will be announced through the service, and the 'last updated' date above will reflect the latest revision."
+                    ]
+                }
+            ]
+        },
+        "terms": {
+            "title": "Terms of Service",
+            "updated": "2026-07-23",
+            "intro": "These Terms of Service govern your access to and use of powerlog. By creating an account or using the service, you agree to these terms.",
+            "sections": [
+                {
+                    "heading": "Acceptance of the terms",
+                    "body": [
+                        "By accessing or using powerlog you accept these terms in full. If you do not agree with them, you must not use the service."
+                    ]
+                },
+                {
+                    "heading": "The service",
+                    "body": [
+                        "powerlog is a training tracker for lifters and coaches. It lets you log workouts, plan sessions and mesocycles, review analytics and, on paid plans, use AI-assisted planning. We may add, change or remove features over time."
+                    ]
+                },
+                {
+                    "heading": "Your account",
+                    "body": [
+                        "You must provide accurate information and keep your credentials secure. You are responsible for all activity under your account. Notify us immediately of any unauthorised use."
+                    ]
+                },
+                {
+                    "heading": "Plans, subscriptions and payments",
+                    "body": ["Some features require a paid subscription. By subscribing you agree that:"],
+                    "bullets": [
+                        "Subscriptions renew automatically at the end of each billing period until cancelled.",
+                        "You can cancel at any time and keep access until the end of the period you have already paid for.",
+                        "Upgrades take effect immediately with a prorated charge; downgrades take effect at the end of the current period.",
+                        "Payments are processed by Stripe and PayPal; card data is handled by them, not by us.",
+                        "Subscriptions are non-refundable, except where required by applicable law."
+                    ]
+                },
+                {
+                    "heading": "Coach and athlete features",
+                    "body": [
+                        "A coach and an athlete can link with each other. When linked, the coach may program sessions and mesocycles and review the athlete’s training. Either party can end the link. The athlete always retains ownership of their own data."
+                    ]
+                },
+                {
+                    "heading": "Acceptable use",
+                    "body": ["You agree not to:"],
+                    "bullets": [
+                        "Use the service for any unlawful purpose or in breach of these terms.",
+                        "Attempt to access accounts or data that are not yours.",
+                        "Disrupt, overload or attempt to compromise the security of the service.",
+                        "Copy, resell or exploit the service without our written permission."
+                    ]
+                },
+                {
+                    "heading": "Your content",
+                    "body": [
+                        "You own the training data and content you create. You grant us the limited licence needed to host, process and display that content solely to provide the service to you (and to any coach you link with)."
+                    ]
+                },
+                {
+                    "heading": "Health disclaimer",
+                    "body": [
+                        "powerlog is a tracking and planning tool, not medical, health or professional coaching advice. Strength training carries inherent risks. Consult a qualified professional before starting or changing a training programme. You train at your own risk and are solely responsible for your health and safety."
+                    ]
+                },
+                {
+                    "heading": "Intellectual property",
+                    "body": [
+                        "The software, design, trademarks and content of powerlog (other than your own data) are owned by us or our licensors and are protected by intellectual-property law."
+                    ]
+                },
+                {
+                    "heading": "Disclaimers and limitation of liability",
+                    "body": [
+                        "The service is provided “as is” and “as available”. To the maximum extent permitted by law, we exclude implied warranties and are not liable for indirect or consequential damages. Nothing in these terms limits liability that cannot be limited under applicable law."
+                    ]
+                },
+                {
+                    "heading": "Suspension and termination",
+                    "body": [
+                        "We may suspend or terminate your access if you breach these terms or use the service in a way that harms others or us. You may stop using the service and delete your account at any time."
+                    ]
+                },
+                {
+                    "heading": "Changes to the terms",
+                    "body": [
+                        "We may update these terms. Material changes will be announced through the service; continued use after they take effect means you accept the updated terms."
+                    ]
+                },
+                {
+                    "heading": "Governing law and jurisdiction",
+                    "body": [
+                        "These terms are governed by Spanish law. Any dispute will be subject to the competent courts of Spain, without prejudice to the mandatory rights of consumers."
+                    ]
+                },
+                {
+                    "heading": "Contact",
+                    "body": ["For any question about these terms, write to us at {email}."]
+                }
+            ]
+        },
+        "cookies": {
+            "title": "Cookie Policy",
+            "updated": "2026-07-23",
+            "intro": "This Cookie Policy explains what cookies and similar technologies powerlog uses, why we use them and how you can manage them. It complements our Privacy Policy.",
+            "sections": [
+                {
+                    "heading": "What are cookies",
+                    "body": [
+                        "Cookies are small files that a website stores on your device. We also use similar technologies (such as local storage) for the same purposes. They let the service work correctly, remember your preferences and understand how the product is used."
+                    ]
+                },
+                {
+                    "heading": "Cookies we use",
+                    "body": ["We use the following categories:"],
+                    "table": {
+                        "head": ["Cookie / technology", "Purpose", "Type"],
+                        "rows": [
+                            [
+                                "Authentication (access & refresh tokens)",
+                                "Keep you signed in securely",
+                                "Strictly necessary"
+                            ],
+                            ["NEXT_LOCALE", "Remember your language preference", "Preferences"],
+                            [
+                                "Analytics & performance (Grafana Faro)",
+                                "Understand usage and improve the product",
+                                "Analytics (consent)"
+                            ]
+                        ]
+                    }
+                },
+                {
+                    "heading": "Legal basis",
+                    "body": [
+                        "Strictly necessary and preference cookies are exempt from consent under Article 22.2 of the Spanish LSSI-CE, because they are required to provide the service you request. Analytics cookies are only used with your consent, which you can give or withdraw at any time."
+                    ]
+                },
+                {
+                    "heading": "Managing cookies",
+                    "body": [
+                        "You can accept or reject non-essential cookies and change your choice at any time. You can also block or delete cookies through your browser settings, though disabling strictly necessary cookies may prevent parts of the service from working."
+                    ]
+                },
+                {
+                    "heading": "Third parties",
+                    "body": [
+                        "Our payment and analytics providers may set their own cookies when their functionality is used. Their processing is governed by their respective policies."
+                    ]
+                },
+                {
+                    "heading": "Changes",
+                    "body": [
+                        "We may update this policy as our use of cookies changes. The “last updated” date above reflects the latest revision."
+                    ]
+                }
+            ]
+        },
+        "faq": {
+            "title": "Frequently Asked Questions",
+            "intro": "Answers to the most common questions about powerlog. Can't find what you're looking for? Reach out at {email}.",
+            "groups": [
+                {
+                    "title": "Getting started",
+                    "items": [
+                        {
+                            "q": "Is powerlog free?",
+                            "a": "Yes. You can track your training on the free plan. Paid plans unlock AI features and higher limits."
+                        },
+                        {
+                            "q": "Do I need to install anything?",
+                            "a": "No. powerlog runs in your browser on any device, so there is nothing to install."
+                        },
+                        {
+                            "q": "What units does powerlog support?",
+                            "a": "Both kilograms and pounds. You can set your preferred unit in your profile at any time."
+                        }
+                    ]
+                },
+                {
+                    "title": "Training & tracking",
+                    "items": [
+                        {
+                            "q": "What can I log?",
+                            "a": "Workouts, sessions, exercises, sets, reps, weight, RPE/RIR and notes, plus planned-vs-actual for every set."
+                        },
+                        {
+                            "q": "Can I plan mesocycles?",
+                            "a": "Yes. You can build templates and mesocycles and track your estimated 1RM and volume over time."
+                        },
+                        {
+                            "q": "What is the coach ↔ athlete feature?",
+                            "a": "Coaches can link with athletes, program sessions and mesocycles for them and review their training. Athletes always keep ownership of their data."
+                        }
+                    ]
+                },
+                {
+                    "title": "Billing & plans",
+                    "items": [
+                        {
+                            "q": "Which payment methods do you accept?",
+                            "a": "We accept cards through Stripe and payments through PayPal, depending on availability."
+                        },
+                        {
+                            "q": "Can I cancel anytime?",
+                            "a": "Yes. You can cancel from your account at any time and keep access until the end of your paid period."
+                        },
+                        {
+                            "q": "Do you offer refunds?",
+                            "a": "Subscriptions are non-refundable, but cancelling never removes time you have already paid for."
+                        }
+                    ]
+                },
+                {
+                    "title": "Privacy & data",
+                    "items": [
+                        {
+                            "q": "Who can see my training data?",
+                            "a": "Only you — and a coach you explicitly link with. See our Privacy Policy for details."
+                        },
+                        {
+                            "q": "Can I delete my account?",
+                            "a": "Yes. Deleting your account removes your personal data, subject to records we must keep for legal reasons."
+                        }
+                    ]
+                }
+            ]
+        },
+        "emailFallback": "contact email"
     }
 }
