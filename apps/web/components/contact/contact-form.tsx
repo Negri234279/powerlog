@@ -30,7 +30,7 @@ export function ContactForm() {
     const [error, setError] = useState<string | null>(null)
     const [done, setDone] = useState(false)
 
-    async function onSubmit(event: React.FormEvent) {
+    async function onSubmit(event: React.SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         setError(null)
         try {

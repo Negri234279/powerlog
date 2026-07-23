@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { type SupportTicketRow, useAdminSupportTickets } from '@/lib/graphql/hooks/use-admin-support'
-import { formatNumericDate } from '@/lib/format-date'
+import { formatNumericDateTime } from '@/lib/format-date'
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { AdminTabs } from '@/components/admin/admin-tabs'
 import { StatusPill } from '@/components/admin/support-status-pill'
@@ -124,7 +124,7 @@ function TicketRow({ ticket }: { ticket: SupportTicketRow }) {
                     </p>
                 </div>
                 <span className="shrink-0 font-mono text-xs text-text-faint">
-                    {formatNumericDate(ticket.lastMessageAt, locale)}
+                    {formatNumericDateTime(ticket.lastMessageAt, locale)}
                 </span>
             </div>
         </TrackedLink>

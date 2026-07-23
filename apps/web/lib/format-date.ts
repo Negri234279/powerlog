@@ -11,6 +11,17 @@ export function formatNumericDate(iso: string, locale: string): string {
 }
 
 /**
+ * A numeric date and time with **2-digit day and month** and a 4-digit year — e.g.
+ * `18/07/2026, 14:30`, not `18/7/2026, 14:30`. The locale still decides field order
+ * and separators (so `en` renders `07/18/2026, 14:30`); only the zero-padding is forced.
+
+ */
+export function formatNumericDateTime(iso: string, locale: string): string {
+    return new Date(iso).toLocaleString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+
+/**
  * A session's date, the way a lifter reads one: `Fri, 3 Oct` — with the year
  * appended only when it isn't the current one.
  *

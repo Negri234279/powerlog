@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { useState } from 'react'
 
 import { type SupportMessage, useAdminSupportTicket, useSetTicketStatus } from '@/lib/graphql/hooks/use-admin-support'
-import { formatNumericDate } from '@/lib/format-date'
+import { formatNumericDateTime } from '@/lib/format-date'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { StatusPill } from '@/components/admin/support-status-pill'
 import { ChevronLeft } from '@/components/ui/icons'
@@ -80,7 +80,7 @@ export default function AdminContactDetailPage() {
                                     )}
                                 </p>
                                 <p className="mt-1 font-mono text-xs text-text-faint">
-                                    {t('openedOn', { date: formatNumericDate(ticket.createdAt, locale) })}
+                                    {t('openedOn', { date: formatNumericDateTime(ticket.createdAt, locale) })}
                                 </p>
                             </div>
 
@@ -121,7 +121,7 @@ function MessageBubble({ message }: { message: SupportMessage }) {
                     {inbound ? t('fromRequester') : t('fromStaff')}
                 </span>
                 <span className="font-mono text-xs text-text-faint">
-                    {formatNumericDate(message.createdAt, locale)}
+                    {formatNumericDateTime(message.createdAt, locale)}
                 </span>
             </div>
             <p className="mt-3 whitespace-pre-wrap text-body leading-relaxed text-text-dim">{message.body}</p>
