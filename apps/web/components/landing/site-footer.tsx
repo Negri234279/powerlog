@@ -26,12 +26,12 @@ function hrefFor(item: string, locale: Locale): string {
     return '#'
 }
 
-export async function SiteFooter() {
+export async function SiteFooter({ className }: { className?: string }) {
     const t = await getTranslations('landing.footer')
     const locale = (await getLocale()) as Locale
 
     return (
-        <footer className="border-t border-hairline px-6 py-16 md:px-8">
+        <footer className={`border-t border-hairline px-6 py-16 md:px-8 ${className ?? ''}`}>
             <div className="mx-auto grid max-w-[80rem] gap-12 md:grid-cols-[1.4fr_repeat(3,1fr)]">
                 <div>
                     <div className="flex items-center gap-2.5">

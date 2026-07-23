@@ -16,7 +16,7 @@ import { SiteNav } from '@/components/landing/site-nav'
  */
 export function LandingPage() {
     return (
-        <>
+        <div className="flex min-h-screen flex-col">
             <SiteNav />
             <main>
                 <Hero />
@@ -27,7 +27,7 @@ export function LandingPage() {
                 <Pricing />
                 <CtaSection />
             </main>
-            <SiteFooter />
-        </>
+            <SiteFooter className="mt-auto" />
+        </div>
     )
 }
