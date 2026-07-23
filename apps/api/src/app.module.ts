@@ -23,6 +23,7 @@ import { BillingModule } from './modules/billing/billing.module'
 import { CoachingModule } from './modules/coaching/coaching.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
 import { ProfileModule } from './modules/profile/profile.module'
+import { SupportModule } from './modules/support/support.module'
 import { WorkoutsModule } from './modules/workouts/workouts.module'
 import { logContextMixin } from './observability/log-context.mixin'
 import { ObservabilityModule } from './observability/observability.module'
@@ -129,6 +130,8 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
         // Answers GetUserEntitlementsQuery, which the Entitlements adapter above
         // dispatches — so it must be registered for any gated action to resolve.
         BillingModule,
+        // Public contact form → support tickets (+ admin surface, Block 2.2).
+        SupportModule,
     ],
     providers: [AppResolver, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],
 })

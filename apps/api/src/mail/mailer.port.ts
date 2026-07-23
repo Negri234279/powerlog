@@ -5,6 +5,11 @@ export interface EmailMessage {
     html: string
     text?: string
     /**
+     * Reply-To address. Used by the contact/support flow so a reply from the admin
+     * inbox goes back to the person who wrote in, not to the app's `from` address.
+     */
+    replyTo?: string
+    /**
      * Low-cardinality purpose label (e.g. `email_verification`, `password_reset`)
      * used as the `type` label on the `emails_sent` metric. Never a recipient.
      */

@@ -1748,16 +1748,12 @@
                 "pricing": "Precios"
             },
             "company": {
-                "about": "Sobre nosotros",
-                "changelog": "Novedades",
-                "careers": "Empleo",
                 "contact": "Contacto",
                 "faq": "Preguntas frecuentes"
             },
             "legal": {
                 "privacy": "Privacidad",
                 "terms": "Términos",
-                "security": "Seguridad",
                 "cookies": "Cookies"
             },
             "builtForBar": "Hecho para la barra"

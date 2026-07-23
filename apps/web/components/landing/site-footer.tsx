@@ -11,8 +11,8 @@ import { LocaleSwitcher } from './locale-switcher'
 // per locale without moving the `footer-*` click events.
 const COLUMNS = [
     { id: 'product', titleKey: 'colProduct', items: ['features', 'analytics', 'coaching', 'pricing'] },
-    { id: 'company', titleKey: 'colCompany', items: ['about', 'changelog', 'careers', 'contact', 'faq'] },
-    { id: 'legal', titleKey: 'colLegal', items: ['privacy', 'terms', 'cookies', 'security'] },
+    { id: 'company', titleKey: 'colCompany', items: ['faq', 'contact'] },
+    { id: 'legal', titleKey: 'colLegal', items: ['privacy', 'terms', 'cookies'] },
 ] as const
 
 // Product items are anchors into the landing; legal docs (privacy/terms/cookies/faq)

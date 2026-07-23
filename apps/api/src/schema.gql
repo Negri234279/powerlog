@@ -719,6 +719,22 @@ input CompleteSetInput {
   weight: Float
 }
 
+input ContactInput {
+  """One of: general, billing, bug, account, feature, other."""
+  category: String!
+  email: String!
+  message: String!
+
+  """The sender’s name, if given."""
+  name: String
+  subject: String!
+
+  """
+  Honeypot — real users leave it empty; a filled value is dropped as spam.
+  """
+  website: String
+}
+
 input CreateExerciseInput {
   """
   squat | bench | deadlift | chest | back | shoulders | legs | arms | core
@@ -1410,6 +1426,11 @@ type Mutation {
 
   """Revoke one session by id (logs out that device)."""
   revokeSession(id: String!): Boolean!
+
+  """
+  Send a contact/support message (public). Opens a support ticket and notifies the team.
+  """
+  sendContactMessage(input: ContactInput!): Boolean!
 
   """
   Make this the provider the AI features use. Any previous default steps down.

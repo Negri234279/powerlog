@@ -56,6 +56,7 @@ export const METRIC = {
     revenueCents: 'powerlog_revenue_cents_total',
     aiGenerationsQueued: 'powerlog_ai_generations_queued_total',
     aiGenerationDuration: 'powerlog_ai_generation_duration_seconds',
+    supportTicketsOpened: 'powerlog_support_tickets_opened_total',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -235,6 +236,14 @@ export const metricsProviders = [
         help: 'End-to-end duration of AI generations in seconds, queue wait included.',
         labelNames: ['kind', 'status'],
         buckets: LLM_DURATION_BUCKETS,
+    }),
+    // Contact/support tickets opened, by category (set by PrometheusSupportMetrics).
+    // The notification email is already counted by MeteredMailer as type=contact;
+    // this is the demand signal — how many people wrote in and about what.
+    makeCounterProvider({
+        name: METRIC.supportTicketsOpened,
+        help: 'Count of contact/support tickets opened, by category.',
+        labelNames: ['category'],
     }),
     // Tokens billed to the user's own provider account, split by direction.
     // The cost is theirs (BYOK); this is a usage signal, not a billing source.

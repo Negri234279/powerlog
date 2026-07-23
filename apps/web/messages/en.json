@@ -1744,16 +1744,12 @@
                 "pricing": "Pricing"
             },
             "company": {
-                "about": "About",
-                "changelog": "Changelog",
-                "careers": "Careers",
                 "contact": "Contact",
                 "faq": "FAQ"
             },
             "legal": {
                 "privacy": "Privacy",
                 "terms": "Terms",
-                "security": "Security",
                 "cookies": "Cookies"
             },
             "builtForBar": "Built for the bar"

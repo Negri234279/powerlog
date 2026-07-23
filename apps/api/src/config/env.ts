@@ -87,6 +87,10 @@ export const envSchema = z.object({
     SMTP_SECURE: z.stringbool().default(false),
     SMTP_USER: z.string().default(''),
     SMTP_PASS: z.string().default(''),
+    // Destination inbox for contact/support tickets. Empty → the ticket is still
+    // stored (the DB is the source of truth), the admin notification email is just
+    // skipped. Reply-To on that email is set to the person who wrote in.
+    CONTACT_TO: z.string().default(''),
     // Lifetime of an email-verification token.
     EMAIL_VERIFICATION_TTL: z.string().default('24h'),
     // Lifetime of a password-reset token.
