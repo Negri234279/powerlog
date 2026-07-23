@@ -2,13 +2,14 @@
 
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { type SubmitEvent, useState, useTransition } from 'react'
+import { type SubmitEvent, useId, useState, useTransition } from 'react'
 
 import { AvailabilityInput } from '@/components/ui/availability-input'
 import { Field, Input, Select } from '@/components/ui/field'
 import { PasswordInput } from '@/components/ui/password-input'
-import { TrackedButton } from '@/components/ui/tracked'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import { useAvailability } from '@/lib/graphql/hooks/use-availability'
+import { LEGAL_PATHS } from '@/lib/legal'
 import { setLocaleCookie } from '@/lib/i18n/actions'
 import { type Locale, LOCALE_LABELS, SUPPORTED_LOCALES } from '@/lib/i18n/config'
 import { type RegisterValues, fieldErrors, registerSchema } from '@/lib/validation/auth'
@@ -25,6 +26,8 @@ export function AccountStep({
     prefillEmail,
     prefillUsername,
     coachUsername,
+    accepted,
+    onAcceptedChange,
     onBack,
     onDone,
 }: {
@@ -33,6 +36,10 @@ export function AccountStep({
     prefillEmail: string
     prefillUsername: string
     coachUsername: string | null
+    /** Whether the Terms + Privacy consent is ticked. Lifted so it survives a
+     *  step back-and-forth just like the account fields do. */
+    accepted: boolean
+    onAcceptedChange: (value: boolean) => void
     /** Omitted when this is the first step — no previous step to go back to. */
     onBack?: () => void
     onDone: (values: RegisterValues) => void
@@ -42,8 +49,12 @@ export function AccountStep({
     const te = (key?: string) => (key ? t(`errors.${key}`) : undefined)
     const router = useRouter()
     const locale = useLocale() as Locale
+    const consentId = useId()
     const [, startTransition] = useTransition()
     const [errors, setErrors] = useState<Record<string, string>>({})
+    // Only surfaced after a submit attempt — the Continue button is already
+    // disabled until consent is ticked, but an Enter keypress can still fire.
+    const [consentError, setConsentError] = useState(false)
 
     const [email, setEmail] = useState(defaults?.email ?? prefillEmail)
     const [username, setUsername] = useState(defaults?.username ?? prefillUsername)
@@ -52,7 +63,7 @@ export function AccountStep({
     // nothing to check there. A "taken" or still-"checking" field blocks the step.
     const emailStatus = useAvailability('email', email, invited)
     const usernameStatus = useAvailability('username', username)
-    const blocked = [emailStatus, usernameStatus].some((s) => s === 'checking' || s === 'taken')
+    const blocked = !accepted || [emailStatus, usernameStatus].some((s) => s === 'checking' || s === 'taken')
 
     const emailError = emailStatus === 'taken' ? t('errors.emailTaken') : te(errors['email'])
     const usernameError = usernameStatus === 'taken' ? t('errors.usernameTaken') : te(errors['username'])
@@ -92,6 +103,14 @@ export function AccountStep({
         // Belt-and-suspenders: the Continue button is disabled while taken/checking,
         // but an Enter keypress could still fire — never advance with a known dup.
         if (emailStatus === 'taken' || usernameStatus === 'taken') return
+
+        // Consent is required to create the account. Same reasoning: the button is
+        // disabled without it, but an Enter keypress bypasses that.
+        if (!accepted) {
+            setConsentError(true)
+
+            return
+        }
 
         setErrors({})
         onDone(parsed.data)
@@ -220,6 +239,49 @@ export function AccountStep({
                         defaultValue={defaults?.birthDate ?? ''}
                     />
                 </Field>
+            </div>
+
+            <div className="pt-2">
+                <label htmlFor={consentId} className="flex items-start gap-3 text-sm text-text-dim">
+                    <input
+                        id={consentId}
+                        type="checkbox"
+                        checked={accepted}
+                        aria-invalid={consentError}
+                        onChange={(e) => {
+                            onAcceptedChange(e.target.checked)
+                            if (e.target.checked) setConsentError(false)
+                        }}
+                        className="mt-0.5 size-4 shrink-0 rounded border-hairline bg-bg/60 accent-ember"
+                    />
+                    <span>
+                        {tw.rich('consent', {
+                            terms: (chunks) => (
+                                <TrackedLink
+                                    analyticsId="wizard-consent-terms"
+                                    href={LEGAL_PATHS[locale].terms}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-text underline-offset-4 hover:underline"
+                                >
+                                    {chunks}
+                                </TrackedLink>
+                            ),
+                            privacy: (chunks) => (
+                                <TrackedLink
+                                    analyticsId="wizard-consent-privacy"
+                                    href={LEGAL_PATHS[locale].privacy}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-text underline-offset-4 hover:underline"
+                                >
+                                    {chunks}
+                                </TrackedLink>
+                            ),
+                        })}
+                    </span>
+                </label>
+                {consentError ? <p className="mt-1.5 text-xs text-ember">{tw('consentRequired')}</p> : null}
             </div>
 
             <div className="flex items-center gap-3 pt-2">

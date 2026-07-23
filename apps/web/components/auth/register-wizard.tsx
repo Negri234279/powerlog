@@ -55,6 +55,9 @@ export function RegisterWizard() {
     const [coachEnabled, setCoachEnabled] = useState(false)
     const [coachPlan, setCoachPlan] = useState<PublicPlan | null>(null)
     const [account, setAccount] = useState<RegisterValues | null>(null)
+    // Terms + Privacy consent, gated on the account step. Lifted here so it
+    // survives stepping back and forth like the account fields do.
+    const [acceptedTerms, setAcceptedTerms] = useState(false)
     const [formError, setFormError] = useState<string | null>(null)
 
     async function createAccount() {
@@ -199,6 +202,8 @@ export function RegisterWizard() {
                                     prefillEmail={preview.data?.email ?? ''}
                                     prefillUsername={preview.data?.suggestedUsername ?? ''}
                                     coachUsername={preview.data?.coachUsername ?? null}
+                                    accepted={acceptedTerms}
+                                    onAcceptedChange={setAcceptedTerms}
                                     onDone={(values) => {
                                         setAccount(values)
                                         setStep('athlete')

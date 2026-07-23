@@ -349,7 +349,9 @@
             "paymentSubtitle": "Enter your payment method to activate your plan.",
             "payingFor": "Activate {plan}",
             "planCount": "Plan {current} of {total}",
-            "payLater": "Finish later"
+            "payLater": "Finish later",
+            "consent": "I accept the <terms>Terms</terms> and the <privacy>Privacy Policy</privacy>.",
+            "consentRequired": "You must accept the Terms and the Privacy Policy to continue."
         }
     },
     "common": {

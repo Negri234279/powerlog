@@ -349,7 +349,9 @@
             "paymentSubtitle": "Introduce tu método de pago para activar tu plan.",
             "payingFor": "Activa {plan}",
             "planCount": "Plan {current} de {total}",
-            "payLater": "Terminar más tarde"
+            "payLater": "Terminar más tarde",
+            "consent": "Acepto los <terms>Términos</terms> y la <privacy>Política de Privacidad</privacy>.",
+            "consentRequired": "Debes aceptar los Términos y la Política de Privacidad para continuar."
         }
     },
     "common": {
