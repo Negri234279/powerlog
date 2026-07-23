@@ -34,12 +34,16 @@ export async function SiteFooter({ className }: { className?: string }) {
         <footer className={`border-t border-hairline px-6 py-16 md:px-8 ${className ?? ''}`}>
             <div className="mx-auto grid max-w-[80rem] gap-12 md:grid-cols-[1.4fr_repeat(3,1fr)]">
                 <div>
-                    <div className="flex items-center gap-2.5">
+                    <TrackedLink
+                        analyticsId="footer-wordmark"
+                        href={locale === 'es' ? '/es' : '/'}
+                        className="inline-flex items-center gap-2.5"
+                    >
                         <span className="grid size-8 place-items-center rounded-xl bg-ember-gradient text-bg">
                             <Mark className="size-4.5" />
                         </span>
                         <span className="font-display text-lg font-semibold tracking-tight">powerlog</span>
-                    </div>
+                    </TrackedLink>
                     <p className="mt-4 max-w-xs text-body text-text-dim">{t('tagline')}</p>
                 </div>
 
