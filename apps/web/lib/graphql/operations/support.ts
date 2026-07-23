@@ -11,8 +11,20 @@ export const SendContactMessageDocument = graphql(`
 // ── Admin support inbox ──────────────────────────────────────
 
 export const AdminSupportTicketsDocument = graphql(`
-    query AdminSupportTickets($status: String, $category: String, $search: String, $limit: Int, $offset: Int) {
-        adminSupportTickets(status: $status, category: $category, search: $search, limit: $limit, offset: $offset) {
+    query AdminSupportTickets(
+        $statuses: [String!]
+        $categories: [String!]
+        $search: String
+        $limit: Int
+        $offset: Int
+    ) {
+        adminSupportTickets(
+            statuses: $statuses
+            categories: $categories
+            search: $search
+            limit: $limit
+            offset: $offset
+        ) {
             rows {
                 id
                 category

@@ -9,7 +9,7 @@ import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { AdminTabs } from '@/components/admin/admin-tabs'
 import { StatusPill } from '@/components/admin/support-status-pill'
 import { ClearableSearch } from '@/components/ui/clearable-search'
-import { Select } from '@/components/ui/field'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
 import { TrackedLink } from '@/components/ui/tracked'
@@ -17,17 +17,27 @@ import { TrackedLink } from '@/components/ui/tracked'
 const STATUSES = ['open', 'closed'] as const
 const CATEGORIES = ['general', 'billing', 'bug', 'account', 'feature', 'other'] as const
 
+/** All filter state in one object — status defaults to `open` so the inbox opens
+ *  on the tickets that still need attention. */
+interface Filters {
+    statuses: string[]
+    categories: string[]
+    search: string
+}
+
+const INITIAL_FILTERS: Filters = { statuses: ['open'], categories: [], search: '' }
+
 export default function AdminContactPage() {
     const t = useTranslations('admin.support')
     const ta = useTranslations('admin')
-    const [status, setStatus] = useState('')
-    const [category, setCategory] = useState('')
-    const [search, setSearch] = useState('')
-    const debouncedSearch = useDebouncedValue(search, 300)
+    const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS)
+    const debouncedSearch = useDebouncedValue(filters.search, 300)
+
+    const patch = (next: Partial<Filters>) => setFilters((current) => ({ ...current, ...next }))
 
     const { data, isLoading } = useAdminSupportTickets({
-        status: status || undefined,
-        category: category || undefined,
+        statuses: filters.statuses,
+        categories: filters.categories,
         search: debouncedSearch || undefined,
     })
 
@@ -42,44 +52,34 @@ export default function AdminContactPage() {
                 <AdminTabs />
             </div>
 
-            {/* Desktop: one row — search grows, each select shrinks to its content.
-                Mobile: search takes the full first row, the two selects split the
-                second row half-and-half. */}
-            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+            {/* Desktop: one row — search grows, the two multi-selects sit at their
+                natural width. Mobile: search takes the full first row, the filters
+                wrap onto the second. */}
+            <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
                 <div className="w-full sm:flex-1">
                     <ClearableSearch
                         analyticsId="admin-support-search"
-                        value={search}
-                        onChange={setSearch}
+                        value={filters.search}
+                        onChange={(search) => patch({ search })}
                         placeholder={t('searchPlaceholder')}
                     />
                 </div>
-                <Select
-                    aria-label={t('statusLabel')}
-                    value={status}
-                    onChange={(event) => setStatus(event.target.value)}
-                    className="w-auto! flex-1 py-2.5 sm:flex-none"
-                >
-                    <option value="">{t('anyStatus')}</option>
-                    {STATUSES.map((value) => (
-                        <option key={value} value={value}>
-                            {t(`status.${value}`)}
-                        </option>
-                    ))}
-                </Select>
-                <Select
-                    aria-label={t('categoryLabel')}
-                    value={category}
-                    onChange={(event) => setCategory(event.target.value)}
-                    className="w-auto! flex-1 py-2.5 sm:flex-none"
-                >
-                    <option value="">{t('anyCategory')}</option>
-                    {CATEGORIES.map((value) => (
-                        <option key={value} value={value}>
-                            {t(`categories.${value}`)}
-                        </option>
-                    ))}
-                </Select>
+                <MultiSelect
+                    analyticsId="admin-support-status"
+                    label={t('statusLabel')}
+                    ariaLabel={t('statusLabel')}
+                    options={STATUSES.map((value) => ({ value, label: t(`status.${value}`) }))}
+                    selected={filters.statuses}
+                    onChange={(statuses) => patch({ statuses })}
+                />
+                <MultiSelect
+                    analyticsId="admin-support-category"
+                    label={t('categoryLabel')}
+                    ariaLabel={t('categoryLabel')}
+                    options={CATEGORIES.map((value) => ({ value, label: t(`categories.${value}`) }))}
+                    selected={filters.categories}
+                    onChange={(categories) => patch({ categories })}
+                />
             </div>
 
             <div className="mt-6 space-y-2">

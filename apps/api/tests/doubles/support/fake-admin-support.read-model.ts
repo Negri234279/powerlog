@@ -18,8 +18,8 @@ export class FakeAdminSupportReadModel extends AdminSupportReadModel {
     async list(filter: AdminSupportFilter, page: { limit: number; offset: number }): Promise<AdminSupportPage> {
         const matched = this.rows.filter(
             (row) =>
-                (!filter.status || row.status === filter.status) &&
-                (!filter.category || row.category === filter.category) &&
+                (!filter.statuses?.length || filter.statuses.includes(row.status)) &&
+                (!filter.categories?.length || filter.categories.includes(row.category)) &&
                 (!filter.userId || row.requesterUserId === filter.userId),
         )
 

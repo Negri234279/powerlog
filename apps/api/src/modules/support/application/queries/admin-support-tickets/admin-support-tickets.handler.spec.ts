@@ -45,6 +45,17 @@ describe('AdminSupportTicketsHandler', () => {
         expect(page.rows[1]).toMatchObject({ id: 'ticket-2', requesterUsername: null })
     })
 
+    it('filters by a set of statuses', async () => {
+        const open = row({ id: 'open-1', status: 'open' })
+        const closed = row({ id: 'closed-1', status: 'closed' })
+        const { handler } = setup([open, closed])
+
+        const page = await handler.execute(new AdminSupportTicketsQuery({ statuses: ['open'] }, 50, 0))
+
+        expect(page.rows).toHaveLength(1)
+        expect(page.rows[0]?.id).toBe('open-1')
+    })
+
     it('resolves a search term to a userId and filters by it', async () => {
         const page = await ctx.handler.execute(new AdminSupportTicketsQuery({ search: 'user@example.com' }, 50, 0))
 

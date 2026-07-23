@@ -17,13 +17,18 @@ export type SupportMessage = SupportTicketDetail['messages'][number]
 
 const TICKETS_KEY = ['adminSupportTickets']
 
-export function useAdminSupportTickets(filter: { status?: string; category?: string; search?: string }) {
+export function useAdminSupportTickets(filter: { statuses?: string[]; categories?: string[]; search?: string }) {
     return useQuery({
-        queryKey: [...TICKETS_KEY, filter.status ?? 'all', filter.category ?? 'all', filter.search ?? ''],
+        queryKey: [
+            ...TICKETS_KEY,
+            filter.statuses?.join(',') ?? '',
+            filter.categories?.join(',') ?? '',
+            filter.search ?? '',
+        ],
         queryFn: () =>
             gqlRequest(AdminSupportTicketsDocument, {
-                status: filter.status || null,
-                category: filter.category || null,
+                statuses: filter.statuses?.length ? filter.statuses : null,
+                categories: filter.categories?.length ? filter.categories : null,
                 search: filter.search || null,
                 limit: 50,
             }).then((r) => r.adminSupportTickets),

@@ -4,8 +4,8 @@ import type { TicketStatus } from '../../../domain/ticket-status'
 export class AdminSupportTicketsQuery {
     constructor(
         readonly filter: {
-            status?: TicketStatus
-            category?: TicketCategory
+            statuses?: TicketStatus[]
+            categories?: TicketCategory[]
             /** Exact email or handle of the requester (resolved to a userId). */
             search?: string
         },

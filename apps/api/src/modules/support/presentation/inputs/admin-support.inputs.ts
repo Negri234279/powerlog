@@ -7,8 +7,8 @@ import { TICKET_STATUSES } from '../../domain/ticket-status'
 export const DEFAULT_LIMIT = 50
 
 export const uuidArg = z.string().uuid()
-export const statusArg = z.enum(TICKET_STATUSES).optional()
-export const categoryArg = z.enum(TICKET_CATEGORIES).optional()
+export const statusesArg = z.array(z.enum(TICKET_STATUSES)).optional()
+export const categoriesArg = z.array(z.enum(TICKET_CATEGORIES)).optional()
 export const searchArg = z.string().trim().min(1).max(120).optional()
 export const limitArg = z.coerce.number().int().min(1).max(100).optional()
 export const offsetArg = z.coerce.number().int().min(0).optional()

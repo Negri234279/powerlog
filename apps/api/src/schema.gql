@@ -1905,7 +1905,7 @@ type Query {
   adminSupportTicket(id: ID!): AdminSupportTicketDetail
 
   """Support tickets, filtered + paginated (admin only)."""
-  adminSupportTickets(category: String, limit: Int, offset: Int, search: String, status: String): AdminSupportTicketPage!
+  adminSupportTickets(categories: [String!], limit: Int, offset: Int, search: String, statuses: [String!]): AdminSupportTicketPage!
 
   """
   The full detail of one user — account, profile, plan, billing, coaching, training (admin only).

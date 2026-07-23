@@ -13,13 +13,13 @@ import { AdminSupportTicketQuery } from '../../application/queries/admin-support
 import type { AdminSupportTicketsPageView } from '../../application/queries/admin-support-tickets/admin-support-tickets.handler'
 import { AdminSupportTicketsQuery } from '../../application/queries/admin-support-tickets/admin-support-tickets.query'
 import {
-    categoryArg,
+    categoriesArg,
     DEFAULT_LIMIT,
     limitArg,
     offsetArg,
     searchArg,
     setStatusArg,
-    statusArg,
+    statusesArg,
     uuidArg,
 } from '../inputs/admin-support.inputs'
 import { AdminSupportTicketDetailType, AdminSupportTicketPageType } from '../types/support.types'
@@ -35,15 +35,19 @@ export class AdminSupportResolver {
 
     @Query(() => AdminSupportTicketPageType, { description: 'Support tickets, filtered + paginated (admin only).' })
     async adminSupportTickets(
-        @Args('status', { type: () => String, nullable: true }, new ZodValidationPipe(statusArg))
-        status?: TicketStatus,
-        @Args('category', { type: () => String, nullable: true }, new ZodValidationPipe(categoryArg))
-        category?: TicketCategory,
+        @Args('statuses', { type: () => [String], nullable: true }, new ZodValidationPipe(statusesArg))
+        statuses?: TicketStatus[],
+        @Args('categories', { type: () => [String], nullable: true }, new ZodValidationPipe(categoriesArg))
+        categories?: TicketCategory[],
         @Args('search', { type: () => String, nullable: true }, new ZodValidationPipe(searchArg)) search?: string,
         @Args('limit', { type: () => Int, nullable: true }, new ZodValidationPipe(limitArg)) limit?: number,
         @Args('offset', { type: () => Int, nullable: true }, new ZodValidationPipe(offsetArg)) offset?: number,
     ): Promise<AdminSupportTicketsPageView> {
-        const query = new AdminSupportTicketsQuery({ status, category, search }, limit ?? DEFAULT_LIMIT, offset ?? 0)
+        const query = new AdminSupportTicketsQuery(
+            { statuses, categories, search },
+            limit ?? DEFAULT_LIMIT,
+            offset ?? 0,
+        )
         return this.queryBus.execute(query)
     }
 

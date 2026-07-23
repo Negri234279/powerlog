@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, count, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, inArray } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import {
@@ -25,8 +25,10 @@ export class DrizzleAdminSupportReadModel extends AdminSupportReadModel {
 
     async list(filter: AdminSupportFilter, page: { limit: number; offset: number }): Promise<AdminSupportPage> {
         const where = and(
-            filter.status ? eq(supportTickets.status, filter.status) : undefined,
-            filter.category ? eq(supportTickets.category, filter.category) : undefined,
+            filter.statuses && filter.statuses.length > 0 ? inArray(supportTickets.status, filter.statuses) : undefined,
+            filter.categories && filter.categories.length > 0
+                ? inArray(supportTickets.category, filter.categories)
+                : undefined,
             filter.userId ? eq(supportTickets.requesterUserId, filter.userId) : undefined,
         )
 
