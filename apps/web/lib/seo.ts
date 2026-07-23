@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 
 import { serverEnv } from '@/lib/env.server'
-import { type LegalDoc, LEGAL_PATHS } from '@/lib/legal'
+import { CONTACT_PATHS, type LegalDoc, LEGAL_PATHS } from '@/lib/legal'
 import type { Locale } from '@/lib/i18n/config'
 
 /** Canonical origin (no trailing slash), e.g. `https://powerlog.negri.es`. */
@@ -57,5 +57,23 @@ export async function legalMetadata(doc: LegalDoc, locale: Locale): Promise<Meta
         title: t('title'),
         description: t('intro'),
         alternates: legalAlternates(doc, locale),
+    }
+}
+
+/** Title/description/alternates for the contact page. */
+export async function contactMetadata(locale: Locale): Promise<Metadata> {
+    const t = await getTranslations({ locale, namespace: 'contact' })
+
+    return {
+        title: t('title'),
+        description: t('intro'),
+        alternates: {
+            canonical: CONTACT_PATHS[locale],
+            languages: {
+                en: CONTACT_PATHS.en,
+                es: CONTACT_PATHS.es,
+                'x-default': CONTACT_PATHS.en,
+            },
+        },
     }
 }

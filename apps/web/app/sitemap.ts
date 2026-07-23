@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 
-import { LEGAL_DOCS, LEGAL_PATHS } from '@/lib/legal'
+import { CONTACT_PATHS, LEGAL_DOCS, LEGAL_PATHS } from '@/lib/legal'
 import { siteUrl } from '@/lib/seo'
 
 /**
@@ -46,5 +46,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
         }))
     })
 
-    return [...home, ...legal]
+    const contactLanguages = {
+        en: `${siteUrl}${CONTACT_PATHS.en}`,
+        es: `${siteUrl}${CONTACT_PATHS.es}`,
+    }
+    const contact: MetadataRoute.Sitemap = (['en', 'es'] as const).map((locale) => ({
+        url: `${siteUrl}${CONTACT_PATHS[locale]}`,
+        changeFrequency: 'yearly' as const,
+        priority: 0.5,
+        alternates: { languages: contactLanguages },
+    }))
+
+    return [...home, ...legal, ...contact]
 }

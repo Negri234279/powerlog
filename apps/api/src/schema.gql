@@ -176,6 +176,49 @@ type AdminSubscriptionPage {
   total: Int!
 }
 
+type AdminSupportTicket {
+  """general | billing | bug | account | feature | other"""
+  category: String!
+  createdAt: DateTime!
+  id: ID!
+  lastMessageAt: DateTime!
+  messageCount: Int!
+  requesterEmail: String!
+  requesterName: String
+
+  """Linked account, if the email matched one."""
+  requesterUserId: ID
+
+  """The linked account's handle."""
+  requesterUsername: String
+
+  """open | closed"""
+  status: String!
+  subject: String!
+}
+
+type AdminSupportTicketDetail {
+  category: String!
+  createdAt: DateTime!
+  id: ID!
+  lastMessageAt: DateTime!
+  messages: [SupportMessage!]!
+  requesterEmail: String!
+  requesterName: String
+  requesterUserId: ID
+  requesterUsername: String
+  status: String!
+  subject: String!
+  updatedAt: DateTime!
+}
+
+type AdminSupportTicketPage {
+  limit: Int!
+  offset: Int!
+  rows: [AdminSupportTicket!]!
+  total: Int!
+}
+
 type AdminUser {
   createdAt: DateTime!
   email: String!
@@ -1458,6 +1501,9 @@ type Mutation {
   """
   setPlanStatus(id: ID!, status: String!): Boolean!
 
+  """Close or reopen a support ticket (admin only)."""
+  setTicketStatus(id: ID!, status: String!): Boolean!
+
   """Grant or revoke platform admin (cannot revoke your own)."""
   setUserAdmin(input: SetUserAdminInput!): AdminUser!
 
@@ -1852,6 +1898,14 @@ type Query {
   Subscriptions, filterable by status/gateway/plan and by exact email or handle.
   """
   adminSubscriptions(gateway: String, limit: Int, offset: Int, planId: ID, search: String, status: String): AdminSubscriptionPage!
+
+  """
+  One support ticket with its full thread (admin only). Null if it does not exist.
+  """
+  adminSupportTicket(id: ID!): AdminSupportTicketDetail
+
+  """Support tickets, filtered + paginated (admin only)."""
+  adminSupportTickets(category: String, limit: Int, offset: Int, search: String, status: String): AdminSupportTicketPage!
 
   """
   The full detail of one user — account, profile, plan, billing, coaching, training (admin only).
@@ -2264,6 +2318,17 @@ type SubscriptionsByStatus {
   count: Int!
   gateway: String!
   status: String!
+}
+
+type SupportMessage {
+  """The staff author of an outbound reply; null for inbound."""
+  authorUserId: ID
+  body: String!
+  createdAt: DateTime!
+
+  """inbound (from the requester) | outbound (staff reply)"""
+  direction: String!
+  id: ID!
 }
 
 input TemplateExerciseInput {

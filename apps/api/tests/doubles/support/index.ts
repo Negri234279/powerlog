@@ -1,3 +1,4 @@
+export { FakeAdminSupportReadModel } from './fake-admin-support.read-model'
 export { FakeClock } from './fake-clock'
 export { FakeIdGenerator } from './fake-id-generator'
 export { FakeSupportMetrics } from './fake-support-metrics'

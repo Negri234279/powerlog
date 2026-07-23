@@ -1,7 +1,7 @@
 import { getLocale, getTranslations } from 'next-intl/server'
 
 import type { Locale } from '@/lib/i18n/config'
-import { isLegalDoc, LEGAL_PATHS } from '@/lib/legal'
+import { CONTACT_PATHS, isLegalDoc, LEGAL_PATHS } from '@/lib/legal'
 import { Mark } from '@/components/ui/icons'
 import { TrackedLink } from '@/components/ui/tracked'
 import { LocaleSwitcher } from './locale-switcher'
@@ -20,6 +20,7 @@ const COLUMNS = [
 const ANCHORS = new Set(['features', 'analytics', 'coaching', 'pricing'])
 
 function hrefFor(item: string, locale: Locale): string {
+    if (item === 'contact') return CONTACT_PATHS[locale]
     if (isLegalDoc(item)) return LEGAL_PATHS[locale][item]
     if (ANCHORS.has(item)) return `${locale === 'es' ? '/es' : '/'}#${item}`
     return '#'

@@ -29,3 +29,9 @@ export const LEGAL_PATHS: Record<Locale, Record<LegalDoc, string>> = {
 export function isLegalDoc(value: string): value is LegalDoc {
     return (LEGAL_DOCS as readonly string[]).includes(value)
 }
+
+/** The contact page — same marketing chrome, but a form rather than a policy. */
+export const CONTACT_PATHS: Record<Locale, string> = {
+    en: '/contact',
+    es: '/es/contacto',
+}

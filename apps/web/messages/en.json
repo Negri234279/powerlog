@@ -957,7 +957,8 @@
             "users": "Users",
             "plans": "Plans",
             "subscriptions": "Subscriptions",
-            "billing": "Billing"
+            "billing": "Billing",
+            "contact": "Contact"
         },
         "overviewTitle": "Overview",
         "sectionUsers": "Users",
@@ -1264,7 +1265,39 @@
         "planSynced": "{gateway} ✓ — re-publish",
         "planSyncing": "Publishing…",
         "cancel": "Cancel",
-        "save": "Save"
+        "save": "Save",
+        "support": {
+            "title": "Contact & support",
+            "searchPlaceholder": "Search by email or handle…",
+            "statusLabel": "Status",
+            "categoryLabel": "Category",
+            "anyStatus": "Any status",
+            "anyCategory": "Any category",
+            "empty": "No tickets match these filters.",
+            "total": "{total} tickets",
+            "messages": "{count, plural, one {# message} other {# messages}}",
+            "status": {
+                "open": "Open",
+                "closed": "Closed"
+            },
+            "categories": {
+                "general": "General",
+                "billing": "Billing",
+                "bug": "Bug",
+                "account": "Account",
+                "feature": "Feature",
+                "other": "Other"
+            },
+            "back": "Back to inbox",
+            "notFound": "This ticket does not exist.",
+            "linkedUser": "account",
+            "noAccount": "No linked account",
+            "openedOn": "Opened {date}",
+            "close": "Close ticket",
+            "reopen": "Reopen ticket",
+            "fromRequester": "From requester",
+            "fromStaff": "Staff reply"
+        }
     },
     "serverErrors": {
         "generic": "Something went wrong. Please try again.",
@@ -2071,5 +2104,30 @@
             ]
         },
         "emailFallback": "contact email"
+    },
+    "contact": {
+        "title": "Contact us",
+        "intro": "Have a question, found a bug or want to suggest something? Send us a message and we’ll get back to you by email.",
+        "nameLabel": "Name",
+        "namePlaceholder": "Your name (optional)",
+        "emailLabel": "Email",
+        "emailPlaceholder": "you@example.com",
+        "categoryLabel": "Category",
+        "subjectLabel": "Subject",
+        "subjectPlaceholder": "A short summary",
+        "messageLabel": "Message",
+        "messagePlaceholder": "Tell us what’s going on…",
+        "send": "Send message",
+        "sending": "Sending…",
+        "successTitle": "Message sent",
+        "successBody": "Thanks for reaching out. We’ve received your message and will reply to your email soon.",
+        "categories": {
+            "general": "General",
+            "billing": "Billing & payments",
+            "bug": "Bug report",
+            "account": "Account & access",
+            "feature": "Feature request",
+            "other": "Other"
+        }
     }
 }

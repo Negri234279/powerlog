@@ -957,7 +957,8 @@
             "users": "Usuarios",
             "plans": "Planes",
             "subscriptions": "Suscripciones",
-            "billing": "Facturación"
+            "billing": "Facturación",
+            "contact": "Contacto"
         },
         "overviewTitle": "Resumen",
         "sectionUsers": "Usuarios",
@@ -1264,7 +1265,39 @@
         "planSynced": "{gateway} ✓ — republicar",
         "planSyncing": "Publicando…",
         "cancel": "Cancelar",
-        "save": "Guardar"
+        "save": "Guardar",
+        "support": {
+            "title": "Contacto y soporte",
+            "searchPlaceholder": "Buscar por correo o usuario…",
+            "statusLabel": "Estado",
+            "categoryLabel": "Categoría",
+            "anyStatus": "Cualquier estado",
+            "anyCategory": "Cualquier categoría",
+            "empty": "Ningún ticket coincide con estos filtros.",
+            "total": "{total} tickets",
+            "messages": "{count, plural, one {# mensaje} other {# mensajes}}",
+            "status": {
+                "open": "Abierto",
+                "closed": "Cerrado"
+            },
+            "categories": {
+                "general": "General",
+                "billing": "Facturación",
+                "bug": "Error",
+                "account": "Cuenta",
+                "feature": "Sugerencia",
+                "other": "Otro"
+            },
+            "back": "Volver a la bandeja",
+            "notFound": "Este ticket no existe.",
+            "linkedUser": "cuenta",
+            "noAccount": "Sin cuenta vinculada",
+            "openedOn": "Abierto el {date}",
+            "close": "Cerrar ticket",
+            "reopen": "Reabrir ticket",
+            "fromRequester": "Del remitente",
+            "fromStaff": "Respuesta del equipo"
+        }
     },
     "serverErrors": {
         "generic": "Algo salió mal. Inténtalo de nuevo.",
@@ -2075,5 +2108,30 @@
             ]
         },
         "emailFallback": "correo de contacto"
+    },
+    "contact": {
+        "title": "Contacto",
+        "intro": "¿Tienes una duda, has encontrado un fallo o quieres sugerir algo? Escríbenos y te responderemos por correo.",
+        "nameLabel": "Nombre",
+        "namePlaceholder": "Tu nombre (opcional)",
+        "emailLabel": "Correo",
+        "emailPlaceholder": "tu@ejemplo.com",
+        "categoryLabel": "Categoría",
+        "subjectLabel": "Asunto",
+        "subjectPlaceholder": "Un resumen breve",
+        "messageLabel": "Mensaje",
+        "messagePlaceholder": "Cuéntanos qué ocurre…",
+        "send": "Enviar mensaje",
+        "sending": "Enviando…",
+        "successTitle": "Mensaje enviado",
+        "successBody": "Gracias por escribirnos. Hemos recibido tu mensaje y te responderemos por correo en breve.",
+        "categories": {
+            "general": "General",
+            "billing": "Facturación y pagos",
+            "bug": "Informe de error",
+            "account": "Cuenta y acceso",
+            "feature": "Sugerencia",
+            "other": "Otro"
+        }
     }
 }
