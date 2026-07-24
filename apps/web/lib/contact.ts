@@ -9,6 +9,6 @@
  * To change the address: reverse each half (e.g. in a REPL, `[...'user'].reverse().join('')`).
  */
 export const CONTACT_EMAIL = {
-    userReversed: '10ojelafar', // rafalejo01
-    domainReversed: 'moc.liamg', // gmail.com
+    userReversed: '10ojelafar',
+    domainReversed: 'se.irgen.golrewop',
 } as const
