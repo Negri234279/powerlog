@@ -58,8 +58,11 @@ export default function AdminSubscriptionsPage() {
                 <AdminTabs />
             </div>
 
-            <div className="flex flex-wrap items-end gap-3">
-                <div className="min-w-56 flex-1">
+            {/* Desktop: one row — search grows, the selects and button sit at their
+                natural width. Mobile: search takes the full first row, the filters
+                and button wrap onto the second. */}
+            <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
+                <div className="w-full sm:flex-1">
                     <ClearableSearch
                         analyticsId="admin-subscriptions-search"
                         value={search}
@@ -71,7 +74,7 @@ export default function AdminSubscriptionsPage() {
                     aria-label={t('subscriptionStatus')}
                     value={status}
                     onChange={(event) => setStatus(event.target.value)}
-                    className="w-40 py-2.5"
+                    className="w-auto! py-2.5"
                 >
                     <option value="">{t('filterAnyStatus')}</option>
                     {STATUSES.map((value) => (
@@ -84,7 +87,7 @@ export default function AdminSubscriptionsPage() {
                     aria-label={t('subscriptionGateway')}
                     value={gateway}
                     onChange={(event) => setGateway(event.target.value)}
-                    className="w-40 py-2.5"
+                    className="w-auto! py-2.5"
                 >
                     <option value="">{t('filterAnyGateway')}</option>
                     {GATEWAYS.map((value) => (
@@ -97,7 +100,7 @@ export default function AdminSubscriptionsPage() {
                     analyticsId="admin-subscription-assign-open"
                     type="button"
                     onClick={() => setAssigning(true)}
-                    className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-4 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-full bg-ember-gradient px-4 py-2.5 text-sm font-medium text-bg glow-ember transition-transform duration-300 ease-spring active:scale-[0.98]"
                 >
                     <Plus className="size-4" />
                     {t('subscriptionAssign')}
