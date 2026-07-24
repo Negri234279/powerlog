@@ -17,9 +17,14 @@ export function formatNumericDate(iso: string, locale: string): string {
 
  */
 export function formatNumericDateTime(iso: string, locale: string): string {
-    return new Date(iso).toLocaleString(locale, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    return new Date(iso).toLocaleString(locale, {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
 }
-
 
 /**
  * A session's date, the way a lifter reads one: `Fri, 3 Oct` — with the year

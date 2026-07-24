@@ -7,8 +7,10 @@ export class AdminGatewayStatusQuery {}
 /** The webhook journal, for the admin panel (and its retry button). */
 export class AdminWebhookEventsQuery {
     constructor(
-        readonly status: WebhookEventStatus | undefined,
-        readonly gateway: PaymentGateway | undefined,
+        readonly statuses: WebhookEventStatus[] | undefined,
+        readonly gateways: PaymentGateway[] | undefined,
+        readonly type: string | undefined,
+        readonly eventId: string | undefined,
         readonly limit: number,
         readonly offset: number,
     ) {}

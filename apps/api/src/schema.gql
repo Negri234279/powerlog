@@ -1931,8 +1931,10 @@ type Query {
     verified: Boolean
   ): AdminUserPage!
 
-  """The webhook journal — what came in and what failed."""
-  adminWebhookEvents(gateway: String, limit: Int, offset: Int, status: String): BillingWebhookEventPage!
+  """
+  The webhook journal — filterable by statuses/gateways, event type and exact-ish event id.
+  """
+  adminWebhookEvents(eventId: String, gateways: [String!], limit: Int, offset: Int, statuses: [String!], type: String): BillingWebhookEventPage!
 
   """Aggregate training counts (admin only)."""
   adminWorkoutStats: AdminWorkoutStats!

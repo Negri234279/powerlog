@@ -57,13 +57,22 @@ export class InMemoryWebhookEventStore extends WebhookEventStore {
     }
 
     async list(
-        filter: { status?: WebhookEventStatus; gateway?: PaymentGateway },
+        filter: {
+            statuses?: WebhookEventStatus[]
+            gateways?: PaymentGateway[]
+            type?: string
+            eventId?: string
+        },
         page: { limit: number; offset: number },
     ): Promise<{ rows: WebhookEventRecord[]; total: number }> {
+        const type = filter.type?.toLowerCase()
+        const eventId = filter.eventId?.toLowerCase()
         const all = [...this.byKey.values()].filter(
             (record) =>
-                (!filter.status || record.status === filter.status) &&
-                (!filter.gateway || record.gateway === filter.gateway),
+                (!filter.statuses?.length || filter.statuses.includes(record.status)) &&
+                (!filter.gateways?.length || filter.gateways.includes(record.gateway)) &&
+                (!type || record.type.toLowerCase().includes(type)) &&
+                (!eventId || record.eventId.toLowerCase().includes(eventId)),
         )
 
         return { rows: all.slice(page.offset, page.offset + page.limit), total: all.length }

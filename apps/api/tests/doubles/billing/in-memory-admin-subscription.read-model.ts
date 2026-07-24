@@ -24,8 +24,8 @@ export class InMemoryAdminSubscriptionReadModel extends AdminSubscriptionReadMod
     ): Promise<AdminSubscriptionPage> {
         const matched = this.rows
             .filter((r) => (filter.userId ? r.userId === filter.userId : true))
-            .filter((r) => (filter.status ? r.status === filter.status : true))
-            .filter((r) => (filter.gateway ? r.gateway === filter.gateway : true))
+            .filter((r) => (filter.statuses?.length ? filter.statuses.includes(r.status) : true))
+            .filter((r) => (filter.gateways?.length ? filter.gateways.includes(r.gateway) : true))
             .filter((r) => (filter.planId ? r.planId === filter.planId : true))
             .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 

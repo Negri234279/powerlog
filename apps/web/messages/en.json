@@ -1259,9 +1259,16 @@
         "driftMissing": "Live at the gateway, missing here (someone is paying for nothing):",
         "driftStale": "Live here, gone at the gateway (we are granting a plan nobody pays for):",
         "webhooksTitle": "Webhook journal",
-        "webhooksOnlyFailed": "Only failed",
+        "webhooksSearchEventId": "Search by event id",
+        "webhooksSearchType": "Event type",
+        "webhookStatusValue": {
+            "received": "Received",
+            "processed": "Processed",
+            "failed": "Failed"
+        },
         "webhooksNone": "No webhooks yet.",
-        "webhooksNoneFailed": "Nothing failed. ",
+        "webhooksNoneFiltered": "No webhooks match these filters.",
+        "webhooksTotal": "{total} events",
         "webhookRetry": "Replay",
         "planSync": "Publish to {gateway}",
         "planSynced": "{gateway} ✓ — re-publish",

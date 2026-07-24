@@ -1259,9 +1259,16 @@
         "driftMissing": "Vivas en la pasarela y no aquí (alguien está pagando por nada):",
         "driftStale": "Vivas aquí y no en la pasarela (regalamos un plan que nadie paga):",
         "webhooksTitle": "Registro de webhooks",
-        "webhooksOnlyFailed": "Solo fallidos",
+        "webhooksSearchEventId": "Buscar por ID de evento",
+        "webhooksSearchType": "Tipo de evento",
+        "webhookStatusValue": {
+            "received": "Recibido",
+            "processed": "Procesado",
+            "failed": "Fallido"
+        },
         "webhooksNone": "Todavía no hay webhooks.",
-        "webhooksNoneFailed": "Nada ha fallado. ",
+        "webhooksNoneFiltered": "Ningún webhook coincide con estos filtros.",
+        "webhooksTotal": "{total} eventos",
         "webhookRetry": "Reprocesar",
         "planSync": "Publicar en {gateway}",
         "planSynced": "{gateway} ✓ — republicar",

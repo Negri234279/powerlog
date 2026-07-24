@@ -14,9 +14,12 @@ import {
     useRetryWebhookEvent,
 } from '@/lib/graphql/hooks/use-admin-gateways'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { AdminTabs } from '@/components/admin/admin-tabs'
+import { ClearableSearch } from '@/components/ui/clearable-search'
 import { FormError } from '@/components/ui/form-error'
 import { ArrowUpRight, ChartLine, CreditCard } from '@/components/ui/icons'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { PopNumber } from '@/components/ui/pop-number'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TextsReveal } from '@/components/ui/texts-reveal'
@@ -24,6 +27,19 @@ import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
 /** How long a silence is suspicious. Providers send events constantly. */
 const SILENCE_HOURS = 6
+
+const WEBHOOK_GATEWAYS = ['stripe', 'paypal', 'manual'] as const
+const WEBHOOK_STATUSES = ['received', 'processed', 'failed'] as const
+
+/** All webhook-journal filters in one object; each field maps to a query arg. */
+interface WebhookFilters {
+    statuses: string[]
+    gateways: string[]
+    type: string
+    eventId: string
+}
+
+const INITIAL_WEBHOOK_FILTERS: WebhookFilters = { statuses: [], gateways: [], type: '', eventId: '' }
 
 function hoursSince(at: string | null | undefined): number | null {
     if (!at) return null
@@ -55,7 +71,9 @@ export default function AdminBillingPage() {
                 <AdminTabs />
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <GrafanaLink />
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 mt-8">
                 <Stat label={t('billingActive')} value={stats?.activeSubscriptions} />
                 <Stat label={t('billingTrialing')} value={stats?.trialing} />
                 <Stat label={t('billingPastDue')} value={stats?.pastDue} />
@@ -97,7 +115,6 @@ export default function AdminBillingPage() {
 
             <DriftCheck />
             <WebhookJournal />
-            <GrafanaLink />
         </div>
     )
 }
@@ -255,25 +272,70 @@ function DriftRow({ drift }: { drift: GatewayDrift }) {
     )
 }
 
-/** Failed events first — those are the ones with something to do about them. */
+/** The journal, filterable: what came in, what failed, and the one event you're after. */
 function WebhookJournal() {
     const t = useTranslations('admin')
-    const [onlyFailed, setOnlyFailed] = useState(true)
-    const { data, isLoading } = useAdminWebhookEvents(onlyFailed ? 'failed' : undefined)
+    const [filters, setFilters] = useState<WebhookFilters>(INITIAL_WEBHOOK_FILTERS)
+    const debouncedType = useDebouncedValue(filters.type, 300)
+    const debouncedEventId = useDebouncedValue(filters.eventId, 300)
+
+    const patch = (next: Partial<WebhookFilters>) => setFilters((current) => ({ ...current, ...next }))
+
+    const { data, isLoading } = useAdminWebhookEvents({
+        statuses: filters.statuses,
+        gateways: filters.gateways,
+        type: debouncedType || undefined,
+        eventId: debouncedEventId || undefined,
+    })
+
+    const filtered =
+        filters.statuses.length > 0 ||
+        filters.gateways.length > 0 ||
+        debouncedType.length > 0 ||
+        debouncedEventId.length > 0
 
     return (
         <section className="mt-10">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-mono text-eyebrow uppercase text-text-dim">{t('webhooksTitle')}</h2>
-                <label className="flex items-center gap-2 text-sm text-text-dim">
-                    <input
-                        type="checkbox"
-                        checked={onlyFailed}
-                        onChange={(event) => setOnlyFailed(event.target.checked)}
-                        className="size-4 accent-ember"
+            <h2 className="font-mono text-eyebrow uppercase text-text-dim">{t('webhooksTitle')}</h2>
+
+            {/* Desktop: one row — the id search grows, the rest sit at their natural
+                width. Mobile: each control wraps to its own full-width line. */}
+            <div className="mt-4 flex flex-wrap items-center gap-3 sm:flex-nowrap">
+                <div className="w-full sm:flex-1">
+                    <ClearableSearch
+                        analyticsId="admin-webhooks-event-id"
+                        value={filters.eventId}
+                        onChange={(eventId) => patch({ eventId })}
+                        placeholder={t('webhooksSearchEventId')}
                     />
-                    {t('webhooksOnlyFailed')}
-                </label>
+                </div>
+                <div className="w-full sm:w-56">
+                    <ClearableSearch
+                        analyticsId="admin-webhooks-type"
+                        value={filters.type}
+                        onChange={(type) => patch({ type })}
+                        placeholder={t('webhooksSearchType')}
+                    />
+                </div>
+                <MultiSelect
+                    analyticsId="admin-webhooks-status"
+                    label={t('subscriptionStatus')}
+                    ariaLabel={t('subscriptionStatus')}
+                    options={WEBHOOK_STATUSES.map((value) => ({
+                        value,
+                        label: t(`webhookStatusValue.${value}` as 'webhookStatusValue.failed'),
+                    }))}
+                    selected={filters.statuses}
+                    onChange={(statuses) => patch({ statuses })}
+                />
+                <MultiSelect
+                    analyticsId="admin-webhooks-gateway"
+                    label={t('subscriptionGateway')}
+                    ariaLabel={t('subscriptionGateway')}
+                    options={WEBHOOK_GATEWAYS.map((value) => ({ value, label: value }))}
+                    selected={filters.gateways}
+                    onChange={(gateways) => patch({ gateways })}
+                />
             </div>
 
             <div className="mt-4 space-y-2">
@@ -283,10 +345,14 @@ function WebhookJournal() {
                     data.rows.map((event) => <WebhookRow key={event.id} event={event} />)
                 ) : (
                     <p className="text-sm text-text-faint">
-                        {onlyFailed ? t('webhooksNoneFailed') : t('webhooksNone')}
+                        {filtered ? t('webhooksNoneFiltered') : t('webhooksNone')}
                     </p>
                 )}
             </div>
+
+            {data ? (
+                <p className="mt-4 font-mono text-xs text-text-faint">{t('webhooksTotal', { total: data.total })}</p>
+            ) : null}
         </section>
     )
 }

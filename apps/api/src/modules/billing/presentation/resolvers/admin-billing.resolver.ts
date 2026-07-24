@@ -51,7 +51,6 @@ import {
     assignSubscriptionSchema,
     audienceArg,
     createPlanSchema,
-    gatewayArg,
     gatewayArgRequired,
     gatewaysArg,
     idArg,
@@ -60,7 +59,7 @@ import {
     planStatusArg,
     searchArg,
     statusesArg,
-    webhookStatusArg,
+    webhookStatusesArg,
     updatePlanSchema,
     upsertPlanOfferSchema,
     uuidArg,
@@ -146,16 +145,27 @@ export class AdminBillingResolver {
         return this.queryBus.execute<AdminGatewayStatusQuery, GatewayStatusView[]>(query)
     }
 
-    @Query(() => BillingWebhookEventPageType, { description: 'The webhook journal — what came in and what failed.' })
+    @Query(() => BillingWebhookEventPageType, {
+        description: 'The webhook journal — filterable by statuses/gateways, event type and exact-ish event id.',
+    })
     async adminWebhookEvents(
-        @Args('status', { type: () => String, nullable: true }, new ZodValidationPipe(webhookStatusArg))
-        status?: WebhookEventStatus,
-        @Args('gateway', { type: () => String, nullable: true }, new ZodValidationPipe(gatewayArg))
-        gateway?: PaymentGateway,
+        @Args('statuses', { type: () => [String], nullable: true }, new ZodValidationPipe(webhookStatusesArg))
+        statuses?: WebhookEventStatus[],
+        @Args('gateways', { type: () => [String], nullable: true }, new ZodValidationPipe(gatewaysArg))
+        gateways?: PaymentGateway[],
+        @Args('type', { type: () => String, nullable: true }, new ZodValidationPipe(searchArg)) type?: string,
+        @Args('eventId', { type: () => String, nullable: true }, new ZodValidationPipe(searchArg)) eventId?: string,
         @Args('limit', { type: () => Int, nullable: true }, new ZodValidationPipe(limitArg)) limit?: number,
         @Args('offset', { type: () => Int, nullable: true }, new ZodValidationPipe(offsetArg)) offset?: number,
     ): Promise<{ rows: AdminWebhookEventView[]; total: number }> {
-        const query = new AdminWebhookEventsQuery(status, gateway, limit ?? DEFAULT_LIMIT, offset ?? 0)
+        const query = new AdminWebhookEventsQuery(
+            statuses,
+            gateways,
+            type,
+            eventId,
+            limit ?? DEFAULT_LIMIT,
+            offset ?? 0,
+        )
 
         return this.queryBus.execute<AdminWebhookEventsQuery, { rows: AdminWebhookEventView[]; total: number }>(query)
     }

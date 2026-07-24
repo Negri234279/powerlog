@@ -51,8 +51,11 @@ export class AdminGatewayStatusHandler implements IQueryHandler<AdminGatewayStat
 
         const statuses: GatewayStatusView[] = []
         for (const gateway of ['stripe', 'paypal'] as const) {
-            const recent = await this.events.list({ gateway }, { limit: 1, offset: 0 })
-            const failed = await this.events.list({ gateway, status: 'failed' }, { limit: 1, offset: 0 })
+            const recent = await this.events.list({ gateways: [gateway] }, { limit: 1, offset: 0 })
+            const failed = await this.events.list(
+                { gateways: [gateway], statuses: ['failed'] },
+                { limit: 1, offset: 0 },
+            )
 
             statuses.push({
                 gateway,
@@ -77,7 +80,12 @@ export class AdminWebhookEventsHandler implements IQueryHandler<
 
     async execute(query: AdminWebhookEventsQuery): Promise<{ rows: AdminWebhookEventView[]; total: number }> {
         const page = await this.events.list(
-            { ...(query.status ? { status: query.status } : {}), ...(query.gateway ? { gateway: query.gateway } : {}) },
+            {
+                statuses: query.statuses,
+                gateways: query.gateways,
+                type: query.type,
+                eventId: query.eventId,
+            },
             { limit: query.limit, offset: query.offset },
         )
 

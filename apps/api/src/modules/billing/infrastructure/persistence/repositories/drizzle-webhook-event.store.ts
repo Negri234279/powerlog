@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, count, desc, eq, sql } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, inArray, sql } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import {
@@ -11,6 +11,12 @@ import type { PaymentGateway } from '../../../domain/entities/subscription.entit
 import { billingWebhookEvents } from '../schema/billing-webhook-events.schema'
 
 type EventRow = typeof billingWebhookEvents.$inferSelect
+
+/** Neutralize LIKE metacharacters so a substring filter matches literally — event
+ *  ids carry `_` (evt_123), which LIKE would otherwise read as "any character". */
+function likeEscape(value: string): string {
+    return value.replace(/[\\%_]/g, (char) => `\\${char}`)
+}
 
 function toRecord(row: EventRow): WebhookEventRecord {
     return {
@@ -75,12 +81,19 @@ export class DrizzleWebhookEventStore extends WebhookEventStore {
     }
 
     async list(
-        filter: { status?: WebhookEventStatus; gateway?: PaymentGateway },
+        filter: {
+            statuses?: WebhookEventStatus[]
+            gateways?: PaymentGateway[]
+            type?: string
+            eventId?: string
+        },
         page: { limit: number; offset: number },
     ): Promise<{ rows: WebhookEventRecord[]; total: number }> {
         const where = and(
-            filter.status ? eq(billingWebhookEvents.status, filter.status) : undefined,
-            filter.gateway ? eq(billingWebhookEvents.gateway, filter.gateway) : undefined,
+            filter.statuses?.length ? inArray(billingWebhookEvents.status, filter.statuses) : undefined,
+            filter.gateways?.length ? inArray(billingWebhookEvents.gateway, filter.gateways) : undefined,
+            filter.type ? ilike(billingWebhookEvents.type, `%${likeEscape(filter.type)}%`) : undefined,
+            filter.eventId ? ilike(billingWebhookEvents.eventId, `%${likeEscape(filter.eventId)}%`) : undefined,
         )
 
         const rows = await this.db

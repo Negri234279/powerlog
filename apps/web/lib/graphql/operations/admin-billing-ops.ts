@@ -16,8 +16,8 @@ export const AdminGatewayStatusDocument = graphql(`
 
 /** The webhook journal. `failed` rows are the ones with a retry button. */
 export const AdminWebhookEventsDocument = graphql(`
-    query AdminWebhookEvents($status: String, $gateway: String, $limit: Int) {
-        adminWebhookEvents(status: $status, gateway: $gateway, limit: $limit) {
+    query AdminWebhookEvents($statuses: [String!], $gateways: [String!], $type: String, $eventId: String, $limit: Int) {
+        adminWebhookEvents(statuses: $statuses, gateways: $gateways, type: $type, eventId: $eventId, limit: $limit) {
             total
             rows {
                 id

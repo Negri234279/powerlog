@@ -45,7 +45,7 @@ export function PricesPanel({ plan, onClose }: { plan: AdminPlan; onClose: () =>
                 seed[`${interval}-${currency}`] = price ? String(price.amountCents / 100) : ''
             }
         }
-        
+
         return seed
     })
     const [error, setError] = useState<string | null>(null)

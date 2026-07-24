@@ -45,9 +45,18 @@ export abstract class WebhookEventStore {
      */
     abstract reopen(gateway: PaymentGateway, eventId: string): Promise<void>
 
-    /** For the admin panel: what came in, and what failed. */
+    /**
+     * For the admin panel: what came in, and what failed. Every filter is
+     * conjunctive; `statuses`/`gateways` are OR-within, and `type`/`eventId` are
+     * case-insensitive substring matches.
+     */
     abstract list(
-        filter: { status?: WebhookEventStatus; gateway?: PaymentGateway },
+        filter: {
+            statuses?: WebhookEventStatus[]
+            gateways?: PaymentGateway[]
+            type?: string
+            eventId?: string
+        },
         page: { limit: number; offset: number },
     ): Promise<{ rows: WebhookEventRecord[]; total: number }>
 

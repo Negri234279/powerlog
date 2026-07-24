@@ -24,13 +24,24 @@ export function useAdminGatewayStatus() {
     })
 }
 
-export function useAdminWebhookEvents(status?: string, gateway?: string) {
+export interface WebhookEventFilters {
+    statuses?: string[]
+    gateways?: string[]
+    type?: string
+    eventId?: string
+}
+
+export function useAdminWebhookEvents(filters: WebhookEventFilters = {}) {
+    const { statuses = [], gateways = [], type, eventId } = filters
+
     return useQuery({
-        queryKey: [...WEBHOOKS_KEY, status ?? 'all', gateway ?? 'all'],
+        queryKey: [...WEBHOOKS_KEY, { statuses, gateways, type: type ?? '', eventId: eventId ?? '' }],
         queryFn: () =>
             gqlRequest(AdminWebhookEventsDocument, {
-                status: status || null,
-                gateway: gateway || null,
+                statuses: statuses.length ? statuses : null,
+                gateways: gateways.length ? gateways : null,
+                type: type || null,
+                eventId: eventId || null,
                 limit: 50,
             }).then((r) => r.adminWebhookEvents),
     })
