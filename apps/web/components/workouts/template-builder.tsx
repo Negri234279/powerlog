@@ -24,6 +24,7 @@ import {
     type SetField,
     validatePlanned,
 } from '@/lib/workouts/planned-validation'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Field, Input } from '@/components/ui/field'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
@@ -514,11 +515,17 @@ function SetRow({
     const weightError = errors[fieldKey(set.key, 'weight')]
     const repsError = errors[fieldKey(set.key, 'reps')]
     const intensityError = errors[fieldKey(set.key, 'intensity')]
+    const [confirmingRemove, setConfirmingRemove] = useState(false)
 
     // Fields are edited in place, so the row menu only ever holds duplicate + remove.
     const menuItems: MenuItem[] = [
         { label: tw('duplicate'), analyticsId: 'template-duplicate-set', onSelect: onDuplicate },
-        { label: tw('removeSet'), analyticsId: 'template-remove-set', onSelect: onRemove, destructive: true },
+        {
+            label: tw('removeSet'),
+            analyticsId: 'template-remove-set',
+            onSelect: () => setConfirmingRemove(true),
+            destructive: true,
+        },
     ]
 
     // items-start so the row number and remove button stay aligned to the inputs
@@ -587,6 +594,18 @@ function SetRow({
                 <CellError message={intensityError} />
             </div>
             <Menu analyticsId="template-set-actions" label={tw('setActions')} items={menuItems} />
+
+            <ConfirmModal
+                analyticsId="template-set-remove"
+                open={confirmingRemove}
+                onClose={() => setConfirmingRemove(false)}
+                onConfirm={onRemove}
+                title={tw('setRemoveTitle', { index })}
+                description={tw('setRemoveBody')}
+                confirmLabel={tw('removeSet')}
+                cancelLabel={tw('cancel')}
+                destructive
+            />
         </div>
     )
 }
