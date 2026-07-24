@@ -79,7 +79,8 @@ export function ExerciseCard({
                 />
 
                 <div className="mt-4 space-y-2">
-                    <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-center gap-2 px-1 font-mono text-[10px] uppercase tracking-widest text-text-faint">
+                    <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_2rem] items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-text-faint">
+                        <span className="text-right">#</span>
                         <span>{tw('weightLabel', { units })}</span>
                         <span>{tw('reps')}</span>
                         <span>{tw('intensity')}</span>

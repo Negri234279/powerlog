@@ -58,7 +58,7 @@ export function SetRow({
     // items-start so the row number and remove button stay aligned to the inputs
     // even when an error message grows a cell taller.
     return (
-        <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-start gap-2">
+        <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_2rem] items-start gap-2">
             <span className="pt-2 text-right font-mono text-xs text-text-faint">{index}</span>
             {/* Text, not number: a range like `50-55` needs the hyphen the numeric
                 keypad hides. `inputMode="decimal"` still brings up digits on mobile. */}
