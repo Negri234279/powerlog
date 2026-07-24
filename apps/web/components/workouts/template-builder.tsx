@@ -4,18 +4,15 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
-import { cn } from '@/lib/cn'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import { useExercises } from '@/lib/graphql/hooks/use-workouts'
 import {
-    type WorkoutTemplateData,
     useCreateWorkoutTemplate,
     useUpdateWorkoutTemplate,
     useWorkoutTemplate,
 } from '@/lib/graphql/hooks/use-workout-templates'
-import { formatRange, formatWeightRange } from '@/lib/range'
-import { type Units, unitsOf } from '@/lib/units'
+import { unitsOf } from '@/lib/units'
 import {
     fieldKey,
     fieldSpec,
@@ -24,64 +21,14 @@ import {
     type SetField,
     validatePlanned,
 } from '@/lib/workouts/planned-validation'
-import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { Field, Input } from '@/components/ui/field'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
-import { Plus, Trash } from '@/components/ui/icons'
-import { Menu, type MenuItem } from '@/components/ui/menu'
+import { Plus } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
+import { type DraftExercise, type DraftSet, draftFromTemplate, emptySet, newKey, textOrNull } from './template-draft'
+import { ExerciseCard } from './template-exercise-card'
 import { ExercisePicker } from './exercise-picker'
-
-type IntensityKind = 'none' | 'rpe' | 'rir'
-
-interface DraftSet {
-    key: string
-    weight: string
-    reps: string
-    intensityKind: IntensityKind
-    intensity: string
-    notes: string
-}
-
-interface DraftExercise {
-    key: string
-    exerciseId: string
-    notes: string
-    sets: DraftSet[]
-}
-
-function newKey(): string {
-    return crypto.randomUUID()
-}
-
-function emptySet(): DraftSet {
-    return { key: newKey(), weight: '', reps: '', intensityKind: 'none', intensity: '', notes: '' }
-}
-
-/** Build the editable draft from a loaded template (kg → display units), each
- *  planned target seeded as its range text (`5` or `5-8`). */
-function draftFromTemplate(template: WorkoutTemplateData, units: Units): DraftExercise[] {
-    return template.exercises.map((exercise) => ({
-        key: newKey(),
-        exerciseId: exercise.exerciseId,
-        notes: exercise.notes ?? '',
-        sets: exercise.sets.map((set) => ({
-            key: newKey(),
-            weight: formatWeightRange(set.plannedWeightKg, units),
-            reps: formatRange(set.plannedReps),
-            intensityKind: set.rpe ? 'rpe' : set.rir ? 'rir' : 'none',
-            intensity: formatRange(set.rpe ?? set.rir),
-            notes: set.notes ?? '',
-        })),
-    }))
-}
-
-/** Trim the field to text, or null when blank — the API parses `5` / `5-8`. */
-function textOrNull(value: string): string | null {
-    const trimmed = value.trim()
-    return trimmed === '' ? null : trimmed
-}
 
 /**
  * Create/edit a workout template as a whole tree: name + notes + exercises, each
@@ -113,9 +60,12 @@ export function TemplateBuilder({
     const [name, setName] = useState('')
     const [notes, setNotes] = useState('')
     const [draft, setDraft] = useState<DraftExercise[]>([])
-    const [error, setError] = useState<string | null>(null)
-    // Kept alongside the message so a plan refusal can render an upgrade CTA instead.
-    const [rawError, setRawError] = useState<unknown>(null)
+    // Message + raw error travel together: the raw one lets a plan refusal render an
+    // upgrade CTA instead of a plain message, and both clear on the next save.
+    const [submitError, setSubmitError] = useState<{ message: string | null; raw: unknown }>({
+        message: null,
+        raw: null,
+    })
     const [picking, setPicking] = useState(false)
     // Per-field client validation messages, keyed by 'name' and `${setKey}.<field>`.
     // A field validates on blur; Save re-checks every field at once so the whole
@@ -130,7 +80,11 @@ export function TemplateBuilder({
         setErrors((prev) => {
             const next = { ...prev }
             delete next[fieldKey(set.key, field)]
-            if (spec && code) next[spec.key] = tw(rangeErrorKey(code, spec.planned))
+
+            if (spec && code) {
+                next[spec.key] = tw(rangeErrorKey(code, spec.planned))
+            }
+
             return next
         })
     }
@@ -139,8 +93,13 @@ export function TemplateBuilder({
     function validateName() {
         setErrors((prev) => {
             const next = { ...prev }
-            if (name.trim() === '') next['name'] = t('nameRequired')
-            else delete next['name']
+            
+            if (name.trim() === '') {
+                next['name'] = t('nameRequired')
+            } else {
+                delete next['name']
+            }
+
             return next
         })
     }
@@ -156,6 +115,7 @@ export function TemplateBuilder({
                 for (const field of SET_FIELDS) {
                     const spec = fieldSpec(set, field)
                     if (!spec) continue
+
                     const code = validatePlanned(spec.text, spec.planned, units)
                     if (code) found[spec.key] = tw(rangeErrorKey(code, spec.planned))
                 }
@@ -178,7 +138,10 @@ export function TemplateBuilder({
 
     const nameById = useMemo(() => {
         const map = new Map<string, string>()
-        for (const exercise of exercises ?? []) map.set(exercise.id, exercise.name)
+        for (const exercise of exercises ?? []) {
+            map.set(exercise.id, exercise.name)
+        }
+
         return map
     }, [exercises])
 
@@ -202,7 +165,11 @@ export function TemplateBuilder({
                 // Clone the last set's targets for speed; fresh if there are none.
                 const last = e.sets[e.sets.length - 1]
                 const next: DraftSet = last ? { ...last, key: newKey() } : emptySet()
-                return { ...e, sets: [...e.sets, next] }
+
+                return {
+                    ...e,
+                    sets: [...e.sets, next],
+                }
             }),
         )
     }
@@ -229,25 +196,34 @@ export function TemplateBuilder({
         setDraft((d) =>
             d.map((e) => {
                 if (e.key !== exerciseKey) return e
+
                 const i = e.sets.findIndex((s) => s.key === setKey)
                 const source = e.sets[i]
                 if (!source) return e
-                const clone: DraftSet = { ...source, key: newKey() }
-                return { ...e, sets: [...e.sets.slice(0, i + 1), clone, ...e.sets.slice(i + 1)] }
+
+                const clone: DraftSet = {
+                    ...source,
+                    key: newKey(),
+                }
+
+                return {
+                    ...e,
+                    sets: [...e.sets.slice(0, i + 1), clone, ...e.sets.slice(i + 1)],
+                }
             }),
         )
     }
 
     async function onSave() {
-        setError(null)
-        setRawError(null)
+        setSubmitError({ message: null, raw: null })
 
         // Validate the whole form up front and show every problem together, rather
         // than letting the back-end reject one field at a time.
         const found = collectErrors()
         setErrors(found)
+
         if (Object.keys(found).length > 0) {
-            setError(t('fixErrors'))
+            setSubmitError({ message: t('fixErrors'), raw: null })
             return
         }
 
@@ -276,10 +252,10 @@ export function TemplateBuilder({
                 await create.mutateAsync(input)
                 track('workout_template_created', {})
             }
+
             onSaved()
         } catch (err) {
-            setRawError(err)
-            setError(errorMessage(err))
+            setSubmitError({ message: errorMessage(err), raw: err })
         }
     }
 
@@ -369,12 +345,12 @@ export function TemplateBuilder({
                 )}
             </div>
 
-            {isPlanRefusal(rawError) ? (
+            {isPlanRefusal(submitError.raw) ? (
                 <div className="mt-5">
-                    <UpgradeGate error={rawError} />
+                    <UpgradeGate error={submitError.raw} />
                 </div>
             ) : (
-                <FormError error={error} className="mt-5" />
+                <FormError error={submitError.message} className="mt-5" />
             )}
 
             <div className="mt-6 flex items-center gap-2">
@@ -396,229 +372,6 @@ export function TemplateBuilder({
                     {tw('cancel')}
                 </TrackedButton>
             </div>
-        </div>
-    )
-}
-
-function ExerciseCard({
-    exercise,
-    name,
-    units,
-    errors,
-    onRemove,
-    onNotes,
-    onAddSet,
-    onPatchSet,
-    onRemoveSet,
-    onDuplicateSet,
-    onValidateSet,
-}: {
-    exercise: DraftExercise
-    name: string
-    units: Units
-    errors: Record<string, string>
-    onRemove: () => void
-    onNotes: (value: string) => void
-    onAddSet: () => void
-    onPatchSet: (setKey: string, patch: Partial<DraftSet>) => void
-    onRemoveSet: (setKey: string) => void
-    onDuplicateSet: (setKey: string) => void
-    onValidateSet: (set: DraftSet, field: SetField) => void
-}) {
-    const t = useTranslations('templates')
-    const tw = useTranslations('workouts')
-    const [confirmingRemove, setConfirmingRemove] = useState(false)
-
-    return (
-        <div className="rounded-2xl bg-shell p-1.5 ring-1 ring-hairline">
-            <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface p-5">
-                <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-display text-lg tracking-tight">{name}</h3>
-                    <TrackedButton
-                        analyticsId="template-remove-exercise"
-                        type="button"
-                        onClick={() => setConfirmingRemove(true)}
-                        aria-label={t('removeExercise', { name })}
-                        className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
-                    >
-                        <Trash className="size-4" />
-                    </TrackedButton>
-                </div>
-
-                <ConfirmModal
-                    analyticsId="template-remove-exercise"
-                    open={confirmingRemove}
-                    onClose={() => setConfirmingRemove(false)}
-                    onConfirm={onRemove}
-                    title={tw('entryRemoveTitle', { name })}
-                    description={tw('entryRemoveBody', { sets: exercise.sets.length })}
-                    confirmLabel={tw('entryRemove')}
-                    cancelLabel={tw('cancel')}
-                    destructive
-                />
-
-                <Input
-                    value={exercise.notes}
-                    onChange={(e) => onNotes(e.target.value)}
-                    placeholder={t('exerciseNotesPlaceholder')}
-                    className="mt-3"
-                />
-
-                <div className="mt-4 space-y-2">
-                    <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-center gap-2 px-1 font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                        <span>{tw('weightLabel', { units })}</span>
-                        <span>{tw('reps')}</span>
-                        <span>{tw('intensity')}</span>
-                        <span />
-                    </div>
-                    {exercise.sets.map((set, index) => (
-                        <SetRow
-                            key={set.key}
-                            set={set}
-                            index={index + 1}
-                            errors={errors}
-                            onPatch={(patch) => onPatchSet(set.key, patch)}
-                            onRemove={() => onRemoveSet(set.key)}
-                            onDuplicate={() => onDuplicateSet(set.key)}
-                            onBlurField={(field) => onValidateSet(set, field)}
-                        />
-                    ))}
-                </div>
-
-                <TrackedButton
-                    analyticsId="template-add-set"
-                    type="button"
-                    onClick={onAddSet}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
-                >
-                    <Plus className="size-3.5" /> {tw('addSet')}
-                </TrackedButton>
-            </div>
-        </div>
-    )
-}
-
-const cellClass =
-    'w-full rounded-xl bg-bg/60 px-3 py-2 text-sm text-text ring-1 ring-hairline outline-none transition-colors duration-300 placeholder:text-text-faint focus:ring-ember/50'
-
-function CellError({ message }: { message?: string }) {
-    if (!message) return null
-    return <p className="mt-1 px-1 text-[10px] leading-tight text-ember">{message}</p>
-}
-
-function SetRow({
-    set,
-    index,
-    errors,
-    onPatch,
-    onRemove,
-    onDuplicate,
-    onBlurField,
-}: {
-    set: DraftSet
-    index: number
-    errors: Record<string, string>
-    onPatch: (patch: Partial<DraftSet>) => void
-    onRemove: () => void
-    onDuplicate: () => void
-    onBlurField: (field: SetField) => void
-}) {
-    const t = useTranslations('templates')
-    const tw = useTranslations('workouts')
-    const weightError = errors[fieldKey(set.key, 'weight')]
-    const repsError = errors[fieldKey(set.key, 'reps')]
-    const intensityError = errors[fieldKey(set.key, 'intensity')]
-    const [confirmingRemove, setConfirmingRemove] = useState(false)
-
-    // Fields are edited in place, so the row menu only ever holds duplicate + remove.
-    const menuItems: MenuItem[] = [
-        { label: tw('duplicate'), analyticsId: 'template-duplicate-set', onSelect: onDuplicate },
-        {
-            label: tw('removeSet'),
-            analyticsId: 'template-remove-set',
-            onSelect: () => setConfirmingRemove(true),
-            destructive: true,
-        },
-    ]
-
-    // items-start so the row number and remove button stay aligned to the inputs
-    // even when an error message grows a cell taller.
-    return (
-        <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-start gap-2">
-            <span className="pt-2 text-right font-mono text-xs text-text-faint">{index}</span>
-            {/* Text, not number: a range like `50-55` needs the hyphen the numeric
-                keypad hides. `inputMode="decimal"` still brings up digits on mobile. */}
-            <div className="min-w-0">
-                <input
-                    type="text"
-                    inputMode="decimal"
-                    value={set.weight}
-                    onChange={(e) => onPatch({ weight: e.target.value })}
-                    onBlur={() => onBlurField('weight')}
-                    aria-invalid={weightError ? true : undefined}
-                    placeholder={tw('rangePlaceholder')}
-                    className={cn(cellClass, weightError && 'ring-ember/60 focus:ring-ember/70')}
-                />
-                <CellError message={weightError} />
-            </div>
-            <div className="min-w-0">
-                <input
-                    type="text"
-                    inputMode="numeric"
-                    value={set.reps}
-                    onChange={(e) => onPatch({ reps: e.target.value })}
-                    onBlur={() => onBlurField('reps')}
-                    aria-invalid={repsError ? true : undefined}
-                    placeholder={tw('rangePlaceholder')}
-                    className={cn(cellClass, repsError && 'ring-ember/60 focus:ring-ember/70')}
-                />
-                <CellError message={repsError} />
-            </div>
-            <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                    <select
-                        value={set.intensityKind}
-                        onChange={(e) => onPatch({ intensityKind: e.target.value as IntensityKind, intensity: '' })}
-                        onBlur={() => onBlurField('intensity')}
-                        className={cn(cellClass, 'appearance-none')}
-                        aria-label={t('intensityType')}
-                    >
-                        <option value="none">—</option>
-                        <option value="rpe">RPE</option>
-                        <option value="rir">RIR</option>
-                    </select>
-                    <input
-                        type="text"
-                        inputMode="decimal"
-                        value={set.intensity}
-                        onChange={(e) => onPatch({ intensity: e.target.value })}
-                        onBlur={() => onBlurField('intensity')}
-                        disabled={set.intensityKind === 'none'}
-                        aria-invalid={intensityError ? true : undefined}
-                        placeholder={set.intensityKind === 'none' ? '' : '0'}
-                        className={cn(
-                            cellClass,
-                            'w-16 disabled:opacity-40',
-                            intensityError && 'ring-ember/60 focus:ring-ember/70',
-                        )}
-                        aria-label={t('intensityValue')}
-                    />
-                </div>
-                <CellError message={intensityError} />
-            </div>
-            <Menu analyticsId="template-set-actions" label={tw('setActions')} items={menuItems} />
-
-            <ConfirmModal
-                analyticsId="template-set-remove"
-                open={confirmingRemove}
-                onClose={() => setConfirmingRemove(false)}
-                onConfirm={onRemove}
-                title={tw('setRemoveTitle', { index })}
-                description={tw('setRemoveBody')}
-                confirmLabel={tw('removeSet')}
-                cancelLabel={tw('cancel')}
-                destructive
-            />
         </div>
     )
 }
