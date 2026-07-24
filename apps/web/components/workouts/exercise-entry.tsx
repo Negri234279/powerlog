@@ -5,230 +5,16 @@ import { useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
-import {
-    type ExerciseEntryData,
-    type WorkoutSetData,
-    useLogSet,
-    useRemoveExerciseEntry,
-    useRemoveSet,
-    useUpdateSet,
-} from '@/lib/graphql/hooks/use-workouts'
+import { type ExerciseEntryData, useLogSet, useRemoveExerciseEntry } from '@/lib/graphql/hooks/use-workouts'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
-import { formatRange, formatWeightRange } from '@/lib/range'
-import { formatWeight, kgTo, type Units } from '@/lib/units'
+import type { Units } from '@/lib/units'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
-import { Check, ChevronDown, Plus } from '@/components/ui/icons'
-import { Menu, type MenuItem } from '@/components/ui/menu'
+import { ChevronDown, Plus } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
-import { CompleteSetModal } from './complete-set-modal'
 import { ExerciseHistory } from './exercise-history'
-import { SetForm, type OutcomeValue, type SetValues } from './set-form'
+import { SetForm, type SetValues } from './set-form'
+import { SetRow } from './set-row'
 import { entryProgress } from './session-progress'
-
-function intensitySuffix(set: WorkoutSetData): string {
-    if (set.rpe !== null) return ` @${set.rpe}`
-    if (set.rir !== null) return ` · ${set.rir} RIR`
-    return ''
-}
-
-function plannedIntensitySuffix(set: WorkoutSetData): string {
-    if (set.plannedRpe) return ` @${formatRange(set.plannedRpe)}`
-    if (set.plannedRir) return ` · ${formatRange(set.plannedRir)} RIR`
-    return ''
-}
-
-/** How the set reads at a glance: green for done, red for failed, plain for pending. */
-function outcomeTone(outcome: string | null): string {
-    if (outcome === 'success') return 'text-pr'
-    if (outcome === 'failed') return 'text-ember'
-    return 'text-text'
-}
-
-function SetRow({
-    sessionId,
-    entryId,
-    set,
-    index,
-    units,
-    locked,
-}: {
-    sessionId: string
-    entryId: string
-    set: WorkoutSetData
-    index: number
-    units: Units
-    /** Completed session in read-only mode: hide every mutating control. */
-    locked: boolean
-}) {
-    const t = useTranslations('workouts')
-    const update = useUpdateSet()
-    const remove = useRemoveSet()
-    const duplicate = useLogSet()
-    const [editing, setEditing] = useState(false)
-    const [marking, setMarking] = useState(false)
-    const [confirmingRemove, setConfirmingRemove] = useState(false)
-
-    // Duplicate carries only the planned targets over to a fresh pending set — you
-    // still log what you actually did. The API reads planned weight as range text
-    // in display units, so it's formatted the same way the edit form seeds it.
-    function onDuplicate() {
-        if (duplicate.isPending) return
-        duplicate.mutate({
-            sessionId,
-            entryId,
-            plannedWeight: set.plannedWeightKg ? formatWeightRange(set.plannedWeightKg, units) : null,
-            plannedReps: set.plannedReps ? formatRange(set.plannedReps) : null,
-            plannedRpe: set.plannedRpe ? formatRange(set.plannedRpe) : null,
-            plannedRir: set.plannedRir ? formatRange(set.plannedRir) : null,
-            unit: units,
-        })
-    }
-
-    const menuItems: MenuItem[] = [
-        { label: t('duplicate'), analyticsId: 'set-duplicate', onSelect: onDuplicate },
-        { label: t('edit'), analyticsId: 'set-edit', onSelect: () => setEditing(true) },
-        {
-            label: t('removeSet'),
-            analyticsId: 'set-remove-open',
-            onSelect: () => setConfirmingRemove(true),
-            destructive: true,
-        },
-    ]
-
-    // Re-locking mid-edit closes the form rather than leaving it hanging.
-    if (editing && !locked) {
-        return (
-            <li className="py-2.5">
-                <SetForm
-                    analyticsId="set-update"
-                    units={units}
-                    submitLabel={update.isPending ? t('saving') : t('save')}
-                    pending={update.isPending}
-                    showOutcome
-                    initial={{
-                        // Planned targets seed as range text in display units; an
-                        // absent one must be null, not '' — the form reads '' as present.
-                        plannedWeight: set.plannedWeightKg ? formatWeightRange(set.plannedWeightKg, units) : null,
-                        plannedReps: set.plannedReps ? formatRange(set.plannedReps) : null,
-                        plannedRpe: set.plannedRpe ? formatRange(set.plannedRpe) : null,
-                        plannedRir: set.plannedRir ? formatRange(set.plannedRir) : null,
-                        weight: set.weightKg === null ? null : kgTo(units, set.weightKg),
-                        reps: set.reps,
-                        rpe: set.rpe,
-                        rir: set.rir,
-                        outcome: (set.outcome ?? 'pending') as OutcomeValue,
-                    }}
-                    onCancel={() => setEditing(false)}
-                    onSubmit={(v) =>
-                        update.mutate(
-                            {
-                                sessionId,
-                                entryId,
-                                setId: set.id,
-                                plannedWeight: v.plannedWeight,
-                                plannedReps: v.plannedReps,
-                                plannedRpe: v.plannedRpe,
-                                plannedRir: v.plannedRir,
-                                weight: v.weight,
-                                reps: v.reps,
-                                rpe: v.rpe,
-                                rir: v.rir,
-                                // `pending` is the API's null: the edit is where a
-                                // set goes back to unmarked.
-                                outcome: v.outcome === 'pending' ? null : v.outcome,
-                                unit: units,
-                            },
-                            { onSuccess: () => setEditing(false) },
-                        )
-                    }
-                />
-            </li>
-        )
-    }
-
-    const hasPlanned =
-        set.plannedWeightKg !== null || set.plannedReps !== null || set.plannedRpe !== null || set.plannedRir !== null
-    const done = set.outcome !== null
-
-    return (
-        <li className="flex items-center gap-3 py-2.5 font-mono text-sm tabular-nums">
-            <span className="w-5 self-start pt-0.5 text-text-faint">{index + 1}</span>
-            {/* Done on top, planned under it — never the same line: at a glance the
-                question is what happened, and the plan is what it's measured against. */}
-            <div className="min-w-0 flex-1 space-y-0.5">
-                <div className={outcomeTone(set.outcome)}>
-                    {formatWeight(set.weightKg, units)}
-                    <span className={done ? 'opacity-70' : 'text-text-faint'}> × {set.reps ?? '—'}</span>
-                    <span className={done ? 'opacity-70' : 'text-text-dim'}>{intensitySuffix(set)}</span>
-                </div>
-                {hasPlanned ? (
-                    <div className="text-xs text-text-faint">
-                        <span className="mr-1.5 text-[10px] uppercase tracking-widest">{t('planPrefix')}</span>
-                        {formatWeightRange(set.plannedWeightKg, units, '—')} {units} ×{' '}
-                        {formatRange(set.plannedReps, { empty: '—' })}
-                        {plannedIntensitySuffix(set)}
-                    </div>
-                ) : null}
-            </div>
-            {set.e1rmKg !== null ? (
-                <span className="hidden self-start text-right text-text-dim sm:block">
-                    e1RM {formatWeight(set.e1rmKg, units)}
-                </span>
-            ) : null}
-
-            {locked || done ? null : (
-                <TrackedButton
-                    analyticsId="set-complete-open"
-                    type="button"
-                    onClick={() => setMarking(true)}
-                    className="inline-flex items-center gap-1 self-start rounded-full px-2.5 py-1 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-pr/10 hover:text-pr"
-                >
-                    <Check className="size-3" /> {t('markDone')}
-                </TrackedButton>
-            )}
-
-            {/* Duplicate / edit / remove live behind one ⋮ — the row already stacks
-                two lines and keeps "mark done" as its one prominent verb. */}
-            {locked ? null : (
-                <div className="shrink-0 self-start">
-                    <Menu analyticsId="set-actions" label={t('setActions')} items={menuItems} />
-                </div>
-            )}
-
-            <ConfirmModal
-                analyticsId="set-remove"
-                open={confirmingRemove}
-                onClose={() => setConfirmingRemove(false)}
-                onConfirm={() =>
-                    remove.mutate(
-                        { sessionId, entryId, setId: set.id },
-                        { onSuccess: () => setConfirmingRemove(false) },
-                    )
-                }
-                title={t('setRemoveTitle', { index: index + 1 })}
-                description={t('setRemoveBody')}
-                confirmLabel={t('removeSet')}
-                cancelLabel={t('cancel')}
-                destructive
-                pending={remove.isPending}
-            />
-
-            {/* Mounted only while open so the form always seeds from the set as it
-                is right now, rather than from whatever it was on first render. */}
-            {marking ? (
-                <CompleteSetModal
-                    open
-                    onClose={() => setMarking(false)}
-                    sessionId={sessionId}
-                    entryId={entryId}
-                    set={set}
-                    index={index}
-                    units={units}
-                />
-            ) : null}
-        </li>
-    )
-}
 
 /** One exercise in a session: its set list + an inline add-set form, plus the
  *  control to remove the whole exercise. The card's ring tracks whether every
@@ -255,21 +41,25 @@ export function ExerciseEntry({
     const errorMessage = useErrorMessage()
     const log = useLogSet()
     const removeEntry = useRemoveExerciseEntry()
-    const [adding, setAdding] = useState(false)
     const [collapsed, setCollapsed] = useState(false)
-    const [confirmingRemove, setConfirmingRemove] = useState(false)
-    const [removeError, setRemoveError] = useState<string | null>(null)
+    const [adding, setAdding] = useState(false)
+    // The remove dialog's state travels together: the error only exists while the
+    // dialog is up, and both reset the moment it closes.
+    const [removal, setRemoval] = useState<{ confirming: boolean; error: string | null }>({
+        confirming: false,
+        error: null,
+    })
     const progress = entryProgress(entry)
 
     // Removing the exercise takes its sets down with it (the API cascades), so the
     // dialog says how many are about to go — that count is the actual stake.
     async function onRemoveEntry() {
-        setRemoveError(null)
+        setRemoval({ confirming: true, error: null })
         try {
             await removeEntry.mutateAsync({ sessionId, entryId: entry.id })
-            setConfirmingRemove(false)
+            setRemoval({ confirming: false, error: null })
         } catch (error) {
-            setRemoveError(errorMessage(error))
+            setRemoval({ confirming: true, error: errorMessage(error) })
         }
     }
 
@@ -339,7 +129,7 @@ export function ExerciseEntry({
                         <TrackedButton
                             analyticsId="exercise-entry-remove-open"
                             type="button"
-                            onClick={() => setConfirmingRemove(true)}
+                            onClick={() => setRemoval({ confirming: true, error: null })}
                             className="shrink-0 rounded-full px-3 py-1 text-xs text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember"
                         >
                             {t('entryRemove')}
@@ -406,11 +196,8 @@ export function ExerciseEntry({
                     because the card it lives in got folded. */}
                 <ConfirmModal
                     analyticsId="exercise-entry-remove"
-                    open={confirmingRemove}
-                    onClose={() => {
-                        setRemoveError(null)
-                        setConfirmingRemove(false)
-                    }}
+                    open={removal.confirming}
+                    onClose={() => setRemoval({ confirming: false, error: null })}
                     onConfirm={onRemoveEntry}
                     title={t('entryRemoveTitle', { name: exerciseName })}
                     description={t('entryRemoveBody', { sets: entry.sets.length })}
@@ -418,7 +205,7 @@ export function ExerciseEntry({
                     cancelLabel={t('cancel')}
                     destructive
                     pending={removeEntry.isPending}
-                    error={removeError}
+                    error={removal.error}
                 />
             </div>
         </div>
