@@ -2,6 +2,10 @@ import { z } from 'zod'
 
 import { SUPPORTED_LOCALES } from '@/lib/i18n/config'
 
+// `fieldErrors` is generic (any ZodError → inline errors); it lives in its own module
+// and is re-exported here so existing `@/lib/validation/auth` importers keep working.
+export { fieldErrors } from './errors'
+
 // Validation messages are emitted as stable keys (not prose) so the forms can
 // translate them via the `auth.errors` namespace. See `fieldErrors`.
 export const loginSchema = z.object({
@@ -33,6 +37,9 @@ export const registerSchema = z.object({
         z
             .string()
             .regex(/^\d{4}-\d{2}-\d{2}$/, 'invalidDate')
+            // No future birth dates. Lexicographic compare is exact for YYYY-MM-DD;
+            // `en-CA` is the local ISO date, so it matches the input's `max`.
+            .refine((value) => value <= new Date().toLocaleDateString('en-CA'), 'birthFuture')
             .optional(),
     ),
     heightCm: z.preprocess(
@@ -51,13 +58,3 @@ export const registerSchema = z.object({
 
 export type LoginValues = z.infer<typeof loginSchema>
 export type RegisterValues = z.infer<typeof registerSchema>
-
-/** Flattens a ZodError into `{ field: firstMessage }` for inline form errors. */
-export function fieldErrors(error: z.ZodError): Record<string, string> {
-    const out: Record<string, string> = {}
-    for (const issue of error.issues) {
-        const key = issue.path[0]
-        if (typeof key === 'string' && !out[key]) out[key] = issue.message
-    }
-    return out
-}

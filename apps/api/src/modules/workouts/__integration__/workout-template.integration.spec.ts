@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+﻿import { randomUUID } from 'node:crypto'
 
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { sql } from 'drizzle-orm'
@@ -55,9 +55,9 @@ describe('WorkoutTemplate persistence (integration)', () => {
         const [exercise] = found!.exercises
         expect(exercise!.exerciseId).toBe(exerciseId)
         expect(exercise!.sets.map((s) => s.order)).toEqual([1, 2])
-        expect(exercise!.sets[0]!.plannedWeight?.value).toBe(100)
-        expect(exercise!.sets[0]!.plannedReps?.value).toBe(5)
-        expect(exercise!.sets[0]!.rpe?.value).toBe(8)
+        expect(exercise!.sets[0]!.plannedWeight?.min.value).toBe(100)
+        expect(exercise!.sets[0]!.plannedReps?.min.value).toBe(5)
+        expect(exercise!.sets[0]!.rpe?.min.value).toBe(8)
     })
 
     it('replaces children on re-save (whole-tree upsert)', async () => {
@@ -92,7 +92,7 @@ describe('WorkoutTemplate persistence (integration)', () => {
         expect(remainingSets).toHaveLength(0)
     })
 
-    it('deleteAllByOwner erases only that owner’s templates (with cascade)', async () => {
+    it('deleteAllByOwner erases only that ownerâ€™s templates (with cascade)', async () => {
         const ownerId = randomUUID()
         const other = randomUUID()
         const own = WorkoutTemplateMother.withTree(exerciseId, { ownerId })
@@ -109,7 +109,7 @@ describe('WorkoutTemplate persistence (integration)', () => {
         expect(remainingSets).toHaveLength(survivor.exercises[0]!.sets.length)
     })
 
-    it('lists the owner’s templates with exercise/set rollups, ordered by name', async () => {
+    it('lists the ownerâ€™s templates with exercise/set rollups, ordered by name', async () => {
         const ownerId = randomUUID()
         await templates.save(
             WorkoutTemplateMother.withTree(exerciseId, {
@@ -133,5 +133,33 @@ describe('WorkoutTemplate persistence (integration)', () => {
 
         const searched = await list.list({ ownerId, search: 'alph' })
         expect(searched.map((r) => r.name)).toEqual(['Alpha'])
+    })
+
+    it('separates personal and coaching templates by scope', async () => {
+        const ownerId = randomUUID()
+        await templates.save(
+            WorkoutTemplateMother.withTree(exerciseId, {
+                ownerId,
+                scope: 'personal',
+                content: { name: TemplateNameVO.create('My own'), exercises: [{ exerciseId, sets: [{}] }] },
+            }),
+        )
+        await templates.save(
+            WorkoutTemplateMother.withTree(exerciseId, {
+                ownerId,
+                scope: 'coaching',
+                content: { name: TemplateNameVO.create('For athletes'), exercises: [{ exerciseId, sets: [{}] }] },
+            }),
+        )
+
+        const personal = await list.list({ ownerId, scope: 'personal' })
+        const coaching = await list.list({ ownerId, scope: 'coaching' })
+        const both = await list.list({ ownerId })
+
+        expect(personal.map((r) => r.name)).toEqual(['My own'])
+        expect(coaching.map((r) => r.name)).toEqual(['For athletes'])
+        // The scope rides along on each row; omitting the filter returns both.
+        expect(personal[0]?.scope).toBe('personal')
+        expect(both).toHaveLength(2)
     })
 })

@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import type { MyAthletesQuery, PendingInvitationsQuery } from '@/lib/graphql/__generated__/graphql'
+import type {
+    MyAthleteRosterQuery,
+    MyAthletesQuery,
+    PendingInvitationsQuery,
+} from '@/lib/graphql/__generated__/graphql'
 import { gqlRequest } from '@/lib/graphql/client'
 import {
     AcceptInvitationDocument,
@@ -10,6 +14,8 @@ import {
     DeclineInvitationDocument,
     InviteAthleteDocument,
     LeaveCoachDocument,
+    MyAthleteDocument,
+    MyAthleteRosterDocument,
     MyAthletesDocument,
     MyCoachesDocument,
     PendingInvitationsDocument,
@@ -18,9 +24,11 @@ import {
 } from '@/lib/graphql/operations/coaching'
 
 export type CoachUser = MyAthletesQuery['myAthletes'][number]
+export type RosterEntry = MyAthleteRosterQuery['myAthleteRoster'][number]
 export type PendingInvitation = PendingInvitationsQuery['pendingInvitations'][number]
 
 const ATHLETES_KEY = ['coaching', 'athletes'] as const
+const athleteKey = (athleteId: string) => ['coaching', 'athlete', athleteId] as const
 const COACHES_KEY = ['coaching', 'coaches'] as const
 const PENDING_KEY = ['coaching', 'pendingInvitations'] as const
 
@@ -30,6 +38,35 @@ export function useMyAthletes(enabled = true) {
         queryKey: ATHLETES_KEY,
         queryFn: async () => (await gqlRequest(MyAthletesDocument)).myAthletes,
         enabled,
+        retry: false,
+    })
+}
+
+/**
+ * Training rollups for the whole roster, in one query. Kept separate from
+ * `useMyAthletes` because identity and training live in different modules — the
+ * two are merged by `athleteId` in the view, so identity can render before the
+ * numbers arrive rather than waiting on them.
+ */
+export function useMyAthleteRoster(from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...ATHLETES_KEY, 'roster', from ?? 'all'],
+        queryFn: async () => (await gqlRequest(MyAthleteRosterDocument, { from })).myAthleteRoster,
+        enabled,
+        retry: false,
+    })
+}
+
+/**
+ * One athlete linked to the caller, by id (coaches only). Resolves `null` when
+ * they are not — a stale link, or an athlete who left — which the caller renders
+ * as a not-found state. Prefer this over filtering `useMyAthletes()`: that one
+ * can't tell "still loading the roster" apart from "not on it".
+ */
+export function useMyAthlete(athleteId: string) {
+    return useQuery({
+        queryKey: athleteKey(athleteId),
+        queryFn: async () => (await gqlRequest(MyAthleteDocument, { athleteId })).myAthlete,
         retry: false,
     })
 }
@@ -144,6 +181,7 @@ export function useRemoveAthlete() {
         mutationFn: (athleteId: string) => gqlRequest(RemoveAthleteDocument, { athleteId }),
         onSuccess: (_data, athleteId) => {
             void qc.invalidateQueries({ queryKey: ATHLETES_KEY })
+            void qc.invalidateQueries({ queryKey: athleteKey(athleteId) })
             void qc.invalidateQueries({ queryKey: ['athlete', athleteId] })
         },
     })

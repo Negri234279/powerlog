@@ -30,7 +30,7 @@ data highlights. Keep ember < ~10% of any view.
 | `--color-hairline`   | `rgba(255,255,255,.08)` | Hairline borders / rings              |
 | `--color-text`       | `#F4F2EE`               | Primary text (warm white)             |
 | `--color-text-dim`   | `#9B9BA4`               | Secondary text                        |
-| `--color-text-faint` | `#62626B`               | Tertiary / captions                   |
+| `--color-text-faint` | `#80808A`               | Tertiary / captions (AA ≥4.5:1)       |
 | `--color-ember`      | `#FF6A2C`               | Primary accent (CTAs, key highlights) |
 | `--color-ember-soft` | `#FF9356`               | Accent hover / gradient stop          |
 | `--color-amber`      | `#FFB347`               | Gradient end (ember→amber)            |

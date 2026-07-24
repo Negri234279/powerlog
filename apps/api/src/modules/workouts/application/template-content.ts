@@ -1,23 +1,25 @@
 import type { TemplateContentInput } from '../domain/entities/workout-template.entity'
 import { ExerciseNotFoundError } from '../domain/errors/workouts.errors'
 import { ExerciseRepository } from '../domain/repositories/exercise.repository'
-import { RepsVO } from '../domain/value-objects/reps.vo'
-import { RirVO } from '../domain/value-objects/rir.vo'
-import { RpeVO } from '../domain/value-objects/rpe.vo'
+import { RepsRangeVO } from '../domain/value-objects/reps-range.vo'
+import { RirRangeVO } from '../domain/value-objects/rir-range.vo'
+import { RpeRangeVO } from '../domain/value-objects/rpe-range.vo'
 import { TemplateNameVO } from '../domain/value-objects/template-name.vo'
-import { WeightVO, type WeightUnit } from '../domain/value-objects/weight.vo'
+import type { WeightUnit } from '../domain/value-objects/weight.vo'
+import { WeightRangeVO } from '../domain/value-objects/weight-range.vo'
 
 /**
- * Raw template content from presentation. Weights are in `unit` (default kg) and
- * converted to canonical kg by `buildTemplateContent`. Shared by the create and
- * update template commands.
+ * Raw template content from presentation. Every planned target arrives in the
+ * range notation (`5` or `5-8`) and is parsed here; weights are in `unit`
+ * (default kg) and converted to canonical kg. Shared by the create and update
+ * template commands.
  */
 export interface TemplateSetRaw {
     unit?: string | null
-    plannedWeight?: number | null
-    plannedReps?: number | null
-    rpe?: number | null
-    rir?: number | null
+    plannedWeight?: string | null
+    plannedReps?: string | null
+    rpe?: string | null
+    rir?: string | null
     notes?: string | null
 }
 
@@ -59,10 +61,10 @@ export async function buildTemplateContent(
                 const unit = (set.unit ?? 'kg') as WeightUnit
 
                 return {
-                    plannedWeight: set.plannedWeight != null ? WeightVO.fromUnit(set.plannedWeight, unit) : null,
-                    plannedReps: set.plannedReps != null ? RepsVO.create(set.plannedReps) : null,
-                    rpe: set.rpe != null ? RpeVO.create(set.rpe) : null,
-                    rir: set.rir != null ? RirVO.create(set.rir) : null,
+                    plannedWeight: set.plannedWeight != null ? WeightRangeVO.parse(set.plannedWeight, unit) : null,
+                    plannedReps: set.plannedReps != null ? RepsRangeVO.parse(set.plannedReps) : null,
+                    rpe: set.rpe != null ? RpeRangeVO.parse(set.rpe) : null,
+                    rir: set.rir != null ? RirRangeVO.parse(set.rir) : null,
                     notes: set.notes ?? null,
                 }
             }),

@@ -1,0 +1,4 @@
+ALTER TABLE "ai_mesocycle_drafts" ADD COLUMN "parent_draft_id" uuid;--> statement-breakpoint
+ALTER TABLE "ai_plan_drafts" ADD COLUMN "parent_draft_id" uuid;--> statement-breakpoint
+ALTER TABLE "ai_mesocycle_drafts" ADD CONSTRAINT "ai_mesocycle_drafts_parent_draft_id_ai_mesocycle_drafts_id_fk" FOREIGN KEY ("parent_draft_id") REFERENCES "public"."ai_mesocycle_drafts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "ai_plan_drafts" ADD CONSTRAINT "ai_plan_drafts_parent_draft_id_ai_plan_drafts_id_fk" FOREIGN KEY ("parent_draft_id") REFERENCES "public"."ai_plan_drafts"("id") ON DELETE set null ON UPDATE no action;

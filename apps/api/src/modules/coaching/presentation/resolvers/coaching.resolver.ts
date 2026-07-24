@@ -17,6 +17,7 @@ import { LeaveCoachCommand } from '../../application/commands/leave-coach/leave-
 import { RemoveAthleteCommand } from '../../application/commands/remove-athlete/remove-athlete.command'
 import { SetAthleteNoteCommand } from '../../application/commands/set-athlete-note/set-athlete-note.command'
 import { GetAthleteNoteQuery } from '../../application/queries/get-athlete-note/get-athlete-note.query'
+import { MyAthleteQuery } from '../../application/queries/my-athlete/my-athlete.query'
 import { MyAthletesQuery } from '../../application/queries/my-athletes/my-athletes.query'
 import { MyCoachesQuery } from '../../application/queries/my-coaches/my-coaches.query'
 import { PendingInvitationsQuery } from '../../application/queries/pending-invitations/pending-invitations.query'
@@ -117,6 +118,22 @@ export class CoachingResolver {
     @Query(() => [CoachUserType], { description: 'Athletes linked to the caller.' })
     async myAthletes(@CurrentUser() user: AuthUser): Promise<CoachUserView[]> {
         const query = new MyAthletesQuery(user.userId)
+        return this.queryBus.execute(query)
+    }
+
+    @Query(() => CoachUserType, {
+        nullable: true,
+        description:
+            'One athlete linked to the calling coach (coaches only). Null when they are not your athlete — ' +
+            'so a stale link renders as not-found instead of loading the whole roster to look them up.',
+    })
+    @UseGuards(RolesGuard)
+    @Roles('coach')
+    async myAthlete(
+        @CurrentUser() user: AuthUser,
+        @Args('athleteId', { type: () => ID }, new ZodValidationPipe(uuidArg)) athleteId: string,
+    ): Promise<CoachUserView | null> {
+        const query = new MyAthleteQuery(user.userId, athleteId)
         return this.queryBus.execute(query)
     }
 

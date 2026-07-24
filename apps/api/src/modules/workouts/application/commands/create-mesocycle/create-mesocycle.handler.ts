@@ -1,7 +1,9 @@
 import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { MesocycleAssignedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-assigned.integration-event'
+import { MesocycleCreatedFromAiDraftIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-created-from-ai-draft.integration-event'
 import { MesocycleAggregate } from '../../../domain/entities/mesocycle.entity'
 import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
 import { ExerciseRepository } from '../../../domain/repositories/exercise.repository'
@@ -18,6 +20,7 @@ export class CreateMesocycleHandler implements ICommandHandler<CreateMesocycleCo
         private readonly mesocycles: MesocycleRepository,
         private readonly exercises: ExerciseRepository,
         private readonly coachLinks: CoachLinks,
+        private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly eventBus: EventBus,
@@ -27,6 +30,19 @@ export class CreateMesocycleHandler implements ICommandHandler<CreateMesocycleCo
         const { athleteId } = command
         if (athleteId !== undefined && !(await this.coachLinks.areLinked(command.userId, athleteId))) {
             throw new NotLinkedToAthleteError()
+        }
+
+        // Two different paths share this command, each paid by a different plan.
+        // A coach building a block for an athlete draws on their COACH plan: the
+        // capability (`plan_sessions`) and the coaching-block quota (`maxMesocycles`).
+        // A user building one for themselves draws on their ATHLETE plan.
+        if (athleteId !== undefined) {
+            await this.entitlements.assertFeature(command.userId, 'coach', 'plan_sessions')
+            const coached = await this.mesocycles.countPlannedForAthletesBy(command.userId)
+            await this.entitlements.assertWithinLimit(command.userId, 'coach', 'mesocycles', coached)
+        } else {
+            const owned = await this.mesocycles.countSelfCreatedBy(command.userId)
+            await this.entitlements.assertWithinLimit(command.userId, 'athlete', 'mesocycles', owned)
         }
 
         const content = await buildMesocycleContent(command.content, this.exercises)
@@ -45,6 +61,14 @@ export class CreateMesocycleHandler implements ICommandHandler<CreateMesocycleCo
         if (athleteId !== undefined) {
             this.eventBus.publish(
                 new MesocycleAssignedIntegrationEvent(command.userId, athleteId, mesocycle.id, mesocycle.name.value),
+            )
+        }
+
+        // Tells the AI module which block its draft became. Announced rather than
+        // called: workouts must not know that module exists.
+        if (command.fromAiDraftId) {
+            this.eventBus.publish(
+                new MesocycleCreatedFromAiDraftIntegrationEvent(command.userId, command.fromAiDraftId, mesocycle.id),
             )
         }
 

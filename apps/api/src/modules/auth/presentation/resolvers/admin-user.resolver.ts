@@ -1,6 +1,6 @@
 import { UseGuards } from '@nestjs/common'
 import { CommandBus, QueryBus } from '@nestjs/cqrs'
-import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql'
+import { Args, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql'
 
 import { AdminGuard } from '../../../../auth/admin.guard'
 import type { AuthUser } from '../../../../auth/auth-user'
@@ -12,6 +12,8 @@ import { SetUserRoleCommand } from '../../application/commands/set-user-role/set
 import { SetUserStatusCommand } from '../../application/commands/set-user-status/set-user-status.command'
 import { AdminUserStatsQuery } from '../../application/queries/admin-user-stats/admin-user-stats.query'
 import type { AdminUserStats } from '../../application/ports/admin-user.read-model'
+import type { AdminUserDetailView } from '../../application/queries/admin-user-detail/admin-user-detail.handler'
+import { AdminUserDetailQuery } from '../../application/queries/admin-user-detail/admin-user-detail.query'
 import type { AdminUsersPageView, AdminUserView } from '../../application/queries/admin-users/admin-users.handler'
 import { AdminUsersQuery } from '../../application/queries/admin-users/admin-users.query'
 import type { AccountStatus } from '../../domain/entities/user.entity'
@@ -23,14 +25,17 @@ import {
     isAdminArg,
     limitArg,
     offsetArg,
+    plansArg,
     rolesArg,
     searchArg,
     setUserAdminSchema,
     setUserRoleSchema,
     setUserStatusSchema,
     statusesArg,
+    userIdArg,
     verifiedArg,
 } from '../inputs/admin-user.inputs'
+import { AdminUserDetailType } from '../types/admin-user-detail.type'
 import { AdminUserPageType, AdminUserStatsType, AdminUserType } from '../types/admin-user.type'
 
 const DEFAULT_LIMIT = 25
@@ -55,17 +60,44 @@ export class AdminUserResolver {
         @Args('verified', { type: () => Boolean, nullable: true }, new ZodValidationPipe(verifiedArg))
         verified?: boolean,
         @Args('search', { type: () => String, nullable: true }, new ZodValidationPipe(searchArg)) search?: string,
+        @Args(
+            'plans',
+            {
+                type: () => [String],
+                nullable: true,
+                description: 'Plan slugs — the plan in force, so a free slug matches whoever falls back to it.',
+            },
+            new ZodValidationPipe(plansArg),
+        )
+        plans?: string[],
         @Args('limit', { type: () => Int, nullable: true }, new ZodValidationPipe(limitArg)) limit?: number,
         @Args('offset', { type: () => Int, nullable: true }, new ZodValidationPipe(offsetArg)) offset?: number,
     ): Promise<AdminUsersPageView> {
-        return this.queryBus.execute<AdminUsersQuery, AdminUsersPageView>(
-            new AdminUsersQuery({ roles, statuses, isAdmin, verified, search }, limit ?? DEFAULT_LIMIT, offset ?? 0),
+        const query = new AdminUsersQuery(
+            { roles, statuses, isAdmin, verified, search },
+            limit ?? DEFAULT_LIMIT,
+            offset ?? 0,
+            plans,
         )
+
+        return this.queryBus.execute<AdminUsersQuery, AdminUsersPageView>(query)
     }
 
     @Query(() => AdminUserStatsType, { description: 'Aggregate user counts for the admin dashboard.' })
     async adminUserStats(): Promise<AdminUserStats> {
         return this.queryBus.execute<AdminUserStatsQuery, AdminUserStats>(new AdminUserStatsQuery())
+    }
+
+    @Query(() => AdminUserDetailType, {
+        nullable: true,
+        description: 'The full detail of one user — account, profile, plan, billing, coaching, training (admin only).',
+    })
+    async adminUserDetail(
+        @Args('userId', { type: () => ID }, new ZodValidationPipe(userIdArg)) userId: string,
+    ): Promise<AdminUserDetailView | null> {
+        const query = new AdminUserDetailQuery(userId)
+
+        return this.queryBus.execute<AdminUserDetailQuery, AdminUserDetailView | null>(query)
     }
 
     @Mutation(() => AdminUserType, { description: "Set a user's role (athlete ↔ coach)." })

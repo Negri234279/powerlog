@@ -10,7 +10,8 @@ import {
     StubSessionPlanContextReader,
     stubRegistry,
 } from '../../../../../../tests/doubles/ai'
-import { RecordingEventBus, silentLogger } from '../../../../../../tests/doubles/shared'
+import { FakeEntitlements, RecordingEventBus, silentLogger } from '../../../../../../tests/doubles/shared'
+import { FeatureNotInPlanError } from '../../../../../shared/contracts/entitlements'
 import { AiPlanDraftMother, AiProviderConfigMother, SessionPlanContextMother } from '../../../../../../tests/mothers/ai'
 import type { SessionPlanContext } from '../../../../../shared/contracts/session-plan-context'
 import { NoDefaultAiProviderError, SessionNotProgrammableError } from '../../../domain/errors/ai-plan.errors'
@@ -42,6 +43,7 @@ describe('GenerateSessionPlanDraftHandler', () => {
     let configs: InMemoryAiProviderConfigRepository
     let openai: StubLlmProviderClient
     let reader: StubSessionPlanContextReader
+    let entitlements: FakeEntitlements
 
     const buildHandler = (context: SessionPlanContext | null = SessionPlanContextMother.create()) => {
         reader = new StubSessionPlanContextReader(context)
@@ -58,6 +60,7 @@ describe('GenerateSessionPlanDraftHandler', () => {
                     new RecordingEventBus().asEventBus(),
                 ),
             ),
+            entitlements,
             new FakeClock(),
             new FakeIdGenerator('draft'),
             silentLogger(),
@@ -69,6 +72,7 @@ describe('GenerateSessionPlanDraftHandler', () => {
         configs = new InMemoryAiProviderConfigRepository()
         configs.seed(AiProviderConfigMother.openai({ userId: USER_ID, model: 'gpt-5', isDefault: true }))
         openai = new StubLlmProviderClient('openai').willAnswer(validPlan)
+        entitlements = new FakeEntitlements()
     })
 
     it('drafts a plan for every exercise, with the set count the model chose', async () => {
@@ -184,6 +188,17 @@ describe('GenerateSessionPlanDraftHandler', () => {
         const command = new GenerateSessionPlanDraftCommand(USER_ID, SESSION_ID)
 
         await expect(buildHandler().execute(command)).rejects.toThrow()
+        expect(drafts.all()).toEqual([])
+    })
+
+    it('refuses on a plan without AI, without calling the provider', async () => {
+        // The key is the user's own, so a call would cost US nothing — but it would
+        // cost THEM, and the plan already said no. The gate runs before the provider.
+        entitlements.onAthlete({ plan: 'athlete-free', ai: false })
+        const command = new GenerateSessionPlanDraftCommand(USER_ID, SESSION_ID)
+
+        await expect(buildHandler().execute(command)).rejects.toBeInstanceOf(FeatureNotInPlanError)
+        expect(openai.completeCalls).toHaveLength(0)
         expect(drafts.all()).toEqual([])
     })
 })

@@ -3,10 +3,12 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs'
 import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql'
 import { Throttle } from '@nestjs/throttler'
 import type { Request, Response } from 'express'
+import { z } from 'zod'
 
 import type { AuthUser } from '../../../../auth/auth-user'
 import { CurrentUser } from '../../../../auth/current-user.decorator'
 import { JwtCookieGuard } from '../../../../auth/jwt-cookie.guard'
+import { FindUserIdByHandleQuery } from '../../../../shared/contracts/find-user-id-by-handle.query'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import { BecomeCoachCommand } from '../../application/commands/become-coach/become-coach.command'
 import { ChangePasswordCommand } from '../../application/commands/change-password/change-password.command'
@@ -21,6 +23,7 @@ import { ResetPasswordCommand } from '../../application/commands/reset-password/
 import { RevokeOtherSessionsCommand } from '../../application/commands/revoke-other-sessions/revoke-other-sessions.command'
 import { RevokeSessionCommand } from '../../application/commands/revoke-session/revoke-session.command'
 import { VerifyEmailCommand } from '../../application/commands/verify-email/verify-email.command'
+import { EmailAvailableQuery } from '../../application/queries/email-available/email-available.query'
 import { GetMeQuery } from '../../application/queries/get-me/get-me.query'
 import type { UserView } from '../../application/queries/get-me/get-me.handler'
 import { GetMySessionsQuery } from '../../application/queries/get-my-sessions/get-my-sessions.query'
@@ -45,7 +48,19 @@ const RATE = {
     changePassword: { default: { ttl: MINUTE, limit: 5 } },
     forgotPassword: { default: { ttl: MINUTE, limit: 5 } },
     resetPassword: { default: { ttl: MINUTE, limit: 10 } },
+    // Registration availability probes fire as the user types (debounced), so they
+    // need more headroom — but still bounded to blunt email enumeration.
+    availability: { default: { ttl: MINUTE, limit: 30 } },
 }
+
+/** Argument schemas for the public availability probes (mirror registerSchema). */
+const availabilityEmailSchema = z.email()
+const availabilityUsernameSchema = z
+    .string()
+    .trim()
+    .min(3)
+    .max(30)
+    .regex(/^[a-z0-9_]+$/i)
 
 interface GqlContext {
     req: Request
@@ -86,6 +101,25 @@ export class AuthResolver {
         this.cookies.setSession(ctx.res, result)
 
         return this.loadMe(result.userId)
+    }
+
+    @Throttle(RATE.availability)
+    @Query(() => Boolean, { description: 'Whether an email is free to register.' })
+    async emailAvailable(
+        @Args('email', new ZodValidationPipe(availabilityEmailSchema)) email: string,
+    ): Promise<boolean> {
+        const query = new EmailAvailableQuery(email)
+        return this.queryBus.execute<EmailAvailableQuery, boolean>(query)
+    }
+
+    @Throttle(RATE.availability)
+    @Query(() => Boolean, { description: 'Whether a public handle is free to register.' })
+    async usernameAvailable(
+        @Args('username', new ZodValidationPipe(availabilityUsernameSchema)) username: string,
+    ): Promise<boolean> {
+        const query = new FindUserIdByHandleQuery(username)
+        const userId = await this.queryBus.execute<FindUserIdByHandleQuery, string | null>(query)
+        return userId === null
     }
 
     @Throttle(RATE.login)

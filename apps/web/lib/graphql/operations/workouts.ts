@@ -21,13 +21,28 @@ export const WorkoutSessionFieldsFragment = graphql(`
             sets {
                 id
                 order
-                plannedWeightKg
-                plannedReps
+                plannedWeightKg {
+                    min
+                    max
+                }
+                plannedReps {
+                    min
+                    max
+                }
+                plannedRpe {
+                    min
+                    max
+                }
+                plannedRir {
+                    min
+                    max
+                }
                 weightKg
                 reps
                 rpe
                 rir
                 e1rmKg
+                outcome
                 notes
             }
         }
@@ -107,6 +122,42 @@ export const ExerciseStatsDocument = graphql(`
             totalReps
             bestE1rmKg
             heaviestWeightKg
+            successSets
+            failedSets
+        }
+    }
+`)
+
+export const TrainingExecutionDocument = graphql(`
+    query TrainingExecution($from: String, $to: String) {
+        trainingExecution(from: $from, to: $to) {
+            adherenceRate
+            plannedCompleted
+            plannedMissed
+            plannedUpcoming
+            successRate
+            successSets
+            failedSets
+            pendingSets
+            loadCompliance
+            plannedSets
+            sessionsPerWeek
+            lastSessionAt
+            daysSinceLastSession
+            volumeChange
+            sessionsChange
+        }
+    }
+`)
+
+export const TrainingExecutionSeriesDocument = graphql(`
+    query TrainingExecutionSeries($from: String, $to: String) {
+        trainingExecutionSeries(from: $from, to: $to) {
+            bucketStart
+            plannedCompleted
+            plannedMissed
+            plannedLoadKg
+            actualLoadKg
         }
     }
 `)
@@ -118,8 +169,14 @@ export const ExerciseSessionHistoryDocument = graphql(`
             performedAt
             status
             sets {
-                plannedWeightKg
-                plannedReps
+                plannedWeightKg {
+                    min
+                    max
+                }
+                plannedReps {
+                    min
+                    max
+                }
                 weightKg
                 reps
                 rpe
@@ -240,6 +297,14 @@ export const LogSetDocument = graphql(`
 export const UpdateSetDocument = graphql(`
     mutation UpdateSet($input: UpdateSetInput!) {
         updateSet(input: $input) {
+            ...WorkoutSessionFields
+        }
+    }
+`)
+
+export const CompleteSetDocument = graphql(`
+    mutation CompleteSet($input: CompleteSetInput!) {
+        completeSet(input: $input) {
             ...WorkoutSessionFields
         }
     }

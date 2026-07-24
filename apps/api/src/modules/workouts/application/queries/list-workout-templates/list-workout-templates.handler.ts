@@ -14,6 +14,6 @@ export class ListWorkoutTemplatesHandler implements IQueryHandler<
     constructor(private readonly templates: WorkoutTemplateListReadModel) {}
 
     async execute(query: ListWorkoutTemplatesQuery): Promise<WorkoutTemplateSummaryRow[]> {
-        return this.templates.list({ ownerId: query.ownerId, search: query.search })
+        return this.templates.list({ ownerId: query.ownerId, search: query.search, scope: query.scope })
     }
 }

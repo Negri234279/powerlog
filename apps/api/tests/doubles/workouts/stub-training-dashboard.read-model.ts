@@ -1,4 +1,7 @@
 import {
+    type ExecutionBucketRow,
+    type ExecutionFilter,
+    type ExecutionRow,
     type StrengthPointRow,
     type StrengthProgressionFilter,
     type TrainingAnalyticsFilter,
@@ -21,11 +24,31 @@ const EMPTY_SUMMARY: TrainingSummaryRow = {
     bestDeadliftE1rmKg: null,
 }
 
+const EMPTY_EXECUTION: ExecutionRow = {
+    plannedCompleted: 0,
+    plannedMissed: 0,
+    plannedUpcoming: 0,
+    completedSessions: 0,
+    previousCompletedSessions: 0,
+    successSets: 0,
+    failedSets: 0,
+    pendingSets: 0,
+    plannedLoadKg: 0,
+    actualLoadKg: 0,
+    plannedSets: 0,
+    volumeKg: 0,
+    previousVolumeKg: 0,
+    firstSessionAt: null,
+    lastSessionAt: null,
+}
+
 interface Seed {
     summary?: Partial<TrainingSummaryRow>
     volume?: VolumeBucketRow[]
     strength?: StrengthPointRow[]
     distribution?: TrainingDistribution
+    execution?: Partial<ExecutionRow>
+    executionSeries?: ExecutionBucketRow[]
 }
 
 /** Returns canned analytics and records the last filter each method received. */
@@ -34,6 +57,8 @@ export class StubTrainingDashboardReadModel extends TrainingDashboardReadModel {
     lastVolumeFilter?: TrainingAnalyticsFilter
     lastStrengthFilter?: StrengthProgressionFilter
     lastDistributionFilter?: TrainingAnalyticsFilter
+    lastExecutionFilter?: ExecutionFilter
+    lastExecutionSeriesFilter?: ExecutionFilter
 
     constructor(private readonly seed: Seed = {}) {
         super()
@@ -57,5 +82,15 @@ export class StubTrainingDashboardReadModel extends TrainingDashboardReadModel {
     async distribution(filter: TrainingAnalyticsFilter): Promise<TrainingDistribution> {
         this.lastDistributionFilter = filter
         return this.seed.distribution ?? { byMuscle: [], byCategory: [], rpe: [], rir: [] }
+    }
+
+    async execution(filter: ExecutionFilter): Promise<ExecutionRow> {
+        this.lastExecutionFilter = filter
+        return { ...EMPTY_EXECUTION, ...this.seed.execution }
+    }
+
+    async executionSeries(filter: ExecutionFilter): Promise<ExecutionBucketRow[]> {
+        this.lastExecutionSeriesFilter = filter
+        return this.seed.executionSeries ?? []
     }
 }

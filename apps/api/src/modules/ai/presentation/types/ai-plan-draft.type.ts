@@ -71,6 +71,9 @@ export class AiPlanDraftType {
     @Field(() => [AiPlanDraftMessageType])
     messages!: AiPlanDraftMessageType[]
 
+    @Field(() => ID, { nullable: true, description: 'The resolved draft this one continues, if any.' })
+    parentDraftId!: string | null
+
     @Field(() => Date)
     createdAt!: Date
 

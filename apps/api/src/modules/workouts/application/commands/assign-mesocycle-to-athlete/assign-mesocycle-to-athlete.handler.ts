@@ -2,6 +2,7 @@ import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { MesocycleAssignedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-assigned.integration-event'
 import { MesocycleAggregate } from '../../../domain/entities/mesocycle.entity'
 import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
@@ -27,6 +28,7 @@ export class AssignMesocycleToAthleteHandler implements ICommandHandler<
     constructor(
         private readonly mesocycles: MesocycleRepository,
         private readonly coachLinks: CoachLinks,
+        private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly eventBus: EventBus,
@@ -39,6 +41,8 @@ export class AssignMesocycleToAthleteHandler implements ICommandHandler<
         if (!(await this.coachLinks.areLinked(command.coachId, command.athleteId))) {
             throw new NotLinkedToAthleteError()
         }
+
+        await this.entitlements.assertFeature(command.coachId, 'coach', 'plan_sessions')
 
         const source = await requireOwnedMesocycle(this.mesocycles, command.mesocycleId, command.coachId)
         const startDate = command.startDate ? new Date(command.startDate) : undefined

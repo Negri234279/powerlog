@@ -2,6 +2,14 @@ import { TemplateExerciseEntity } from './template-exercise.entity'
 import { type TemplateSetFields, TemplateSetEntity } from './template-set.entity'
 import type { TemplateNameVO } from '../value-objects/template-name.vo'
 
+/**
+ * Who a template is for, and therefore which plan pays for it: `personal` ones
+ * are the owner's own training (athlete plan `maxTemplates`), `coaching` ones are
+ * built to use with athletes (coach plan `maxTemplates`). Fixed at creation — a
+ * template does not move between the two.
+ */
+export type TemplateScope = 'personal' | 'coaching'
+
 /** A programmed exercise the caller composed in the builder (sets in display order). */
 export interface TemplateExerciseInput {
     exerciseId: string
@@ -20,6 +28,8 @@ export interface WorkoutTemplateProps {
     id: string
     /** Owner; soft reference to the auth user (no DB FK across modules). */
     ownerId: string
+    /** Personal (own training) or coaching (built for athletes). See {@link TemplateScope}. */
+    scope: TemplateScope
     name: TemplateNameVO
     notes: string | null
     createdAt: Date
@@ -40,6 +50,7 @@ export class WorkoutTemplateAggregate {
     static create(input: {
         id: string
         ownerId: string
+        scope?: TemplateScope
         content: TemplateContentInput
         idFactory: () => string
         now: Date
@@ -47,6 +58,7 @@ export class WorkoutTemplateAggregate {
         return new WorkoutTemplateAggregate({
             id: input.id,
             ownerId: input.ownerId,
+            scope: input.scope ?? 'personal',
             name: input.content.name,
             notes: input.content.notes ?? null,
             createdAt: input.now,
@@ -72,6 +84,9 @@ export class WorkoutTemplateAggregate {
     }
     get ownerId(): string {
         return this.props.ownerId
+    }
+    get scope(): TemplateScope {
+        return this.props.scope
     }
     get name(): TemplateNameVO {
         return this.props.name

@@ -55,6 +55,10 @@ export interface AnalyticsEventMap {
     ai_mesocycle_refined: EmptyProps
     ai_mesocycle_accepted: EmptyProps
     ai_mesocycle_discarded: EmptyProps
+    // Billing. The server owns the funnel (started / completed / expired, by
+    // webhook); this is the one step only the client sees — the gateway sending
+    // the user back. `cancelled` is the walk-away PayPal never reports.
+    checkout_returned: { result: 'success' | 'cancelled' }
     // Emitted only by TrackedButton / TrackedLink (components/ui/tracked.tsx);
     // `id` is the finite set of analyticsId literals used across the app.
     ui_click: { id: string; kind: 'button' | 'link' }

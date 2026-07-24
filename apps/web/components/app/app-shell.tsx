@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 
 import type { Session } from '@/lib/auth/session'
 import { identifyUser, resetAnalytics, track } from '@/lib/analytics/events'
@@ -24,7 +24,18 @@ const NAV = [
  *  gates the route server-side and seeds `initialUser` from the verified access
  *  token, so the handle/avatar paint immediately; `useMe` fills the full profile
  *  and this still bounces to /login if the session turns out to be invalid. */
-export function AppShell({ children, initialUser }: { children: React.ReactNode; initialUser?: Session | null }) {
+export function AppShell({
+    children,
+    initialUser,
+    footer,
+}: {
+    children: React.ReactNode
+    initialUser?: Session | null
+    /** The marketing footer, passed in as a slot (it's a server component; this
+     *  shell is a client component). Rendered with `mt-auto` so it stays at the
+     *  bottom on short pages. */
+    footer?: ReactNode
+}) {
     const t = useTranslations('shell')
     const { data: me, isError } = useMe()
     const logout = useLogout()
@@ -97,7 +108,7 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
     }
 
     return (
-        <div className="min-h-[100dvh]">
+        <div className="flex min-h-[100dvh] flex-col">
             <header className="sticky top-0 z-50 border-b border-hairline bg-bg/80 backdrop-blur-xl">
                 <div className="mx-auto flex max-w-[72rem] items-center justify-between gap-6 px-6 py-3">
                     <div className="flex items-center gap-8">
@@ -253,7 +264,9 @@ export function AppShell({ children, initialUser }: { children: React.ReactNode;
                 </div>
             ) : null}
 
-            <main className="mx-auto max-w-[72rem] px-6 py-10 md:py-14">{children}</main>
+            <main className="mx-auto w-full max-w-[72rem] px-6 py-10 md:py-14">{children}</main>
+
+            {footer}
         </div>
     )
 }

@@ -58,6 +58,7 @@ export class GetSessionPlanContextHandler implements IQueryHandler<
 
         return {
             sessionId: session.id,
+            ownerId: session.userId,
             performedAt: session.performedAt,
             sessionNotes: session.notes,
             exercises,
@@ -114,8 +115,10 @@ export class GetSessionPlanContextHandler implements IQueryHandler<
             sets: entry.sets.map((set) => ({
                 setId: set.id,
                 order: set.order,
-                plannedWeightKg: set.plannedWeight?.value ?? null,
-                plannedReps: set.plannedReps?.value ?? null,
+                // The floor of each planned range — the model is given one number
+                // per target, as it always was. See `PlannedSetContext`.
+                plannedWeightKg: set.plannedWeight?.min.value ?? null,
+                plannedReps: set.plannedReps?.min.value ?? null,
                 rpe: set.rpe?.value ?? null,
                 rir: set.rir?.value ?? null,
                 notes: set.notes,

@@ -1,18 +1,25 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type {
+    AthleteExecutionQuery,
     AthleteExerciseStatsQuery,
     AthleteMesocyclesQuery,
     AthleteTrainingSummaryQuery,
     AthleteWorkoutHistoryQuery,
 } from '@/lib/graphql/__generated__/graphql'
 import { gqlRequest } from '@/lib/graphql/client'
+import type { HistoryFilters } from '@/lib/workouts/use-history-filters'
 import {
     AssignMesocycleToAthleteDocument,
+    AthleteExecutionDocument,
+    AthleteExecutionSeriesDocument,
     AthleteExerciseSessionHistoryDocument,
     AthleteExerciseStatsDocument,
     AthleteMesocyclesDocument,
+    AthleteStrengthProgressionDocument,
+    AthleteTrainingDistributionDocument,
     AthleteTrainingSummaryDocument,
+    AthleteVolumeSeriesDocument,
     AthleteWorkoutHistoryDocument,
     AthleteWorkoutSessionDocument,
     PlanSessionFromTemplateDocument,
@@ -22,6 +29,7 @@ import {
 export type AthleteHistoryItem = AthleteWorkoutHistoryQuery['athleteWorkoutHistory']['items'][number]
 export type AthleteStatsRow = AthleteExerciseStatsQuery['athleteExerciseStats'][number]
 export type AthleteSummary = AthleteTrainingSummaryQuery['athleteTrainingSummary']
+export type AthleteExecution = AthleteExecutionQuery['athleteExecution']
 export type AthleteMesocycle = AthleteMesocyclesQuery['athleteMesocycles'][number]
 
 /** Everything the coach reads about one athlete lives under this key. */
@@ -31,14 +39,19 @@ const HISTORY_PAGE_SIZE = 20
 
 // ── Reads ────────────────────────────────────────────────────
 
-export function useAthleteHistory(athleteId: string, status?: string, enabled = true) {
+/**
+ * The athlete's session history as their coach sees it. Takes the same filter
+ * set as the athlete's own history — the API's `athleteWorkoutHistory` accepts
+ * exactly the same arguments, gated by the coach↔athlete link.
+ */
+export function useAthleteHistory(athleteId: string, filters: HistoryFilters = {}, enabled = true) {
     return useInfiniteQuery({
-        queryKey: [...athleteKey(athleteId), 'history', status ?? 'all'],
+        queryKey: [...athleteKey(athleteId), 'history', filters],
         queryFn: ({ pageParam }) =>
             gqlRequest(AthleteWorkoutHistoryDocument, {
                 athleteId,
                 limit: HISTORY_PAGE_SIZE,
-                status,
+                ...filters,
                 // The API's zod arg takes string | undefined, never an explicit null.
                 cursor: pageParam ?? undefined,
             }).then((r) => r.athleteWorkoutHistory),
@@ -46,6 +59,9 @@ export function useAthleteHistory(athleteId: string, status?: string, enabled = 
         getNextPageParam: (last) => (last.hasNextPage ? last.nextCursor : undefined),
         enabled,
         retry: false,
+        // Keep the current results on screen while a new filter combination loads,
+        // so changing filters refreshes in place instead of flashing a skeleton.
+        placeholderData: keepPreviousData,
     })
 }
 
@@ -105,11 +121,68 @@ export function useAthleteSummary(athleteId: string, from?: string, enabled = tr
     })
 }
 
+/**
+ * Adherence, set outcomes and load compliance. Separate from `useAthleteSummary`
+ * because it answers a different question over a different population — see the
+ * API type: adherence covers only what *this* coach programmed, the rest covers
+ * all the athlete's training.
+ */
+export function useAthleteExecution(athleteId: string, from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'execution', from ?? 'all'],
+        queryFn: async () => (await gqlRequest(AthleteExecutionDocument, { athleteId, from })).athleteExecution,
+        enabled,
+        retry: false,
+    })
+}
+
 export function useAthleteExerciseStats(athleteId: string, from?: string, enabled = true) {
     return useQuery({
         queryKey: [...athleteKey(athleteId), 'exerciseStats', from ?? 'all'],
         queryFn: async () => (await gqlRequest(AthleteExerciseStatsDocument, { athleteId, from })).athleteExerciseStats,
         enabled,
+        retry: false,
+    })
+}
+
+/** Week-by-week adherence and programmed-vs-executed load — coach-only charts. */
+export function useAthleteExecutionSeries(athleteId: string, from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'executionSeries', from ?? 'all'],
+        queryFn: async () =>
+            (await gqlRequest(AthleteExecutionSeriesDocument, { athleteId, from })).athleteExecutionSeries,
+        enabled,
+        retry: false,
+    })
+}
+
+export function useAthleteVolumeSeries(athleteId: string, from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'volumeSeries', from ?? 'all'],
+        queryFn: async () => (await gqlRequest(AthleteVolumeSeriesDocument, { athleteId, from })).athleteVolumeSeries,
+        enabled,
+        retry: false,
+    })
+}
+
+export function useAthleteDistribution(athleteId: string, from?: string, enabled = true) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'distribution', from ?? 'all'],
+        queryFn: async () =>
+            (await gqlRequest(AthleteTrainingDistributionDocument, { athleteId, from })).athleteTrainingDistribution,
+        enabled,
+        retry: false,
+    })
+}
+
+/** Disabled until a lift is picked — there is no sensible "all exercises" e1RM. */
+export function useAthleteStrengthProgression(athleteId: string, exerciseId?: string, from?: string) {
+    return useQuery({
+        queryKey: [...athleteKey(athleteId), 'strength', exerciseId ?? null, from ?? 'all'],
+        queryFn: async () =>
+            (await gqlRequest(AthleteStrengthProgressionDocument, { athleteId, exerciseId: exerciseId!, from }))
+                .athleteStrengthProgression,
+        enabled: Boolean(exerciseId),
         retry: false,
     })
 }

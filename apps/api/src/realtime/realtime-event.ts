@@ -12,6 +12,8 @@ export const REALTIME_EVENT_TYPES = [
     'athlete_unlinked',
     'session_planned',
     'mesocycle_assigned',
+    'subscription_updated',
+    'ai_generation_settled',
 ] as const
 
 export type RealtimeEventType = (typeof REALTIME_EVENT_TYPES)[number]

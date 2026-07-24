@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useForgotPassword } from '@/lib/graphql/hooks/use-auth'
@@ -19,7 +19,7 @@ export function ForgotPasswordForm() {
     const [error, setError] = useState<string | null>(null)
     const [sent, setSent] = useState(false)
 
-    async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    async function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const email = String(new FormData(event.currentTarget).get('email') ?? '').trim()
         if (!EMAIL_RE.test(email)) {

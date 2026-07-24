@@ -1,6 +1,7 @@
 import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { WorkoutSessionPlannedIntegrationEvent } from '../../../../../shared/integration-events/workout-session-planned.integration-event'
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { NotLinkedToAthleteError } from '../../../domain/errors/workouts.errors'
@@ -25,6 +26,7 @@ export class PlanSessionFromTemplateHandler implements ICommandHandler<
         private readonly sessions: WorkoutSessionRepository,
         private readonly templates: WorkoutTemplateRepository,
         private readonly coachLinks: CoachLinks,
+        private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly eventBus: EventBus,
@@ -34,6 +36,10 @@ export class PlanSessionFromTemplateHandler implements ICommandHandler<
         if (!(await this.coachLinks.areLinked(command.coachId, command.athleteId))) {
             throw new NotLinkedToAthleteError()
         }
+
+        // Programming for someone else is the coach's plan paying, not the
+        // athlete's: it's the coach who performs the action.
+        await this.entitlements.assertFeature(command.coachId, 'coach', 'plan_sessions')
 
         // The coach plans from their own template (ownership scoped to the coach).
         const template = await requireOwnedTemplate(this.templates, command.templateId, command.coachId)

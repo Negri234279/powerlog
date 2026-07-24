@@ -1,4 +1,6 @@
-import { Field, Float, ID, Int, ObjectType } from '@nestjs/graphql'
+import { Field, ID, Int, ObjectType } from '@nestjs/graphql'
+
+import { FloatRangeType, IntRangeType } from './range.type'
 
 /** A programmed set within a microcycle day exercise. Weights are kg. */
 @ObjectType('MesocycleDaySet')
@@ -9,17 +11,17 @@ export class MesocycleDaySetType {
     @Field(() => Int)
     order!: number
 
-    @Field(() => Float, { nullable: true })
-    plannedWeightKg?: number | null
+    @Field(() => FloatRangeType, { nullable: true })
+    plannedWeightKg?: FloatRangeType | null
 
-    @Field(() => Int, { nullable: true })
-    plannedReps?: number | null
+    @Field(() => IntRangeType, { nullable: true })
+    plannedReps?: IntRangeType | null
 
-    @Field(() => Float, { nullable: true })
-    rpe?: number | null
+    @Field(() => FloatRangeType, { nullable: true })
+    rpe?: FloatRangeType | null
 
-    @Field(() => Int, { nullable: true })
-    rir?: number | null
+    @Field(() => IntRangeType, { nullable: true })
+    rir?: IntRangeType | null
 
     @Field(() => String, { nullable: true })
     notes?: string | null

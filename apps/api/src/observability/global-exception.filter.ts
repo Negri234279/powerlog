@@ -16,6 +16,8 @@ interface Classified {
     status: number
     clientMessage: string
     level: 'warn' | 'error'
+    /** Client-safe specifics from a domain error (see `DomainError.details`). */
+    details?: Record<string, unknown>
 }
 
 const HTTP_CODE: Record<number, string> = {
@@ -77,12 +79,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
         if (host.getType<GqlContextType>() === 'graphql') {
             return new GraphQLError(info.clientMessage, {
-                extensions: { code: info.code },
+                // `code` last: a stray `code` in details can't shadow the real one.
+                extensions: { ...info.details, code: info.code },
             })
         }
 
         const response = host.switchToHttp().getResponse<Response>()
         response.status(info.status).json({
+            ...info.details,
             statusCode: info.status,
             code: info.code,
             message: info.clientMessage,
@@ -97,6 +101,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                 status: HttpStatus.BAD_REQUEST,
                 clientMessage: exception.message,
                 level: 'warn',
+                ...(exception.details ? { details: exception.details } : {}),
             }
         }
 

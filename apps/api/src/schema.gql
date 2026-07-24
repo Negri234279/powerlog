@@ -8,11 +8,65 @@ input AddExerciseEntryInput {
   sessionId: ID!
 }
 
+input AddPlanPriceInput {
+  """Integer cents. Replaces the version on sale for this combo."""
+  amountCents: Int!
+
+  """EUR | USD"""
+  currency: String!
+
+  """month | quarter | semester | year"""
+  interval: String!
+  planId: ID!
+}
+
+type AdminAthleteEntitlements {
+  ai: Boolean!
+  maxMesocycles: Int
+  maxTemplates: Int
+  maxWorkouts: Int
+
+  """Slug of the plan this section came from."""
+  plan: String!
+}
+
+type AdminBillingStats {
+  """Subscriptions currently granting their plan."""
+  activeSubscriptions: Int!
+  byPlan: [SubscriptionsByPlan!]!
+  byStatus: [SubscriptionsByStatus!]!
+
+  """Cancelled but still inside the period they paid for."""
+  canceling: Int!
+  mrr: [MrrByPlan!]!
+  pastDue: Int!
+  trialing: Int!
+}
+
+type AdminCoachEntitlements {
+  ai: Boolean!
+  maxAthletes: Int
+  maxMesocycles: Int
+  maxTemplates: Int
+
+  """Slug of the plan this section came from."""
+  plan: String!
+  planSessions: Boolean!
+}
+
 type AdminCoachingStats {
   activeCoaches: Int!
   linkedAthletes: Int!
   links: Int!
   pendingInvitations: Int!
+}
+
+type AdminCoachingUserCard {
+  avatarUrl: String
+  firstName: String
+  lastName: String
+  userId: ID!
+  username: String!
 }
 
 type AdminExercise {
@@ -43,12 +97,139 @@ type AdminExercisePage {
   total: Int!
 }
 
+type AdminPlan {
+  """athlete | coach"""
+  audience: String!
+  createdAt: DateTime!
+  description: String
+
+  """
+  The raw entitlements the admin form edits. Its shape is the zod schema of the audience.
+  """
+  entitlements: JSON!
+
+  """Editorial "recommended / most popular" badge for the pricing card."""
+  highlighted: Boolean!
+  id: ID!
+
+  """The fallback of its audience: no subscription row, no charge."""
+  isFree: Boolean!
+  name: String!
+
+  """The plan’s live offer, if it has one."""
+  offer: PlanOffer
+
+  """
+  The PayPal Product this plan was published as. Null → never synced there.
+  """
+  paypalProductId: String
+  prices: [PlanPrice!]!
+
+  """Stable public identifier. Immutable — it labels metrics."""
+  slug: String!
+
+  """The same entitlements, collapsed as a subscriber would get them."""
+  snapshot: PlanEntitlements!
+  sortOrder: Int!
+
+  """draft | active | archived"""
+  status: String!
+
+  """
+  The Stripe Product this plan was published as. Null → never synced there.
+  """
+  stripeProductId: String
+
+  """Localized name/description per non-default locale."""
+  translations: [PlanTranslation!]!
+  updatedAt: DateTime!
+}
+
+type AdminSubscription {
+  """Null for a manual grant: nothing is charged."""
+  amountCents: Int
+  cancelAtPeriodEnd: Boolean!
+  createdAt: DateTime!
+  currency: String
+  currentPeriodEnd: DateTime!
+  currentPeriodStart: DateTime!
+
+  """Null if the account is gone."""
+  email: String
+
+  """stripe | paypal | manual"""
+  gateway: String!
+  id: ID!
+  interval: String
+  planId: ID!
+  planName: String!
+  planSlug: String!
+  status: String!
+  userId: ID!
+  username: String
+}
+
+type AdminSubscriptionPage {
+  limit: Int!
+  offset: Int!
+  rows: [AdminSubscription!]!
+  total: Int!
+}
+
+type AdminSupportTicket {
+  """general | billing | bug | account | feature | other"""
+  category: String!
+  createdAt: DateTime!
+  id: ID!
+  lastMessageAt: DateTime!
+  messageCount: Int!
+  requesterEmail: String!
+  requesterName: String
+
+  """Linked account, if the email matched one."""
+  requesterUserId: ID
+
+  """The linked account's handle."""
+  requesterUsername: String
+
+  """open | closed"""
+  status: String!
+  subject: String!
+}
+
+type AdminSupportTicketDetail {
+  category: String!
+  createdAt: DateTime!
+  id: ID!
+  lastMessageAt: DateTime!
+  messages: [SupportMessage!]!
+  requesterEmail: String!
+  requesterName: String
+  requesterUserId: ID
+  requesterUsername: String
+  status: String!
+  subject: String!
+  updatedAt: DateTime!
+}
+
+type AdminSupportTicketPage {
+  limit: Int!
+  offset: Int!
+  rows: [AdminSupportTicket!]!
+  total: Int!
+}
+
 type AdminUser {
   createdAt: DateTime!
   email: String!
   emailVerified: Boolean!
   id: ID!
   isAdmin: Boolean!
+
+  """
+  Slug of the plan in force (the free plan of their role when they don’t pay); null if unresolved.
+  """
+  plan: String
 
   """User role: "athlete" or "coach"."""
   role: String!
@@ -60,6 +241,66 @@ type AdminUser {
   username: String
 }
 
+type AdminUserAccount {
+  createdAt: DateTime!
+  email: String!
+  emailVerified: Boolean!
+
+  """false → a Google-only account with no password."""
+  hasPassword: Boolean!
+  id: ID!
+  isAdmin: Boolean!
+
+  """Last active (newest session issued), or null if never."""
+  lastSeenAt: DateTime
+
+  """"athlete" | "coach"."""
+  role: String!
+
+  """"active" | "disabled" | "deleted"."""
+  status: String!
+
+  """Unit preference: "kg" | "lb"."""
+  units: String!
+  updatedAt: DateTime!
+}
+
+type AdminUserBilling {
+  """Currency of the MRR figure; null when nothing is charged."""
+  currency: String
+
+  """Monthly-normalised revenue from entitling, priced subscriptions."""
+  mrrCents: Int!
+  subscriptions: [AdminUserSubscription!]!
+}
+
+type AdminUserCoaching {
+  """How many athletes this user coaches (the true total)."""
+  athleteCount: Int!
+
+  """A bounded sample of those athletes (newest first)."""
+  athletes: [AdminCoachingUserCard!]!
+
+  """Coaches over this user (usually zero or one)."""
+  coaches: [AdminCoachingUserCard!]!
+}
+
+type AdminUserDetail {
+  account: AdminUserAccount!
+  billing: AdminUserBilling
+  coaching: AdminUserCoaching
+  entitlements: AdminUserEntitlements
+  profile: AdminUserProfile
+  training: AdminUserTraining
+}
+
+type AdminUserEntitlements {
+  athlete: AdminAthleteEntitlements!
+
+  """null when the user does no coaching."""
+  coach: AdminCoachEntitlements
+}
+
 type AdminUserPage {
   limit: Int!
   offset: Int!
@@ -67,6 +308,16 @@ type AdminUserPage {
 
   """Total users matching the filter (ignoring pagination)."""
   total: Int!
+}
+
+type AdminUserProfile {
+  avatarUrl: String
+  firstName: String
+  lastName: String
+
+  """Preferred locale (BCP-47), or null if unset."""
+  locale: String
+  username: String!
 }
 
 type AdminUserStats {
@@ -81,6 +332,36 @@ type AdminUserStats {
   verified: Int!
 }
 
+type AdminUserSubscription {
+  """Null for a manual grant: nothing is charged."""
+  amountCents: Int
+  cancelAtPeriodEnd: Boolean!
+  createdAt: DateTime!
+  currency: String
+  currentPeriodEnd: DateTime!
+  currentPeriodStart: DateTime!
+
+  """stripe | paypal | manual."""
+  gateway: String!
+  id: ID!
+  interval: String
+  planId: ID!
+  planName: String!
+  planSlug: String!
+  status: String!
+}
+
+type AdminUserTraining {
+  completedSessions: Int!
+  distinctExercises: Int!
+
+  """When the user last trained, or null if never."""
+  lastSessionAt: DateTime
+  sessions: Int!
+  sessionsLast30Days: Int!
+  sets: Int!
+}
+
 type AdminWorkoutStats {
   activeUsers: Int!
   completedSessions: Int!
@@ -88,6 +369,69 @@ type AdminWorkoutStats {
   sessions: Int!
   sessionsLast7Days: Int!
   sets: Int!
+}
+
+type AiDraftHistoryPage {
+  hasNextPage: Boolean!
+  items: [AiDraftSummary!]!
+  nextCursor: String
+}
+
+type AiDraftSummary {
+  """
+  The athlete a coach designed for; null on session drafts and on the caller’s own blocks.
+  """
+  athleteId: ID
+  createdAt: DateTime!
+  id: ID!
+
+  """"session" or "mesocycle"."""
+  kind: String!
+  messageCount: Int!
+
+  """The model that produced the proposal."""
+  model: String!
+
+  """The block name the model proposed; null on session drafts."""
+  name: String
+
+  """The resolved draft this one continues, if any."""
+  parentDraftId: ID
+
+  """"openai" or "anthropic"."""
+  provider: String!
+
+  """The session programmed; null on mesocycle drafts."""
+  sessionId: ID
+
+  """"open", "accepted" or "discarded"."""
+  status: String!
+
+  """
+  What the athlete asked for, in their own words; null when the draft was generated unprompted.
+  """
+  title: String
+  updatedAt: DateTime!
+}
+
+type AiGeneration {
+  createdAt: DateTime!
+
+  """The draft it produced; null until it succeeds."""
+  draftId: ID
+
+  """Why it failed, as a stable error code; null unless it failed."""
+  failureCode: String
+  id: ID!
+
+  """
+  "session_plan", "session_plan_refinement", "mesocycle" or "mesocycle_refinement".
+  """
+  kind: String!
+
+  """"queued", "running", "succeeded" or "failed"."""
+  status: String!
+  updatedAt: DateTime!
 }
 
 type AiMesocycleDraft {
@@ -99,6 +443,9 @@ type AiMesocycleDraft {
   days: [AiMesocycleDraftDay!]!
   goal: String
   id: ID!
+
+  """The block this draft became, once it was created."""
+  mesocycleId: ID
   messages: [AiMesocycleDraftMessage!]!
 
   """The model that produced this proposal."""
@@ -106,6 +453,9 @@ type AiMesocycleDraft {
 
   """The name the model proposed for the block."""
   name: String!
+
+  """The resolved draft this one continues, if any."""
+  parentDraftId: ID
 
   """"openai" or "anthropic"."""
   provider: String!
@@ -177,6 +527,9 @@ type AiPlanDraft {
 
   """The model that produced this proposal."""
   model: String!
+
+  """The resolved draft this one continues, if any."""
+  parentDraftId: ID
 
   """"openai" or "anthropic"."""
   provider: String!
@@ -267,9 +620,60 @@ type AiUsageTotals {
   totalCost: Float
 }
 
+input AssignSubscriptionInput {
+  planId: ID!
+
+  """When the grant ends. Omitted → one year."""
+  until: DateTime
+  userId: ID!
+}
+
+type BillingDrift {
+  gateway: String!
+
+  """Live at the gateway but not here: a webhook we never received."""
+  missingLocally: [String!]!
+
+  """Live here but not at the gateway: a plan granted to nobody paying."""
+  staleLocally: [String!]!
+
+  """
+  Null when the provider could not be asked — no signal, which is not the same as no drift.
+  """
+  total: Int
+}
+
+type BillingWebhookEvent {
+  error: String
+
+  """The provider’s own event id — the idempotency key."""
+  eventId: String!
+  gateway: String!
+  id: ID!
+  processedAt: DateTime
+  receivedAt: DateTime!
+
+  """received | processed | failed"""
+  status: String!
+  type: String!
+}
+
+type BillingWebhookEventPage {
+  rows: [BillingWebhookEvent!]!
+  total: Int!
+}
+
 input ChangePasswordInput {
   currentPassword: String
   newPassword: String!
+}
+
+type CheckoutSession {
+  """Initialise Stripe embedded checkout with this (in-page checkout)."""
+  clientSecret: String
+
+  """Redirect the browser here (hosted checkout)."""
+  url: String
 }
 
 type CoachAthleteNote {
@@ -302,6 +706,28 @@ type CoachInvitationPreview {
   suggestedUsername: String!
 }
 
+type CoachRosterEntry {
+  """Completed ÷ due of this coach's programming."""
+  adherenceRate: Float
+  athleteId: ID!
+  attention: RosterAttention!
+
+  """When the coaching relationship started."""
+  coachedSince: DateTime!
+  daysSinceLastSession: Int
+
+  """All-time; null when they have never trained."""
+  lastSessionAt: DateTime
+
+  """Next planned session, all-future."""
+  nextSessionAt: DateTime
+  plannedCompleted: Int!
+
+  """Completed + missed — the adherence denominator."""
+  plannedDue: Int!
+  plannedMissed: Int!
+}
+
 type CoachUser {
   """Resolved avatar URL; null → show initials."""
   avatarUrl: String
@@ -313,6 +739,43 @@ type CoachUser {
   lastName: String
   userId: ID!
   username: String!
+}
+
+input CompleteSetInput {
+  entryId: ID!
+  notes: String
+
+  """success | failed"""
+  outcome: String!
+  reps: Int
+
+  """Reps in reserve (alternative to RPE)."""
+  rir: Int
+
+  """RPE 0–10 in half-point steps."""
+  rpe: Float
+  sessionId: ID!
+  setId: ID!
+
+  """Weight unit of the inputs: kg | lb (default kg)."""
+  unit: String
+  weight: Float
+}
+
+input ContactInput {
+  """One of: general, billing, bug, account, feature, other."""
+  category: String!
+  email: String!
+  message: String!
+
+  """The sender’s name, if given."""
+  name: String
+  subject: String!
+
+  """
+  Honeypot — real users leave it empty; a filled value is dropped as spam.
+  """
+  website: String
 }
 
 input CreateExerciseInput {
@@ -333,6 +796,32 @@ input CreateExerciseInput {
 
   """Stable key; derived from name if omitted."""
   slug: String
+}
+
+input CreatePlanInput {
+  """athlete | coach — decides the shape of the entitlements."""
+  audience: String!
+  description: String
+
+  """Validated against the zod schema of the audience."""
+  entitlements: JSON!
+
+  """Editorial "recommended / most popular" badge for the pricing card."""
+  highlighted: Boolean
+
+  """The audience fallback. At most one active free plan per audience."""
+  isFree: Boolean
+  name: String!
+
+  """Stable public id (e.g. athlete-pro). Immutable afterwards."""
+  slug: String!
+  sortOrder: Int
+
+  """draft (default) | active | archived"""
+  status: String
+
+  """Name/description in non-default locales."""
+  translations: [PlanTranslationInput!]
 }
 
 input CreateSessionFromTemplateInput {
@@ -359,6 +848,16 @@ type DistributionSlice {
   key: String!
   totalSets: Int!
   totalVolumeKg: Float!
+}
+
+type ExecutionBucket {
+  actualLoadKg: Float!
+
+  """Start of the week (UTC)."""
+  bucketStart: DateTime!
+  plannedCompleted: Int!
+  plannedLoadKg: Float!
+  plannedMissed: Int!
 }
 
 type Exercise {
@@ -390,10 +889,10 @@ type ExerciseHistorySet {
   e1rmKg: Float
 
   """Programmed target reps, if any."""
-  plannedReps: Int
+  plannedReps: IntRange
 
   """Programmed target weight (kg), if any."""
-  plannedWeightKg: Float
+  plannedWeightKg: FloatRange
   reps: Int!
   rir: Int
   rpe: Float
@@ -414,16 +913,39 @@ type ExerciseStats {
   bestE1rmKg: Float
   category: String!
   exerciseId: ID!
+  failedSets: Int!
 
   """Heaviest single set (kg)."""
   heaviestWeightKg: Float
   name: String!
   slug: String!
+
+  """Sets marked successful. Unmarked sets count in neither."""
+  successSets: Int!
   totalReps: Int!
   totalSets: Int!
 
   """Σ weight·reps (kg) over logged sets."""
   totalVolumeKg: Float!
+}
+
+type FloatRange {
+  max: Float!
+  min: Float!
+}
+
+type GatewayStatus {
+  """Whether this deployment has keys for it at all."""
+  configured: Boolean!
+  failedWebhooks: Int!
+  gateway: String!
+
+  """
+  A long silence here means the endpoint is broken — the cheapest signal there is.
+  """
+  lastWebhookAt: DateTime
+  syncedPlans: Int!
+  totalPlans: Int!
 }
 
 input GenerateMesocycleDraftInput {
@@ -475,6 +997,11 @@ input GenerateSessionPlanDraftInput {
   sessionId: ID!
 }
 
+type IntRange {
+  max: Int!
+  min: Int!
+}
+
 type IntensityBucket {
   sets: Int!
 
@@ -482,11 +1009,41 @@ type IntensityBucket {
   value: Int!
 }
 
+type IntroPhase {
+  cycles: Int!
+  percentOff: Int!
+}
+
+input IntroPhaseInput {
+  """How many billing cycles the discount lasts."""
+  cycles: Int!
+
+  """How much is taken off each of those cycles (1–100)."""
+  percentOff: Int!
+}
+
+"""An arbitrary JSON value (validated against a schema by the server)."""
+scalar JSON
+
 input LogSetInput {
   entryId: ID!
   notes: String
-  plannedReps: Int
-  plannedWeight: Float
+
+  """A number or a range: "5" or "5-8"."""
+  plannedReps: String
+
+  """
+  Target reps in reserve (alternative to planned RPE). A number or a range: "5" or "5-8".
+  """
+  plannedRir: String
+
+  """
+  Target RPE 0–10 in half-point steps. A number or a range: "5" or "5-8".
+  """
+  plannedRpe: String
+
+  """A number or a range: "5" or "5-8"."""
+  plannedWeight: String
   reps: Int
 
   """Reps in reserve (alternative to RPE)."""
@@ -573,22 +1130,30 @@ type MesocycleDaySet {
   id: ID!
   notes: String
   order: Int!
-  plannedReps: Int
-  plannedWeightKg: Float
-  rir: Int
-  rpe: Float
+  plannedReps: IntRange
+  plannedWeightKg: FloatRange
+  rir: IntRange
+  rpe: FloatRange
 }
 
 input MesocycleDaySetInput {
   notes: String
-  plannedReps: Int
-  plannedWeight: Float
 
-  """Target reps in reserve (alternative to RPE)."""
-  rir: Int
+  """A number or a range: "5" or "5-8"."""
+  plannedReps: String
 
-  """Target RPE 0–10 in half-point steps."""
-  rpe: Float
+  """A number or a range: "5" or "5-8"."""
+  plannedWeight: String
+
+  """
+  Target reps in reserve (alternative to RPE). A number or a range: "5" or "5-8".
+  """
+  rir: String
+
+  """
+  Target RPE 0–10 in half-point steps. A number or a range: "5" or "5-8".
+  """
+  rpe: String
 
   """Weight unit of the inputs: kg | lb (default kg)."""
   unit: String
@@ -656,6 +1221,13 @@ input MicrocycleInput {
   notes: String
 }
 
+type MrrByPlan {
+  """Monthly-normalised cents: a yearly plan is not 12× a monthly one."""
+  amountCents: Int!
+  currency: String!
+  plan: String!
+}
+
 type Mutation {
   """Accept a pending invitation (links you to the coach)."""
   acceptInvitation(id: ID!): CoachInvitation!
@@ -672,6 +1244,19 @@ type Mutation {
   addExerciseEntry(input: AddExerciseEntryInput!): WorkoutSession!
 
   """
+  Put a price on sale. The version currently on sale for that interval+currency is withdrawn.
+  """
+  addPlanPrice(input: AddPlanPriceInput!): ID!
+
+  """Put a user on a plan by hand (comp/support): no gateway, no charge."""
+  adminAssignSubscription(input: AssignSubscriptionInput!): ID!
+
+  """
+  End a manual grant now. Gateway-billed subscriptions must be ended at the gateway.
+  """
+  adminRevokeSubscription(id: ID!): Boolean!
+
+  """
   Copy one of your own mesocycles to an athlete (they own the copy, you plan it; coaches only). The source stays in your library.
   """
   assignMesocycleToAthlete(athleteId: ID!, mesocycleId: ID!, startDate: String): Mesocycle!
@@ -684,8 +1269,23 @@ type Mutation {
   """Cancel an invitation you sent (coaches only)."""
   cancelInvitation(id: ID!): CoachInvitation!
 
+  """
+  Stop a subscription renewing (athlete | coach). You keep the plan until the period you paid for ends.
+  """
+  cancelSubscription(audience: String!): Boolean!
+
   """Change (or set, for Google-only accounts) the password."""
   changePassword(input: ChangePasswordInput!): Boolean!
+
+  """
+  Move to another plan. An upgrade is charged now, pro-rated; a downgrade lands when the period you paid for ends. Returns a URL when the provider needs you to approve it again (PayPal), null when it just applied it (Stripe).
+  """
+  changePlan(planPriceId: ID!): String
+
+  """
+  Mark a set done (success | failed), logging what was actually performed.
+  """
+  completeSet(input: CompleteSetInput!): WorkoutSession!
 
   """Mark a session as completed."""
   completeWorkoutSession(id: ID!): WorkoutSession!
@@ -693,13 +1293,16 @@ type Mutation {
   """
   Build a mesocycle for one of your athletes: they own it, you plan it (coaches only).
   """
-  createAthleteMesocycle(athleteId: ID!, input: MesocycleInput!): Mesocycle!
+  createAthleteMesocycle(athleteId: ID!, fromAiDraftId: ID, input: MesocycleInput!): Mesocycle!
 
   """Create a catalog exercise."""
   createExercise(input: CreateExerciseInput!): Exercise!
 
   """Create a mesocycle (weeks → days → programmed sets)."""
-  createMesocycle(input: MesocycleInput!): Mesocycle!
+  createMesocycle(fromAiDraftId: ID, input: MesocycleInput!): Mesocycle!
+
+  """Create a plan. Born `draft` unless told otherwise."""
+  createPlan(input: CreatePlanInput!): ID!
 
   """
   Create a session for yourself, pre-filled from one of your templates (status: planned).
@@ -709,8 +1312,18 @@ type Mutation {
   """Create a workout session (status: planned)."""
   createWorkoutSession(input: CreateWorkoutSessionInput): WorkoutSession!
 
-  """Create a reusable workout template."""
-  createWorkoutTemplate(input: WorkoutTemplateInput!): WorkoutTemplate!
+  """
+  Create a reusable workout template. `scope` is personal (own training) or coaching (for athletes); each counts against a different plan.
+  """
+  createWorkoutTemplate(input: WorkoutTemplateInput!, scope: String): WorkoutTemplate!
+
+  """
+  Retire a plan’s live offer without replacing it (turns the trial/discount off for new signups). Subscribers who signed up under it keep their terms.
+  """
+  deactivatePlanOffer(id: ID!): Boolean!
+
+  """Withdraw a price. Subscriptions on it keep running — they paid for it."""
+  deactivatePlanPrice(id: ID!): Boolean!
 
   """Decline a pending invitation."""
   declineInvitation(id: ID!): CoachInvitation!
@@ -753,9 +1366,19 @@ type Mutation {
   forgotPassword(email: String!): Boolean!
 
   """
-  Ask the default AI provider to design a training block. Supersedes any open draft for the same trainee.
+  Pick a past block design back up: opens a new draft carrying its week. Supersedes any open draft for the same trainee.
   """
-  generateMesocycleDraft(input: GenerateMesocycleDraftInput!): AiMesocycleDraft!
+  forkMesocycleDraft(draftId: ID!): AiMesocycleDraft!
+
+  """
+  Pick a past conversation back up: opens a new draft carrying its proposal. Supersedes any open draft on the session.
+  """
+  forkPlanDraft(draftId: ID!): AiPlanDraft!
+
+  """
+  Queue a request to design a training block. Returns the job; watch it and read `draftId` when it succeeds. Supersedes any open draft for the same trainee.
+  """
+  generateMesocycleDraft(input: GenerateMesocycleDraftInput!): AiGeneration!
 
   """
   Generate one week of a mesocycle into dated planned sessions (one per training day).
@@ -763,9 +1386,9 @@ type Mutation {
   generateMesocycleWeek(input: GenerateMesocycleWeekInput!): [WorkoutSession!]!
 
   """
-  Ask the default AI provider to program a planned session, or one exercise of it. Supersedes any open draft.
+  Queue a request to program a planned session, or one exercise of it. Returns the job; watch it and read `draftId` when it succeeds. Supersedes any open draft.
   """
-  generateSessionPlanDraft(input: GenerateSessionPlanDraftInput!): AiPlanDraft!
+  generateSessionPlanDraft(input: GenerateSessionPlanDraftInput!): AiGeneration!
 
   """
   Invite an athlete by email (coaches only). Works whether or not they have an account yet.
@@ -802,11 +1425,11 @@ type Mutation {
   """
   planWorkoutSession(input: PlanWorkoutSessionInput!): WorkoutSession!
 
-  """Ask the model to revise an open draft."""
-  refineMesocycleDraft(input: RefineMesocycleDraftInput!): AiMesocycleDraft!
+  """Queue a revision of an open draft."""
+  refineMesocycleDraft(input: RefineMesocycleDraftInput!): AiGeneration!
 
-  """Ask the model to revise an open draft."""
-  refinePlanDraft(input: RefinePlanDraftInput!): AiPlanDraft!
+  """Queue a revision of an open draft."""
+  refinePlanDraft(input: RefinePlanDraftInput!): AiGeneration!
 
   """Rotate the session using the refresh cookie."""
   refresh: Me!
@@ -831,11 +1454,26 @@ type Mutation {
   """Reset the password using the token from the reset email."""
   resetPassword(input: ResetPasswordInput!): Boolean!
 
+  """
+  Undo a scheduled cancellation (athlete | coach), while the paid period is still running.
+  """
+  resumeSubscription(audience: String!): Boolean!
+
+  """
+  Re-process a webhook whose handler failed, from the payload the journal kept. It runs the same command the webhook does.
+  """
+  retryWebhookEvent(id: ID!): Boolean!
+
   """Revoke every session except the current one."""
   revokeOtherSessions: Boolean!
 
   """Revoke one session by id (logs out that device)."""
   revokeSession(id: String!): Boolean!
+
+  """
+  Send a contact/support message (public). Opens a support ticket and notifies the team.
+  """
+  sendContactMessage(input: ContactInput!): Boolean!
 
   """
   Make this the provider the AI features use. Any previous default steps down.
@@ -858,6 +1496,14 @@ type Mutation {
   """Transition a mesocycle’s status (draft/active/completed/archived)."""
   setMesocycleStatus(id: ID!, status: String!): Mesocycle!
 
+  """
+  Publish, unpublish or archive a plan. Archiving stops new signups; the subscriptions already on it keep it.
+  """
+  setPlanStatus(id: ID!, status: String!): Boolean!
+
+  """Close or reopen a support ticket (admin only)."""
+  setTicketStatus(id: ID!, status: String!): Boolean!
+
   """Grant or revoke platform admin (cannot revoke your own)."""
   setUserAdmin(input: SetUserAdminInput!): AdminUser!
 
@@ -869,6 +1515,16 @@ type Mutation {
   """
   setUserStatus(input: SetUserStatusInput!): AdminUser!
 
+  """
+  Start paying for a plan. Returns a redirect URL (hosted) or a client secret (Stripe embedded, when embedded is true); the subscription is created by the webhook, not by the redirect.
+  """
+  startCheckout(embedded: Boolean, gateway: String!, offerId: ID, planPriceId: ID!, returnTo: String): CheckoutSession!
+
+  """
+  Publish the plan, its prices on sale and its offer to a payment gateway. Re-runnable — this is also the retry.
+  """
+  syncPlanToGateway(gateway: String!, planId: ID!): Boolean!
+
   """Select the model used for a configured provider."""
   updateAiProviderModel(input: UpdateAiProviderModelInput!): AiProviderConfig!
 
@@ -877,6 +1533,11 @@ type Mutation {
 
   """Replace a mesocycle’s details and its whole week/day/set tree."""
   updateMesocycle(id: ID!, input: MesocycleInput!): Mesocycle!
+
+  """
+  Edit a plan. Entitlement changes are retroactive: live subscribers see them at once.
+  """
+  updatePlan(input: UpdatePlanInput!): Boolean!
 
   """Update the authenticated user’s profile fields."""
   updateProfile(input: UpdateProfileInput!): Profile!
@@ -892,8 +1553,110 @@ type Mutation {
   """Replace a template’s name, notes and exercise/set tree."""
   updateWorkoutTemplate(id: ID!, input: WorkoutTemplateInput!): WorkoutTemplate!
 
+  """
+  Publish an offer on a plan (trial and/or a discounted opening phase). It replaces the plan’s live offer — terms are immutable, so a change is a new offer.
+  """
+  upsertPlanOffer(input: UpsertPlanOfferInput!): ID!
+
   """Confirm email ownership with the token from the verification email."""
   verifyEmail(token: String!): Boolean!
+}
+
+type MyAthleteEntitlements {
+  ai: Boolean!
+
+  """How many mesocycles they may create. null = unlimited."""
+  maxMesocycles: Int
+
+  """How many templates they may create. null = unlimited."""
+  maxTemplates: Int
+
+  """How many workouts they may log. null = unlimited."""
+  maxWorkouts: Int
+
+  """Slug of the plan this section came from."""
+  plan: String!
+}
+
+type MyCoachEntitlements {
+  """The AI assistant when designing for athletes."""
+  ai: Boolean!
+
+  """null = unlimited."""
+  maxAthletes: Int
+
+  """Blocks designed for athletes. null = unlimited."""
+  maxMesocycles: Int
+
+  """Coaching templates (for athletes). null = unlimited."""
+  maxTemplates: Int
+
+  """Slug of the plan this section came from."""
+  plan: String!
+  planSessions: Boolean!
+}
+
+type MyEntitlements {
+  athlete: MyAthleteEntitlements!
+  coach: MyCoachEntitlements
+}
+
+type MyInvoice {
+  amountDueCents: Int!
+  amountPaidCents: Int!
+  currency: String!
+
+  """Which platform issued it: stripe | paypal | manual."""
+  gateway: String!
+
+  """The invoice on the gateway’s site."""
+  hostedUrl: String
+  id: ID!
+  issuedAt: DateTime!
+
+  """The gateway’s invoice number, when it issues one."""
+  number: String
+
+  """Null for gateways that issue no PDF (PayPal)."""
+  pdfUrl: String
+
+  """
+  Our own generated receipt PDF, for invoices with no gateway document (PayPal).
+  """
+  receiptUrl: String
+  status: String!
+}
+
+type MyInvoicePage {
+  rows: [MyInvoice!]!
+  total: Int!
+}
+
+type MySubscription {
+  amountCents: Int
+
+  """
+  Whether a cancellation can still be undone. False on PayPal — its cancellation is terminal.
+  """
+  canResume: Boolean!
+
+  """It will not renew; the plan is kept until currentPeriodEnd."""
+  cancelAtPeriodEnd: Boolean!
+  currency: String
+
+  """When the access they have paid for runs out."""
+  currentPeriodEnd: DateTime!
+
+  """stripe | paypal | manual"""
+  gateway: String!
+  id: ID!
+  interval: String
+
+  """A downgrade that lands at the next renewal."""
+  pendingPlanSlug: String
+  planName: String!
+  planSlug: String!
+  status: String!
 }
 
 type Notification {
@@ -927,6 +1690,64 @@ type PendingInvitation {
   id: ID!
 }
 
+type PlanEntitlements {
+  ai: Boolean!
+  audience: String!
+
+  """null = unlimited."""
+  maxAthletes: Int
+
+  """How many mesocycles they may create. null = unlimited."""
+  maxMesocycles: Int
+
+  """How many templates they may create. null = unlimited."""
+  maxTemplates: Int
+
+  """How many workouts they may log. null = unlimited."""
+  maxWorkouts: Int
+  plan: String!
+  planSessions: Boolean!
+}
+
+type PlanOffer {
+  """Null = open-ended."""
+  endsAt: DateTime
+  id: ID!
+  introPhase: IntroPhase
+
+  """Buyer-facing promo copy for the pricing card."""
+  message: String
+  name: String!
+  startsAt: DateTime!
+
+  """The Stripe coupon behind the intro phase."""
+  stripeCouponId: String
+
+  """Free days before the first charge."""
+  trialDays: Int
+}
+
+type PlanPrice {
+  """
+  Whether it is on sale. Withdrawn versions stay: subscriptions point at them.
+  """
+  active: Boolean!
+  amountCents: Int!
+
+  """EUR | USD"""
+  currency: String!
+  id: ID!
+
+  """month | quarter | semester | year"""
+  interval: String!
+
+  """Set once the catalog is synced to PayPal."""
+  paypalPlanId: String
+
+  """Set once the catalog is synced to Stripe."""
+  stripePriceId: String
+}
+
 input PlanSessionFromTemplateInput {
   """The athlete this session is planned for."""
   athleteId: ID!
@@ -935,6 +1756,22 @@ input PlanSessionFromTemplateInput {
   """ISO 8601 datetime; defaults to now."""
   performedAt: String
   templateId: ID!
+}
+
+type PlanTranslation {
+  description: String
+
+  """BCP-47 base locale, e.g. "es"."""
+  locale: String!
+  name: String!
+}
+
+input PlanTranslationInput {
+  description: String
+
+  """A non-default supported locale, e.g. "es"."""
+  locale: String!
+  name: String!
 }
 
 input PlanWorkoutSessionInput {
@@ -976,7 +1813,66 @@ type Profile {
   userId: ID!
 }
 
+type PublicOffer {
+  endsAt: DateTime
+  id: ID!
+  introPhase: IntroPhase
+
+  """Buyer-facing promo copy for the pricing card."""
+  message: String
+  name: String!
+  trialDays: Int
+}
+
+type PublicPlan {
+  ai: Boolean!
+  description: String
+
+  """Editorial "recommended / most popular" badge."""
+  highlighted: Boolean!
+  id: ID!
+  isFree: Boolean!
+
+  """null = unlimited."""
+  maxAthletes: Int
+
+  """How many mesocycles they may create. null = unlimited."""
+  maxMesocycles: Int
+
+  """How many templates they may create. null = unlimited."""
+  maxTemplates: Int
+
+  """How many workouts they may log. null = unlimited."""
+  maxWorkouts: Int
+  name: String!
+  offer: PublicOffer
+  planSessions: Boolean!
+  prices: [PublicPrice!]!
+  slug: String!
+  sortOrder: Int!
+}
+
+type PublicPrice {
+  amountCents: Int!
+  currency: String!
+
+  """
+  The gateways that can sell this price right now. Empty → no checkout available.
+  """
+  gateways: [String!]!
+  id: ID!
+  interval: String!
+}
+
 type Query {
+  """
+  Compare our subscriptions with each gateway now. Should be 0 — anything else is a webhook we never received.
+  """
+  adminBillingDrift: [BillingDrift!]!
+
+  """Aggregate billing figures (admin only)."""
+  adminBillingStats: AdminBillingStats!
+
   """Aggregate coaching counts (admin only)."""
   adminCoachingStats: AdminCoachingStats!
 
@@ -985,20 +1881,95 @@ type Query {
   """
   adminExercises(categories: [String!], equipment: [String!], limit: Int, muscles: [String!], offset: Int, search: String): AdminExercisePage!
 
+  """
+  Health of each payment integration: configured, catalog published, when the last webhook arrived, how many failed.
+  """
+  adminGatewayStatus: [GatewayStatus!]!
+
+  """
+  JSON Schema of the entitlements an audience accepts — the admin form renders itself from this, so adding a feature needs no UI change.
+  """
+  adminPlanEntitlementsSchema(audience: String!): JSON!
+
+  """The whole catalog, any status (admin only)."""
+  adminPlans(audience: String): [AdminPlan!]!
+
+  """
+  Subscriptions, filterable by statuses/gateways/plan and by exact email or handle.
+  """
+  adminSubscriptions(gateways: [String!], limit: Int, offset: Int, planId: ID, search: String, statuses: [String!]): AdminSubscriptionPage!
+
+  """
+  One support ticket with its full thread (admin only). Null if it does not exist.
+  """
+  adminSupportTicket(id: ID!): AdminSupportTicketDetail
+
+  """Support tickets, filtered + paginated (admin only)."""
+  adminSupportTickets(categories: [String!], limit: Int, offset: Int, search: String, statuses: [String!]): AdminSupportTicketPage!
+
+  """
+  The full detail of one user — account, profile, plan, billing, coaching, training (admin only).
+  """
+  adminUserDetail(userId: ID!): AdminUserDetail
+
   """Aggregate user counts for the admin dashboard."""
   adminUserStats: AdminUserStats!
 
   """List users with filters + offset pagination (admin only)."""
-  adminUsers(isAdmin: Boolean, limit: Int, offset: Int, roles: [String!], search: String, statuses: [String!], verified: Boolean): AdminUserPage!
+  adminUsers(
+    isAdmin: Boolean
+    limit: Int
+    offset: Int
+
+    """
+    Plan slugs — the plan in force, so a free slug matches whoever falls back to it.
+    """
+    plans: [String!]
+    roles: [String!]
+    search: String
+    statuses: [String!]
+    verified: Boolean
+  ): AdminUserPage!
+
+  """
+  The webhook journal — filterable by statuses/gateways, event type and exact-ish event id.
+  """
+  adminWebhookEvents(eventId: String, gateways: [String!], limit: Int, offset: Int, statuses: [String!], type: String): BillingWebhookEventPage!
 
   """Aggregate training counts (admin only)."""
   adminWorkoutStats: AdminWorkoutStats!
+
+  """
+  Your AI drafts, most recent activity first. Session and mesocycle drafts in one feed.
+  """
+  aiDraftHistory(
+    """An athlete’s id, or "self" for your own blocks."""
+    athleteId: String
+    cursor: String
+    kind: String
+    limit: Int
+    sessionId: ID
+    status: String
+  ): AiDraftHistoryPage!
+
+  """Where one of your AI generations got to."""
+  aiGeneration(id: ID!): AiGeneration!
 
   """Models the stored key may call, fetched live from the provider."""
   aiModels(provider: String!): [AiModel!]!
 
   """The running API release (package version)."""
   apiVersion: String!
+
+  """
+  How an athlete is executing: adherence to THIS coach's programming, set outcomes and load compliance across all their training, plus period-over-period trends (coaches only).
+  """
+  athleteExecution(athleteId: ID!, from: String, to: String): TrainingExecution!
+
+  """
+  An athlete's adherence and programmed-vs-executed load, week by week — when they slipped, not just how much (coaches only).
+  """
+  athleteExecutionSeries(athleteId: ID!, from: String, to: String): [ExecutionBucket!]!
 
   """
   An athlete's recent completed sessions logging one exercise, with their performed sets (coaches only).
@@ -1049,10 +2020,21 @@ type Query {
   """One of an athlete's sessions, with its full tree (coaches only)."""
   athleteWorkoutSession(athleteId: ID!, id: ID!): WorkoutSession!
 
+  """The plans on sale for an audience. Public — no session needed."""
+  availablePlans(audience: String!, locale: String): [PublicPlan!]!
+
+  """
+  The gateway’s billing portal (card, invoices) for your subscription in an audience (athlete | coach). Null when there is none — the button hides.
+  """
+  billingPortalUrl(audience: String!): String
+
   """
   Public: preview a pending invitation by its opaque token (for the invite-aware signup page).
   """
   coachInvitationPreview(token: String!): CoachInvitationPreview
+
+  """Whether an email is free to register."""
+  emailAvailable(email: String!): Boolean!
 
   """
   The caller's recent completed sessions logging one exercise, with their performed sets.
@@ -1079,6 +2061,11 @@ type Query {
   mesocycleDraft(athleteId: ID): AiMesocycleDraft
 
   """
+  One mesocycle draft by id, whatever its status — the history’s detail view. Null when it is not a mesocycle draft, does not exist, or is not yours.
+  """
+  mesocycleDraftById(draftId: ID!): AiMesocycleDraft
+
+  """
   The caller's mesocycles (newest first), with cheap rollups; optional name search.
   """
   mesocycles(search: String): [MesocycleSummary!]!
@@ -1091,11 +2078,29 @@ type Query {
   """
   myAiUsage: AiUsageSummary!
 
+  """
+  One athlete linked to the calling coach (coaches only). Null when they are not your athlete — so a stale link renders as not-found instead of loading the whole roster to look them up.
+  """
+  myAthlete(athleteId: ID!): CoachUser
+
+  """
+  Training rollups for every athlete the calling coach coaches, in one grouped pass. Identity is not included — merge with `myAthletes` by athleteId (coaches only).
+  """
+  myAthleteRoster(from: String, to: String): [CoachRosterEntry!]!
+
   """Athletes linked to the caller."""
   myAthletes: [CoachUser!]!
 
   """Coaches linked to the caller."""
   myCoaches: [CoachUser!]!
+
+  """
+  What your plan includes. For the UI only — the server is the authority on every gate.
+  """
+  myEntitlements: MyEntitlements!
+
+  """Your billing history, as the gateway issued it."""
+  myInvoices(limit: Int, offset: Int): MyInvoicePage!
 
   """The caller's notification inbox, newest first (keyset-paginated)."""
   myNotifications(cursor: String, limit: Int): NotificationsPage!
@@ -1106,11 +2111,26 @@ type Query {
   """The user’s active sessions (devices)."""
   mySessions: [Session!]!
 
+  """
+  Your subscription in an audience (athlete | coach), or null when you are on that free plan.
+  """
+  mySubscription(audience: String!): MySubscription
+
+  """
+  The caller's self-created counts (templates, mesocycles, workouts), for the plan usage readout.
+  """
+  myWorkoutUsage: WorkoutUsage!
+
   """Pending invitations received by the caller."""
   pendingInvitations: [PendingInvitation!]!
 
   """Liveness ping for the GraphQL schema."""
   ping: String!
+
+  """
+  One session draft by id, whatever its status — the history’s detail view. Null when it is not a session draft, does not exist, or is not yours.
+  """
+  planDraftById(draftId: ID!): AiPlanDraft
 
   """The proposal awaiting a decision on this session, if any."""
   sessionPlanDraft(sessionId: ID!): AiPlanDraft
@@ -1126,12 +2146,28 @@ type Query {
   trainingDistribution(from: String, to: String): TrainingDistribution!
 
   """
+  How the caller is executing their training: adherence to their own planned sessions, set outcomes, load compliance and period-over-period trends.
+  """
+  trainingExecution(from: String, to: String): TrainingExecution!
+
+  """The caller's adherence and programmed-vs-executed load, week by week."""
+  trainingExecutionSeries(from: String, to: String): [ExecutionBucket!]!
+
+  """
   The caller's headline training KPIs (incl. estimated S+B+D total), optionally ranged.
   """
   trainingSummary(from: String, to: String): TrainingSummary!
 
+  """
+  Whether you can still get a free trial in an audience (athlete | coach). False once you have used your one trial there.
+  """
+  trialEligible(audience: String!): Boolean!
+
   """Number of unread notifications (the bell badge)."""
   unreadNotificationsCount: Int!
+
+  """Whether a public handle is free to register."""
+  usernameAvailable(username: String!): Boolean!
 
   """The caller's weekly training volume, optionally within a date range."""
   volumeSeries(from: String, to: String): [VolumeBucket!]!
@@ -1150,7 +2186,7 @@ type Query {
   """
   The caller's templates (name-ordered), with cheap rollups; optional name search.
   """
-  workoutTemplates(search: String): [WorkoutTemplateSummary!]!
+  workoutTemplates(scope: String, search: String): [WorkoutTemplateSummary!]!
 }
 
 input RefineMesocycleDraftInput {
@@ -1191,6 +2227,16 @@ input RegisterInput {
 input ResetPasswordInput {
   newPassword: String!
   token: String!
+}
+
+"""
+Why an athlete is flagged on the roster, or `none`. At most one reason per athlete.
+"""
+enum RosterAttention {
+  lowAdherence
+  neverTrained
+  none
+  stale
 }
 
 type Session {
@@ -1264,6 +2310,29 @@ type StrengthTrend {
   slopePerWeekKg: Float!
 }
 
+type SubscriptionsByPlan {
+  audience: String!
+  count: Int!
+  plan: String!
+}
+
+type SubscriptionsByStatus {
+  count: Int!
+  gateway: String!
+  status: String!
+}
+
+type SupportMessage {
+  """The staff author of an outbound reply; null for inbound."""
+  authorUserId: ID
+  body: String!
+  createdAt: DateTime!
+
+  """inbound (from the requester) | outbound (staff reply)"""
+  direction: String!
+  id: ID!
+}
+
 input TemplateExerciseInput {
   exerciseId: ID!
   notes: String
@@ -1272,14 +2341,22 @@ input TemplateExerciseInput {
 
 input TemplateSetInput {
   notes: String
-  plannedReps: Int
-  plannedWeight: Float
 
-  """Target reps in reserve (alternative to RPE)."""
-  rir: Int
+  """A number or a range: "5" or "5-8"."""
+  plannedReps: String
 
-  """Target RPE 0–10 in half-point steps."""
-  rpe: Float
+  """A number or a range: "5" or "5-8"."""
+  plannedWeight: String
+
+  """
+  Target reps in reserve (alternative to RPE). A number or a range: "5" or "5-8".
+  """
+  rir: String
+
+  """
+  Target RPE 0–10 in half-point steps. A number or a range: "5" or "5-8".
+  """
+  rpe: String
 
   """Weight unit of the inputs: kg | lb (default kg)."""
   unit: String
@@ -1290,6 +2367,41 @@ type TrainingDistribution {
   byMuscle: [DistributionSlice!]!
   rir: [IntensityBucket!]!
   rpe: [IntensityBucket!]!
+}
+
+type TrainingExecution {
+  """Completed ÷ due, within the adherence scope. Null when none."""
+  adherenceRate: Float
+  daysSinceLastSession: Int
+  failedSets: Int!
+
+  """Last completed session, all-time (ignores the range)."""
+  lastSessionAt: DateTime
+
+  """Executed ÷ programmed load. Above 1 = heavier than written."""
+  loadCompliance: Float
+
+  """Logged in a completed session but never marked either way."""
+  pendingSets: Int!
+  plannedCompleted: Int!
+
+  """In scope, already past, still not done."""
+  plannedMissed: Int!
+
+  """Sets the compliance ratio is built from."""
+  plannedSets: Int!
+
+  """Still on the calendar. Not bounded by the range."""
+  plannedUpcoming: Int!
+  sessionsChange: Float
+  sessionsPerWeek: Float
+
+  """Successful ÷ marked sets, across all their training."""
+  successRate: Float
+  successSets: Int!
+
+  """Signed change vs the preceding window (0.12 = +12%)."""
+  volumeChange: Float
 }
 
 type TrainingSummary {
@@ -1336,6 +2448,23 @@ input UpdateExerciseInput {
   primaryMuscle: String
 }
 
+input UpdatePlanInput {
+  """Pass null to clear it."""
+  description: String
+
+  """Editing these reaches live subscribers immediately."""
+  entitlements: JSON
+
+  """Toggle the "recommended" pricing badge."""
+  highlighted: Boolean
+  id: ID!
+  name: String
+  sortOrder: Int
+
+  """Absent leaves translations alone; present replaces the whole set."""
+  translations: [PlanTranslationInput!]
+}
+
 input UpdateProfileInput {
   bio: String
 
@@ -1364,8 +2493,27 @@ input UpdateProfileInput {
 input UpdateSetInput {
   entryId: ID!
   notes: String
-  plannedReps: Int
-  plannedWeight: Float
+
+  """
+  success | failed; null sends the set back to pending. Absent leaves it as it is.
+  """
+  outcome: String
+
+  """A number or a range: "5" or "5-8"."""
+  plannedReps: String
+
+  """
+  Target reps in reserve (alternative to planned RPE). A number or a range: "5" or "5-8".
+  """
+  plannedRir: String
+
+  """
+  Target RPE 0–10 in half-point steps. A number or a range: "5" or "5-8".
+  """
+  plannedRpe: String
+
+  """A number or a range: "5" or "5-8"."""
+  plannedWeight: String
   reps: Int
 
   """Reps in reserve (alternative to RPE)."""
@@ -1388,6 +2536,23 @@ input UpdateWorkoutSessionInput {
   """ISO 8601 datetime; absent = leave unchanged."""
   performedAt: String
   sessionId: ID!
+}
+
+input UpsertPlanOfferInput {
+  """When it closes. Omitted → open-ended."""
+  endsAt: DateTime
+  introPhase: IntroPhaseInput
+
+  """Buyer-facing promo copy for the pricing card."""
+  message: String
+  name: String!
+  planId: ID!
+
+  """When it opens. Omitted → now."""
+  startsAt: DateTime
+
+  """Free days before the first charge."""
+  trialDays: Int
 }
 
 type VolumeBucket {
@@ -1458,8 +2623,17 @@ type WorkoutSet {
   id: ID!
   notes: String
   order: Int!
-  plannedReps: Int
-  plannedWeightKg: Float
+
+  """success | failed; null while the set is still pending."""
+  outcome: String
+  plannedReps: IntRange
+
+  """Target RIR, if the set was programmed with one."""
+  plannedRir: IntRange
+
+  """Target RPE, if the set was programmed with one."""
+  plannedRpe: FloatRange
+  plannedWeightKg: FloatRange
   reps: Int
   rir: Int
   rpe: Float
@@ -1494,10 +2668,10 @@ type WorkoutTemplateSet {
   id: ID!
   notes: String
   order: Int!
-  plannedReps: Int
-  plannedWeightKg: Float
-  rir: Int
-  rpe: Float
+  plannedReps: IntRange
+  plannedWeightKg: FloatRange
+  rir: IntRange
+  rpe: FloatRange
 }
 
 type WorkoutTemplateSummary {
@@ -1505,6 +2679,15 @@ type WorkoutTemplateSummary {
   id: ID!
   name: String!
   notes: String
+
+  """personal (own training) | coaching (for athletes)"""
+  scope: String!
   setCount: Int!
   updatedAt: DateTime!
+}
+
+type WorkoutUsage {
+  mesocycles: Int!
+  templates: Int!
+  workouts: Int!
 }

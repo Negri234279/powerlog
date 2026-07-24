@@ -43,11 +43,16 @@ export class DrizzleCoachLinkRepository extends CoachLinkRepository {
     }
 
     async athleteIdsOf(coachId: string): Promise<string[]> {
+        const rows = await this.athletesOf(coachId)
+        return rows.map((r) => r.athleteId)
+    }
+
+    async athletesOf(coachId: string): Promise<{ athleteId: string; since: Date }[]> {
         const rows = await this.db
-            .select({ athleteId: coachAthlete.athleteId })
+            .select({ athleteId: coachAthlete.athleteId, since: coachAthlete.createdAt })
             .from(coachAthlete)
             .where(eq(coachAthlete.coachId, coachId))
             .orderBy(desc(coachAthlete.createdAt))
-        return rows.map((r) => r.athleteId)
+        return rows.map((r) => ({ athleteId: r.athleteId, since: new Date(r.since) }))
     }
 }

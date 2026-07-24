@@ -34,6 +34,7 @@ export class SmtpMailer extends Mailer {
             subject: message.subject,
             html: message.html,
             text: message.text,
+            ...(message.replyTo ? { replyTo: message.replyTo } : {}),
         })
 
         return info.messageId

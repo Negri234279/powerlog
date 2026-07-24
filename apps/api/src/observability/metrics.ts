@@ -19,6 +19,7 @@ export const METRIC = {
     r2Up: 'powerlog_r2_up',
     r2ProbeDuration: 'powerlog_r2_probe_seconds',
     notificationsCreated: 'powerlog_notifications_created_total',
+    setsCompleted: 'powerlog_sets_completed_total',
     mesocycleStatusTransitions: 'powerlog_mesocycle_status_transitions_total',
     mesocycleSessionsGenerated: 'powerlog_mesocycle_sessions_generated_total',
     llmRequests: 'powerlog_llm_requests_total',
@@ -38,6 +39,24 @@ export const METRIC = {
     coachingCoaches: 'powerlog_coaching_coaches',
     coachingAthletes: 'powerlog_coaching_athletes',
     coachingPendingInvitations: 'powerlog_coaching_pending_invitations',
+    entitlementDenials: 'powerlog_entitlement_denials_total',
+    subscriptions: 'powerlog_subscriptions',
+    subscriptionsByPlan: 'powerlog_subscriptions_by_plan',
+    mrrCents: 'powerlog_mrr_cents',
+    subscriptionsCanceling: 'powerlog_subscriptions_canceling',
+    gatewayRequestDuration: 'powerlog_gateway_request_duration_seconds',
+    planSync: 'powerlog_plan_sync_total',
+    checkoutSessions: 'powerlog_checkout_sessions_total',
+    subscriptionEvents: 'powerlog_subscription_events_total',
+    offerRedemptions: 'powerlog_offer_redemptions_total',
+    billingWebhooks: 'powerlog_billing_webhooks_total',
+    billingWebhookRetries: 'powerlog_billing_webhook_retries_total',
+    billingWebhooksPendingReplay: 'powerlog_billing_webhooks_pending_replay',
+    billingDrift: 'powerlog_billing_drift',
+    revenueCents: 'powerlog_revenue_cents_total',
+    aiGenerationsQueued: 'powerlog_ai_generations_queued_total',
+    aiGenerationDuration: 'powerlog_ai_generation_duration_seconds',
+    supportTicketsOpened: 'powerlog_support_tickets_opened_total',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -163,6 +182,13 @@ export const metricsProviders = [
     // Mesocycle lifecycle signals — dimensions the CQRS command name can't carry.
     // Status transitions by target status (draft/active/completed/archived): the
     // meso lifecycle funnel (set by PrometheusMesocycleMetrics).
+    // Sets marked done by the athlete. `outcome` is the point: a rising share of
+    // `failed` is a programme prescribing more than the athlete can lift.
+    makeCounterProvider({
+        name: METRIC.setsCompleted,
+        help: 'Count of workout sets marked done, by outcome.',
+        labelNames: ['outcome'],
+    }),
     makeCounterProvider({
         name: METRIC.mesocycleStatusTransitions,
         help: 'Count of mesocycle status transitions, by target status.',
@@ -190,6 +216,34 @@ export const metricsProviders = [
         labelNames: ['provider', 'operation', 'status'],
         buckets: LLM_DURATION_BUCKETS,
         enableExemplars: true,
+    }),
+    // The async generation queue. `queued` counts what was asked for; the
+    // histogram measures wait + run, which is the number that says whether the
+    // work could ever have fitted inside a request. `kind` and `status` are
+    // bounded enums — no ids, no models.
+    makeCounterProvider({
+        name: METRIC.aiGenerationsQueued,
+        help: 'Count of AI generations queued, by kind.',
+        labelNames: ['kind'],
+    }),
+    // No exemplars, deliberately: this is observed from the worker with a plain
+    // `observe(labels, value)`, and prom-client swaps that method for the
+    // single-object `observeWithExemplar` as soon as exemplars are on — the two
+    // do not mix. Nothing is lost: the same work is already exemplared as
+    // `RunAiGenerationCommand` on the CQRS histogram, which is the same span.
+    makeHistogramProvider({
+        name: METRIC.aiGenerationDuration,
+        help: 'End-to-end duration of AI generations in seconds, queue wait included.',
+        labelNames: ['kind', 'status'],
+        buckets: LLM_DURATION_BUCKETS,
+    }),
+    // Contact/support tickets opened, by category (set by PrometheusSupportMetrics).
+    // The notification email is already counted by MeteredMailer as type=contact;
+    // this is the demand signal — how many people wrote in and about what.
+    makeCounterProvider({
+        name: METRIC.supportTicketsOpened,
+        help: 'Count of contact/support tickets opened, by category.',
+        labelNames: ['category'],
     }),
     // Tokens billed to the user's own provider account, split by direction.
     // The cost is theirs (BYOK); this is a usage signal, not a billing source.
@@ -280,5 +334,103 @@ export const metricsProviders = [
     makeGaugeProvider({
         name: METRIC.coachingPendingInvitations,
         help: 'Invitations still awaiting a response (the backlog).',
+    }),
+    // Every time a plan says no. Incremented in the Entitlements adapter, the one
+    // place all denials pass through: this is demand for a feature, measured at the
+    // moment someone wanted it and couldn't have it. `feature` is the closed
+    // Feature union plus `athletes` (the coach cap); `plan` is a catalog slug, so
+    // all three labels stay bounded.
+    makeCounterProvider({
+        name: METRIC.entitlementDenials,
+        help: 'Actions refused because the user’s plan does not include them.',
+        labelNames: ['feature', 'audience', 'plan'],
+    }),
+    // Where the business stands, sampled at scrape time from the same read model
+    // that backs the admin billing panel (set by BillingStateMetrics). `plan` is a
+    // catalog slug — bounded, admin-created; never a user or gateway id.
+    makeGaugeProvider({
+        name: METRIC.subscriptions,
+        help: 'Subscriptions currently granting their plan, by status and gateway.',
+        labelNames: ['status', 'gateway'],
+    }),
+    makeGaugeProvider({
+        name: METRIC.subscriptionsByPlan,
+        help: 'Subscriptions currently granting their plan, by plan — which plans sell and which are dead.',
+        labelNames: ['plan', 'audience'],
+    }),
+    makeGaugeProvider({
+        name: METRIC.mrrCents,
+        help: 'Monthly recurring revenue in cents (each interval normalised to a month), by plan and currency.',
+        labelNames: ['plan', 'currency'],
+    }),
+    makeGaugeProvider({
+        name: METRIC.subscriptionsCanceling,
+        help: 'Cancelled but still inside the period they paid for: churn already decided, not yet visible.',
+    }),
+    // Outgoing calls to the payment providers — the same treatment mail and R2 get.
+    makeHistogramProvider({
+        name: METRIC.gatewayRequestDuration,
+        help: 'Duration of outgoing calls to a payment gateway.',
+        labelNames: ['gateway', 'operation', 'status'],
+        buckets: DURATION_BUCKETS,
+    }),
+    makeCounterProvider({
+        name: METRIC.planSync,
+        help: 'Catalog publications to a payment gateway.',
+        labelNames: ['gateway', 'status'],
+    }),
+    makeCounterProvider({
+        name: METRIC.checkoutSessions,
+        help: 'Checkout funnel: started here, completed/expired by webhook.',
+        labelNames: ['gateway', 'plan', 'status'],
+    }),
+    makeCounterProvider({
+        name: METRIC.subscriptionEvents,
+        help: 'The subscription lifecycle — churn and dunning recovery are derived from this.',
+        labelNames: ['type', 'gateway'],
+    }),
+    makeCounterProvider({
+        name: METRIC.offerRedemptions,
+        help: 'Signups that came in through an offer.',
+        labelNames: ['plan'],
+    }),
+    // `duplicate` is visible on purpose: it is the proof the idempotency works.
+    makeCounterProvider({
+        name: METRIC.billingWebhooks,
+        help: 'Inbound billing webhooks, by outcome.',
+        labelNames: ['gateway', 'type', 'status'],
+    }),
+    // Backoff retries of failed webhooks. `exhausted` is the alertable one.
+    makeCounterProvider({
+        name: METRIC.billingWebhookRetries,
+        help: 'Backoff retries of failed billing webhooks, by outcome.',
+        labelNames: ['gateway', 'outcome'],
+    }),
+    // The backlog the retries could not clear: journal rows sitting `failed`,
+    // waiting for a human to replay them from /admin/billing. Sampled at scrape
+    // time (set by BillingStateMetrics). The retry counter says it happened;
+    // this says it is STILL not fixed — which is what an alert can hold open.
+    makeGaugeProvider({
+        name: METRIC.billingWebhooksPendingReplay,
+        help: 'Failed billing webhook events awaiting a manual replay. Should be 0.',
+        labelNames: ['gateway'],
+    }),
+    // Cash actually collected (paid invoices as they land), vs the MRR gauge
+    // which is a photograph of the book. `plan` is a catalog slug; `unknown`
+    // marks an invoice that arrived before its subscription was mirrored.
+    makeCounterProvider({
+        name: METRIC.revenueCents,
+        help: 'Revenue collected in cents, from paid invoices, by gateway, plan and currency.',
+        labelNames: ['gateway', 'plan', 'currency'],
+    }),
+    // Subscriptions the gateway thinks are live but we do not (a webhook we never
+    // got), plus the reverse. **It should always be zero** — which is exactly what
+    // makes it worth alerting on: a missed webhook bills people wrongly for weeks
+    // in complete silence otherwise. A gateway that could not be asked leaves its
+    // series untouched rather than reporting a fabricated zero.
+    makeGaugeProvider({
+        name: METRIC.billingDrift,
+        help: 'Disagreements between our subscriptions and the gateway’s. Should be 0.',
+        labelNames: ['gateway'],
     }),
 ]

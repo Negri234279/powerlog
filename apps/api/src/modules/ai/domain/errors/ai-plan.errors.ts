@@ -47,6 +47,14 @@ export class InvalidPlanDraftStatusError extends AiSettingsError {
     }
 }
 
+/** The history cursor did not come from us — truncated, edited or from another list. */
+export class InvalidAiDraftCursorError extends AiSettingsError {
+    readonly code = 'INVALID_AI_DRAFT_CURSOR'
+    constructor() {
+        super('That page cursor is not valid.')
+    }
+}
+
 /** A set cannot carry both an RPE and an RIR — they say the same thing twice. */
 export class ConflictingPlanIntensityError extends AiSettingsError {
     readonly code = 'CONFLICTING_PLAN_INTENSITY'

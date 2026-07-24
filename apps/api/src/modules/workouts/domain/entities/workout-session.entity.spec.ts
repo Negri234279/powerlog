@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+﻿import { randomUUID } from 'node:crypto'
 
 import { describe, expect, it } from 'vitest'
 
@@ -7,9 +7,13 @@ import {
     ExerciseEntryNotFoundError,
     WorkoutSetNotFoundError,
 } from '../errors/workouts.errors'
+import { RepsRangeVO } from '../value-objects/reps-range.vo'
 import { RepsVO } from '../value-objects/reps.vo'
+import { RirRangeVO } from '../value-objects/rir-range.vo'
 import { RirVO } from '../value-objects/rir.vo'
+import { RpeRangeVO } from '../value-objects/rpe-range.vo'
 import { RpeVO } from '../value-objects/rpe.vo'
+import { WeightRangeVO } from '../value-objects/weight-range.vo'
 import { WeightVO } from '../value-objects/weight.vo'
 import { WorkoutSessionAggregate } from './workout-session.entity'
 
@@ -19,6 +23,101 @@ const LATER = new Date('2026-01-02T00:00:00.000Z')
 function newSession() {
     return WorkoutSessionAggregate.create({ id: randomUUID(), userId: 'u-1', performedAt: NOW, now: NOW })
 }
+
+describe('WorkoutSessionAggregate â€” marking sets done', () => {
+    function sessionWithProgrammedSet() {
+        const session = newSession()
+        const entry = session.addEntry({ id: 'e-1', exerciseId: 'x-1' }, NOW)
+        const set = session.addSet(
+            entry.id,
+            {
+                id: 's-1',
+                plannedWeight: WeightRangeVO.create(100),
+                plannedReps: RepsRangeVO.create(5),
+                plannedRpe: RpeRangeVO.create(8),
+            },
+            NOW,
+        )
+        return { session, entryId: entry.id, setId: set.id }
+    }
+
+    it('starts pending', () => {
+        const { session } = sessionWithProgrammedSet()
+        expect(session.entries[0]!.sets[0]!.outcome).toBeNull()
+    })
+
+    it('records what was performed without touching the targets it deviates from', () => {
+        const { session, entryId, setId } = sessionWithProgrammedSet()
+
+        // Told 100Ã—5 @8; managed 95Ã—5 and it felt like a 9.5.
+        session.completeSet(
+            entryId,
+            setId,
+            'failed',
+            { weight: WeightVO.create(95), reps: RepsVO.create(5), rpe: RpeVO.create(9.5) },
+            LATER,
+        )
+
+        const set = session.entries[0]!.sets[0]!
+        expect(set.outcome).toBe('failed')
+        expect(set.weight?.value).toBe(95)
+        expect(set.rpe?.value).toBe(9.5)
+        expect(set.plannedWeight?.min.value).toBe(100)
+        expect(set.plannedRpe?.min.value).toBe(8)
+        expect(set.e1rmKg).toBeCloseTo(110.83, 2)
+        expect(session.updatedAt).toEqual(LATER)
+    })
+
+    it('marks a set failed with nothing logged â€” failing can mean it never went up', () => {
+        const { session, entryId, setId } = sessionWithProgrammedSet()
+
+        session.completeSet(entryId, setId, 'failed', {}, LATER)
+
+        const set = session.entries[0]!.sets[0]!
+        expect(set.outcome).toBe('failed')
+        expect(set.weight).toBeNull()
+        expect(set.e1rmKg).toBeNull()
+    })
+
+    it('sends a set back to pending through an edit, keeping its logged numbers', () => {
+        const { session, entryId, setId } = sessionWithProgrammedSet()
+        session.completeSet(entryId, setId, 'success', { weight: WeightVO.create(100), reps: RepsVO.create(5) }, NOW)
+
+        session.updateSet(entryId, setId, { outcome: null }, LATER)
+
+        const set = session.entries[0]!.sets[0]!
+        expect(set.outcome).toBeNull()
+        expect(set.weight?.value).toBe(100)
+        expect(session.updatedAt).toEqual(LATER)
+    })
+
+    it('leaves the outcome alone when an edit does not name it', () => {
+        const { session, entryId, setId } = sessionWithProgrammedSet()
+        session.completeSet(entryId, setId, 'success', { weight: WeightVO.create(100), reps: RepsVO.create(5) }, NOW)
+
+        session.updateSet(entryId, setId, { weight: WeightVO.create(102.5) }, LATER)
+
+        expect(session.entries[0]!.sets[0]!.outcome).toBe('success')
+    })
+
+    it('rejects a target carrying both RPE and RIR', () => {
+        const session = newSession()
+        const entry = session.addEntry({ id: 'e-1', exerciseId: 'x-1' }, NOW)
+
+        expect(() =>
+            session.addSet(
+                entry.id,
+                { id: 's-1', plannedRpe: RpeRangeVO.create(8), plannedRir: RirRangeVO.create(2) },
+                NOW,
+            ),
+        ).toThrow(ConflictingIntensityError)
+    })
+
+    it('reports a missing set rather than silently marking nothing', () => {
+        const { session, entryId } = sessionWithProgrammedSet()
+        expect(() => session.completeSet(entryId, 'nope', 'success', {}, NOW)).toThrow(WorkoutSetNotFoundError)
+    })
+})
 
 describe('WorkoutSessionAggregate', () => {
     it('starts planned with no entries', () => {
@@ -37,7 +136,7 @@ describe('WorkoutSessionAggregate', () => {
         expect(session.updatedAt).toEqual(LATER)
     })
 
-    it('derives e1RM from the actual weight × reps, leaving planned-only sets null', () => {
+    it('derives e1RM from the actual weight Ã— reps, leaving planned-only sets null', () => {
         const session = newSession()
         const entry = session.addEntry({ id: 'e-1', exerciseId: 'x-1' }, NOW)
 
@@ -48,7 +147,7 @@ describe('WorkoutSessionAggregate', () => {
         )
         const plannedOnly = session.addSet(
             entry.id,
-            { id: 's-2', plannedWeight: WeightVO.create(120), plannedReps: RepsVO.create(3) },
+            { id: 's-2', plannedWeight: WeightRangeVO.create(120), plannedReps: RepsRangeVO.create(3) },
             NOW,
         )
 

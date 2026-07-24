@@ -109,6 +109,7 @@ export const AdminUsersDocument = graphql(`
         $isAdmin: Boolean
         $verified: Boolean
         $search: String
+        $plans: [String!]
         $limit: Int
         $offset: Int
     ) {
@@ -118,6 +119,7 @@ export const AdminUsersDocument = graphql(`
             isAdmin: $isAdmin
             verified: $verified
             search: $search
+            plans: $plans
             limit: $limit
             offset: $offset
         ) {
@@ -129,11 +131,100 @@ export const AdminUsersDocument = graphql(`
                 isAdmin
                 status
                 emailVerified
+                plan
                 createdAt
             }
             total
             limit
             offset
+        }
+    }
+`)
+
+export const AdminUserDetailDocument = graphql(`
+    query AdminUserDetail($userId: ID!) {
+        adminUserDetail(userId: $userId) {
+            account {
+                id
+                email
+                role
+                isAdmin
+                status
+                emailVerified
+                hasPassword
+                units
+                createdAt
+                updatedAt
+                lastSeenAt
+            }
+            profile {
+                username
+                firstName
+                lastName
+                avatarUrl
+                locale
+            }
+            entitlements {
+                athlete {
+                    plan
+                    maxTemplates
+                    maxMesocycles
+                    maxWorkouts
+                    ai
+                }
+                coach {
+                    plan
+                    maxAthletes
+                    planSessions
+                    maxTemplates
+                    maxMesocycles
+                    ai
+                }
+            }
+            billing {
+                mrrCents
+                currency
+                subscriptions {
+                    id
+                    planId
+                    planSlug
+                    planName
+                    gateway
+                    status
+                    amountCents
+                    currency
+                    interval
+                    currentPeriodStart
+                    currentPeriodEnd
+                    cancelAtPeriodEnd
+                    createdAt
+                }
+            }
+            coaching {
+                athleteCount
+                coaches {
+                    userId
+                    username
+                    firstName
+                    lastName
+                    avatarUrl
+                }
+                athletes {
+                    userId
+                    username
+                    firstName
+                    lastName
+                    avatarUrl
+                }
+            }
+            training {
+                sessions
+                completedSessions
+                sets
+                distinctExercises
+                lastSessionAt
+                sessionsLast30Days
+            }
         }
     }
 `)

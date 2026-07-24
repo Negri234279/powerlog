@@ -1,14 +1,15 @@
 import { TemplateExerciseEntity } from '../../../domain/entities/template-exercise.entity'
 import { TemplateSetEntity } from '../../../domain/entities/template-set.entity'
-import { WorkoutTemplateAggregate } from '../../../domain/entities/workout-template.entity'
-import { RepsVO } from '../../../domain/value-objects/reps.vo'
-import { RirVO } from '../../../domain/value-objects/rir.vo'
-import { RpeVO } from '../../../domain/value-objects/rpe.vo'
+import { type TemplateScope, WorkoutTemplateAggregate } from '../../../domain/entities/workout-template.entity'
+import { RepsRangeVO } from '../../../domain/value-objects/reps-range.vo'
+import { RirRangeVO } from '../../../domain/value-objects/rir-range.vo'
+import { RpeRangeVO } from '../../../domain/value-objects/rpe-range.vo'
 import { TemplateNameVO } from '../../../domain/value-objects/template-name.vo'
-import { WeightVO } from '../../../domain/value-objects/weight.vo'
+import { WeightRangeVO } from '../../../domain/value-objects/weight-range.vo'
 import type { workoutTemplateExercises } from '../schema/workout-template-exercises.schema'
 import type { workoutTemplateSets } from '../schema/workout-template-sets.schema'
 import type { workoutTemplates } from '../schema/workout-templates.schema'
+import { rangeFromColumns } from './range-columns'
 
 type TemplateRow = typeof workoutTemplates.$inferSelect
 type ExerciseRow = typeof workoutTemplateExercises.$inferSelect
@@ -40,10 +41,14 @@ export const WorkoutTemplateMapper = {
                     id: set.id,
                     templateExerciseId: exercise.id,
                     order: set.order,
-                    plannedWeightKg: set.plannedWeight?.value ?? null,
-                    plannedReps: set.plannedReps?.value ?? null,
-                    rpe: set.rpe?.value ?? null,
-                    rir: set.rir?.value ?? null,
+                    plannedWeightKgMin: set.plannedWeight?.min.value ?? null,
+                    plannedWeightKgMax: set.plannedWeight?.max.value ?? null,
+                    plannedRepsMin: set.plannedReps?.min.value ?? null,
+                    plannedRepsMax: set.plannedReps?.max.value ?? null,
+                    rpeMin: set.rpe?.min.value ?? null,
+                    rpeMax: set.rpe?.max.value ?? null,
+                    rirMin: set.rir?.min.value ?? null,
+                    rirMax: set.rir?.max.value ?? null,
                     notes: set.notes,
                 })
             }
@@ -53,6 +58,7 @@ export const WorkoutTemplateMapper = {
             template: {
                 id: template.id,
                 ownerId: template.ownerId,
+                scope: template.scope,
                 name: template.name.value,
                 notes: template.notes,
                 createdAt: template.createdAt,
@@ -82,10 +88,16 @@ export const WorkoutTemplateMapper = {
                     TemplateSetEntity.rehydrate({
                         id: setRow.id,
                         order: setRow.order,
-                        plannedWeight: setRow.plannedWeightKg !== null ? WeightVO.create(setRow.plannedWeightKg) : null,
-                        plannedReps: setRow.plannedReps !== null ? RepsVO.create(setRow.plannedReps) : null,
-                        rpe: setRow.rpe !== null ? RpeVO.create(setRow.rpe) : null,
-                        rir: setRow.rir !== null ? RirVO.create(setRow.rir) : null,
+                        plannedWeight: rangeFromColumns(
+                            setRow.plannedWeightKgMin,
+                            setRow.plannedWeightKgMax,
+                            (min, max) => WeightRangeVO.create(min, max),
+                        ),
+                        plannedReps: rangeFromColumns(setRow.plannedRepsMin, setRow.plannedRepsMax, (min, max) =>
+                            RepsRangeVO.create(min, max),
+                        ),
+                        rpe: rangeFromColumns(setRow.rpeMin, setRow.rpeMax, (min, max) => RpeRangeVO.create(min, max)),
+                        rir: rangeFromColumns(setRow.rirMin, setRow.rirMax, (min, max) => RirRangeVO.create(min, max)),
                         notes: setRow.notes,
                     }),
                 ),
@@ -95,6 +107,7 @@ export const WorkoutTemplateMapper = {
         return WorkoutTemplateAggregate.rehydrate({
             id: templateRow.id,
             ownerId: templateRow.ownerId,
+            scope: templateRow.scope as TemplateScope,
             name: TemplateNameVO.create(templateRow.name),
             notes: templateRow.notes,
             createdAt: templateRow.createdAt,

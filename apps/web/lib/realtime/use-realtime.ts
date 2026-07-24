@@ -22,6 +22,13 @@ const INVALIDATES = {
     athlete_unlinked: [['coaching', 'athletes'], ['notifications']],
     session_planned: [['workoutHistory'], ['notifications']],
     mesocycle_assigned: [['mesocycles'], ['workoutHistory'], ['notifications']],
+    // The checkout redirect cannot be trusted (the subscription is created by the
+    // webhook), so this is what actually tells the open tab that the money landed.
+    subscription_updated: [['myPlan'], ['myInvoices'], ['notifications']],
+    // An AI job finished. The tab that asked is already waiting on it, but this is
+    // what reaches the OTHER tabs — and the one that was reopened while the job
+    // ran — without any of them polling for a draft they don't know about yet.
+    ai_generation_settled: [['sessionPlanDraft'], ['mesocycleDraft'], ['aiDraftCount'], ['aiDraftHistory']],
 } as const satisfies Record<string, readonly string[][]>
 
 type RealtimeEventType = keyof typeof INVALIDATES
@@ -42,6 +49,19 @@ function parseEventType(raw: string): RealtimeEventType | null {
 function invalidate(queryClient: QueryClient, type: RealtimeEventType): void {
     for (const queryKey of INVALIDATES[type]) {
         void queryClient.invalidateQueries({ queryKey })
+    }
+
+    // A subscription change can flip the user's role — activating a coach plan
+    // promotes them (the reverse on the way out). The role rides in the JWT, so the
+    // invalidations above aren't enough: re-mint the session to pull the new role,
+    // then refetch `me`. This fires exactly when the webhook lands, so it works from
+    // anywhere (e.g. a fresh signup that paid for a coach plan and went to the
+    // dashboard). Single-flight-shared with the client, so it can't collide with the
+    // reconnect refresh.
+    if (type === 'subscription_updated') {
+        void refreshSession()
+            .then(() => queryClient.invalidateQueries({ queryKey: ['me'] }))
+            .catch(() => undefined)
     }
 }
 

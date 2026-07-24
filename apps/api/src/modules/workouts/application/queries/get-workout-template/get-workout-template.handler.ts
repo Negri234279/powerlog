@@ -2,17 +2,18 @@ import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 
 import type { WorkoutTemplateAggregate } from '../../../domain/entities/workout-template.entity'
 import { WorkoutTemplateRepository } from '../../../domain/repositories/workout-template.repository'
+import { type RangeView, toRangeView } from '../../range-view'
 import { requireOwnedTemplate } from '../../require-owned-template'
 import { GetWorkoutTemplateQuery } from './get-workout-template.query'
 
-/** Read models (decoupled from the aggregate). Weights are kg. */
+/** Read models (decoupled from the aggregate). Weights are kg; targets are ranges. */
 export interface TemplateSetView {
     id: string
     order: number
-    plannedWeightKg: number | null
-    plannedReps: number | null
-    rpe: number | null
-    rir: number | null
+    plannedWeightKg: RangeView | null
+    plannedReps: RangeView | null
+    rpe: RangeView | null
+    rir: RangeView | null
     notes: string | null
 }
 
@@ -50,10 +51,10 @@ export function toWorkoutTemplateView(template: WorkoutTemplateAggregate): Worko
             sets: exercise.sets.map((set) => ({
                 id: set.id,
                 order: set.order,
-                plannedWeightKg: set.plannedWeight?.value ?? null,
-                plannedReps: set.plannedReps?.value ?? null,
-                rpe: set.rpe?.value ?? null,
-                rir: set.rir?.value ?? null,
+                plannedWeightKg: toRangeView(set.plannedWeight),
+                plannedReps: toRangeView(set.plannedReps),
+                rpe: toRangeView(set.rpe),
+                rir: toRangeView(set.rir),
                 notes: set.notes,
             })),
         })),

@@ -7,6 +7,9 @@ import type { WorkoutSessionAggregate } from '../entities/workout-session.entity
 export abstract class WorkoutSessionRepository {
     abstract save(session: WorkoutSessionAggregate): Promise<void>
     abstract findById(id: string): Promise<WorkoutSessionAggregate | null>
+    /** How many ad-hoc workouts a user logged for themselves — excludes sessions a
+     *  coach planned and those generated inside a mesocycle. For the `maxWorkouts` cap. */
+    abstract countSelfCreatedBy(userId: string): Promise<number>
     abstract delete(id: string): Promise<void>
     /** Delete every session owned by a user (cascades to entries + sets). Used to
      *  erase workout data on account deletion. Sessions a coach planned for an

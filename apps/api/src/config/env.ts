@@ -70,6 +70,10 @@ export const envSchema = z.object({
     // Web origin: post-OAuth redirect target, CORS allow-list, email links.
     WEB_ORIGIN: z.url().default('http://localhost:3000'),
 
+    // The API's own public base URL, for links back to its REST endpoints (today:
+    // the generated invoice receipt PDF). No trailing slash.
+    API_PUBLIC_URL: z.url().default('http://localhost:4000'),
+
     // ── Mail (transactional email) ─────────────────────────────────
     // smtp → Mailpit in dev; resend in staging/prod.
     MAIL_TRANSPORT: z.enum(['smtp', 'resend']).default('smtp'),
@@ -83,6 +87,10 @@ export const envSchema = z.object({
     SMTP_SECURE: z.stringbool().default(false),
     SMTP_USER: z.string().default(''),
     SMTP_PASS: z.string().default(''),
+    // Destination inbox for contact/support tickets. Empty → the ticket is still
+    // stored (the DB is the source of truth), the admin notification email is just
+    // skipped. Reply-To on that email is set to the person who wrote in.
+    CONTACT_TO: z.string().default(''),
     // Lifetime of an email-verification token.
     EMAIL_VERIFICATION_TTL: z.string().default('24h'),
     // Lifetime of a password-reset token.
@@ -116,6 +124,25 @@ export const envSchema = z.object({
     // so `pnpm dev` without Docker and the test suites need no Redis at all.
     // Set it in every deployed env. Format: redis://[user:pass@]host:port[/db].
     REDIS_URL: z.url({ protocol: /^rediss?$/ }).optional(),
+
+    // ── Payments (Stripe) ──────────────────────────────────────────
+    // Optional on purpose, like REDIS_URL: with no key the gateway is simply not
+    // offered (checkout answers GATEWAY_NOT_CONFIGURED) and the app runs in
+    // free/manual mode — which is what dev and the test suites do.
+    // The webhook secret is what makes an inbound event trustworthy: without it
+    // the endpoint refuses every payload rather than trusting an unsigned one.
+    STRIPE_SECRET_KEY: z.string().default(''),
+    STRIPE_WEBHOOK_SECRET: z.string().default(''),
+
+    // ── Payments (PayPal) ──────────────────────────────────────────
+    // Same deal as Stripe: no credentials ⇒ PayPal is simply not offered.
+    // `PAYPAL_WEBHOOK_ID` is not a secret to sign with — PayPal verifies a webhook
+    // by calling its own API with the id, so without it we cannot authenticate an
+    // event and the endpoint refuses everything.
+    PAYPAL_CLIENT_ID: z.string().default(''),
+    PAYPAL_CLIENT_SECRET: z.string().default(''),
+    PAYPAL_WEBHOOK_ID: z.string().default(''),
+    PAYPAL_ENV: z.enum(['sandbox', 'live']).default('sandbox'),
 
     // ── Observability (OpenTelemetry → Tempo) ──────────────────────
     OTEL_SERVICE_NAME: z.string().default('powerlog-api'),

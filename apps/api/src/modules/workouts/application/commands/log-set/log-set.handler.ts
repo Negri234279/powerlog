@@ -3,9 +3,11 @@ import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import type { WorkoutSetFields } from '../../../domain/entities/workout-set.entity'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
+import { RepsRangeVO } from '../../../domain/value-objects/reps-range.vo'
 import { RepsVO } from '../../../domain/value-objects/reps.vo'
 import { RirVO } from '../../../domain/value-objects/rir.vo'
 import { RpeVO } from '../../../domain/value-objects/rpe.vo'
+import { WeightRangeVO } from '../../../domain/value-objects/weight-range.vo'
 import { WeightVO, type WeightUnit } from '../../../domain/value-objects/weight.vo'
 import { Clock } from '../../ports/clock.port'
 import { IdGenerator } from '../../ports/id-generator.port'
@@ -35,8 +37,8 @@ export class LogSetHandler implements ICommandHandler<LogSetCommand, WorkoutSess
         const raw = command.set
         const unit = (raw.unit ?? 'kg') as WeightUnit
         const fields: WorkoutSetFields = {
-            plannedWeight: raw.plannedWeight != null ? WeightVO.fromUnit(raw.plannedWeight, unit) : null,
-            plannedReps: raw.plannedReps != null ? RepsVO.create(raw.plannedReps) : null,
+            plannedWeight: raw.plannedWeight != null ? WeightRangeVO.parse(raw.plannedWeight, unit) : null,
+            plannedReps: raw.plannedReps != null ? RepsRangeVO.parse(raw.plannedReps) : null,
             weight: raw.weight != null ? WeightVO.fromUnit(raw.weight, unit) : null,
             reps: raw.reps != null ? RepsVO.create(raw.reps) : null,
             rpe: raw.rpe != null ? RpeVO.create(raw.rpe) : null,

@@ -1,16 +1,16 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 
 import { MesocycleMother } from '../../../../../tests/mothers/workouts'
 import { ConflictingIntensityError } from '../errors/workouts.errors'
 import { MesocycleNameVO } from '../value-objects/mesocycle-name.vo'
-import { RepsVO } from '../value-objects/reps.vo'
-import { RirVO } from '../value-objects/rir.vo'
-import { RpeVO } from '../value-objects/rpe.vo'
+import { RepsRangeVO } from '../value-objects/reps-range.vo'
+import { RirRangeVO } from '../value-objects/rir-range.vo'
+import { RpeRangeVO } from '../value-objects/rpe-range.vo'
 import { type MesocycleContentInput, MesocycleAggregate } from './mesocycle.entity'
 
 const NOW = new Date('2026-01-01T00:00:00.000Z')
 
-// Deterministic ids — this is a pure domain spec, so ids are opaque and unasserted.
+// Deterministic ids â€” this is a pure domain spec, so ids are opaque and unasserted.
 let seq = 0
 const uid = (): string => `id-${++seq}`
 
@@ -28,7 +28,7 @@ describe('MesocycleAggregate', () => {
         expect(day1.dayOffset).toBe(0)
         expect(day1.exercises[0]!.order).toBe(1)
         expect(day1.exercises[0]!.sets.map((s) => s.order)).toEqual([1, 2])
-        expect(day1.exercises[0]!.sets[0]!.plannedWeight?.value).toBe(100)
+        expect(day1.exercises[0]!.sets[0]!.plannedWeight?.min.value).toBe(100)
     })
 
     it('finds the microcycle for a given week, or null', () => {
@@ -46,7 +46,12 @@ describe('MesocycleAggregate', () => {
                     days: [
                         {
                             dayOffset: 0,
-                            exercises: [{ exerciseId: 'ex-1', sets: [{ rpe: RpeVO.create(8), rir: RirVO.create(2) }] }],
+                            exercises: [
+                                {
+                                    exerciseId: 'ex-1',
+                                    sets: [{ rpe: RpeRangeVO.create(8), rir: RirRangeVO.create(2) }],
+                                },
+                            ],
                         },
                     ],
                 },
@@ -78,7 +83,7 @@ describe('MesocycleAggregate', () => {
                         days: [
                             {
                                 dayOffset: 2,
-                                exercises: [{ exerciseId: 'ex-1', sets: [{ plannedReps: RepsVO.create(3) }] }],
+                                exercises: [{ exerciseId: 'ex-1', sets: [{ plannedReps: RepsRangeVO.create(3) }] }],
                             },
                         ],
                     },

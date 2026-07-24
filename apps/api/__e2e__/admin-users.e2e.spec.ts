@@ -48,6 +48,8 @@ afterAll(async () => {
 beforeEach(async () => {
     await pool.query('TRUNCATE TABLE users RESTART IDENTITY CASCADE')
     await pool.query('TRUNCATE TABLE workout_sessions RESTART IDENTITY CASCADE')
+    // `user_id` is a soft reference, so CASCADE from users doesn't reach these.
+    await pool.query('TRUNCATE TABLE subscriptions RESTART IDENTITY CASCADE')
 })
 
 // ── helpers ───────────────────────────────────────────────────────────
@@ -90,6 +92,28 @@ async function registerAdmin(email: string): Promise<string> {
     return cookiePair(setCookies(res), COOKIE.access)!
 }
 
+/**
+ * The user's id straight from the DB. Deliberately not `adminUserIdByEmail`: that
+ * one lists users, which resolves their plan and warms the entitlements cache —
+ * so a subscription created afterwards would show up under the plan they had a
+ * moment ago (the cache is invalidated by an event a raw INSERT doesn't publish).
+ */
+async function userIdByEmail(email: string): Promise<string> {
+    const { rows } = await pool.query<{ id: string }>('SELECT id FROM users WHERE email = $1', [email])
+
+    return rows[0]!.id
+}
+
+/** Put a user on a paid plan of the seeded catalog, the way a gateway would. */
+async function subscribeTo(userId: string, planSlug: string): Promise<void> {
+    await pool.query(
+        `INSERT INTO subscriptions (user_id, plan_id, audience, gateway, status, current_period_start, current_period_end)
+         SELECT $1, p.id, p.audience, 'manual', 'active', now(), now() + interval '30 days'
+         FROM plans p WHERE p.slug = $2`,
+        [userId, planSlug],
+    )
+}
+
 async function adminUserIdByEmail(admin: string, email: string): Promise<string> {
     const res = await gql(`query { adminUsers(search: "${email}") { rows { id email } } }`, admin)
     expect(res.body.errors).toBeUndefined()
@@ -129,6 +153,66 @@ describe('Admin users + stats via GraphQL', () => {
         expect(stats.body.data.adminUserStats.total).toBeGreaterThanOrEqual(2)
         expect(stats.body.data.adminUserStats.admins).toBeGreaterThanOrEqual(1)
         expect(stats.body.data.adminUserStats.newLast7Days).toBeGreaterThanOrEqual(2)
+    })
+
+    it('filters by the plan in force, free plans included', async () => {
+        const admin = await registerAdmin('admin-plans@example.com')
+        await registerUser('payer@example.com')
+        await registerUser('freeloader@example.com')
+        await subscribeTo(await userIdByEmail('payer@example.com'), 'athlete-pro')
+
+        const paid = await gql(`query { adminUsers(plans: ["athlete-pro"]) { rows { email plan } total } }`, admin)
+        expect(paid.body.errors).toBeUndefined()
+        expect(paid.body.data.adminUsers.rows).toEqual([{ email: 'payer@example.com', plan: 'athlete-pro' }])
+        // `total` counts the filtered listing, not the page — it drives the infinite
+        // scroll, so a plan filter that only trimmed the page would loop forever.
+        expect(paid.body.data.adminUsers.total).toBe(1)
+
+        // The free plan is nobody's subscription: it's whoever falls back to it. The
+        // subscriber must not appear here even though he is an athlete.
+        const free = await gql(`query { adminUsers(plans: ["athlete-free"]) { rows { email plan } } }`, admin)
+        const emails = free.body.data.adminUsers.rows.map((row: { email: string }) => row.email)
+        expect(emails).toContain('freeloader@example.com')
+        expect(emails).toContain('admin-plans@example.com')
+        expect(emails).not.toContain('payer@example.com')
+    })
+
+    it('lists nobody for a plan nobody is on, rather than everybody', async () => {
+        const admin = await registerAdmin('admin-empty-plan@example.com')
+
+        // The failure this guards is a filter that collapses to "no filter": an empty
+        // membership must read as no rows, not as the whole table.
+        const res = await gql(`query { adminUsers(plans: ["coach-elite"]) { rows { email } total } }`, admin)
+
+        expect(res.body.errors).toBeUndefined()
+        expect(res.body.data.adminUsers).toEqual({ rows: [], total: 0 })
+    })
+
+    it('keeps a canceled-but-unexpired subscriber on their plan, and drops them once it lapses', async () => {
+        const admin = await registerAdmin('admin-canceled@example.com')
+        await registerUser('leaving@example.com')
+        const userId = await userIdByEmail('leaving@example.com')
+        await subscribeTo(userId, 'athlete-pro')
+
+        // Canceled but paid up: still on the plan they paid for.
+        await pool.query(
+            `UPDATE subscriptions SET status = 'canceled', cancel_at_period_end = true, canceled_at = now()
+             WHERE user_id = $1`,
+            [userId],
+        )
+        const during = await gql(`query { adminUsers(plans: ["athlete-pro"]) { rows { email } } }`, admin)
+        expect(during.body.data.adminUsers.rows).toEqual([{ email: 'leaving@example.com' }])
+
+        // Period elapsed: the fallback takes over, and they show up under free.
+        await pool.query(`UPDATE subscriptions SET current_period_end = now() - interval '1 day' WHERE user_id = $1`, [
+            userId,
+        ])
+        const after = await gql(`query { adminUsers(plans: ["athlete-pro"]) { rows { email } } }`, admin)
+        expect(after.body.data.adminUsers.rows).toEqual([])
+
+        const free = await gql(`query { adminUsers(plans: ["athlete-free"]) { rows { email } } }`, admin)
+        const emails = free.body.data.adminUsers.rows.map((row: { email: string }) => row.email)
+        expect(emails).toContain('leaving@example.com')
     })
 
     it('changes a user’s role and admin flag', async () => {

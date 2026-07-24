@@ -5,6 +5,7 @@ import { useState } from 'react'
 
 import { useAthleteExerciseSessionHistory } from '@/lib/graphql/hooks/use-athlete'
 import { type ExerciseSessionHistorySet, useExerciseSessionHistory } from '@/lib/graphql/hooks/use-workouts'
+import { formatRange, formatWeightRange } from '@/lib/range'
 import { kgTo, type Units } from '@/lib/units'
 import { ChevronDown } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
@@ -30,10 +31,10 @@ function hasPlanned(set: ExerciseSessionHistorySet): boolean {
     return set.plannedWeightKg !== null || set.plannedReps !== null
 }
 
-/** "100kg × 5" from the programmed target; a missing side renders as "—". */
+/** "100kg × 5" / "50-55kg × 5-8" from the programmed target; a missing side is "—". */
 function formatPlanned(set: ExerciseSessionHistorySet, units: Units): string {
-    const weight = set.plannedWeightKg !== null ? compactWeight(set.plannedWeightKg, units) : '—'
-    const reps = set.plannedReps !== null ? set.plannedReps : '—'
+    const weight = set.plannedWeightKg ? `${formatWeightRange(set.plannedWeightKg, units)}${units}` : '—'
+    const reps = formatRange(set.plannedReps, { empty: '—' })
     return `${weight} × ${reps}`
 }
 

@@ -1,31 +1,19 @@
 'use client'
 
 import { useLocale, useTranslations } from 'next-intl'
-import { useRouter } from 'next/navigation'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
-import { useAssignMesocycle, usePlanSessionFromTemplate, usePlanWorkoutSession } from '@/lib/graphql/hooks/use-athlete'
-import { useAthleteMesocycles } from '@/lib/graphql/hooks/use-athlete'
+import { useAssignMesocycle, useAthleteMesocycles } from '@/lib/graphql/hooks/use-athlete'
 import { useMesocycles } from '@/lib/graphql/hooks/use-mesocycles'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
-import { type SelectedTemplate, TemplateBrowseModal, TemplateCombobox } from '@/components/workouts/template-select'
+import { todayLocalIso } from '@/lib/format-date'
+import { PlanSessionForm } from '@/components/coaching/plan-session-form'
 import { FormError } from '@/components/ui/form-error'
-import { Field, Input, Select, Textarea } from '@/components/ui/field'
-import { Calendar, Dumbbell, Plus } from '@/components/ui/icons'
+import { Field, Input, Select } from '@/components/ui/field'
+import { Calendar, Dumbbell } from '@/components/ui/icons'
+import { QueryError } from '@/components/ui/query-error'
+import { Skeleton } from '@/components/ui/skeleton'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
-
-/** Today as YYYY-MM-DD in the coach's timezone (for <input type="date">). */
-function todayLocalIso(): string {
-    const now = new Date()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    return `${now.getFullYear()}-${month}-${day}`
-}
-
-/** A date input value → an ISO datetime at midday (matches how sessions are dated). */
-function isoAtNoon(date: string): string {
-    return new Date(`${date}T12:00:00`).toISOString()
-}
 
 function Card({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
     return (
@@ -37,124 +25,91 @@ function Card({ title, subtitle, children }: { title: string; subtitle: string; 
     )
 }
 
+function GroupLabel({ children }: { children: React.ReactNode }) {
+    return <p className="font-mono text-[10px] uppercase tracking-widest text-text-faint">{children}</p>
+}
+
 /** Plan a session for the athlete — blank, or materialized from one of the coach's templates. */
 function PlanSessionCard({ athleteId }: { athleteId: string }) {
     const t = useTranslations('coaching')
-    const errorMessage = useErrorMessage()
-    const router = useRouter()
-
-    const plan = usePlanWorkoutSession()
-    const planFromTemplate = usePlanSessionFromTemplate()
-
-    const [date, setDate] = useState(todayLocalIso())
-    const [notes, setNotes] = useState('')
-    const [template, setTemplate] = useState<SelectedTemplate | null>(null)
-    const [browsing, setBrowsing] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-
-    const pending = plan.isPending || planFromTemplate.isPending
-
-    function onSubmit(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault()
-        setError(null)
-
-        const input = {
-            athleteId,
-            performedAt: isoAtNoon(date),
-            notes: notes.trim() === '' ? undefined : notes.trim(),
-        }
-        // Straight into the session editor: that is where the coach builds the plan.
-        // Under the athlete's route, not /workouts/<id> — that one belongs to the
-        // coach's own log, and its "back" would strand them there.
-        const onSuccess = (id: string) => router.push(`/coaching/athletes/${athleteId}/workouts/${id}`)
-        const onError = (err: unknown) => setError(errorMessage(err))
-
-        if (template) {
-            planFromTemplate.mutate(
-                { ...input, templateId: template.id },
-                { onSuccess: (data) => onSuccess(data.planSessionFromTemplate.id), onError },
-            )
-            return
-        }
-
-        plan.mutate(input, { onSuccess: (data) => onSuccess(data.planWorkoutSession.id), onError })
-    }
 
     return (
         <Card title={t('planSessionTitle')} subtitle={t('planSessionSubtitle')}>
-            <form onSubmit={onSubmit} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label={t('planDate')}>
-                        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-                    </Field>
-                    <Field label={t('planTemplate')}>
-                        <TemplateCombobox value={template} onChange={setTemplate} onBrowse={() => setBrowsing(true)} />
-                    </Field>
-                </div>
-
-                <Field label={t('planNotes')}>
-                    <Textarea
-                        rows={2}
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder={t('planNotesPlaceholder')}
-                    />
-                </Field>
-
-                <FormError error={error} />
-
-                <TrackedButton
-                    analyticsId="athlete-plan-session"
-                    type="submit"
-                    disabled={pending}
-                    className="inline-flex items-center gap-2 rounded-full bg-ember-gradient px-5 py-2.5 text-sm font-medium text-bg transition-transform duration-300 ease-spring active:scale-[0.98] disabled:opacity-60"
-                >
-                    <Plus className="size-4" />
-                    {pending ? t('planning') : template ? t('planFromTemplate') : t('planBlank')}
-                </TrackedButton>
-            </form>
-
-            {browsing ? (
-                <TemplateBrowseModal
-                    open={browsing}
-                    onClose={() => setBrowsing(false)}
-                    onSelect={(selected) => {
-                        setTemplate(selected)
-                        setBrowsing(false)
-                    }}
-                />
-            ) : null}
+            <PlanSessionForm athleteId={athleteId} analyticsId="athlete-plan-session" />
         </Card>
     )
 }
 
-/**
- * Build a block the athlete owns, from scratch or with the AI. Distinct from
- * assigning: this one is designed *for them* — the AI anchors the loads on the
- * athlete's own lifts, not the coach's.
- */
-function BuildBlockCard({ athleteId }: { athleteId: string }) {
+/** The blocks the athlete already has — the state this section is about. */
+function AthleteBlockList({ athleteId }: { athleteId: string }) {
     const t = useTranslations('coaching')
+    const tm = useTranslations('mesocycles')
+    const locale = useLocale()
+    const blocks = useAthleteMesocycles(athleteId)
+
+    if (blocks.isPending) {
+        return (
+            <div className="space-y-2">
+                {Array.from({ length: 2 }).map((_, i) => (
+                    <Skeleton key={i} className="h-14 rounded-xl" />
+                ))}
+            </div>
+        )
+    }
+
+    if (blocks.isError) {
+        return (
+            <QueryError
+                message={t('blocksLoadError')}
+                onRetry={() => void blocks.refetch()}
+                analyticsId="athlete-blocks-retry"
+            />
+        )
+    }
+
+    if (blocks.data.length === 0) {
+        return <p className="text-sm text-text-faint">{t('noAthleteBlocks')}</p>
+    }
 
     return (
-        <Card title={t('buildBlockTitle')} subtitle={t('buildBlockSubtitle')}>
-            <TrackedLink
-                analyticsId="athlete-build-block"
-                href={`/coaching/athletes/${athleteId}/mesocycles/new`}
-                className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
-            >
-                <Dumbbell className="size-4" /> {t('buildBlockFor')}
-            </TrackedLink>
-        </Card>
+        <div className="space-y-2">
+            {blocks.data.map((block) => (
+                <div
+                    key={block.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface px-4 py-3 ring-1 ring-hairline"
+                >
+                    <div className="min-w-0">
+                        <p className="truncate text-text">{block.name}</p>
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
+                            {tm(`status.${block.status}`)} ·{' '}
+                            {block.startDate
+                                ? new Date(block.startDate).toLocaleDateString(locale, {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                  })
+                                : tm('noStartDate')}
+                        </p>
+                    </div>
+                    <TrackedLink
+                        analyticsId="athlete-block-open"
+                        href={`/coaching/athletes/${athleteId}/mesocycles/${block.id}`}
+                        className="shrink-0 rounded-full px-4 py-1.5 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                    >
+                        {t('openBlock')}
+                    </TrackedLink>
+                </div>
+            ))}
+        </div>
     )
 }
 
 /** Copy one of the coach's own blocks into the athlete's library. */
-function AssignBlockCard({ athleteId }: { athleteId: string }) {
+function AssignBlockForm({ athleteId }: { athleteId: string }) {
     const t = useTranslations('coaching')
     const errorMessage = useErrorMessage()
 
-    const { data: mine } = useMesocycles()
+    const { data: mine, isPending } = useMesocycles()
     const assign = useAssignMesocycle()
 
     const [mesocycleId, setMesocycleId] = useState('')
@@ -162,10 +117,7 @@ function AssignBlockCard({ athleteId }: { athleteId: string }) {
     const [error, setError] = useState<string | null>(null)
     const [assigned, setAssigned] = useState<string | null>(null)
 
-    // Blocks a coach already handed to someone are copies; only offer their own.
-    const own = (mine ?? []).filter((mesocycle) => mesocycle.plannedByUserId === null)
-
-    function onSubmit(event: FormEvent<HTMLFormElement>) {
+    function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         if (mesocycleId === '') return
 
@@ -183,9 +135,19 @@ function AssignBlockCard({ athleteId }: { athleteId: string }) {
         )
     }
 
+    // Still loading is not the same as owning none: the old code read an empty
+    // `mine` during the fetch and told the coach they had no mesocycles at all,
+    // CTA included, while their library was on its way.
+    if (isPending) {
+        return <Skeleton className="h-24 rounded-2xl" />
+    }
+
+    // Blocks a coach already handed to someone are copies; only offer their own.
+    const own = (mine ?? []).filter((mesocycle) => mesocycle.plannedByUserId === null)
+
     if (own.length === 0) {
         return (
-            <Card title={t('assignBlockTitle')} subtitle={t('assignBlockSubtitle')}>
+            <div>
                 <p className="text-sm text-text-faint">{t('noBlocksYet')}</p>
                 <TrackedLink
                     analyticsId="athlete-plan-build-block"
@@ -194,85 +156,76 @@ function AssignBlockCard({ athleteId }: { athleteId: string }) {
                 >
                     <Dumbbell className="size-4" /> {t('buildBlock')}
                 </TrackedLink>
-            </Card>
+            </div>
         )
     }
 
     return (
-        <Card title={t('assignBlockTitle')} subtitle={t('assignBlockSubtitle')}>
-            <form onSubmit={onSubmit} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label={t('assignBlock')}>
-                        <Select value={mesocycleId} onChange={(e) => setMesocycleId(e.target.value)}>
-                            <option value="">{t('assignBlockPlaceholder')}</option>
-                            {own.map((mesocycle) => (
-                                <option key={mesocycle.id} value={mesocycle.id}>
-                                    {mesocycle.name}
-                                </option>
-                            ))}
-                        </Select>
-                    </Field>
-                    <Field label={t('assignStartDate')}>
-                        <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                    </Field>
-                </div>
+        <form onSubmit={onSubmit} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+                <Field label={t('assignBlock')}>
+                    <Select value={mesocycleId} onChange={(e) => setMesocycleId(e.target.value)}>
+                        <option value="">{t('assignBlockPlaceholder')}</option>
+                        {own.map((mesocycle) => (
+                            <option key={mesocycle.id} value={mesocycle.id}>
+                                {mesocycle.name}
+                            </option>
+                        ))}
+                    </Select>
+                </Field>
+                <Field label={t('assignStartDate')}>
+                    <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                </Field>
+            </div>
 
-                {assigned ? <p className="text-sm text-pr">{t('assigned', { name: assigned })}</p> : null}
-                <FormError error={error} />
+            {assigned ? <p className="text-sm text-pr">{t('assigned', { name: assigned })}</p> : null}
+            <FormError error={error} />
 
-                <TrackedButton
-                    analyticsId="athlete-assign-block"
-                    type="submit"
-                    disabled={assign.isPending || mesocycleId === ''}
-                    className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-50"
-                >
-                    <Calendar className="size-4" />
-                    {assign.isPending ? t('assigning') : t('assign')}
-                </TrackedButton>
-            </form>
-        </Card>
+            <TrackedButton
+                analyticsId="athlete-assign-block"
+                type="submit"
+                disabled={assign.isPending || mesocycleId === ''}
+                className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1] disabled:opacity-50"
+            >
+                <Calendar className="size-4" />
+                {assign.isPending ? t('assigning') : t('assign')}
+            </TrackedButton>
+        </form>
     )
 }
 
-/** The blocks this athlete already has, so the coach can jump into one. */
-function AthleteBlocks({ athleteId }: { athleteId: string }) {
+/**
+ * Everything about the athlete's blocks in one place: the ones they already have
+ * first, then the two ways to give them another. Both actions produce the same
+ * kind of thing, so they belong beside the list they change — reading the state
+ * before adding to it is also what stops a coach assigning a second block on top
+ * of a running one.
+ */
+function AthleteBlocksCard({ athleteId }: { athleteId: string }) {
     const t = useTranslations('coaching')
-    const tm = useTranslations('mesocycles')
-    const locale = useLocale()
-    const { data: blocks } = useAthleteMesocycles(athleteId)
-
-    if (!blocks || blocks.length === 0) return null
 
     return (
         <Card title={t('athleteBlocksTitle')} subtitle={t('athleteBlocksSubtitle')}>
-            <div className="space-y-2">
-                {blocks.map((block) => (
-                    <div
-                        key={block.id}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface px-4 py-3 ring-1 ring-hairline"
+            <AthleteBlockList athleteId={athleteId} />
+
+            <div className="mt-5 space-y-5 border-t border-hairline pt-5">
+                <div>
+                    <GroupLabel>{t('buildBlockTitle')}</GroupLabel>
+                    <p className="mt-1 text-sm text-text-dim">{t('buildBlockSubtitle')}</p>
+                    <TrackedLink
+                        analyticsId="athlete-build-block"
+                        href={`/coaching/athletes/${athleteId}/mesocycles/new`}
+                        className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
                     >
-                        <div className="min-w-0">
-                            <p className="truncate text-text">{block.name}</p>
-                            <p className="font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                                {tm(`status.${block.status}`)} ·{' '}
-                                {block.startDate
-                                    ? new Date(block.startDate).toLocaleDateString(locale, {
-                                          day: 'numeric',
-                                          month: 'short',
-                                          year: 'numeric',
-                                      })
-                                    : tm('noStartDate')}
-                            </p>
-                        </div>
-                        <TrackedLink
-                            analyticsId="athlete-block-open"
-                            href={`/coaching/athletes/${athleteId}/mesocycles/${block.id}`}
-                            className="shrink-0 rounded-full px-4 py-1.5 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
-                        >
-                            {t('openBlock')}
-                        </TrackedLink>
-                    </div>
-                ))}
+                        <Dumbbell className="size-4" /> {t('buildBlockFor')}
+                    </TrackedLink>
+                </div>
+
+                <div>
+                    <GroupLabel>{t('assignBlockTitle')}</GroupLabel>
+                    <p className="mt-1 mb-3 text-sm text-text-dim">{t('assignBlockSubtitle')}</p>
+                    <AssignBlockForm athleteId={athleteId} />
+                </div>
             </div>
         </Card>
     )
@@ -282,10 +235,8 @@ function AthleteBlocks({ athleteId }: { athleteId: string }) {
 export function AthletePlan({ athleteId }: { athleteId: string }) {
     return (
         <div className="space-y-4">
+            <AthleteBlocksCard athleteId={athleteId} />
             <PlanSessionCard athleteId={athleteId} />
-            <BuildBlockCard athleteId={athleteId} />
-            <AssignBlockCard athleteId={athleteId} />
-            <AthleteBlocks athleteId={athleteId} />
         </div>
     )
 }

@@ -89,6 +89,14 @@ export const Plus = (p: SVGProps<SVGSVGElement>) => (
     </Icon>
 )
 
+/** Indeterminate loader: a faint track with a brighter arc that spins. */
+export const Spinner = ({ className, ...p }: SVGProps<SVGSVGElement>) => (
+    <Icon className={`animate-spin ${className ?? ''}`} {...p}>
+        <circle cx="12" cy="12" r="8" opacity="0.25" />
+        <path d="M12 4a8 8 0 0 1 8 8" />
+    </Icon>
+)
+
 export const Mail = (p: SVGProps<SVGSVGElement>) => (
     <Icon {...p}>
         <rect x="3" y="5" width="18" height="14" rx="2.5" />
@@ -170,8 +178,38 @@ export const Shield = (p: SVGProps<SVGSVGElement>) => (
     </Icon>
 )
 
+export const Lock = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <rect x="4.5" y="11" width="15" height="9" rx="2" />
+        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </Icon>
+)
+
+export const Eye = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+        <circle cx="12" cy="12" r="3" />
+    </Icon>
+)
+
+export const EyeOff = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <path d="M3 3l18 18" />
+        <path d="M10.6 6.1A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a15 15 0 0 1-2.9 3.4" />
+        <path d="M6.3 7.8A15 15 0 0 0 2.5 12S6 18 12 18a9.3 9.3 0 0 0 3.3-.6" />
+        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </Icon>
+)
+
 export const Dumbbell = (p: SVGProps<SVGSVGElement>) => (
     <Icon {...p}>
         <path d="M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12" />
+    </Icon>
+)
+
+export const CreditCard = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M3 10h18M7 15h3" />
     </Icon>
 )

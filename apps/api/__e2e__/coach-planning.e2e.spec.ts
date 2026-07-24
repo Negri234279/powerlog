@@ -1,4 +1,4 @@
-import type { INestApplication } from '@nestjs/common'
+﻿import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import cookieParser from 'cookie-parser'
@@ -53,7 +53,7 @@ beforeEach(async () => {
     )
 })
 
-// ── helpers ───────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function setCookies(res: request.Response): string[] {
     const raw = res.headers['set-cookie']
     return Array.isArray(raw) ? raw : raw ? [raw] : []
@@ -133,20 +133,20 @@ describe('Coach planning via GraphQL', () => {
         )
         const entryId: string = entryRes.body.data.addExerciseEntry.entries[0].id
         const setRes = await gql(
-            `mutation { logSet(input: { sessionId: "${sessionId}", entryId: "${entryId}", plannedWeight: 100, plannedReps: 5 }) { entries { sets { id plannedWeightKg plannedReps weightKg } } } }`,
+            `mutation { logSet(input: { sessionId: "${sessionId}", entryId: "${entryId}", plannedWeight: "100", plannedReps: "5" }) { entries { sets { id plannedWeightKg { min max } plannedReps { min max } weightKg } } } }`,
             coachAccess,
         )
         const setId: string = setRes.body.data.logSet.entries[0].sets[0].id
 
         // The athlete sees the planned session (owned by them) and logs the real set.
         const seen = await gql(
-            `query { workoutSession(id: "${sessionId}") { plannedByUserId entries { sets { plannedWeightKg plannedReps weightKg } } } }`,
+            `query { workoutSession(id: "${sessionId}") { plannedByUserId entries { sets { plannedWeightKg { min max } plannedReps { min max } weightKg } } } }`,
             athlete.access,
         )
         expect(seen.body.data.workoutSession.plannedByUserId).toBe(coachId)
         expect(seen.body.data.workoutSession.entries[0].sets[0]).toMatchObject({
-            plannedWeightKg: 100,
-            plannedReps: 5,
+            plannedWeightKg: { min: 100, max: 100 },
+            plannedReps: { min: 5, max: 5 },
             weightKg: null,
         })
 
@@ -262,7 +262,7 @@ describe("Coach reading an athlete's training", () => {
     it("shows the coach the ATHLETE's previous marks for an exercise, never their own", async () => {
         const { coachAccess, athlete } = await linkedCoachAndAthlete()
 
-        // The same exercise, trained by both — the coach is far stronger, so the
+        // The same exercise, trained by both â€” the coach is far stronger, so the
         // weights alone say whose history came back.
         const exerciseId = await anExerciseId(coachAccess)
         await aCompletedSessionOf(athlete.access, exerciseId, 100)
@@ -276,7 +276,7 @@ describe("Coach reading an athlete's training", () => {
         expect(marks.body.data.athleteExerciseSessionHistory).toHaveLength(1)
         expect(marks.body.data.athleteExerciseSessionHistory[0].sets[0].weightKg).toBe(100)
 
-        // The coach's own query still answers with the coach's own numbers — the
+        // The coach's own query still answers with the coach's own numbers â€” the
         // panel picks the right one, the API doesn't guess.
         const own = await gql(
             `query { exerciseSessionHistory(exerciseId: "${exerciseId}") { sets { weightKg } } }`,
@@ -320,7 +320,7 @@ describe("Coach reading an athlete's training", () => {
         expect(res.body.errors[0].extensions.code).toBe('WORKOUT_SESSION_NOT_FOUND')
     })
 
-    it('forbids a non-coach from reading another user’s training', async () => {
+    it('forbids a non-coach from reading another userâ€™s training', async () => {
         const athlete = await register('plainathlete@example.com')
         const other = await register('other@example.com')
 
@@ -347,7 +347,7 @@ describe('Coach mesocycles for an athlete', () => {
                             dayOffset: 0
                             label: "Squat day"
                             exercises: [
-                                { exerciseId: "${exerciseId}", sets: [{ plannedWeight: 100, plannedReps: 5, rpe: 8 }] }
+                                { exerciseId: "${exerciseId}", sets: [{ plannedWeight: "100", plannedReps: "5", rpe: "8" }] }
                             ]
                         }
                     ]
@@ -385,21 +385,24 @@ describe('Coach mesocycles for an athlete', () => {
 
         // The coach generates week 1 into the athlete's calendar.
         const generated = await gql(
-            `mutation { generateMesocycleWeek(input: { mesocycleId: "${mesocycleId}", week: 1 }) { id userId plannedByUserId status entries { sets { plannedWeightKg plannedReps } } } }`,
+            `mutation { generateMesocycleWeek(input: { mesocycleId: "${mesocycleId}", week: 1 }) { id userId plannedByUserId status entries { sets { plannedWeightKg { min max } plannedReps { min max } } } } }`,
             coachAccess,
         )
         expect(generated.body.errors).toBeUndefined()
         expect(generated.body.data.generateMesocycleWeek).toHaveLength(1)
         const session = generated.body.data.generateMesocycleWeek[0]
         expect(session).toMatchObject({ userId: athlete.userId, plannedByUserId: coachId, status: 'planned' })
-        expect(session.entries[0].sets[0]).toMatchObject({ plannedWeightKg: 100, plannedReps: 5 })
+        expect(session.entries[0].sets[0]).toMatchObject({
+            plannedWeightKg: { min: 100, max: 100 },
+            plannedReps: { min: 5, max: 5 },
+        })
 
         // It lands in the athlete's own history, ready to train.
         const history = await gql(`query { workoutHistory { items { id } } }`, athlete.access)
         expect(history.body.data.workoutHistory.items.map((s: { id: string }) => s.id)).toContain(session.id)
     })
 
-    it('copies one of the coach’s own blocks to the athlete, leaving the source in their library', async () => {
+    it('copies one of the coachâ€™s own blocks to the athlete, leaving the source in their library', async () => {
         const { coachAccess, coachId, athlete } = await linkedCoachAndAthlete()
         const exerciseId = await anExerciseId(coachAccess)
 
@@ -411,14 +414,14 @@ describe('Coach mesocycles for an athlete', () => {
         expect(own.body.data.createMesocycle).toMatchObject({ ownerId: coachId, plannedByUserId: null })
 
         const assigned = await gql(
-            `mutation { assignMesocycleToAthlete(athleteId: "${athlete.userId}", mesocycleId: "${sourceId}", startDate: "2026-04-06") { id ownerId plannedByUserId startDate microcycles { days { exercises { sets { plannedWeightKg } } } } } }`,
+            `mutation { assignMesocycleToAthlete(athleteId: "${athlete.userId}", mesocycleId: "${sourceId}", startDate: "2026-04-06") { id ownerId plannedByUserId startDate microcycles { days { exercises { sets { plannedWeightKg { min max } } } } } } }`,
             coachAccess,
         )
         expect(assigned.body.errors).toBeUndefined()
         const copy = assigned.body.data.assignMesocycleToAthlete
         expect(copy).toMatchObject({ ownerId: athlete.userId, plannedByUserId: coachId })
         expect(copy.id).not.toBe(sourceId)
-        expect(copy.microcycles[0].days[0].exercises[0].sets[0].plannedWeightKg).toBe(100)
+        expect(copy.microcycles[0].days[0].exercises[0].sets[0].plannedWeightKg).toEqual({ min: 100, max: 100 })
 
         // The coach still owns the original; the athlete only has the copy.
         const coachLibrary = await gql(`query { mesocycles { id } }`, coachAccess)
@@ -539,7 +542,7 @@ describe('Coaching notifications', () => {
         const exerciseId = await anExerciseId(coachAccess)
 
         const created = await gql(
-            `mutation { createAthleteMesocycle(athleteId: "${athlete.userId}", input: { name: "Peaking Block", microcycles: [{ days: [{ dayOffset: 0, exercises: [{ exerciseId: "${exerciseId}", sets: [{ plannedReps: 3 }] }] }] }] }) { id } }`,
+            `mutation { createAthleteMesocycle(athleteId: "${athlete.userId}", input: { name: "Peaking Block", microcycles: [{ days: [{ dayOffset: 0, exercises: [{ exerciseId: "${exerciseId}", sets: [{ plannedReps: "3" }] }] }] }] }) { id } }`,
             coachAccess,
         )
         const mesocycleId: string = created.body.data.createAthleteMesocycle.id

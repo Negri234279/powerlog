@@ -7,6 +7,7 @@ import { NotifyOnCoachLinkEstablished } from './event-handlers/notify-on-coach-l
 import { NotifyOnCoachLinkRemoved } from './event-handlers/notify-on-coach-link-removed.handler'
 import { NotifyOnMesocycleAssigned } from './event-handlers/notify-on-mesocycle-assigned.handler'
 import { NotifyOnMesocycleWeekGenerated } from './event-handlers/notify-on-mesocycle-week-generated.handler'
+import { NotifyOnSubscriptionChanged } from './event-handlers/notify-on-subscription-changed.handler'
 import { NotifyOnSessionPlanned } from './event-handlers/notify-on-session-planned.handler'
 import { CountUnreadNotificationsHandler } from './queries/count-unread-notifications/count-unread-notifications.handler'
 import { ListNotificationsHandler } from './queries/list-notifications/list-notifications.handler'
@@ -31,6 +32,7 @@ export const NOTIFICATIONS_EVENT_HANDLERS = [
     NotifyOnSessionPlanned,
     NotifyOnMesocycleAssigned,
     NotifyOnMesocycleWeekGenerated,
+    NotifyOnSubscriptionChanged,
 ]
 
 /** Application-layer services (not CQRS handlers). */

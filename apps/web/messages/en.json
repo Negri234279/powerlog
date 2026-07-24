@@ -29,7 +29,10 @@
             "sessionPlanned": "{coach} planned a session for you",
             "mesocycleAssigned": "{coach} gave you a block: {name}",
             "mesocycleWeekGenerated": "{coach} planned week {week} for you — {sessions, plural, one {# session} other {# sessions}}",
-            "generic": "You have a new notification"
+            "generic": "You have a new notification",
+            "subscriptionActivated": "Your {plan} plan is active",
+            "subscriptionCanceled": "Your plan won’t renew — you keep it until {until}",
+            "subscriptionPaymentFailed": "Your payment failed — update your card to keep your plan"
         }
     },
     "coaching": {
@@ -53,30 +56,137 @@
         "becomeTitle": "Become a coach",
         "becomeBody": "Train other athletes: build their plans, templates and mesocycles, and follow their progress.",
         "become": "Become a coach",
-        "athlete": "Athlete",
+        "coachEmptyTitle": "Your coach",
+        "coachEmptyBody": "You don’t have a coach yet. A coach invites you by email — accept it and they’ll show up here.",
+        "becomeModalSubtitle": "Pick a coaching plan to start training athletes.",
+        "becomeFree": "Start free",
+        "athleteLoading": "Loading athlete…",
+        "athleteMenu": "Athlete actions",
+        "quickPlanSession": "Plan session",
+        "athleteNotFoundTitle": "Athlete not found",
+        "athleteNotFoundBody": "They are no longer one of your athletes, or the link has expired.",
         "backToCoaching": "Back to coaching",
         "coachesOnly": "Only available to coaches.",
         "noteTitle": "Private note",
         "noteSubtitle": "Only you can see this note about the athlete.",
         "notePlaceholder": "Observations, goals, injuries, preferences…",
-        "noteSave": "Save note",
+        "noteUnsaved": "Not saved",
         "noteSaving": "Saving…",
         "noteSaved": "Saved",
         "tab": {
             "training": "Training",
             "stats": "Stats",
-            "plan": "Plan",
-            "note": "Note"
+            "plan": "Plan"
         },
-        "filter": {
-            "all": "All",
-            "planned": "Planned",
-            "completed": "Completed"
+        "roster": {
+            "tableCaption": "Your athletes, with their recent training",
+            "scopeNote": "Adherence and volume cover the selected range · last and next session are all-time.",
+            "colAthlete": "Athlete",
+            "colLast": "Last",
+            "colAdherence": "Adherence",
+            "colNext": "Next",
+            "never": "Never",
+            "daysShort": "{days} d",
+            "new": "New",
+            "notProgrammed": "Not programmed",
+            "adherenceDetail": "{done}/{due} sessions",
+            "reasonStale": "Hasn't trained in {days} days",
+            "reasonNeverTrained": "Has never trained",
+            "reasonMissed": "{count, plural, one {# missed session} other {# missed sessions}}",
+            "searchPlaceholder": "Search name or @handle",
+            "filterAttention": "Attention",
+            "filterThisWeek": "This week",
+            "sortLabel": "Sort:",
+            "sortBy": "Sort by {column}",
+            "sort": {
+                "attention": "Urgency",
+                "name": "Name",
+                "last": "Last session",
+                "adherence": "Adherence",
+                "next": "Next session"
+            },
+            "noAttention": "Nobody needs attention. Good work.",
+            "noMatches": "No athlete matches «{query}».",
+            "metricsError": "Couldn't load training data. The roster still works.",
+            "resultsAnnouncement": "{total} athletes, {attention} need attention",
+            "attentionReason": {
+                "stale": "Not training",
+                "neverTrained": "Never trained",
+                "lowAdherence": "Low adherence"
+            },
+            "filterAttentionAria": "Filter by attention reason",
+            "athleteCount": "{count, plural, one {# athlete} other {# athletes}}",
+            "rangeAria": "Data range",
+            "resultCount": "{visible} of {total} athletes",
+            "needsMetrics": "Requires training data",
+            "removeFilter": "Remove filter: {filter}",
+            "clearAll": "Clear all",
+            "noMatchesFilters": "No athlete matches the filters.",
+            "noSessionsThisWeek": "No sessions scheduled in the next 7 days."
+        },
+        "athleteStats": {
+            "lastSession": "Last session",
+            "neverTrained": "No sessions logged",
+            "today": "today",
+            "daysAgo": "{days, plural, one {# day ago} other {# days ago}}",
+            "programTitle": "Your program",
+            "programScope": "Only sessions you planned for them.",
+            "nothingProgrammed": "You haven't planned any sessions for this athlete yet.",
+            "goToPlan": "Plan their training",
+            "adherenceDetail": "{done}/{due} due",
+            "nothingDueYet": "{upcoming, plural, one {# upcoming} other {# upcoming}} · nothing due yet",
+            "adherenceAria": "{done} completed, {missed} not done, {upcoming} upcoming",
+            "legendDone": "{count} completed",
+            "legendMissed": "{count} not done",
+            "legendUpcoming": "{count} upcoming",
+            "executionTitle": "Their training",
+            "executionScope": "Everything they lift, planned by you or not.",
+            "successLabel": "Successful sets",
+            "successDetail": "{ok}/{marked} marked",
+            "noMarkedSets": "no marked sets",
+            "complianceLabel": "Load vs. programmed",
+            "complianceDetail": "{sets, plural, one {# programmed set} other {# programmed sets}}",
+            "noProgrammedSets": "no programmed sets",
+            "complianceAria": {
+                "under": "{percent} of the programmed load — below plan",
+                "onPlan": "{percent} of the programmed load — on plan",
+                "over": "{percent} of the programmed load — above plan"
+            },
+            "avgRpeLabel": "Average RPE",
+            "avgRpeDetail": "across sets that recorded one",
+            "noRpe": "no RPE recorded",
+            "workloadTitle": "Workload in range",
+            "sessions": "Sessions",
+            "sets": "Sets",
+            "volume": "Volume",
+            "estTotal": "Est. total",
+            "perWeek": "{value}/wk",
+            "trendAria": "{change} vs. the previous period",
+            "colSuccess": "Successful sets",
+            "colFailed": "Failed sets",
+            "adherenceChartTitle": "Adherence week by week",
+            "adherenceChartScope": "Sessions you planned — where the misses actually fell.",
+            "noProgrammedWeeks": "You haven't planned sessions in this range.",
+            "chartDone": "Completed",
+            "chartMissed": "Not done",
+            "loadChartTitle": "Programmed vs. executed",
+            "loadChartScope": "Weekly load on sets that carried a plan, in completed sessions.",
+            "noProgrammedLoad": "No sessions with programmed loads in this range.",
+            "chartPlanned": "Programmed",
+            "chartActual": "Executed",
+            "strengthScope": "Best e1RM per session, with a linear trend and projection.",
+            "noStrengthData": "No exercises trained in this range.",
+            "volumeScope": "All their training — tonnage per week.",
+            "distributionScope": "All their training.",
+            "intensityScope": "All their training — how hard the sets were."
         },
         "loading": "Loading…",
         "loadMore": "Load more",
         "noSessions": "No sessions yet.",
         "noStats": "Nothing logged in this range.",
+        "trainingLoadError": "Couldn’t load training.",
+        "statsLoadError": "Couldn’t load stats.",
+        "retry": "Retry",
         "editPlan": "Edit plan",
         "backToAthlete": "← Athlete",
         "planSessionTitle": "Plan a session",
@@ -103,6 +213,8 @@
         "buildBlock": "Build a mesocycle",
         "athleteBlocksTitle": "Their blocks",
         "athleteBlocksSubtitle": "Mesocycles this athlete is training.",
+        "noAthleteBlocks": "They aren’t training any block yet.",
+        "blocksLoadError": "Couldn’t load their blocks.",
         "openBlock": "Open",
         "removeAthlete": "Stop coaching",
         "removeAthleteTitle": "Stop coaching this athlete?",
@@ -110,7 +222,8 @@
         "leaveCoach": "Leave",
         "leaveCoachTitle": "Leave this coach?",
         "leaveCoachBody": "@{coach} will no longer see your training or plan for you. You keep everything they planned.",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "done": "Done"
     },
     "auth": {
         "login": {
@@ -119,7 +232,8 @@
             "submit": "Log in",
             "newHere": "New here?",
             "createAccount": "Create an account",
-            "forgot": "Forgot password?"
+            "forgot": "Forgot password?",
+            "expired": "Your session ended for your security. Log in again to continue."
         },
         "register": {
             "title": "Create your account",
@@ -193,6 +307,8 @@
         },
         "errors": {
             "invalidEmail": "Enter a valid email address.",
+            "emailTaken": "That email already has an account.",
+            "usernameTaken": "That username is taken.",
             "passwordRequired": "Password is required.",
             "usernameLength": "Use 3–30 characters.",
             "usernameChars": "Only a–z, 0–9 and underscore.",
@@ -202,7 +318,40 @@
             "heightNumber": "Enter a number.",
             "heightWhole": "Whole centimetres.",
             "heightRange": "Between 50 and 300 cm.",
-            "passwordsMismatch": "Passwords don’t match."
+            "passwordsMismatch": "Passwords don’t match.",
+            "birthFuture": "Birth date cannot be in the future."
+        },
+        "wizard": {
+            "progress": "Step {step} of {total}",
+            "athleteTitle": "Choose your plan",
+            "athleteSubtitle": "For your own training. You can change it anytime.",
+            "coachTitle": "Do you also coach others?",
+            "coachSubtitle": "Add a coach plan to program for your athletes. It is separate from your athlete plan.",
+            "coachEnable": "Yes, I want to coach others",
+            "coachSkip": "Not now",
+            "accountTitle": "Your details",
+            "accountSubtitle": "This is what we use to create your account.",
+            "reviewTitle": "All set",
+            "reviewSubtitle": "Review your choices before creating the account.",
+            "reviewAthletePlan": "Athlete plan",
+            "reviewCoachPlan": "Coach plan",
+            "reviewNoCoach": "No coach plan",
+            "reviewAccount": "Account",
+            "createAccount": "Create account",
+            "back": "Back",
+            "continue": "Continue",
+            "select": "Select",
+            "selected": "Selected",
+            "perMonth": "/mo",
+            "perYear": "/yr",
+            "notAvailable": "Not available for this combination",
+            "paymentTitle": "Payment",
+            "paymentSubtitle": "Enter your payment method to activate your plan.",
+            "payingFor": "Activate {plan}",
+            "planCount": "Plan {current} of {total}",
+            "payLater": "Finish later",
+            "consent": "I accept the <terms>Terms</terms> and the <privacy>Privacy Policy</privacy>.",
+            "consentRequired": "You must accept the Terms and the Privacy Policy to continue."
         }
     },
     "common": {
@@ -214,7 +363,9 @@
             "athlete": "Athlete",
             "coach": "Coach"
         },
-        "exSets": "{ex} ex · {sets} sets"
+        "exSets": "{ex} ex · {sets} sets",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password"
     },
     "dashboard": {
         "eyebrow": "Dashboard",
@@ -254,6 +405,14 @@
     "workouts": {
         "training": "Training",
         "title": "Workouts",
+        "tabs": {
+            "label": "Training sections",
+            "sessions": "Sessions",
+            "mesocycles": "Mesocycles",
+            "templates": "Templates",
+            "stats": "Analytics",
+            "ai": "AI"
+        },
         "templates": "Templates",
         "mesocycles": "Mesocycles",
         "analytics": "Analytics",
@@ -278,6 +437,7 @@
         "noSessionsInRange": "No workouts in this range",
         "noSessionsInRangeBody": "There are no sessions in the selected period. Move to another week or widen the range.",
         "viewAll": "View all",
+        "weekSummary": "{count, plural, one {# session} other {# sessions}} · {volume}",
         "searchNotes": "Search session notes…",
         "filterByExercise": "Filter by exercise",
         "allExercises": "All exercises",
@@ -327,6 +487,17 @@
         "coachPlanned": "Coach-planned",
         "complete": "Complete",
         "completing": "Completing…",
+        "completeConfirmTitle": "Complete unfinished session?",
+        "completeConfirmBody": "You've marked {completed} of {total} sets. Mark the session as completed anyway?",
+        "completedLockedTitle": "Completed session",
+        "completedLockedBody": "Changes are locked to prevent accidental edits while you train.",
+        "editSession": "Edit",
+        "editingCompletedTitle": "Editing a completed session",
+        "editingCompletedBody": "Be careful — you're changing a session already marked as done.",
+        "lockSession": "Lock",
+        "unlockConfirmTitle": "Edit a completed session?",
+        "unlockConfirmBody": "This session is already marked as completed. Editing its data can alter your log by mistake.",
+        "unlockConfirm": "Edit anyway",
         "deleteQ": "Delete?",
         "deleting": "Deleting…",
         "noExercisesYet": "No exercises yet. Add one to start logging sets.",
@@ -337,25 +508,120 @@
         "filterCategory": "Category",
         "filterEquipment": "Equipment",
         "filterMuscle": "Muscle",
+        "filterStatus": "Status",
+        "statusPending": "Pending",
+        "statusCompleted": "Completed",
+        "noMatchingExercises": "No exercises match the filter.",
         "entryRemove": "Remove",
+        "entryRemoveTitle": "Remove {name}?",
+        "entryRemoveBody": "{sets, plural, =0 {The exercise will be removed from this session.} one {The exercise and its set will be removed.} other {The exercise and its # sets will be removed.}} This can’t be undone.",
         "noSetsYet": "No sets yet.",
         "addSet": "Add set",
         "adding": "Adding…",
         "planPrefix": "plan",
         "removeSet": "Remove set",
+        "duplicate": "Duplicate set",
+        "setActions": "Set actions",
+        "setRemoveTitle": "Remove set {index}?",
+        "setRemoveBody": "This set will be removed. This can’t be undone.",
         "save": "Save",
         "saving": "Saving…",
         "weightLabel": "Weight ({units})",
         "reps": "Reps",
-        "plannedWeightLabel": "Planned ({units})",
-        "plannedRepsLabel": "Planned reps",
         "intensity": "Intensity",
+        "rangePlaceholder": "5 or 5-8",
+        "errNumFormat": "Enter a number.",
+        "errRangeFormat": "Use a number or a range, e.g. 5-8.",
+        "errRangeReversed": "The low end can't be above the high end.",
+        "errRangeReps": "Reps must be whole numbers from 1 to 1000.",
+        "errRangeWeight": "Enter a realistic weight (up to 1000 kg).",
+        "errRangeRpe": "RPE must be 0–10 in half-point steps.",
+        "errRangeRir": "RIR must be whole numbers from 0 to 50.",
         "none": "None",
         "rpeRange": "RPE (0–10)",
         "rir": "RIR",
+        "markDone": "Done",
+        "completeSetTitle": "Set {index}",
+        "outcomeLabel": "How it went",
+        "outcomeSuccess": "Success",
+        "outcomeFailed": "Failed",
+        "outcomePending": "Pending",
+        "doneSection": "Done",
+        "plannedSection": "Planned",
+        "confirmDone": "Confirm",
+        "sessionProgress": "Progress",
+        "setsDone": "{completed}/{total} sets",
         "previousSessions": "Previous sessions",
         "historyLoadError": "Couldn’t load history.",
         "noPrevious": "No previous sessions logged yet."
+    },
+    "aiHistory": {
+        "title": "AI history",
+        "intro": "Every plan you've asked the AI for — including the ones you turned down.",
+        "loadMore": "Load more",
+        "loading": "Loading…",
+        "messages": "{count, plural, one {# message} other {# messages}}",
+        "forAthlete": "for {name}",
+        "anAthlete": "for an athlete",
+        "cardAria": "{status} {kind}: {title}, {model}",
+        "kind": {
+            "session": "Session",
+            "mesocycle": "Block"
+        },
+        "status": {
+            "open": "Open",
+            "accepted": "Accepted",
+            "discarded": "Discarded"
+        },
+        "untitled": {
+            "session": "Session plan · no request",
+            "mesocycle": "Training block · no request"
+        },
+        "filters": {
+            "label": "Filter by kind",
+            "all": "All",
+            "session": "Sessions",
+            "mesocycle": "Blocks"
+        },
+        "empty": {
+            "title": "Nothing here yet",
+            "body": "Every plan you ask the AI for is kept here — including the ones you discarded. Ask for one and it shows up.",
+            "designBlock": "Design a block with AI",
+            "fromSession": "Session plans start from a session →",
+            "noMatchesTitle": "No {kind} plans yet",
+            "noMatchesBody": "Nothing matches this filter. Clear it to see everything you've asked for.",
+            "clearFilter": "Clear filter"
+        },
+        "thread": {
+            "you": "You",
+            "label": "Conversation, {count} messages"
+        },
+        "detail": {
+            "breadcrumb": "← AI history",
+            "proposal": "The proposal",
+            "weeks": "{count, plural, one {# week} other {# weeks}}",
+            "viewSession": "View session",
+            "viewMesocycle": "View block",
+            "sessionGone": "The session this was for has been deleted.",
+            "readOnlyAccepted": "Accepted — its targets were written to your training. This conversation can't change.",
+            "readOnlyDiscarded": "Discarded — nothing was written. This conversation can't change.",
+            "notFoundTitle": "This plan isn't here",
+            "notFoundBody": "It doesn't exist, or it isn't yours.",
+            "backToHistory": "Back to AI history",
+            "continueInNewDraft": "Continue in a new draft",
+            "continuing": "Continuing…",
+            "resume": "Resume this draft"
+        },
+        "fork": {
+            "conflictTitle": "Replace the open draft?",
+            "conflictBody": "You already have an open draft for this. Continuing here replaces it.",
+            "conflictReassurance": "It stays in your history, and you can pick it up again later.",
+            "goToOpen": "Open that draft instead",
+            "replaceAndContinue": "Replace and continue",
+            "continuing": "Continuing…",
+            "cancel": "Cancel"
+        },
+        "previous": "Previous · {count} →"
     },
     "mesocycles": {
         "eyebrow": "Mesocycle",
@@ -370,6 +636,7 @@
         "startDate": "Start date",
         "notesPlaceholder": "Optional notes",
         "nameRequired": "A name is required.",
+        "fixErrors": "Fix the highlighted fields before saving.",
         "loadingMesocycle": "Loading mesocycle…",
         "loadError": "Couldn’t load this mesocycle.",
         "addWeek": "Add week",
@@ -497,6 +764,7 @@
         "createTemplate": "Create template",
         "loadingTemplate": "Loading template…",
         "nameRequired": "Give your template a name.",
+        "fixErrors": "Fix the highlighted fields before saving.",
         "removeExercise": "Remove {name}",
         "removeSet": "Remove set {index}",
         "intensityType": "Intensity type",
@@ -555,7 +823,44 @@
         "seriesVolume": "Volume",
         "seriesSets": "Sets",
         "seriesProjected": "Projected",
-        "weekOf": "Week of {date}"
+        "weekOf": "Week of {date}",
+        "trendAria": "{change} vs. the previous period",
+        "colSuccess": "Successful sets",
+        "colFailed": "Failed sets",
+        "execution": {
+            "title": "Execution",
+            "subtitle": "How well you're following your plan and completing your sets.",
+            "lastSession": "Last session",
+            "neverTrained": "No sessions logged",
+            "today": "today",
+            "daysAgo": "{days, plural, one {# day ago} other {# days ago}}",
+            "adherenceLabel": "Session adherence",
+            "adherenceDetail": "{done}/{due} due",
+            "nothingDue": "Nothing due yet",
+            "noPlanned": "No planned sessions in this range.",
+            "successLabel": "Successful sets",
+            "successDetail": "{ok}/{marked} marked",
+            "noMarkedSets": "no marked sets",
+            "complianceLabel": "Load vs. programmed",
+            "complianceDetail": "{sets, plural, one {# programmed set} other {# programmed sets}}",
+            "noProgrammedSets": "no programmed sets",
+            "complianceAria": {
+                "under": "{percent} of the programmed load — below plan",
+                "onPlan": "{percent} of the programmed load — on plan",
+                "over": "{percent} of the programmed load — above plan"
+            },
+            "frequencyLabel": "Sessions per week",
+            "adherenceChartTitle": "Adherence week by week",
+            "adherenceChartSubtitle": "Your planned sessions — where the misses fell.",
+            "noProgrammedWeeks": "No planned sessions in this range.",
+            "chartDone": "Completed",
+            "chartMissed": "Not done",
+            "loadChartTitle": "Programmed vs. executed",
+            "loadChartSubtitle": "Weekly load on sets that carried a plan, in completed sessions.",
+            "noProgrammedLoad": "No sessions with programmed loads in this range.",
+            "chartPlanned": "Programmed",
+            "chartActual": "Executed"
+        }
     },
     "profile": {
         "eyebrow": "Account",
@@ -563,7 +868,9 @@
         "nav": {
             "profile": "Profile",
             "security": "Account & security",
-            "ai": "AI"
+            "ai": "AI",
+            "plan": "Plan",
+            "billing": "Billing"
         },
         "title": "Your profile",
         "intro": "This shapes how analytics and coaching read your training. Everything here is optional except your display name.",
@@ -642,14 +949,20 @@
         "cantUndo": "This can’t be undone.",
         "typeToConfirm": "Type <handle></handle> to confirm.",
         "deleting": "Deleting…",
-        "permanentlyDelete": "Permanently delete"
+        "permanentlyDelete": "Permanently delete",
+        "plan": "Plan",
+        "billing": "Billing"
     },
     "admin": {
         "eyebrow": "Admin",
         "tabs": {
             "overview": "Overview",
             "exercises": "Exercises",
-            "users": "Users"
+            "users": "Users",
+            "plans": "Plans",
+            "subscriptions": "Subscriptions",
+            "billing": "Billing",
+            "contact": "Contact"
         },
         "overviewTitle": "Overview",
         "sectionUsers": "Users",
@@ -690,6 +1003,55 @@
         "editAria": "Edit {name}",
         "deleteAria": "Delete {name}",
         "countOf": "{shown} of {total}",
+        "detailBack": "Back to users",
+        "detailNotFound": "User not found.",
+        "detailAccount": "Account",
+        "detailProfile": "Profile",
+        "detailPlan": "Plan & limits",
+        "detailBilling": "Billing",
+        "detailCoaching": "Coaching",
+        "detailTraining": "Training",
+        "detailUserId": "User ID",
+        "detailUnits": "Units",
+        "detailPassword": "Password",
+        "detailPasswordYes": "Set",
+        "detailPasswordNo": "Google only",
+        "detailRegistered": "Registered",
+        "detailLastSeen": "Last seen",
+        "detailUpdated": "Updated",
+        "detailName": "Name",
+        "detailLocale": "Locale",
+        "detailNoProfile": "No profile yet.",
+        "detailAthletePlan": "Athlete plan",
+        "detailCoachPlan": "Coach plan",
+        "detailNoCoachPlan": "No coach plan.",
+        "detailMaxTemplates": "Templates",
+        "detailMaxMesocycles": "Mesocycles",
+        "detailMaxWorkouts": "Workouts",
+        "detailMaxAthletes": "Athletes",
+        "detailAi": "AI",
+        "detailPlanSessions": "Plan sessions",
+        "detailUnlimited": "Unlimited",
+        "detailYes": "Yes",
+        "detailNo": "No",
+        "detailMrr": "MRR",
+        "detailNoSubscriptions": "No subscriptions.",
+        "detailBillingUnavailable": "Billing data is unavailable.",
+        "detailPlanUnavailable": "Plan data is unavailable.",
+        "detailCoaches": "Coaches",
+        "detailAthletes": "Athletes",
+        "detailNoCoaches": "No coach.",
+        "detailNoAthletes": "No athletes.",
+        "detailAndMore": "+{count} more",
+        "detailCoachingUnavailable": "Coaching data is unavailable.",
+        "detailSessions": "Sessions",
+        "detailCompleted": "Completed",
+        "detailSets": "Sets",
+        "detailExercises": "Exercises",
+        "detailLast30": "Last 30 days",
+        "detailLastSession": "Last session",
+        "detailNever": "Never",
+        "detailTrainingUnavailable": "Training data is unavailable.",
         "editExercise": "Edit exercise",
         "nameEn": "Name (English)",
         "nameEs": "Name (Spanish)",
@@ -705,12 +1067,14 @@
         "searchEmail": "Search email…",
         "filterRole": "Role",
         "filterStatus": "Status",
+        "filterPlan": "Plan",
         "adminsOnly": "Admins only",
         "statusActive": "Active",
         "statusDisabled": "Disabled",
         "statusDeleted": "Deleted",
         "colUser": "User",
         "colRole": "Role",
+        "colPlan": "Plan",
         "colStatus": "Status",
         "colAdmin": "Admin",
         "noUsersMatch": "No users match these filters.",
@@ -731,7 +1095,218 @@
         "disableBody": "{who} will be signed out and unable to log in until re-enabled.",
         "enableBody": "{who} will be able to log in again.",
         "disable": "Disable",
-        "enable": "Re-enable"
+        "enable": "Re-enable",
+        "sectionBilling": "Billing",
+        "billingActive": "Active subscriptions",
+        "billingTrialing": "In trial",
+        "billingPastDue": "Payment failing",
+        "billingCanceling": "Cancelling",
+        "billingMrr": "MRR",
+        "plansTitle": "Plans",
+        "plansEmpty": "No plans in this catalog yet.",
+        "planCreate": "New plan",
+        "planCreateTitle": "New plan",
+        "planEditTitle": "Edit plan",
+        "planEdit": "Edit",
+        "planMoveUp": "Move up",
+        "planMoveDown": "Move down",
+        "planFree": "Free",
+        "planStatus": "Status",
+        "planName": "Name",
+        "planSlug": "Slug",
+        "planSlugHint": "Stable public id (e.g. athlete-pro). It cannot be changed later.",
+        "planDescription": "Description",
+        "planEntitlements": "What it includes",
+        "planEntitlementsLive": "Subscribers of this plan get these changes immediately.",
+        "planTabInfo": "Plan",
+        "planTabTranslations": "Translations",
+        "planTabOffer": "Offer",
+        "planTranslationsHint": "Name & description in other languages. Leave blank to use the Plan-tab (default) text.",
+        "localeName": {
+            "es": "Spanish"
+        },
+        "planCreateSubmit": "Create plan",
+        "planCreatePricesNext": "You'll set prices right after creating the plan.",
+        "planSaved": "Saved",
+        "planDone": "Done",
+        "planPrices": "Prices",
+        "planPricesTitle": "Prices — {name}",
+        "planPricesHint": "A price is never edited: publishing a new one withdraws the current version, and the subscriptions signed on it keep it.",
+        "planPriceInterval": "Interval",
+        "planPriceCurrency": "Currency",
+        "planPriceAmount": "Amount",
+        "planPriceAdd": "Publish price",
+        "planPricesSave": "Save prices",
+        "planPriceInvalid": "Enter a valid amount above zero.",
+        "planBaseInvalid": "Fill in the name and a valid slug first.",
+        "planNameRequired": "Enter a plan name.",
+        "planSlugInvalid": "Use a lowercase slug like athlete-pro (min. 3 characters).",
+        "planFreeConfirm": "Free plan — no prices",
+        "planFreeLocked": "A plan's free status is set when it's created.",
+        "planHighlighted": "Recommended plan",
+        "planHighlightedHint": "Adds a “Recommended” badge and highlights this plan on the pricing cards. Use it on one plan per audience.",
+        "planNeedsPrice": "Add at least one price, or tick “Free plan”.",
+        "planPriceReplaces": "This withdraws the current {amount}.",
+        "planPriceHistory": "Withdrawn versions",
+        "planPriceWithdraw": "Withdraw",
+        "planPriceWithdrawTitle": "Withdraw this price?",
+        "planPriceWithdrawBody": "It stops being sold. The subscriptions already on it keep running — they paid for it.",
+        "planNoPrice": "No price on sale.",
+        "planNoPriceFree": "Free plan — no price.",
+        "offerDefaultName": "Launch offer",
+        "offerLive": "Live offer",
+        "offerNone": "No offer on this plan yet.",
+        "offerTrial": "{days} days free",
+        "offerDiscount": "{percent}% off to start",
+        "offerHint": "A free trial and/or a discounted opening phase for new signups. Saving replaces the plan's live offer. A trial can be used once per account.",
+        "offerName": "Internal name",
+        "offerNameHint": "For your reference only — buyers never see it.",
+        "offerMessage": "Promo line",
+        "offerMessageHint": "What buyers see on the pricing card. Leave blank to auto-generate from the terms.",
+        "offerMessagePlaceholder": "7 days free, then 9.99 €",
+        "offerTrialDays": "Trial days",
+        "offerTrialDaysHint": "Free days before the first charge (1–365). Leave blank for no trial.",
+        "offerDiscountTitle": "Intro discount (optional)",
+        "offerDiscountHint": "A percentage off the first N billing cycles. Fill both fields or neither.",
+        "offerDiscountPercent": "% off",
+        "offerDiscountCycles": "Cycles",
+        "offerDiscountIncomplete": "Set both the discount percentage and the number of cycles.",
+        "offerStartsAt": "Starts",
+        "offerStartsAtHint": "Blank = now.",
+        "offerEndsAt": "Ends",
+        "offerEndsAtHint": "Blank = open-ended.",
+        "offerSyncHint": "After saving, re-sync the plan to each gateway so the discount is created there.",
+        "offerNeedsSomething": "Add a trial, an intro discount, or both.",
+        "offerSave": "Save offer",
+        "offerRetire": "Retire offer",
+        "offerRetireTitle": "Retire this offer?",
+        "offerRetireBody": "New signups stop getting it. Anyone already on it keeps their terms.",
+        "entitlementUnlimited": "Unlimited",
+        "subscriptionsTitle": "Subscriptions",
+        "subscriptionsEmpty": "No subscriptions match.",
+        "subscriptionsSearch": "Exact email or handle",
+        "subscriptionsTotal": "{total} subscriptions",
+        "subscriptionStatus": "Status",
+        "subscriptionGateway": "Gateway",
+        "filterAnyStatus": "Any status",
+        "filterAnyGateway": "Any gateway",
+        "subscriptionNoCharge": "no charge",
+        "subscriptionRenewsOn": "renews",
+        "subscriptionEndsOn": "ends",
+        "subscriptionRevoke": "Revoke",
+        "subscriptionRevokeTitle": "End this grant?",
+        "subscriptionRevokeBody": "The user drops back to the free plan straight away.",
+        "subscriptionAssign": "Grant a plan",
+        "subscriptionAssignTitle": "Grant a plan",
+        "subscriptionAssignHint": "A comp: no gateway, nothing charged. It behaves like any other subscription.",
+        "subscriptionAssignUser": "User email",
+        "subscriptionAssignFound": "Granting to @{handle}",
+        "subscriptionAssignNotFound": "No account with that email.",
+        "subscriptionAssignPlan": "Plan",
+        "subscriptionAssignPlanPlaceholder": "Pick a plan",
+        "subscriptionAssignUntil": "Until",
+        "subscriptionAssignUntilHint": "Leave empty for a year.",
+        "audience": {
+            "athlete": "Athlete",
+            "coach": "Coach"
+        },
+        "planStatusValue": {
+            "draft": "Draft",
+            "active": "Active",
+            "archived": "Archived"
+        },
+        "subscriptionStatusValue": {
+            "incomplete": "Incomplete",
+            "trialing": "Trial",
+            "active": "Active",
+            "past_due": "Past due",
+            "canceled": "Cancelled",
+            "expired": "Expired"
+        },
+        "interval": {
+            "month": "month",
+            "quarter": "quarter",
+            "semester": "semester",
+            "year": "year"
+        },
+        "entitlements": {
+            "templates": "Templates",
+            "mesocycles": "Training blocks",
+            "maxTemplates": "Templates",
+            "maxMesocycles": "Training blocks",
+            "maxWorkouts": "Workouts",
+            "ai": "AI assistant",
+            "planSessions": "Program for athletes",
+            "maxAthletes": "Athletes",
+            "athlete": "Their own training"
+        },
+        "billingTitle": "Billing",
+        "billingGrafana": "Open the billing dashboard in Grafana",
+        "gatewayHealth": "Payment integrations",
+        "gatewayConfigured": "configured",
+        "gatewayNotConfigured": "no keys",
+        "gatewayNotConfiguredBody": "No credentials in this environment, so it is not offered at checkout.",
+        "gatewaySyncedPlans": "Plans published",
+        "gatewayLastWebhook": "Last webhook",
+        "gatewayNever": "never",
+        "gatewayFailedWebhooks": "Failed webhooks",
+        "gatewaySilent": "No webhook in hours. Providers send events constantly — a silence this long usually means the endpoint is unreachable (URL, TLS or proxy).",
+        "driftTitle": "Reconciliation",
+        "driftHint": "Asks each gateway what it thinks is live and compares. A webhook we never received bills people wrongly for weeks in silence — this is what sees it.",
+        "driftCheck": "Check now",
+        "driftChecking": "Checking…",
+        "driftClean": "{gateway}: our books and theirs agree.",
+        "driftFound": "{gateway}: {count} disagreements. Replay the failed events below, or investigate.",
+        "driftNoSignal": "{gateway}: could not be asked — no signal, which is not the same as no drift.",
+        "driftMissing": "Live at the gateway, missing here (someone is paying for nothing):",
+        "driftStale": "Live here, gone at the gateway (we are granting a plan nobody pays for):",
+        "webhooksTitle": "Webhook journal",
+        "webhooksSearchEventId": "Search by event id",
+        "webhooksSearchType": "Event type",
+        "webhookStatusValue": {
+            "received": "Received",
+            "processed": "Processed",
+            "failed": "Failed"
+        },
+        "webhooksNone": "No webhooks yet.",
+        "webhooksNoneFiltered": "No webhooks match these filters.",
+        "webhooksTotal": "{total} events",
+        "webhookRetry": "Replay",
+        "planSync": "Publish to {gateway}",
+        "planSynced": "{gateway} ✓ — re-publish",
+        "planSyncing": "Publishing…",
+        "cancel": "Cancel",
+        "save": "Save",
+        "support": {
+            "title": "Contact & support",
+            "searchPlaceholder": "Search by email or handle…",
+            "statusLabel": "Status",
+            "categoryLabel": "Category",
+            "empty": "No tickets match these filters.",
+            "total": "{total} tickets",
+            "messages": "{count, plural, one {# message} other {# messages}}",
+            "status": {
+                "open": "Open",
+                "closed": "Closed"
+            },
+            "categories": {
+                "general": "General",
+                "billing": "Billing",
+                "bug": "Bug",
+                "account": "Account",
+                "feature": "Feature",
+                "other": "Other"
+            },
+            "back": "Back to inbox",
+            "notFound": "This ticket does not exist.",
+            "linkedUser": "account",
+            "noAccount": "No linked account",
+            "openedOn": "Opened {date}",
+            "close": "Close ticket",
+            "reopen": "Reopen ticket",
+            "fromRequester": "From requester",
+            "fromStaff": "Staff reply"
+        }
     },
     "serverErrors": {
         "generic": "Something went wrong. Please try again.",
@@ -793,7 +1368,35 @@
         "AI_MESOCYCLE_DRAFT_NOT_OPEN": "That proposal has already been resolved.",
         "INVALID_AI_MESOCYCLE_RESPONSE": "The model did not return a usable training week. Try again.",
         "INVALID_MESOCYCLE_DRAFT_PROPOSAL": "The proposed training week is not usable. Try again.",
-        "AI_DRAFT_THREAD_EXHAUSTED": "This proposal has been refined as many times as it can be. Generate a new one."
+        "AI_DRAFT_THREAD_EXHAUSTED": "This proposal has been refined as many times as it can be. Generate a new one.",
+        "FEATURE_NOT_IN_PLAN": "Your plan does not include this feature.",
+        "PLAN_LIMIT_REACHED": "You have reached the limit of your plan.",
+        "PLAN_NOT_FOUND": "Plan not found.",
+        "PLAN_SLUG_TAKEN": "Another plan already uses that slug.",
+        "LAST_FREE_PLAN": "That would leave the catalog with no free plan.",
+        "FREE_PLAN_EXISTS": "That catalog already has an active free plan.",
+        "FREE_PLAN_MISSING": "The catalog has no free plan. Contact an admin.",
+        "INVALID_PLAN_ENTITLEMENTS": "Those features do not fit this kind of plan.",
+        "INVALID_PLAN_SLUG": "A slug is 3–40 lowercase letters, digits or hyphens.",
+        "INVALID_PLAN_PRICE": "The amount must be greater than zero.",
+        "PLAN_PRICE_NOT_FOUND": "Price not found.",
+        "PLAN_NOT_AVAILABLE": "That plan is not available.",
+        "PLAN_AUDIENCE_MISMATCH": "That plan is for coaches. Become a coach first — it's free — and you can subscribe to it.",
+        "SUBSCRIPTION_ALREADY_ACTIVE": "This user already has an active subscription.",
+        "SUBSCRIPTION_NOT_FOUND": "Subscription not found.",
+        "NOT_A_MANUAL_SUBSCRIPTION": "This subscription is billed by a payment gateway; end it there.",
+        "GATEWAY_NOT_CONFIGURED": "Payments aren’t available right now. Try again later.",
+        "GATEWAY_REQUEST_FAILED": "The payment provider couldn’t complete the request. Try again.",
+        "NO_ACTIVE_SUBSCRIPTION": "You don’t have an active subscription.",
+        "NOT_A_GATEWAY_SUBSCRIPTION": "This plan was granted by an admin; there’s nothing to manage here.",
+        "SAME_PLAN": "You’re already on that plan.",
+        "OFFER_NOT_REDEEMABLE": "That offer is no longer available.",
+        "PRICE_NOT_SYNCED": "That price isn’t on sale yet. Try again in a moment.",
+        "PLAN_SYNC_FAILED": "The plan couldn’t be published to the payment provider.",
+        "INVALID_PLAN_OFFER": "That offer doesn’t make sense.",
+        "PLAN_OFFER_NOT_FOUND": "Offer not found.",
+        "RESUME_NOT_SUPPORTED": "This provider can’t undo a cancellation. Subscribe again to come back.",
+        "WEBHOOK_EVENT_NOT_FOUND": "That webhook event no longer exists."
     },
     "ai": {
         "eyebrow": "Provider",
@@ -901,5 +1504,645 @@
         "weekBody": "Design this week with AI, on the days it already trains. It replaces the week; you can edit it after.",
         "weekDraftBody": "A proposed week. Use it to fill this week, then edit it like any other.",
         "useWeek": "Use this week"
+    },
+    "billing": {
+        "checkoutSuccess": "Payment received — we’re finishing setting up your plan. This page updates itself.",
+        "checkoutCancelled": "Checkout cancelled. Nothing was charged.",
+        "activatedTitle": "Plan activated!",
+        "activatedBody": "Your {plan} plan is now active. Enjoy!",
+        "activatedClose": "Got it",
+        "tabs": {
+            "athlete": "Training",
+            "coach": "Coaching"
+        },
+        "coachPlanIncludes": "Your coaching plan",
+        "source": {
+            "stripe": "Stripe",
+            "paypal": "PayPal",
+            "manual": "Manual"
+        },
+        "currentPlan": "Your plan",
+        "freePlan": "Free",
+        "freePlanBody": "You’re on the free plan. Upgrade any time.",
+        "grantedByAdmin": "Granted by an admin — nothing is charged",
+        "renewsOn": "renews on {date}",
+        "accessUntil": "you keep it until {date}",
+        "pendingDowngrade": "You move to {plan} on {date}.",
+        "pastDue": "Your last payment failed. We keep your plan while your bank retries — update your card to be safe.",
+        "cancel": "Cancel plan",
+        "cancelTitle": "Cancel your plan?",
+        "cancelBody": "It stops renewing, and you keep everything until {date}. Nothing is charged again.",
+        "cancelConfirm": "Cancel plan",
+        "keepPlan": "Keep it",
+        "resume": "Resume plan",
+        "choosePlan": "Plans",
+        "free": "Free",
+        "plansError": "Couldn’t load the plans. Check your connection and try again.",
+        "plansRetry": "Try again",
+        "plansEmpty": "No plans are available right now. Please try again later.",
+        "planGroupLabel": "Choose a plan",
+        "recommended": "Recommended",
+        "annualSave": "Save {percent}%",
+        "offerEndsIn": "Ends in {days}d",
+        "priceUnavailable": "—",
+        "subscribe": "Subscribe",
+        "switchToPlan": "Switch to this plan",
+        "yourPlan": "Your current plan",
+        "noGateway": "Not on sale right now.",
+        "offerTrial": "{days} days free",
+        "offerDiscount": "{percent}% off to start",
+        "paymentMethod": "Payment method",
+        "paymentMethodBody": "Your card and receipts live with our payment provider.",
+        "openPortal": "Manage payment method",
+        "invoices": "Invoices",
+        "noInvoices": "No invoices yet.",
+        "invoiceNoNumber": "Invoice",
+        "viewInvoice": "View",
+        "interval": {
+            "month": "month",
+            "quarter": "quarter",
+            "semester": "semester",
+            "year": "year"
+        },
+        "invoiceStatus": {
+            "draft": "Draft",
+            "open": "Pending",
+            "paid": "Paid",
+            "uncollectible": "Uncollectible",
+            "void": "Void"
+        },
+        "usage": {
+            "title": "Your usage",
+            "workouts": "Workouts",
+            "templates": "Templates",
+            "mesocycles": "Training blocks",
+            "ofLimit": "{used} / {limit}",
+            "unlimited": "{used} · unlimited"
+        },
+        "features": {
+            "templates": "Workout templates",
+            "mesocycles": "Training blocks",
+            "ai": "AI assistant",
+            "planSessions": "Program for your athletes",
+            "athletes": "Up to {count} athletes",
+            "athletesUnlimited": "Unlimited athletes",
+            "workoutsUnlimited": "Unlimited workout logging",
+            "workoutsLimited": "{count, plural, one {# logged workout} other {# logged workouts}}",
+            "templatesUnlimited": "Unlimited workout templates",
+            "templatesLimited": "{count, plural, one {# workout template} other {# workout templates}}",
+            "mesocyclesUnlimited": "Unlimited mesocycle planning",
+            "mesocyclesLimited": "{count, plural, one {# mesocycle} other {# mesocycles}}"
+        },
+        "gate": {
+            "cta": "See plans",
+            "featureGeneric": "Your plan doesn’t include this.",
+            "limitReached": {
+                "athletes": "You’ve reached your plan’s limit of {limit} athletes.",
+                "templates": "You’ve reached your plan’s limit of {limit} workout templates.",
+                "mesocycles": "You’ve reached your plan’s limit of {limit} training blocks.",
+                "workouts": "You’ve reached your plan’s limit of {limit} logged workouts.",
+                "generic": "You’ve reached your plan’s limit."
+            },
+            "feature": {
+                "ai": "The AI assistant isn’t part of your plan yet.",
+                "templates": "Workout templates aren’t part of your plan yet.",
+                "mesocycles": "Training blocks aren’t part of your plan yet.",
+                "plan_sessions": "Programming for athletes isn’t part of your plan yet."
+            }
+        },
+        "subscribeWith": "Subscribe with {gateway}",
+        "switchWith": "Switch with {gateway}",
+        "cancelBodyTerminal": "It ends now and you keep everything until {date}. PayPal cannot undo a cancellation — to come back you would subscribe again.",
+        "gateway": {
+            "stripe": "card",
+            "paypal": "PayPal"
+        }
+    },
+    "landing": {
+        "nav": {
+            "features": "Features",
+            "analytics": "Analytics",
+            "coaching": "Coaching",
+            "pricing": "Pricing",
+            "login": "Log in",
+            "startFree": "Start free",
+            "openMenu": "Open menu",
+            "closeMenu": "Close menu"
+        },
+        "hero": {
+            "eyebrow": "For people who take the bar seriously",
+            "title": "Train like it’s <em>logged.</em>",
+            "subtitle": "powerlog is a precision instrument for strength. Log every set, watch your estimated 1RM and PRs move in real time, and read the progress that’s actually there — not the story you tell yourself.",
+            "ctaPrimary": "Start training free",
+            "ctaSecondary": "See the data",
+            "noCard": "Free forever for solo lifters · No card required",
+            "panel": {
+                "lift": "Back Squat",
+                "week": "Week 4 · Heavy single",
+                "completed": "Completed",
+                "est1rm": "Est. 1RM · 12 wk",
+                "newPr": "New squat PR",
+                "streak": "Streak",
+                "streakValue": "14 weeks"
+            }
+        },
+        "proof": {
+            "setsLogged": "Sets logged",
+            "prsDetected": "PRs detected",
+            "categories": "Lift categories",
+            "units": "Your units, always",
+            "terms": [
+                "Squat",
+                "Bench",
+                "Deadlift",
+                "Overhead Press",
+                "Row",
+                "RPE",
+                "RIR",
+                "e1RM",
+                "Block Periodization",
+                "Volume",
+                "Top Sets",
+                "Back-off"
+            ]
+        },
+        "features": {
+            "eyebrow": "The instrument",
+            "title": "Everything the bar deserves. Nothing it doesn’t.",
+            "subtitle": "A fixed exercise catalog, a clean log, and the math that turns reps into a verdict.",
+            "planned": "Planned",
+            "logged": "Logged",
+            "bestE1rm": "Best e1RM",
+            "planActual": {
+                "title": "Plan vs. actual, every set",
+                "body": "Program targets — weight, reps, RPE or RIR — then log what really happened beside them. powerlog keeps intent and reality on the same line, so honesty is the default."
+            },
+            "e1rm": {
+                "title": "e1RM & automatic PRs",
+                "body": "Epley estimates from your real top sets, with personal records surfaced the moment you hit them."
+            },
+            "honest": {
+                "title": "Analytics that don’t lie",
+                "body": "Volume, intensity and 1RM trends per lift — grouped straight from the database, scoped to you."
+            },
+            "units": {
+                "title": "kg or lb, canonical",
+                "body": "Log in either unit. Weights are stored canonically and shown in your preference, never rounded wrong."
+            },
+            "history": {
+                "title": "History & streaks",
+                "body": "Every session, keyset-paginated and fast — with the streaks that keep you under the bar."
+            },
+            "roles": {
+                "title": "Built for coaches and athletes",
+                "body": "Coaches plan sessions straight into an athlete’s log; athletes train and record the real numbers. One link, two views, zero spreadsheets."
+            }
+        },
+        "analytics": {
+            "eyebrow": "Read your progress",
+            "title": "The truth, grouped by lift.",
+            "body": "Total volume, heaviest weight, best e1RM and PRs — computed in a single pass over your logged sets and scoped to you. Filter by date, compare blocks, and let the trend make the call on whether the program is working.",
+            "bullets": [
+                "Per-exercise volume & intensity",
+                "Best estimated 1RM and PR history",
+                "Date-range and block comparisons"
+            ],
+            "weeklyVolume": "Weekly volume · tonnes",
+            "badge": "+15% vs. block 1",
+            "wkFirst": "Wk 1",
+            "wkLast": "Wk 12"
+        },
+        "coaching": {
+            "eyebrow": "Coach & athlete",
+            "title": "Two roles. One source of truth.",
+            "body": "Invite by username, accept in a tap, and you’re linked. Coaches program; athletes execute. Everyone sees the same numbers — no exported sheets, no version drift.",
+            "coach": {
+                "tag": "The coach",
+                "title": "Plans the work",
+                "body": "Build the session straight into your athlete’s log — authorized only for the lifters you actually coach.",
+                "lines": ["Invite athlete by @username", "Assign a planned session", "Set targets per set"]
+            },
+            "athlete": {
+                "tag": "The athlete",
+                "title": "Logs the truth",
+                "body": "Open what your coach planned, train it, and record what actually moved. The history is yours forever.",
+                "lines": ["See planned sessions in the bell", "Log the real weight × reps", "PRs surface automatically"]
+            }
+        },
+        "cta": {
+            "title": "The bar doesn’t care how you feel. <em>Log it.</em>",
+            "body": "Join the lifters who replaced the notes app with an instrument. Free to start, yours to keep.",
+            "ctaPrimary": "Start training free",
+            "ctaSecondary": "Compare plans"
+        },
+        "pricing": {
+            "eyebrow": "Pricing",
+            "title": "Free to lift. Pay to go further.",
+            "body": "Logging, PRs and progress are free, forever. The paid plans add the work that saves you time — mesocycle planning, the AI assistant, and coaching a roster.",
+            "fallbackCta": "Create your free account"
+        },
+        "plans": {
+            "audienceAthlete": "For lifters",
+            "audienceCoach": "For coaches",
+            "monthly": "Monthly",
+            "yearly": "Yearly",
+            "yearlySave": "Yearly · save {percent}%",
+            "mostPopular": "Most popular",
+            "free": "Free",
+            "forever": "forever",
+            "perMonth": "/month",
+            "perYear": "/year",
+            "notSoldMonthly": "Not sold monthly in {currency}",
+            "notSoldYearly": "Not sold yearly in {currency}",
+            "billedYearly": "{price} per month, billed yearly",
+            "featureUnlimited": "Unlimited sessions, sets & PRs",
+            "featureTemplates": "Reusable workout templates",
+            "featureMesocycles": "Mesocycle planning",
+            "featureWorkoutsUnlimited": "Unlimited workout logging",
+            "featureWorkoutsLimited": "{count, plural, one {# logged workout} other {# logged workouts}}",
+            "featureTemplatesUnlimited": "Unlimited workout templates",
+            "featureTemplatesLimited": "{count, plural, one {# workout template} other {# workout templates}}",
+            "featureMesocyclesUnlimited": "Unlimited mesocycle planning",
+            "featureMesocyclesLimited": "{count, plural, one {# mesocycle} other {# mesocycles}}",
+            "featureAi": "AI assistant (bring your own key)",
+            "featurePlanSessions": "Plan sessions into your athletes’ logs",
+            "rosterUnlimited": "Unlimited athletes",
+            "rosterLimited": "{count, plural, one {Up to # athlete} other {Up to # athletes}}",
+            "offerTrial": "{days, plural, one {# day free} other {# days free}}",
+            "offerIntro": "{percent}% off your first {cycles, plural, one {period} other {# periods}}",
+            "ctaStartWith": "Start with {plan}",
+            "ctaChoose": "Choose {plan}",
+            "ctaStartFree": "Start free"
+        },
+        "footer": {
+            "tagline": "A precision instrument for serious lifters. Train like it’s logged.",
+            "colProduct": "Product",
+            "colCompany": "Company",
+            "colLegal": "Legal",
+            "product": {
+                "features": "Features",
+                "analytics": "Analytics",
+                "coaching": "Coaching",
+                "pricing": "Pricing"
+            },
+            "company": {
+                "contact": "Contact",
+                "faq": "FAQ"
+            },
+            "legal": {
+                "privacy": "Privacy",
+                "terms": "Terms",
+                "cookies": "Cookies"
+            },
+            "builtForBar": "Built for the bar"
+        }
+    },
+    "legal": {
+        "updatedLabel": "Last updated",
+        "reviewNotice": "This is a general template and does not constitute legal advice. Have it reviewed by a qualified professional before publishing.",
+        "privacy": {
+            "title": "Privacy Policy",
+            "updated": "2026-07-23",
+            "intro": "This Privacy Policy explains how powerlog collects, uses and protects your personal data when you use our website and application. We process your data in accordance with the EU General Data Protection Regulation (GDPR) and Spanish Organic Law 3/2018 (LOPDGDD).",
+            "sections": [
+                {
+                    "heading": "Data controller",
+                    "body": [
+                        "The controller of your personal data is Rafa Garcia, with registered address at Cordoba, Spain, Spain. For any question about this policy or your data, write to us at {email}."
+                    ]
+                },
+                {
+                    "heading": "Data we collect",
+                    "body": ["We collect the following categories of personal data:"],
+                    "bullets": [
+                        "Account data: email address, display name and an encrypted (hashed) password.",
+                        "Profile data: avatar image, preferred units, language and role (athlete or coach).",
+                        "Training data: workouts, sessions, exercises, sets, weights, RPE and related notes you log.",
+                        "Billing data: your subscription plan and payment status. Card details are handled directly by our payment providers (Stripe and PayPal) and are never stored on our servers.",
+                        "Technical and usage data: IP address, device and browser information, pages visited and product interactions, collected for analytics, performance and security."
+                    ]
+                },
+                {
+                    "heading": "Purposes and legal basis",
+                    "body": [
+                        "We process your data for the following purposes and on the following legal bases under Article 6 GDPR:"
+                    ],
+                    "bullets": [
+                        "Providing the service and managing your account — performance of the contract with you.",
+                        "Processing subscriptions and payments — performance of the contract and compliance with legal obligations.",
+                        "Product analytics and performance monitoring — your consent and/or our legitimate interest in improving the service.",
+                        "Security, fraud prevention and abuse detection — our legitimate interest and legal obligations.",
+                        "Service communications (e.g. email verification, billing notices) — performance of the contract."
+                    ]
+                },
+                {
+                    "heading": "Recipients and processors",
+                    "body": [
+                        "We share data only with providers that process it on our behalf under a data processing agreement:"
+                    ],
+                    "bullets": [
+                        "Payment processing: Stripe and PayPal.",
+                        "Transactional email: our email delivery provider.",
+                        "Hosting and infrastructure: our cloud and server providers.",
+                        "Analytics and telemetry: our self-hosted observability stack and product-analytics provider."
+                    ],
+                    "note": "Some providers may process data outside the European Economic Area. In such cases, transfers are protected by appropriate safeguards such as the European Commission's Standard Contractual Clauses."
+                },
+                {
+                    "heading": "Data retention",
+                    "body": [
+                        "We keep your personal data for as long as your account is active. When you delete your account, we erase or anonymise your data within a reasonable period, except where we must retain certain records (e.g. invoices) to comply with legal obligations."
+                    ]
+                },
+                {
+                    "heading": "Your rights",
+                    "body": ["You may exercise the following rights at any time by contacting us at {email}:"],
+                    "bullets": [
+                        "Access to your data.",
+                        "Rectification of inaccurate data.",
+                        "Erasure ('right to be forgotten').",
+                        "Restriction of processing.",
+                        "Data portability.",
+                        "Objection to processing based on legitimate interest."
+                    ],
+                    "note": "You also have the right to lodge a complaint with the Spanish Data Protection Agency (AEPD, www.aepd.es) if you believe your rights have not been respected."
+                },
+                {
+                    "heading": "Security",
+                    "body": [
+                        "We apply technical and organisational measures to protect your data, including encryption in transit, hashed passwords and tokens, signed authentication tokens and strict access controls."
+                    ]
+                },
+                {
+                    "heading": "Minors",
+                    "body": [
+                        "The service is not directed to children under 14. We do not knowingly collect data from minors below the age required by applicable law."
+                    ]
+                },
+                {
+                    "heading": "Changes to this policy",
+                    "body": [
+                        "We may update this policy from time to time. Material changes will be announced through the service, and the 'last updated' date above will reflect the latest revision."
+                    ]
+                }
+            ]
+        },
+        "terms": {
+            "title": "Terms of Service",
+            "updated": "2026-07-23",
+            "intro": "These Terms of Service govern your access to and use of powerlog. By creating an account or using the service, you agree to these terms.",
+            "sections": [
+                {
+                    "heading": "Acceptance of the terms",
+                    "body": [
+                        "By accessing or using powerlog you accept these terms in full. If you do not agree with them, you must not use the service."
+                    ]
+                },
+                {
+                    "heading": "The service",
+                    "body": [
+                        "powerlog is a training tracker for lifters and coaches. It lets you log workouts, plan sessions and mesocycles, review analytics and, on paid plans, use AI-assisted planning. We may add, change or remove features over time."
+                    ]
+                },
+                {
+                    "heading": "Your account",
+                    "body": [
+                        "You must provide accurate information and keep your credentials secure. You are responsible for all activity under your account. Notify us immediately of any unauthorised use."
+                    ]
+                },
+                {
+                    "heading": "Plans, subscriptions and payments",
+                    "body": ["Some features require a paid subscription. By subscribing you agree that:"],
+                    "bullets": [
+                        "Subscriptions renew automatically at the end of each billing period until cancelled.",
+                        "You can cancel at any time and keep access until the end of the period you have already paid for.",
+                        "Upgrades take effect immediately with a prorated charge; downgrades take effect at the end of the current period.",
+                        "Payments are processed by Stripe and PayPal; card data is handled by them, not by us.",
+                        "Subscriptions are non-refundable, except where required by applicable law."
+                    ]
+                },
+                {
+                    "heading": "Coach and athlete features",
+                    "body": [
+                        "A coach and an athlete can link with each other. When linked, the coach may program sessions and mesocycles and review the athlete’s training. Either party can end the link. The athlete always retains ownership of their own data."
+                    ]
+                },
+                {
+                    "heading": "Acceptable use",
+                    "body": ["You agree not to:"],
+                    "bullets": [
+                        "Use the service for any unlawful purpose or in breach of these terms.",
+                        "Attempt to access accounts or data that are not yours.",
+                        "Disrupt, overload or attempt to compromise the security of the service.",
+                        "Copy, resell or exploit the service without our written permission."
+                    ]
+                },
+                {
+                    "heading": "Your content",
+                    "body": [
+                        "You own the training data and content you create. You grant us the limited licence needed to host, process and display that content solely to provide the service to you (and to any coach you link with)."
+                    ]
+                },
+                {
+                    "heading": "Health disclaimer",
+                    "body": [
+                        "powerlog is a tracking and planning tool, not medical, health or professional coaching advice. Strength training carries inherent risks. Consult a qualified professional before starting or changing a training programme. You train at your own risk and are solely responsible for your health and safety."
+                    ]
+                },
+                {
+                    "heading": "Intellectual property",
+                    "body": [
+                        "The software, design, trademarks and content of powerlog (other than your own data) are owned by us or our licensors and are protected by intellectual-property law."
+                    ]
+                },
+                {
+                    "heading": "Disclaimers and limitation of liability",
+                    "body": [
+                        "The service is provided “as is” and “as available”. To the maximum extent permitted by law, we exclude implied warranties and are not liable for indirect or consequential damages. Nothing in these terms limits liability that cannot be limited under applicable law."
+                    ]
+                },
+                {
+                    "heading": "Suspension and termination",
+                    "body": [
+                        "We may suspend or terminate your access if you breach these terms or use the service in a way that harms others or us. You may stop using the service and delete your account at any time."
+                    ]
+                },
+                {
+                    "heading": "Changes to the terms",
+                    "body": [
+                        "We may update these terms. Material changes will be announced through the service; continued use after they take effect means you accept the updated terms."
+                    ]
+                },
+                {
+                    "heading": "Governing law and jurisdiction",
+                    "body": [
+                        "These terms are governed by Spanish law. Any dispute will be subject to the competent courts of Spain, without prejudice to the mandatory rights of consumers."
+                    ]
+                },
+                {
+                    "heading": "Contact",
+                    "body": ["For any question about these terms, write to us at {email}."]
+                }
+            ]
+        },
+        "cookies": {
+            "title": "Cookie Policy",
+            "updated": "2026-07-23",
+            "intro": "This Cookie Policy explains what cookies and similar technologies powerlog uses, why we use them and how you can manage them. It complements our Privacy Policy.",
+            "sections": [
+                {
+                    "heading": "What are cookies",
+                    "body": [
+                        "Cookies are small files that a website stores on your device. We also use similar technologies (such as local storage) for the same purposes. They let the service work correctly, remember your preferences and understand how the product is used."
+                    ]
+                },
+                {
+                    "heading": "Cookies we use",
+                    "body": ["We use the following categories:"],
+                    "table": {
+                        "head": ["Cookie / technology", "Purpose", "Type"],
+                        "rows": [
+                            [
+                                "Authentication (access & refresh tokens)",
+                                "Keep you signed in securely",
+                                "Strictly necessary"
+                            ],
+                            ["NEXT_LOCALE", "Remember your language preference", "Preferences"],
+                            [
+                                "Analytics & performance (Grafana Faro)",
+                                "Understand usage and improve the product",
+                                "Analytics (consent)"
+                            ]
+                        ]
+                    }
+                },
+                {
+                    "heading": "Legal basis",
+                    "body": [
+                        "Strictly necessary and preference cookies are exempt from consent under Article 22.2 of the Spanish LSSI-CE, because they are required to provide the service you request. Analytics cookies are only used with your consent, which you can give or withdraw at any time."
+                    ]
+                },
+                {
+                    "heading": "Managing cookies",
+                    "body": [
+                        "You can accept or reject non-essential cookies and change your choice at any time. You can also block or delete cookies through your browser settings, though disabling strictly necessary cookies may prevent parts of the service from working."
+                    ]
+                },
+                {
+                    "heading": "Third parties",
+                    "body": [
+                        "Our payment and analytics providers may set their own cookies when their functionality is used. Their processing is governed by their respective policies."
+                    ]
+                },
+                {
+                    "heading": "Changes",
+                    "body": [
+                        "We may update this policy as our use of cookies changes. The “last updated” date above reflects the latest revision."
+                    ]
+                }
+            ]
+        },
+        "faq": {
+            "title": "Frequently Asked Questions",
+            "intro": "Answers to the most common questions about powerlog. Can't find what you're looking for? Reach out at {email}.",
+            "groups": [
+                {
+                    "title": "Getting started",
+                    "items": [
+                        {
+                            "q": "Is powerlog free?",
+                            "a": "Yes. You can track your training on the free plan. Paid plans unlock AI features and higher limits."
+                        },
+                        {
+                            "q": "Do I need to install anything?",
+                            "a": "No. powerlog runs in your browser on any device, so there is nothing to install."
+                        },
+                        {
+                            "q": "What units does powerlog support?",
+                            "a": "Both kilograms and pounds. You can set your preferred unit in your profile at any time."
+                        }
+                    ]
+                },
+                {
+                    "title": "Training & tracking",
+                    "items": [
+                        {
+                            "q": "What can I log?",
+                            "a": "Workouts, sessions, exercises, sets, reps, weight, RPE/RIR and notes, plus planned-vs-actual for every set."
+                        },
+                        {
+                            "q": "Can I plan mesocycles?",
+                            "a": "Yes. You can build templates and mesocycles and track your estimated 1RM and volume over time."
+                        },
+                        {
+                            "q": "What is the coach ↔ athlete feature?",
+                            "a": "Coaches can link with athletes, program sessions and mesocycles for them and review their training. Athletes always keep ownership of their data."
+                        }
+                    ]
+                },
+                {
+                    "title": "Billing & plans",
+                    "items": [
+                        {
+                            "q": "Which payment methods do you accept?",
+                            "a": "We accept cards through Stripe and payments through PayPal, depending on availability."
+                        },
+                        {
+                            "q": "Can I cancel anytime?",
+                            "a": "Yes. You can cancel from your account at any time and keep access until the end of your paid period."
+                        },
+                        {
+                            "q": "Do you offer refunds?",
+                            "a": "Subscriptions are non-refundable, but cancelling never removes time you have already paid for."
+                        }
+                    ]
+                },
+                {
+                    "title": "Privacy & data",
+                    "items": [
+                        {
+                            "q": "Who can see my training data?",
+                            "a": "Only you — and a coach you explicitly link with. See our Privacy Policy for details."
+                        },
+                        {
+                            "q": "Can I delete my account?",
+                            "a": "Yes. Deleting your account removes your personal data, subject to records we must keep for legal reasons."
+                        }
+                    ]
+                }
+            ]
+        },
+        "emailFallback": "contact email"
+    },
+    "contact": {
+        "title": "Contact us",
+        "intro": "Have a question, found a bug or want to suggest something? Send us a message and we’ll get back to you by email.",
+        "nameLabel": "Name",
+        "namePlaceholder": "Your name",
+        "emailLabel": "Email",
+        "emailPlaceholder": "you@example.com",
+        "categoryLabel": "Category",
+        "subjectLabel": "Subject",
+        "subjectPlaceholder": "A short summary",
+        "messageLabel": "Message",
+        "messagePlaceholder": "Tell us what’s going on…",
+        "send": "Send message",
+        "sending": "Sending…",
+        "successTitle": "Message sent",
+        "successBody": "Thanks for reaching out. We’ve received your message and will reply to your email soon.",
+        "categories": {
+            "general": "General",
+            "billing": "Billing & payments",
+            "bug": "Bug report",
+            "account": "Account & access",
+            "feature": "Feature request",
+            "other": "Other"
+        },
+        "errors": {
+            "name": "Please enter your name.",
+            "email": "Please enter a valid email address.",
+            "subject": "The subject must be between 3 and 150 characters.",
+            "message": "The message must be at least 10 characters."
+        }
     }
 }

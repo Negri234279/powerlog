@@ -15,3 +15,5 @@ apps/web/next-env.d.ts
 
 # Lockfile
 pnpm-lock.yaml
+
+docs/*

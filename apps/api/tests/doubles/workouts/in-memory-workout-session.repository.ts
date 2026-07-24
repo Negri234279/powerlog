@@ -18,6 +18,15 @@ export class InMemoryWorkoutSessionRepository extends WorkoutSessionRepository {
         return this.store.get(id) ?? null
     }
 
+    async countSelfCreatedBy(userId: string): Promise<number> {
+        let n = 0
+        for (const session of this.store.values()) {
+            if (session.userId === userId && session.plannedByUserId === null && session.mesocycleId === null) n++
+        }
+
+        return n
+    }
+
     async delete(id: string): Promise<void> {
         this.store.delete(id)
     }

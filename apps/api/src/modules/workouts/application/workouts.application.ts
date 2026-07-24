@@ -1,5 +1,6 @@
-import { AddExerciseEntryHandler } from './commands/add-exercise-entry/add-exercise-entry.handler'
+﻿import { AddExerciseEntryHandler } from './commands/add-exercise-entry/add-exercise-entry.handler'
 import { AssignMesocycleToAthleteHandler } from './commands/assign-mesocycle-to-athlete/assign-mesocycle-to-athlete.handler'
+import { CompleteSetHandler } from './commands/complete-set/complete-set.handler'
 import { CompleteWorkoutSessionHandler } from './commands/complete-workout-session/complete-workout-session.handler'
 import { CreateExerciseHandler } from './commands/create-exercise/create-exercise.handler'
 import { CreateMesocycleHandler } from './commands/create-mesocycle/create-mesocycle.handler'
@@ -25,6 +26,9 @@ import { UpdateWorkoutSessionHandler } from './commands/update-workout-session/u
 import { UpdateWorkoutTemplateHandler } from './commands/update-workout-template/update-workout-template.handler'
 import { PurgeWorkoutsOnUserDeleted } from './event-handlers/purge-workouts-on-user-deleted.handler'
 import { AdminWorkoutStatsHandler } from './queries/admin-workout-stats/admin-workout-stats.handler'
+import { GetCoachRosterHandler } from './queries/get-coach-roster/get-coach-roster.handler'
+import { GetTrainingExecutionHandler } from './queries/get-training-execution/get-training-execution.handler'
+import { GetTrainingExecutionSeriesHandler } from './queries/get-training-execution-series/get-training-execution-series.handler'
 import { GetExerciseSessionHistoryHandler } from './queries/get-exercise-session-history/get-exercise-session-history.handler'
 import { GetMesocycleDesignContextHandler } from './queries/get-mesocycle-design-context/get-mesocycle-design-context.handler'
 import { GetSessionPlanContextHandler } from './queries/get-session-plan-context/get-session-plan-context.handler'
@@ -33,9 +37,11 @@ import { GetMesocycleHandler } from './queries/get-mesocycle/get-mesocycle.handl
 import { GetStrengthProgressionHandler } from './queries/get-strength-progression/get-strength-progression.handler'
 import { GetTrainingDistributionHandler } from './queries/get-training-distribution/get-training-distribution.handler'
 import { GetTrainingSummaryHandler } from './queries/get-training-summary/get-training-summary.handler'
+import { GetUserTrainingHandler } from './queries/get-user-training/get-user-training.handler'
 import { GetVolumeSeriesHandler } from './queries/get-volume-series/get-volume-series.handler'
 import { GetWorkoutSessionHandler } from './queries/get-workout-session/get-workout-session.handler'
 import { GetWorkoutTemplateHandler } from './queries/get-workout-template/get-workout-template.handler'
+import { GetWorkoutUsageHandler } from './queries/get-workout-usage/get-workout-usage.handler'
 import { ListAdminExercisesHandler } from './queries/list-admin-exercises/list-admin-exercises.handler'
 import { ListExercisesHandler } from './queries/list-exercises/list-exercises.handler'
 import { ListMesocyclesHandler } from './queries/list-mesocycles/list-mesocycles.handler'
@@ -49,6 +55,7 @@ export const WORKOUTS_COMMAND_HANDLERS = [
     RemoveExerciseEntryHandler,
     LogSetHandler,
     UpdateSetHandler,
+    CompleteSetHandler,
     ApplySessionPlanHandler,
     RemoveSetHandler,
     CompleteWorkoutSessionHandler,
@@ -90,6 +97,11 @@ export const WORKOUTS_QUERY_HANDLERS = [
     GetVolumeSeriesHandler,
     GetStrengthProgressionHandler,
     GetTrainingDistributionHandler,
+    GetTrainingExecutionHandler,
+    GetTrainingExecutionSeriesHandler,
+    GetCoachRosterHandler,
+    GetWorkoutUsageHandler,
+    GetUserTrainingHandler,
 ]
 
 /** CQRS event handlers for the workouts module (cross-module integration events). */

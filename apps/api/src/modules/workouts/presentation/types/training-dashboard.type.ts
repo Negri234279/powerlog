@@ -37,6 +37,92 @@ export class TrainingSummaryType {
     estimatedTotalKg?: number | null
 }
 
+/**
+ * How someone is executing their training. Served to both a lifter reading their
+ * own numbers (`trainingExecution`) and a coach reading an athlete's
+ * (`athleteExecution`) — the same shape as `TrainingSummary` is.
+ *
+ * **The adherence scope differs by caller and the UI must say which it is.** For
+ * a coach it counts only sessions *they* programmed, so it sits beside set
+ * outcomes and load compliance that cover all the athlete's training — two
+ * populations that must not be blurred. For a lifter's own view every planned
+ * session counts, so all three cover the same thing and the distinction is moot.
+ *
+ * Every rate is a ratio (0.94 = 94%), nullable, and `null` means "no basis to
+ * answer" — never zero.
+ */
+@ObjectType('TrainingExecution')
+export class TrainingExecutionType {
+    @Field(() => Float, { nullable: true, description: 'Completed ÷ due, within the adherence scope. Null when none.' })
+    adherenceRate?: number | null
+
+    @Field(() => Int)
+    plannedCompleted!: number
+
+    @Field(() => Int, { description: 'In scope, already past, still not done.' })
+    plannedMissed!: number
+
+    @Field(() => Int, { description: 'Still on the calendar. Not bounded by the range.' })
+    plannedUpcoming!: number
+
+    @Field(() => Float, { nullable: true, description: 'Successful ÷ marked sets, across all their training.' })
+    successRate?: number | null
+
+    @Field(() => Int)
+    successSets!: number
+
+    @Field(() => Int)
+    failedSets!: number
+
+    @Field(() => Int, { description: 'Logged in a completed session but never marked either way.' })
+    pendingSets!: number
+
+    @Field(() => Float, { nullable: true, description: 'Executed ÷ programmed load. Above 1 = heavier than written.' })
+    loadCompliance?: number | null
+
+    @Field(() => Int, { description: 'Sets the compliance ratio is built from.' })
+    plannedSets!: number
+
+    @Field(() => Float, { nullable: true })
+    sessionsPerWeek?: number | null
+
+    // Explicit type: a nullable union erases to Object under emitDecoratorMetadata,
+    // and the schema builder can't infer Date from that.
+    @Field(() => Date, { nullable: true, description: 'Last completed session, all-time (ignores the range).' })
+    lastSessionAt?: Date | null
+
+    @Field(() => Int, { nullable: true })
+    daysSinceLastSession?: number | null
+
+    @Field(() => Float, { nullable: true, description: 'Signed change vs the preceding window (0.12 = +12%).' })
+    volumeChange?: number | null
+
+    @Field(() => Float, { nullable: true })
+    sessionsChange?: number | null
+}
+
+/**
+ * One week of execution. Same scopes as `TrainingExecution`: adherence follows
+ * the caller's planner scope, load covers every completed session with a plan.
+ */
+@ObjectType('ExecutionBucket')
+export class ExecutionBucketType {
+    @Field({ description: 'Start of the week (UTC).' })
+    bucketStart!: Date
+
+    @Field(() => Int)
+    plannedCompleted!: number
+
+    @Field(() => Int)
+    plannedMissed!: number
+
+    @Field(() => Float)
+    plannedLoadKg!: number
+
+    @Field(() => Float)
+    actualLoadKg!: number
+}
+
 /** One week of training volume. */
 @ObjectType('VolumeBucket')
 export class VolumeBucketType {

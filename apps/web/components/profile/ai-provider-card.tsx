@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type ChangeEvent, type FormEvent, useState } from 'react'
+import { type ChangeEvent, type SubmitEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { Field, Input, Select } from '@/components/ui/field'
@@ -69,7 +69,7 @@ export function AiProviderCard({ provider, config }: { provider: AiProvider; con
 
     const showKeyForm = !config || replacing
 
-    async function onSubmitKey(event: FormEvent<HTMLFormElement>) {
+    async function onSubmitKey(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const form = event.currentTarget
         const apiKey = String(new FormData(form).get('apiKey') ?? '').trim()

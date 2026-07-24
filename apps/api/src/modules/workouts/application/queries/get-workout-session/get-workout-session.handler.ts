@@ -3,21 +3,29 @@ import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs'
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import type { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
+import type { SetOutcome } from '../../../domain/set-outcome'
 import type { WorkoutStatus } from '../../../domain/workout-status'
+import { type RangeView, toRangeView } from '../../range-view'
 import { requireManageableSession } from '../../require-manageable-session'
 import { GetWorkoutSessionQuery } from './get-workout-session.query'
 
-/** Read models (decoupled from the aggregate). Weights are kg. */
+/**
+ * Read models (decoupled from the aggregate). Weights are kg. The planned half is
+ * ranges (what was asked for); the performed half stays single values.
+ */
 export interface WorkoutSetView {
     id: string
     order: number
-    plannedWeightKg: number | null
-    plannedReps: number | null
+    plannedWeightKg: RangeView | null
+    plannedReps: RangeView | null
+    plannedRpe: RangeView | null
+    plannedRir: RangeView | null
     weightKg: number | null
     reps: number | null
     rpe: number | null
     rir: number | null
     e1rmKg: number | null
+    outcome: SetOutcome | null
     notes: string | null
 }
 
@@ -63,13 +71,16 @@ export function toWorkoutSessionView(session: WorkoutSessionAggregate): WorkoutS
             sets: entry.sets.map((set) => ({
                 id: set.id,
                 order: set.order,
-                plannedWeightKg: set.plannedWeight?.value ?? null,
-                plannedReps: set.plannedReps?.value ?? null,
+                plannedWeightKg: toRangeView(set.plannedWeight),
+                plannedReps: toRangeView(set.plannedReps),
+                plannedRpe: toRangeView(set.plannedRpe),
+                plannedRir: toRangeView(set.plannedRir),
                 weightKg: set.weight?.value ?? null,
                 reps: set.reps?.value ?? null,
                 rpe: set.rpe?.value ?? null,
                 rir: set.rir?.value ?? null,
                 e1rmKg: set.e1rmKg,
+                outcome: set.outcome,
                 notes: set.notes,
             })),
         })),

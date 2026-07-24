@@ -11,7 +11,14 @@
  * for the model would only add a rounding step and a chance to get it wrong.
  */
 
-/** A set as currently programmed in the planned session (targets, no results). */
+/**
+ * A set as currently programmed in the planned session (targets, no results).
+ *
+ * Targets can be ranges (`5-8`), but the model is handed a single number — the
+ * floor of the range — and prescribes single numbers back. Teaching it to read
+ * and write ranges is a separate change; until then this stays the narrow
+ * contract it has always been rather than a half-migrated one.
+ */
 export interface PlannedSetContext {
     setId: string
     order: number
@@ -56,6 +63,12 @@ export interface ExercisePlanContext {
 /** Everything the model is given about a session it is asked to program. */
 export interface SessionPlanContext {
     sessionId: string
+    /**
+     * Who will lift it — the session's owner, whose history anchors the loads.
+     * The AI gate also reads it to pick which plan pays: programming your own
+     * session draws on the athlete plan, programming an athlete's on the coach plan.
+     */
+    ownerId: string
     performedAt: Date
     sessionNotes: string | null
     exercises: ExercisePlanContext[]

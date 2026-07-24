@@ -10,6 +10,7 @@ import {
 } from '../../../../../../tests/doubles/coaching'
 import { FakeEntitlements, FakeUserDirectory, RecordingEventBus } from '../../../../../../tests/doubles/shared'
 import { CoachInvitationMother } from '../../../../../../tests/mothers/coaching'
+import { PlanLimitReachedError } from '../../../../../shared/contracts/entitlements'
 import { CoachInvitationCreatedIntegrationEvent } from '../../../../../shared/integration-events/coach-invitation-created.integration-event'
 import {
     AlreadyLinkedError,
@@ -112,10 +113,12 @@ describe('InviteAthleteHandler', () => {
     })
 
     it('enforces the plan athlete limit via entitlements', async () => {
-        ctx.entitlements.denyAddAthlete(new Error('athlete limit reached'))
+        // A coach on a plan with no room left: the invitation is never issued, so
+        // the cap can't be dodged by inviting more people than seats.
+        ctx.entitlements.onCoach({ plan: 'coach-free', maxAthletes: 0 })
 
-        await expect(ctx.handler.execute(new InviteAthleteCommand(COACH, ATHLETE_EMAIL))).rejects.toThrow(
-            'athlete limit reached',
+        await expect(ctx.handler.execute(new InviteAthleteCommand(COACH, ATHLETE_EMAIL))).rejects.toBeInstanceOf(
+            PlanLimitReachedError,
         )
         expect(ctx.invitations.all()).toHaveLength(0)
     })

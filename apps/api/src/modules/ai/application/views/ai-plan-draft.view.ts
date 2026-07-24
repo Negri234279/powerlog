@@ -27,6 +27,8 @@ export interface AiPlanDraftView {
     status: string
     sets: AiPlanDraftSetView[]
     messages: AiPlanDraftMessageView[]
+    /** The resolved draft this one continues, if any. */
+    parentDraftId: string | null
     createdAt: Date
     updatedAt: Date
 }
@@ -46,6 +48,7 @@ export function toAiPlanDraftView(draft: AiPlanDraftAggregate): AiPlanDraftView 
             content: message.content,
             createdAt: message.createdAt,
         })),
+        parentDraftId: draft.parentDraftId,
         createdAt: draft.createdAt,
         updatedAt: draft.updatedAt,
     }

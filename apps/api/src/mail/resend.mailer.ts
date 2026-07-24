@@ -25,6 +25,7 @@ export class ResendMailer extends Mailer {
             subject: message.subject,
             html: message.html,
             ...(message.text ? { text: message.text } : {}),
+            ...(message.replyTo ? { replyTo: message.replyTo } : {}),
             // Tag with the purpose so Resend echoes it on delivery webhooks → we
             // can break delivered/bounced/complained down by email type. Tag
             // values allow only [A-Za-z0-9_-], which our tags already satisfy.

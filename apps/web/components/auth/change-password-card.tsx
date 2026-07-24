@@ -1,13 +1,14 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useChangePassword, useMe } from '@/lib/graphql/hooks/use-auth'
-import { Field, Input } from '@/components/ui/field'
+import { Field } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
+import { PasswordInput } from '@/components/ui/password-input'
 import { SubmitButton } from '@/components/ui/submit-button'
 
 /**
@@ -27,7 +28,7 @@ export function ChangePasswordCard() {
 
     const hasPassword = me?.hasPassword ?? true
 
-    async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    async function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const form = event.currentTarget
         const data = new FormData(form)
@@ -71,10 +72,9 @@ export function ChangePasswordCard() {
                 <form onSubmit={onSubmit} className="mt-6 max-w-sm space-y-4" noValidate>
                     {hasPassword ? (
                         <Field label={t('currentPassword')} htmlFor="currentPassword" error={errors['currentPassword']}>
-                            <Input
+                            <PasswordInput
                                 id="currentPassword"
                                 name="currentPassword"
-                                type="password"
                                 autoComplete="current-password"
                                 placeholder="••••••••"
                             />
@@ -86,22 +86,15 @@ export function ChangePasswordCard() {
                         error={errors['newPassword']}
                         hint={ta('passwordMin')}
                     >
-                        <Input
+                        <PasswordInput
                             id="newPassword"
                             name="newPassword"
-                            type="password"
                             autoComplete="new-password"
                             placeholder="••••••••"
                         />
                     </Field>
                     <Field label={t('confirmNewPassword')} htmlFor="confirm" error={errors['confirm']}>
-                        <Input
-                            id="confirm"
-                            name="confirm"
-                            type="password"
-                            autoComplete="new-password"
-                            placeholder="••••••••"
-                        />
+                        <PasswordInput id="confirm" name="confirm" autoComplete="new-password" placeholder="••••••••" />
                     </Field>
 
                     <FormError error={formError} />

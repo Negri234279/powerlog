@@ -1,0 +1,1 @@
+ALTER TABLE "plans" ADD COLUMN "highlighted" boolean DEFAULT false NOT NULL;

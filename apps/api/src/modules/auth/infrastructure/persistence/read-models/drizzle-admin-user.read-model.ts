@@ -1,13 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, ne, type SQL, sql } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, ne, notInArray, or, type SQL, sql } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
+import type { PlanMembership } from '../../../../../shared/contracts/plan-membership'
 import {
+    type AdminUserAccount,
     type AdminUserFilter,
     type AdminUserPage,
     AdminUserReadModel,
     type AdminUserStats,
 } from '../../../application/ports/admin-user.read-model'
+import { refreshTokens } from '../schema/refresh-tokens.schema'
 import { users } from '../schema/users.schema'
 
 @Injectable()
@@ -48,6 +51,49 @@ export class DrizzleAdminUserReadModel extends AdminUserReadModel {
                 createdAt: row.createdAt,
             })),
             total: totals?.value ?? 0,
+        }
+    }
+
+    async byId(userId: string): Promise<AdminUserAccount | null> {
+        const [row] = await this.db
+            .select({
+                id: users.id,
+                email: users.email,
+                role: users.role,
+                isAdmin: users.isAdmin,
+                status: users.status,
+                emailVerifiedAt: users.emailVerifiedAt,
+                hashedPassword: users.hashedPassword,
+                units: users.units,
+                createdAt: users.createdAt,
+                updatedAt: users.updatedAt,
+            })
+            .from(users)
+            .where(eq(users.id, userId))
+            .limit(1)
+
+        if (!row) return null
+
+        // Last activity ≈ the newest refresh token issued to them: one is created on
+        // login and on every silent refresh, so the max tracks real use, not just
+        // the last explicit sign-in. A raw aggregate comes back as a string.
+        const [session] = await this.db
+            .select({ lastSeenAt: sql<string | null>`max(${refreshTokens.createdAt})` })
+            .from(refreshTokens)
+            .where(eq(refreshTokens.userId, userId))
+
+        return {
+            id: row.id,
+            email: row.email,
+            role: row.role,
+            isAdmin: row.isAdmin,
+            status: row.status,
+            emailVerified: row.emailVerifiedAt !== null,
+            hasPassword: row.hashedPassword !== null,
+            units: row.units,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
+            lastSeenAt: session?.lastSeenAt ? new Date(session.lastSeenAt) : null,
         }
     }
 
@@ -101,7 +147,38 @@ export class DrizzleAdminUserReadModel extends AdminUserReadModel {
         if (filter.search) {
             conditions.push(ilike(users.email, `%${filter.search}%`))
         }
+        if (filter.planMembership) {
+            conditions.push(this.onPlans(filter.planMembership))
+        }
 
         return conditions.length ? and(...conditions) : undefined
+    }
+
+    /**
+     * "Is on one of the selected plans", as SQL over `users` alone — billing
+     * resolved the plans into these sets precisely so this stays a predicate and
+     * not a join, which keeps `total` and the pagination honest.
+     *
+     * The second half is the free-plan fallback: someone of that role with no
+     * entitling subscription is on the free plan of their audience.
+     */
+    private onPlans(membership: PlanMembership): SQL {
+        const matches: SQL[] = []
+
+        if (membership.subscriberIds.length) {
+            matches.push(inArray(users.id, membership.subscriberIds))
+        }
+        if (membership.freeAudiences.length) {
+            const free = [
+                inArray(users.role, membership.freeAudiences),
+                membership.entitledUserIds.length ? notInArray(users.id, membership.entitledUserIds) : undefined,
+            ].filter((condition) => condition !== undefined)
+
+            matches.push(and(...free) as SQL)
+        }
+
+        // Plans nobody is on. Without this the filter would collapse to `undefined`
+        // and quietly list every user — the one wrong answer available here.
+        return matches.length ? (or(...matches) as SQL) : sql`false`
     }
 }

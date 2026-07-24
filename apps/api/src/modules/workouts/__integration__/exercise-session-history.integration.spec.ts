@@ -62,8 +62,10 @@ describe('Exercise session history (integration)', () => {
         // withTree logs 102.5×5 @8 (top, planned 100×5) then 90×8 RIR2 (backoff, no plan).
         expect(rows[0]!.sets).toEqual([
             {
-                plannedWeightKg: 100,
-                plannedReps: 5,
+                plannedWeightKgMin: 100,
+                plannedWeightKgMax: 100,
+                plannedRepsMin: 5,
+                plannedRepsMax: 5,
                 weightKg: 102.5,
                 reps: 5,
                 rpe: 8,
@@ -72,8 +74,10 @@ describe('Exercise session history (integration)', () => {
                 notes: null,
             },
             {
-                plannedWeightKg: null,
-                plannedReps: null,
+                plannedWeightKgMin: null,
+                plannedWeightKgMax: null,
+                plannedRepsMin: null,
+                plannedRepsMax: null,
                 weightKg: 90,
                 reps: 8,
                 rpe: null,

@@ -21,6 +21,10 @@ const schema = z.object({
     // The web release, inlined by next.config's `env` block from package.json.
     // Surfaced on the admin panel next to the API version.
     NEXT_PUBLIC_APP_VERSION: z.string().min(1).default('unknown'),
+    // Stripe publishable key (pk_…), for embedded checkout. Optional: absent → the
+    // in-page Stripe checkout is not offered (the wizard falls back to the hosted
+    // redirect / PayPal), mirroring how the API runs without STRIPE_SECRET_KEY.
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
 })
 
 const parsed = schema.safeParse({
@@ -28,6 +32,7 @@ const parsed = schema.safeParse({
     NEXT_PUBLIC_GRAPHQL_URL: process.env['NEXT_PUBLIC_GRAPHQL_URL'],
     NEXT_PUBLIC_GRAFANA_URL: process.env['NEXT_PUBLIC_GRAFANA_URL'],
     NEXT_PUBLIC_APP_VERSION: process.env['NEXT_PUBLIC_APP_VERSION'],
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'],
 })
 
 if (!parsed.success) {
@@ -40,4 +45,5 @@ export const env = {
     graphqlUrl: parsed.data.NEXT_PUBLIC_GRAPHQL_URL,
     grafanaUrl: parsed.data.NEXT_PUBLIC_GRAFANA_URL ?? null,
     webVersion: parsed.data.NEXT_PUBLIC_APP_VERSION,
+    stripePublishableKey: parsed.data.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? null,
 } as const

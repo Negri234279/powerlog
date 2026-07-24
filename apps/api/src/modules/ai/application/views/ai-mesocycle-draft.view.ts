@@ -49,6 +49,10 @@ export interface AiMesocycleDraftView {
     name: string
     days: AiMesocycleDraftDayView[]
     messages: AiMesocycleDraftMessageView[]
+    /** The resolved draft this one continues, if any. */
+    parentDraftId: string | null
+    /** The block this draft became, once it was created. */
+    mesocycleId: string | null
     createdAt: Date
     updatedAt: Date
 }
@@ -78,6 +82,8 @@ export function toAiMesocycleDraftView(draft: AiMesocycleDraftAggregate): AiMeso
             content: message.content,
             createdAt: message.createdAt,
         })),
+        parentDraftId: draft.parentDraftId,
+        mesocycleId: draft.mesocycleId,
         createdAt: draft.createdAt,
         updatedAt: draft.updatedAt,
     }

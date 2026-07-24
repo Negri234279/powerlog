@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { SessionPlanContextReader } from '../../../../../shared/contracts/session-plan-context'
 import { AiPlanDraftAggregate } from '../../../domain/entities/ai-plan-draft.entity'
 import { SessionNotProgrammableError } from '../../../domain/errors/ai-plan.errors'
@@ -20,6 +21,7 @@ export class GenerateSessionPlanDraftHandler implements ICommandHandler<
         private readonly drafts: AiPlanDraftRepository,
         private readonly context: SessionPlanContextReader,
         private readonly prescriber: SetPrescriber,
+        private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly logger: PinoLogger,
@@ -28,14 +30,24 @@ export class GenerateSessionPlanDraftHandler implements ICommandHandler<
     }
 
     async execute(command: GenerateSessionPlanDraftCommand): Promise<AiPlanDraftView> {
-        // Resolve the provider first: a missing key should fail before the
-        // athlete waits for anything.
-        const config = await this.prescriber.resolveConfig(command.userId)
-
+        // The context first: it is also the authorization (a session that isn't
+        // yours to manage reads as null) and it says WHOSE session this is — which
+        // decides the plan that pays for the AI below.
         const context = await this.context.read(command.userId, command.sessionId, command.entryId ?? undefined)
         // No exercises means the session is empty, or the named entry is not in
         // it. Exercises *without sets* are fine — the model proposes the scheme.
         if (!context || context.exercises.length === 0) throw new SessionNotProgrammableError()
+
+        // The plan gate before the provider: the key is the user's own (BYOK), but
+        // whether they may use the feature at all is ours to say. Programming your
+        // own session draws on the athlete plan; programming an athlete's session
+        // draws on the coach plan.
+        const audience = context.ownerId === command.userId ? 'athlete' : 'coach'
+        await this.entitlements.assertFeature(command.userId, audience, 'ai')
+
+        // Resolve the provider next: a missing key should fail before the athlete
+        // waits for anything.
+        const config = await this.prescriber.resolveConfig(command.userId)
 
         const parsed = await this.prescriber.prescribe(config, context, { extraInfo: command.extraInfo })
         const now = this.clock.now()

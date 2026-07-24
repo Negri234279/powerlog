@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { WorkoutSessionAggregate } from '../../../domain/entities/workout-session.entity'
 import { WorkoutSessionRepository } from '../../../domain/repositories/workout-session.repository'
 import { WorkoutTemplateRepository } from '../../../domain/repositories/workout-template.repository'
@@ -21,11 +22,18 @@ export class CreateSessionFromTemplateHandler implements ICommandHandler<
     constructor(
         private readonly sessions: WorkoutSessionRepository,
         private readonly templates: WorkoutTemplateRepository,
+        private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
     ) {}
 
     async execute(command: CreateSessionFromTemplateCommand): Promise<WorkoutSessionView> {
+        // Starting a session — from a template or not — creates a workout, so it's
+        // the workout cap that gates it. Using an existing template stays allowed
+        // after a downgrade; only creating new templates is what `maxTemplates` caps.
+        const owned = await this.sessions.countSelfCreatedBy(command.userId)
+        await this.entitlements.assertWithinLimit(command.userId, 'athlete', 'workouts', owned)
+
         const template = await requireOwnedTemplate(this.templates, command.templateId, command.userId)
 
         const now = this.clock.now()

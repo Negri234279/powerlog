@@ -169,6 +169,8 @@ describe('AiMesocycleDraftAggregate', () => {
             // What a hand-edited or half-migrated `content` column could hold.
             proposal: mesocycleDraftProposal({ days: [] }),
             messages: [...stored.messages],
+            parentDraftId: stored.parentDraftId,
+            mesocycleId: stored.mesocycleId,
             createdAt: stored.createdAt,
             updatedAt: stored.updatedAt,
         }

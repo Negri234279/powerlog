@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { FakeCoachLinks, RecordingEventBus } from '../../../../../../tests/doubles/shared'
+import { FakeCoachLinks, FakeEntitlements, RecordingEventBus } from '../../../../../../tests/doubles/shared'
 import { MesocycleAssignedIntegrationEvent } from '../../../../../shared/integration-events/mesocycle-assigned.integration-event'
 import { FakeClock, FakeIdGenerator, InMemoryMesocycleRepository } from '../../../../../../tests/doubles/workouts'
 import { MesocycleMother } from '../../../../../../tests/mothers/workouts'
@@ -23,6 +23,7 @@ function setup(linked = true) {
     const handler = new AssignMesocycleToAthleteHandler(
         mesocycles,
         coachLinks,
+        new FakeEntitlements(),
         new FakeClock(NOW),
         new FakeIdGenerator(),
         events.asEventBus(),
@@ -42,9 +43,9 @@ describe('AssignMesocycleToAthleteHandler', () => {
         expect(view.id).not.toBe(source.id)
         expect(view.microcycles).toHaveLength(source.microcycles.length)
         expect(view.microcycles[0]!.days[0]!.exercises[0]!.sets[0]).toMatchObject({
-            plannedWeightKg: 100,
-            plannedReps: 5,
-            rpe: 8,
+            plannedWeightKg: { min: 100, max: 100 },
+            plannedReps: { min: 5, max: 5 },
+            rpe: { min: 8, max: 8 },
         })
 
         const copy = await mesocycles.findById(view.id)

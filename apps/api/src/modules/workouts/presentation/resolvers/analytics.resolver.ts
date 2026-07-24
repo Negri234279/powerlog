@@ -10,7 +10,14 @@ import { toSupportedLocale } from '../../../../shared/i18n/locale'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import type { ExerciseSessionHistoryRow } from '../../application/ports/exercise-session-history.read-model'
 import type { ExerciseStatsRow } from '../../application/ports/exercise-stats.read-model'
-import type { TrainingDistribution, VolumeBucketRow } from '../../application/ports/training-dashboard.read-model'
+import type {
+    ExecutionBucketRow,
+    TrainingDistribution,
+    VolumeBucketRow,
+} from '../../application/ports/training-dashboard.read-model'
+import { GetTrainingExecutionSeriesQuery } from '../../application/queries/get-training-execution-series/get-training-execution-series.query'
+import type { TrainingExecutionView } from '../../application/queries/get-training-execution/get-training-execution.handler'
+import { GetTrainingExecutionQuery } from '../../application/queries/get-training-execution/get-training-execution.query'
 import { GetExerciseSessionHistoryQuery } from '../../application/queries/get-exercise-session-history/get-exercise-session-history.query'
 import { GetExerciseStatsQuery } from '../../application/queries/get-exercise-stats/get-exercise-stats.query'
 import type { StrengthProgressionView } from '../../application/queries/get-strength-progression/get-strength-progression.handler'
@@ -22,8 +29,10 @@ import { GetVolumeSeriesQuery } from '../../application/queries/get-volume-serie
 import { ExerciseSessionHistoryType } from '../types/exercise-session-history.type'
 import { ExerciseStatsType } from '../types/exercise-stats.type'
 import {
+    ExecutionBucketType,
     StrengthProgressionType,
     TrainingDistributionType,
+    TrainingExecutionType,
     TrainingSummaryType,
     VolumeBucketType,
 } from '../types/training-dashboard.type'
@@ -59,6 +68,33 @@ export class AnalyticsResolver {
         @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
     ): Promise<TrainingSummaryView> {
         const query = new GetTrainingSummaryQuery(user.userId, from, to)
+        return this.queryBus.execute(query)
+    }
+
+    @Query(() => TrainingExecutionType, {
+        description:
+            'How the caller is executing their training: adherence to their own planned sessions, set outcomes, load compliance and period-over-period trends.',
+    })
+    async trainingExecution(
+        @CurrentUser() user: AuthUser,
+        @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
+        @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
+    ): Promise<TrainingExecutionView> {
+        // No planner scope: a lifter's own adherence counts every session they put
+        // on the calendar, whether their coach wrote it or they did.
+        const query = new GetTrainingExecutionQuery(user.userId, undefined, from, to)
+        return this.queryBus.execute(query)
+    }
+
+    @Query(() => [ExecutionBucketType], {
+        description: "The caller's adherence and programmed-vs-executed load, week by week.",
+    })
+    async trainingExecutionSeries(
+        @CurrentUser() user: AuthUser,
+        @Args('from', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) from?: string,
+        @Args('to', { type: () => String, nullable: true }, new ZodValidationPipe(isoDate)) to?: string,
+    ): Promise<ExecutionBucketRow[]> {
+        const query = new GetTrainingExecutionSeriesQuery(user.userId, undefined, from, to)
         return this.queryBus.execute(query)
     }
 

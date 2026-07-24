@@ -107,3 +107,42 @@ export function formatRange(mode: PeriodMode, range: PeriodRange, locale: string
 export function formatDay(iso: string, locale: string): string {
     return fromIsoDate(iso).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
 }
+
+/** A run of sessions that fall in the same Monday-based week. */
+export interface WeekGroup<T> {
+    /** Monday of the week, `YYYY-MM-DD` — stable React key. */
+    key: string
+    range: PeriodRange
+    items: T[]
+}
+
+/**
+ * Split a **date-ordered** list of sessions into Monday-based weeks.
+ *
+ * A month or a six-month window is a wall of rows with no landmarks; weeks are
+ * the unit coaches actually think in ("three sessions last week, one this one"),
+ * so grouping restores the shape of the training block at a glance. Order is
+ * preserved exactly as given — the caller decides newest- or oldest-first, and a
+ * week is closed as soon as a different one appears, so a list that isn't sorted
+ * simply yields more groups rather than silently reordering anything.
+ */
+export function groupByWeek<T>(items: T[], dateOf: (item: T) => string): WeekGroup<T>[] {
+    const groups: WeekGroup<T>[] = []
+
+    for (const item of items) {
+        const monday = startOfWeek(new Date(dateOf(item)))
+        const key = toIsoDate(monday)
+        const last = groups.at(-1)
+
+        if (last?.key === key) {
+            last.items.push(item)
+            continue
+        }
+
+        const sunday = new Date(monday)
+        sunday.setDate(sunday.getDate() + 6)
+        groups.push({ key, range: { from: key, to: toIsoDate(sunday) }, items: [item] })
+    }
+
+    return groups
+}

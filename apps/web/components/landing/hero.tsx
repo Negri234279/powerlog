@@ -1,3 +1,5 @@
+import { getTranslations } from 'next-intl/server'
+
 import { PrimaryCta, SecondaryCta } from '@/components/ui/cta'
 import { Eyebrow } from '@/components/ui/eyebrow'
 import { Reveal } from '@/components/ui/reveal'
@@ -34,18 +36,20 @@ function SetRow({
     )
 }
 
-function SessionPanel() {
+async function SessionPanel() {
+    const t = await getTranslations('landing.hero.panel')
+
     return (
         <div className="rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
             <div className="inset-hi rounded-[calc(2rem-0.375rem)] bg-surface p-5">
                 {/* panel header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="font-display text-lg font-semibold tracking-tight">Back Squat</p>
-                        <p className="font-mono text-eyebrow uppercase text-text-faint">Week 4 · Heavy single</p>
+                        <p className="font-display text-lg font-semibold tracking-tight">{t('lift')}</p>
+                        <p className="font-mono text-eyebrow uppercase text-text-faint">{t('week')}</p>
                     </div>
                     <span className="rounded-full bg-pr/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-pr">
-                        Completed
+                        {t('completed')}
                     </span>
                 </div>
 
@@ -60,7 +64,7 @@ function SessionPanel() {
                 {/* e1RM trend sparkline */}
                 <div className="mt-5 rounded-2xl bg-bg/60 p-4 ring-1 ring-hairline">
                     <div className="flex items-center justify-between">
-                        <span className="font-mono text-eyebrow uppercase text-text-faint">Est. 1RM · 12 wk</span>
+                        <span className="font-mono text-eyebrow uppercase text-text-faint">{t('est1rm')}</span>
                         <span className="font-mono text-sm tabular-nums text-ember">+18.2kg</span>
                     </div>
                     <svg viewBox="0 0 300 70" className="mt-3 h-16 w-full" fill="none" aria-hidden>
@@ -88,7 +92,9 @@ function SessionPanel() {
     )
 }
 
-export function Hero() {
+export async function Hero() {
+    const t = await getTranslations('landing.hero')
+
     return (
         <section id="top" className="relative overflow-hidden px-6 pt-40 pb-24 md:px-8 md:pt-48 md:pb-32">
             {/* mesh orbs */}
@@ -99,34 +105,30 @@ export function Hero() {
                 {/* Left — type */}
                 <div className="max-w-2xl">
                     <Reveal>
-                        <Eyebrow>For people who take the bar seriously</Eyebrow>
+                        <Eyebrow>{t('eyebrow')}</Eyebrow>
                     </Reveal>
                     <Reveal delay={80}>
                         <h1 className="mt-6 font-display text-display-xl">
-                            Train like it&rsquo;s <span className="text-gradient-ember">logged.</span>
+                            {t.rich('title', {
+                                em: (chunks) => <span className="text-gradient-ember">{chunks}</span>,
+                            })}
                         </h1>
                     </Reveal>
                     <Reveal delay={160}>
-                        <p className="mt-6 max-w-xl text-body-lg text-text-dim">
-                            powerlog is a precision instrument for strength. Log every set, watch your estimated 1RM and
-                            PRs move in real time, and read the progress that&rsquo;s actually there — not the story you
-                            tell yourself.
-                        </p>
+                        <p className="mt-6 max-w-xl text-body-lg text-text-dim">{t('subtitle')}</p>
                     </Reveal>
                     <Reveal delay={240}>
                         <div className="mt-9 flex flex-wrap items-center gap-3">
                             <PrimaryCta href="/register" analyticsId="hero-register">
-                                Start training free
+                                {t('ctaPrimary')}
                             </PrimaryCta>
                             <SecondaryCta href="#analytics" analyticsId="hero-see-data">
-                                See the data
+                                {t('ctaSecondary')}
                             </SecondaryCta>
                         </div>
                     </Reveal>
                     <Reveal delay={320}>
-                        <p className="mt-8 font-mono text-eyebrow uppercase text-text-faint">
-                            Free forever for solo lifters · No card required
-                        </p>
+                        <p className="mt-8 font-mono text-eyebrow uppercase text-text-faint">{t('noCard')}</p>
                     </Reveal>
                 </div>
 
@@ -136,14 +138,14 @@ export function Hero() {
                     {/* floating stat chips */}
                     <div className="absolute -left-6 top-10 hidden rotate-[-3deg] rounded-2xl bg-shell p-1.5 ring-1 ring-hairline sm:block">
                         <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface px-4 py-3">
-                            <p className="font-mono text-eyebrow uppercase text-text-faint">New squat PR</p>
+                            <p className="font-mono text-eyebrow uppercase text-text-faint">{t('panel.newPr')}</p>
                             <p className="font-mono text-xl tabular-nums text-text">207.5kg</p>
                         </div>
                     </div>
                     <div className="absolute -right-5 -bottom-6 hidden rotate-[3deg] rounded-2xl bg-shell p-1.5 ring-1 ring-hairline sm:block">
                         <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface px-4 py-3">
-                            <p className="font-mono text-eyebrow uppercase text-text-faint">Streak</p>
-                            <p className="font-mono text-xl tabular-nums text-pr">14 weeks</p>
+                            <p className="font-mono text-eyebrow uppercase text-text-faint">{t('panel.streak')}</p>
+                            <p className="font-mono text-xl tabular-nums text-pr">{t('panel.streakValue')}</p>
                         </div>
                     </div>
                 </Reveal>

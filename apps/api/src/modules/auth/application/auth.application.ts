@@ -16,9 +16,12 @@ import { SetUserRoleHandler } from './commands/set-user-role/set-user-role.handl
 import { SetUserStatusHandler } from './commands/set-user-status/set-user-status.handler'
 import { VerifyEmailHandler } from './commands/verify-email/verify-email.handler'
 import { CountRegistrationOnUserRegistered } from './event-handlers/count-registration-on-user-registered.handler'
+import { PromoteToCoachOnSubscriptionActivated } from './event-handlers/promote-to-coach-on-subscription-activated.handler'
 import { SendEmailVerificationOnUserRegistered } from './event-handlers/send-email-verification-on-user-registered.handler'
+import { AdminUserDetailHandler } from './queries/admin-user-detail/admin-user-detail.handler'
 import { AdminUserStatsHandler } from './queries/admin-user-stats/admin-user-stats.handler'
 import { AdminUsersHandler } from './queries/admin-users/admin-users.handler'
+import { EmailAvailableHandler } from './queries/email-available/email-available.handler'
 import { GetMeHandler } from './queries/get-me/get-me.handler'
 import { GetMySessionsHandler } from './queries/get-my-sessions/get-my-sessions.handler'
 import { EmailVerificationIssuer } from './services/email-verification-issuer.service'
@@ -47,10 +50,21 @@ export const AUTH_COMMAND_HANDLERS = [
 ]
 
 /** CQRS query handlers for the auth module. */
-export const AUTH_QUERY_HANDLERS = [GetMeHandler, GetMySessionsHandler, AdminUsersHandler, AdminUserStatsHandler]
+export const AUTH_QUERY_HANDLERS = [
+    GetMeHandler,
+    GetMySessionsHandler,
+    EmailAvailableHandler,
+    AdminUsersHandler,
+    AdminUserStatsHandler,
+    AdminUserDetailHandler,
+]
 
 /** Integration-event handlers (react to events on the bus). */
-export const AUTH_EVENT_HANDLERS = [SendEmailVerificationOnUserRegistered, CountRegistrationOnUserRegistered]
+export const AUTH_EVENT_HANDLERS = [
+    SendEmailVerificationOnUserRegistered,
+    CountRegistrationOnUserRegistered,
+    PromoteToCoachOnSubscriptionActivated,
+]
 
 /** Application-layer services (not CQRS handlers). */
 export const AUTH_APPLICATION_SERVICES = [SessionIssuer, EmailVerificationIssuer, PasswordResetIssuer]

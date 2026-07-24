@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { ProfileSnapshotReader } from '../../../../../shared/contracts/profile-snapshot-reader'
 import { CannotDisableOwnAccountError, UserNotFoundError } from '../../../domain/errors/auth.errors'
 import { RefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository'
@@ -15,6 +16,7 @@ export class SetUserStatusHandler implements ICommandHandler<SetUserStatusComman
         private readonly refreshTokens: RefreshTokenRepository,
         private readonly clock: Clock,
         private readonly profiles: ProfileSnapshotReader,
+        private readonly entitlements: Entitlements,
     ) {}
 
     async execute(command: SetUserStatusCommand): Promise<AdminUserView> {
@@ -43,6 +45,10 @@ export class SetUserStatusHandler implements ICommandHandler<SetUserStatusComman
         }
 
         const snapshot = await this.profiles.read(user.id).catch(() => null)
+        // Disabling an account doesn't end its subscription — the plan cell keeps
+        // saying what they are still paying for, which is the point of seeing it.
+        const entitlements = await this.entitlements.forUser(user.id).catch(() => null)
+
         return {
             id: user.id,
             email: user.email.value,
@@ -51,6 +57,7 @@ export class SetUserStatusHandler implements ICommandHandler<SetUserStatusComman
             isAdmin: user.isAdmin,
             status: user.status,
             emailVerified: user.isEmailVerified(),
+            plan: entitlements ? (entitlements.coach?.plan ?? entitlements.athlete.plan) : null,
             createdAt: user.createdAt,
         }
     }

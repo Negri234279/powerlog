@@ -29,4 +29,10 @@ export class ExerciseStatsType {
 
     @Field(() => Float, { nullable: true, description: 'Heaviest single set (kg).' })
     heaviestWeightKg?: number | null
+
+    @Field(() => Int, { description: 'Sets marked successful. Unmarked sets count in neither.' })
+    successSets!: number
+
+    @Field(() => Int)
+    failedSets!: number
 }

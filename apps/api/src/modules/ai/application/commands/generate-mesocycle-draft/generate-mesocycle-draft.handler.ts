@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
+import { Entitlements } from '../../../../../shared/contracts/entitlements'
 import { MesocycleDesignContextReader } from '../../../../../shared/contracts/mesocycle-design-context'
 import { AiMesocycleDraftAggregate } from '../../../domain/entities/ai-mesocycle-draft.entity'
 import { AiMesocycleDraftRepository } from '../../../domain/repositories/ai-mesocycle-draft.repository'
@@ -19,6 +20,7 @@ export class GenerateMesocycleDraftHandler implements ICommandHandler<
         private readonly drafts: AiMesocycleDraftRepository,
         private readonly context: MesocycleDesignContextReader,
         private readonly designer: MesocycleDesigner,
+        private readonly entitlements: Entitlements,
         private readonly clock: Clock,
         private readonly ids: IdGenerator,
         private readonly logger: PinoLogger,
@@ -27,8 +29,17 @@ export class GenerateMesocycleDraftHandler implements ICommandHandler<
     }
 
     async execute(command: GenerateMesocycleDraftCommand): Promise<AiMesocycleDraftView> {
-        // Resolve the provider first: a missing key should fail before the
-        // athlete waits for anything.
+        // The plan gate goes before everything, so a plan without AI never reaches
+        // the provider. Designing for an athlete draws on the coach plan; designing
+        // for yourself draws on your athlete plan.
+        if (command.athleteId) {
+            await this.entitlements.assertFeature(command.userId, 'coach', 'ai')
+        } else {
+            await this.entitlements.assertFeature(command.userId, 'athlete', 'ai')
+        }
+
+        // Resolve the provider next: a missing key should fail before the athlete
+        // waits for anything.
         const config = await this.designer.resolveConfig(command.userId)
 
         // The strength that anchors the loads is the TRAINEE's — the athlete when a

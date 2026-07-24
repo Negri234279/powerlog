@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto'
 
 import { WorkoutSessionAggregate } from '../../../src/modules/workouts/domain/entities/workout-session.entity'
+import { RepsRangeVO } from '../../../src/modules/workouts/domain/value-objects/reps-range.vo'
 import { RepsVO } from '../../../src/modules/workouts/domain/value-objects/reps.vo'
 import { RirVO } from '../../../src/modules/workouts/domain/value-objects/rir.vo'
 import { RpeVO } from '../../../src/modules/workouts/domain/value-objects/rpe.vo'
+import { WeightRangeVO } from '../../../src/modules/workouts/domain/value-objects/weight-range.vo'
 import { WeightVO } from '../../../src/modules/workouts/domain/value-objects/weight.vo'
 import type { WorkoutStatus } from '../../../src/modules/workouts/domain/workout-status'
 
@@ -41,8 +43,8 @@ export const WorkoutSessionMother = {
             entry.id,
             {
                 id: randomUUID(),
-                plannedWeight: WeightVO.create(100),
-                plannedReps: RepsVO.create(5),
+                plannedWeight: WeightRangeVO.create(100),
+                plannedReps: RepsRangeVO.create(5),
                 weight: WeightVO.create(102.5),
                 reps: RepsVO.create(5),
                 rpe: RpeVO.create(8),

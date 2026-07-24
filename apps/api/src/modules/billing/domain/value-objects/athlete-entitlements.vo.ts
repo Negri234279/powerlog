@@ -1,0 +1,75 @@
+import { z } from 'zod'
+
+import type { AthleteEntitlementsSection } from '../../../../shared/contracts/entitlements'
+import { ValueObject } from '../../../../shared/domain/value-object'
+import { InvalidPlanEntitlementsError } from '../errors/billing.errors'
+import type { PlanPublicView } from './plan-entitlements'
+
+/**
+ * What an athlete plan grants. Stored as jsonb and validated here with zod
+ * rather than spread over columns: the catalog is edited from the admin panel,
+ * so adding a check must be a line in this schema plus a field in the form —
+ * not a migration. What Postgres cannot enforce, `assertIsValid` does, so every
+ * entitlements value in the domain has been through it.
+ *
+ * `strictObject` rejects unknown keys on purpose: a renamed feature would
+ * otherwise linger in the jsonb of old rows and read as "not granted" while
+ * looking present in the DB.
+ */
+const schema = z.strictObject({
+    /** How many workout templates they may create. `null` = unlimited, `0` = none. */
+    maxTemplates: z.int().min(0).nullable(),
+    /** How many mesocycles (training blocks) they may design for themselves. */
+    maxMesocycles: z.int().min(0).nullable(),
+    /** How many workouts (sessions) they may log for themselves. */
+    maxWorkouts: z.int().min(0).nullable(),
+    /** Use the AI drafts. A boolean, not a quota: the key is the user's own
+     *  (BYOK), so a generation costs the app nothing to serve. */
+    ai: z.boolean(),
+})
+
+export type AthleteEntitlements = z.infer<typeof schema>
+
+export class AthleteEntitlementsVO extends ValueObject<AthleteEntitlements> {
+    /** Validate raw input (admin form, jsonb column) into a VO. */
+    static create(raw: unknown): AthleteEntitlementsVO {
+        return new AthleteEntitlementsVO(raw as AthleteEntitlements)
+    }
+
+    /** The athlete section of a snapshot — what this plan grants its holder. */
+    toSection(plan: string): AthleteEntitlementsSection {
+        return {
+            plan,
+            maxTemplates: this.value.maxTemplates,
+            maxMesocycles: this.value.maxMesocycles,
+            maxWorkouts: this.value.maxWorkouts,
+            ai: this.value.ai,
+        }
+    }
+
+    /** The pricing-page view. An athlete plan does no coaching. */
+    publicView(): PlanPublicView {
+        return {
+            maxTemplates: this.value.maxTemplates,
+            maxMesocycles: this.value.maxMesocycles,
+            maxWorkouts: this.value.maxWorkouts,
+            ai: this.value.ai,
+            planSessions: false,
+            maxAthletes: 0,
+        }
+    }
+
+    protected override assertIsValid(value: AthleteEntitlements): void {
+        const parsed = schema.safeParse(value)
+        if (!parsed.success) {
+            throw new InvalidPlanEntitlementsError('athlete', z.prettifyError(parsed.error))
+        }
+    }
+
+    override equals(other: AthleteEntitlementsVO): boolean {
+        return JSON.stringify(this.value) === JSON.stringify(other.value)
+    }
+}
+
+/** The athlete schema, exposed so the admin form can be generated from it. */
+export const athleteEntitlementsSchema = schema

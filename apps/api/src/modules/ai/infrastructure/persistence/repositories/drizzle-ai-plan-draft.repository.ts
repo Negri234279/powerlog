@@ -78,7 +78,7 @@ export class DrizzleAiPlanDraftRepository extends AiPlanDraftRepository {
                 .select()
                 .from(aiPlanDraftMessages)
                 .where(eq(aiPlanDraftMessages.draftId, draft.id))
-                .orderBy(asc(aiPlanDraftMessages.createdAt)),
+                .orderBy(asc(aiPlanDraftMessages.position)),
         ])
 
         return AiPlanDraftMapper.toDomain(draft, sets, messages)

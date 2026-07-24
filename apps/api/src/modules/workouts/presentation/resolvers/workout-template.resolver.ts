@@ -32,6 +32,16 @@ import { WorkoutTemplateSummaryType, WorkoutTemplateType } from '../types/workou
 
 const uuidArg = z.string().uuid()
 const searchArg = z.string().trim().min(1).max(100).optional()
+// On create: which plan pays. Absent → personal (the common case).
+const scopeArg = z
+    .enum(['personal', 'coaching'])
+    .nullish()
+    .transform((value) => value ?? 'personal')
+// On list: a filter. Absent → both scopes, so it stays undefined.
+const listScopeArg = z
+    .enum(['personal', 'coaching'])
+    .nullish()
+    .transform((value) => value ?? undefined)
 
 @Resolver(() => WorkoutTemplateType)
 @UseGuards(JwtCookieGuard)
@@ -47,8 +57,10 @@ export class WorkoutTemplateResolver {
     async workoutTemplates(
         @CurrentUser() user: AuthUser,
         @Args('search', { type: () => String, nullable: true }, new ZodValidationPipe(searchArg)) search?: string,
+        @Args('scope', { type: () => String, nullable: true }, new ZodValidationPipe(listScopeArg))
+        scope?: 'personal' | 'coaching',
     ): Promise<WorkoutTemplateSummaryRow[]> {
-        const query = new ListWorkoutTemplatesQuery(user.userId, search)
+        const query = new ListWorkoutTemplatesQuery(user.userId, search, scope)
         return this.queryBus.execute(query)
     }
 
@@ -61,12 +73,17 @@ export class WorkoutTemplateResolver {
         return this.queryBus.execute(query)
     }
 
-    @Mutation(() => WorkoutTemplateType, { description: 'Create a reusable workout template.' })
+    @Mutation(() => WorkoutTemplateType, {
+        description:
+            'Create a reusable workout template. `scope` is personal (own training) or coaching (for athletes); each counts against a different plan.',
+    })
     async createWorkoutTemplate(
         @CurrentUser() user: AuthUser,
         @Args('input', new ZodValidationPipe(workoutTemplateSchema)) input: WorkoutTemplateInput,
+        @Args('scope', { type: () => String, nullable: true }, new ZodValidationPipe(scopeArg))
+        scope: 'personal' | 'coaching',
     ): Promise<WorkoutTemplateView> {
-        const command = new CreateWorkoutTemplateCommand(user.userId, input)
+        const command = new CreateWorkoutTemplateCommand(user.userId, input, scope)
         return this.commandBus.execute(command)
     }
 

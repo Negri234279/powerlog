@@ -1,14 +1,17 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useMemo, useState } from 'react'
+import { type SubmitEvent, useMemo, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { FormError } from '@/components/ui/form-error'
+import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Bolt } from '@/components/ui/icons'
+import { HistoryEntryLink } from '@/components/ai/history-entry-link'
+import { ProposedSets } from '@/components/ai/proposed-sets'
 import { TrackedButton } from '@/components/ui/tracked'
-import { kgTo, type Units } from '@/lib/units'
+import { type Units } from '@/lib/units'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import {
     type AiPlanDraft,
@@ -23,16 +26,6 @@ import type { WorkoutSessionData } from '@/lib/graphql/hooks/use-workouts'
 
 type Entries = NonNullable<WorkoutSessionData>['entries']
 type ProposedSet = AiPlanDraft['sets'][number]
-
-/** "102.5kg × 5 @8" / "90kg × 8 · RIR 2" — the same shape as a logged set. */
-function formatTarget(set: ProposedSet, units: Units): string {
-    const weight = set.plannedWeightKg === null ? '—' : `${Number(kgTo(units, set.plannedWeightKg).toFixed(1))}${units}`
-    const base = `${weight} × ${set.plannedReps ?? '—'}`
-    if (set.rpe !== null) return `${base} @${set.rpe}`
-    if (set.rir !== null) return `${base} · RIR ${set.rir}`
-
-    return base
-}
 
 /**
  * The AI's proposal for a planned session: what it would program for each set,
@@ -67,6 +60,10 @@ export function AiPlanPanel({
     const discard = useDiscardPlanDraft(sessionId)
 
     const [error, setError] = useState<string | null>(null)
+    // The raw error too: only it carries the `extensions.code` that tells a plan
+    // refusal ("you don't pay for AI") from a real failure. One gets an upgrade CTA,
+    // the other an error message.
+    const [rawError, setRawError] = useState<unknown>(null)
     const [extraInfo, setExtraInfo] = useState('')
     const [open, setOpen] = useState(false)
 
@@ -99,11 +96,13 @@ export function AiPlanPanel({
 
     async function run(action: () => Promise<unknown>, onDone?: () => void) {
         setError(null)
+        setRawError(null)
         try {
             await action()
             onDone?.()
         } catch (caught) {
             setError(errorMessage(caught))
+            setRawError(caught)
         }
     }
 
@@ -120,7 +119,17 @@ export function AiPlanPanel({
         if (!draft) return
         void run(
             () => accept.mutateAsync(draft.id),
-            () => track('ai_plan_accepted', {}),
+            () => {
+                track('ai_plan_accepted', {})
+                // The work is done — the targets are on the session now, and the
+                // session itself is what the athlete wants to look at. Collapsing
+                // only on success: a failed accept must leave the proposal on
+                // screen, or the athlete loses what they were deciding about.
+                //
+                // Discarding deliberately does NOT collapse: saying no to a
+                // proposal usually means wanting another one.
+                setOpen(false)
+            },
         )
     }
 
@@ -132,7 +141,7 @@ export function AiPlanPanel({
         )
     }
 
-    async function onRefine(event: FormEvent<HTMLFormElement>) {
+    async function onRefine(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         if (!draft) return
         const form = event.currentTarget
@@ -156,14 +165,18 @@ export function AiPlanPanel({
     // wants it. A live draft always expands — there's a proposal to review.
     if (!open && !draft) {
         return (
-            <TrackedButton
-                analyticsId="ai-plan-open"
-                type="button"
-                onClick={() => setOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
-            >
-                <Bolt className="size-4" /> {t('open')}
-            </TrackedButton>
+            <div className="flex flex-wrap items-center gap-4">
+                <TrackedButton
+                    analyticsId="ai-plan-open"
+                    type="button"
+                    onClick={() => setOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-5 py-2.5 text-sm font-medium text-text ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.1]"
+                >
+                    <Bolt className="size-4" /> {t('open')}
+                </TrackedButton>
+                {/* Collapsed is exactly when "where's my old one" gets asked. */}
+                <HistoryEntryLink kind="session" sessionId={sessionId} analyticsId="ai-plan-history-link" />
+            </div>
         )
     }
 
@@ -177,36 +190,19 @@ export function AiPlanPanel({
                         <p className="mt-3 max-w-lg text-body text-text-dim">{draft ? t('draftBody') : t('body')}</p>
                     </div>
 
-                    {draft ? (
-                        <span className="whitespace-nowrap rounded-full bg-white/[0.06] px-3 py-1 font-mono text-eyebrow uppercase text-text-dim">
-                            {draft.model}
-                        </span>
-                    ) : null}
+                    <div className="flex flex-col items-end gap-2">
+                        {draft ? (
+                            <span className="whitespace-nowrap rounded-full bg-white/[0.06] px-3 py-1 font-mono text-eyebrow uppercase text-text-dim">
+                                {draft.model}
+                            </span>
+                        ) : null}
+                        <HistoryEntryLink kind="session" sessionId={sessionId} analyticsId="ai-plan-history-link" />
+                    </div>
                 </div>
 
                 {draft ? (
                     <div className="mt-6 space-y-6">
-                        <div className="space-y-4">
-                            {proposalByEntry.map((entry) => (
-                                <div key={entry.entryId}>
-                                    <p className="font-mono text-eyebrow uppercase text-text-dim">{entry.name}</p>
-                                    <ul className="mt-2 space-y-1">
-                                        {entry.sets.map((proposed) => (
-                                            <li
-                                                key={proposed.order}
-                                                className="flex flex-wrap items-baseline gap-x-3 text-sm text-text"
-                                            >
-                                                <span className="font-mono text-text-faint">{proposed.order}</span>
-                                                <span>{formatTarget(proposed, units)}</span>
-                                                {proposed.notes ? (
-                                                    <span className="text-text-dim">— {proposed.notes}</span>
-                                                ) : null}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
-                        </div>
+                        <ProposedSets entries={proposalByEntry} units={units} />
 
                         <div className="space-y-3 rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
                             {draft.messages.map((message) => (
@@ -237,7 +233,7 @@ export function AiPlanPanel({
                             </form>
                         </div>
 
-                        <FormError error={error} />
+                        {isPlanRefusal(rawError) ? <UpgradeGate error={rawError} /> : <FormError error={error} />}
 
                         <div className="flex flex-wrap items-center gap-3">
                             <TrackedButton
@@ -288,7 +284,7 @@ export function AiPlanPanel({
                             </Field>
                         </div>
 
-                        <FormError error={error} />
+                        {isPlanRefusal(rawError) ? <UpgradeGate error={rawError} /> : <FormError error={error} />}
 
                         <div className="flex flex-wrap items-center gap-3">
                             <TrackedButton

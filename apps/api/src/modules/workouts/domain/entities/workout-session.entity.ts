@@ -1,4 +1,5 @@
 import { ExerciseEntryNotFoundError, WorkoutSetNotFoundError } from '../errors/workouts.errors'
+import type { SetOutcome } from '../set-outcome'
 import type { WorkoutStatus } from '../workout-status'
 import { ExerciseEntryEntity } from './exercise-entry.entity'
 import type { WorkoutSetEntity, WorkoutSetFields } from './workout-set.entity'
@@ -82,14 +83,21 @@ export class WorkoutSessionAggregate {
     }
 
     updateSet(entryId: string, setId: string, fields: WorkoutSetFields, now: Date): void {
-        const set = this.requireEntry(entryId).getSet(setId)
-        if (!set) throw new WorkoutSetNotFoundError()
-        set.update(fields)
+        this.requireSet(entryId, setId).update(fields)
         this.touch(now)
     }
 
     removeSet(entryId: string, setId: string, now: Date): void {
         if (!this.requireEntry(entryId).removeSet(setId)) throw new WorkoutSetNotFoundError()
+        this.touch(now)
+    }
+
+    /**
+     * Mark a set done (success or failed), logging what was performed. Going back
+     * to pending is an edit like any other (`updateSet` with a null outcome).
+     */
+    completeSet(entryId: string, setId: string, outcome: SetOutcome, fields: WorkoutSetFields, now: Date): void {
+        this.requireSet(entryId, setId).markOutcome(outcome, fields)
         this.touch(now)
     }
 
@@ -110,6 +118,12 @@ export class WorkoutSessionAggregate {
         const entry = this.props.entries.find((e) => e.id === entryId)
         if (!entry) throw new ExerciseEntryNotFoundError()
         return entry
+    }
+
+    private requireSet(entryId: string, setId: string): WorkoutSetEntity {
+        const set = this.requireEntry(entryId).getSet(setId)
+        if (!set) throw new WorkoutSetNotFoundError()
+        return set
     }
 
     private touch(now: Date): void {

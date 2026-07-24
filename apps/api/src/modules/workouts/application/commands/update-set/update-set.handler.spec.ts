@@ -37,4 +37,32 @@ describe('UpdateSetHandler', () => {
         expect(view.entries[0]!.sets[0]!.reps).toBeNull()
         expect(view.entries[0]!.sets[0]!.e1rmKg).toBeNull()
     })
+
+    it('leaves the outcome alone when the edit does not mention it', async () => {
+        const { handler } = setup()
+        await handler.execute(new UpdateSetCommand('u-1', 's-1', 'e-1', 'set-1', { outcome: 'success' }))
+
+        const view = await handler.execute(new UpdateSetCommand('u-1', 's-1', 'e-1', 'set-1', { weight: 110 }))
+
+        expect(view.entries[0]!.sets[0]!.outcome).toBe('success')
+    })
+
+    it('corrects a mis-marked outcome', async () => {
+        const { handler } = setup()
+        await handler.execute(new UpdateSetCommand('u-1', 's-1', 'e-1', 'set-1', { outcome: 'success' }))
+
+        const view = await handler.execute(new UpdateSetCommand('u-1', 's-1', 'e-1', 'set-1', { outcome: 'failed' }))
+
+        expect(view.entries[0]!.sets[0]!.outcome).toBe('failed')
+    })
+
+    it('sends a set back to pending with a null outcome, keeping its logged numbers', async () => {
+        const { handler } = setup()
+        await handler.execute(new UpdateSetCommand('u-1', 's-1', 'e-1', 'set-1', { outcome: 'success' }))
+
+        const view = await handler.execute(new UpdateSetCommand('u-1', 's-1', 'e-1', 'set-1', { outcome: null }))
+
+        // Un-marking is a correction of the outcome, not of the training done.
+        expect(view.entries[0]!.sets[0]!).toMatchObject({ outcome: null, weightKg: 100, reps: 5 })
+    })
 })

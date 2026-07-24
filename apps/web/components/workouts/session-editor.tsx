@@ -13,23 +13,18 @@ import {
     useExercises,
     useWorkoutSession,
 } from '@/lib/graphql/hooks/use-workouts'
+import { formatSessionDate } from '@/lib/format-date'
 import { unitsOf } from '@/lib/units'
 import { AddExercise } from '@/components/workouts/add-exercise'
 import { AiPlanPanel } from '@/components/workouts/ai-plan-panel'
 import { ExerciseEntry } from '@/components/workouts/exercise-entry'
+import { SessionProgress, entryProgress, sessionProgress } from '@/components/workouts/session-progress'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { FormError } from '@/components/ui/form-error'
-import { Check } from '@/components/ui/icons'
+import { Check, Lock, Pencil } from '@/components/ui/icons'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import type { BackLink } from '@/components/workouts/back-link'
-
-function formatDate(iso: string, locale: string): string {
-    return new Date(iso).toLocaleDateString(locale, {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-    })
-}
 
 /**
  * The session view/editor: complete, delete, plan with AI, log sets. Shared by
@@ -51,6 +46,12 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
     const del = useDeleteWorkoutSession()
     const [confirmingDelete, setConfirmingDelete] = useState(false)
     const [actionError, setActionError] = useState<string | null>(null)
+    const [statusFilter, setStatusFilter] = useState<string[]>([])
+    // A completed session opens read-only; unlocking is a deliberate, confirmed
+    // step so a stray tap while training can't rewrite what already happened.
+    const [unlocked, setUnlocked] = useState(false)
+    const [confirmingUnlock, setConfirmingUnlock] = useState(false)
+    const [confirmingComplete, setConfirmingComplete] = useState(false)
 
     const nameById = useMemo(() => {
         const map = new Map<string, string>()
@@ -58,7 +59,25 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
         return map
     }, [exercises])
 
+    const statusOptions = useMemo(
+        () => [
+            { value: 'pending', label: t('statusPending') },
+            { value: 'completed', label: t('statusCompleted') },
+        ],
+        [t],
+    )
+
+    // Nothing picked = no filter, the same as every other filter in the app.
+    // An exercise counts as completed once every set in it has been marked.
+    const visibleEntries = useMemo(() => {
+        const entries = session?.entries ?? []
+        if (statusFilter.length === 0) return entries
+
+        return entries.filter((entry) => statusFilter.includes(entryProgress(entry).done ? 'completed' : 'pending'))
+    }, [session, statusFilter])
+
     async function onComplete() {
+        setConfirmingComplete(false)
         setActionError(null)
         try {
             await complete.mutateAsync(sessionId)
@@ -66,6 +85,18 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
         } catch (error) {
             setActionError(errorMessage(error))
         }
+    }
+
+    // Every set marked (e.g. 10/10) ⇒ complete straight away. Anything left
+    // pending is likely an early tap, so make finishing it a deliberate confirm.
+    function handleComplete() {
+        if (!session) return
+        if (sessionProgress(session).done) {
+            void onComplete()
+            return
+        }
+
+        setConfirmingComplete(true)
     }
 
     async function onDelete() {
@@ -98,6 +129,8 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
     }
 
     const completed = session.status === 'completed'
+    const progress = sessionProgress(session)
+    const locked = completed && !unlocked
     const coachPlanned = session.plannedByUserId !== null && session.plannedByUserId !== session.userId
     // Someone else's session ⇒ a coach is programming for that athlete. Everything
     // showing past performance has to read the ATHLETE's history, not the coach's.
@@ -116,7 +149,7 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
             <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-3">
-                        <h1 className="font-display text-display">{formatDate(session.performedAt, locale)}</h1>
+                        <h1 className="font-display text-display">{formatSessionDate(session.performedAt, locale)}</h1>
                         {coachPlanned ? (
                             <span className="rounded-full bg-amber/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-amber">
                                 {t('coachPlanned')}
@@ -135,7 +168,7 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
                         <TrackedButton
                             analyticsId="session-complete"
                             type="button"
-                            onClick={onComplete}
+                            onClick={handleComplete}
                             disabled={complete.isPending}
                             className="inline-flex items-center gap-1.5 rounded-full bg-pr/15 px-4 py-2 text-sm font-medium text-pr ring-1 ring-pr/30 transition-colors duration-300 hover:bg-pr/25 disabled:opacity-60"
                         >
@@ -179,16 +212,85 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
 
             <FormError error={actionError} className="mt-4" />
 
-            {/* Only a planned session has targets left to program. */}
-            {completed ? null : (
-                <div className="mt-8">
-                    <AiPlanPanel sessionId={session.id} entries={session.entries} nameById={nameById} units={units} />
+            {completed ? (
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-shell px-5 py-4 ring-1 ring-hairline">
+                    <div className="flex items-start gap-3">
+                        {locked ? (
+                            <Lock className="mt-0.5 size-4 shrink-0 text-text-faint" />
+                        ) : (
+                            <Pencil className="mt-0.5 size-4 shrink-0 text-amber" />
+                        )}
+                        <div>
+                            <p className="text-sm font-medium text-text">
+                                {locked ? t('completedLockedTitle') : t('editingCompletedTitle')}
+                            </p>
+                            <p className="mt-0.5 text-sm text-text-dim">
+                                {locked ? t('completedLockedBody') : t('editingCompletedBody')}
+                            </p>
+                        </div>
+                    </div>
+                    {locked ? (
+                        <TrackedButton
+                            analyticsId="session-unlock-open"
+                            type="button"
+                            onClick={() => setConfirmingUnlock(true)}
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                        >
+                            <Pencil className="size-4" /> {t('editSession')}
+                        </TrackedButton>
+                    ) : (
+                        <TrackedButton
+                            analyticsId="session-relock"
+                            type="button"
+                            onClick={() => setUnlocked(false)}
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                        >
+                            <Lock className="size-4" /> {t('lockSession')}
+                        </TrackedButton>
+                    )}
                 </div>
-            )}
+            ) : null}
+
+            <div className="mt-6">
+                <SessionProgress session={session} />
+            </div>
+
+            {/* `items-start` + a growing AI slot so this row holds up in both of the
+                panel's shapes: a pill next to the filter when closed, and a
+                full-width card with the filter still at its top-right when open. */}
+            <div className="mt-8 flex flex-wrap items-start gap-3">
+                <div className="min-w-0 flex-1">
+                    {/* Only a planned session has targets left to program. */}
+                    {completed ? null : (
+                        <AiPlanPanel
+                            sessionId={session.id}
+                            entries={session.entries}
+                            nameById={nameById}
+                            units={units}
+                        />
+                    )}
+                </div>
+
+                {session.entries.length > 0 ? (
+                    <div className="shrink-0">
+                        <MultiSelect
+                            analyticsId="session-entries-filter-status"
+                            label={t('filterStatus')}
+                            options={statusOptions}
+                            selected={statusFilter}
+                            onChange={setStatusFilter}
+                        />
+                    </div>
+                ) : null}
+            </div>
 
             <div className="mt-10 space-y-4">
-                {session.entries.length > 0 ? (
-                    session.entries.map((entry) => (
+                {session.entries.length === 0 ? (
+                    <p className="text-body text-text-dim">{t('noExercisesYet')}</p>
+                ) : visibleEntries.length === 0 ? (
+                    <p className="text-body text-text-dim">{t('noMatchingExercises')}</p>
+                ) : (
+                    visibleEntries.map((entry) => (
                         <ExerciseEntry
                             key={entry.id}
                             sessionId={session.id}
@@ -196,16 +298,43 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
                             exerciseName={nameById.get(entry.exerciseId) ?? t('exercise')}
                             units={units}
                             athleteId={athleteId}
+                            locked={locked}
                         />
                     ))
-                ) : (
-                    <p className="text-body text-text-dim">{t('noExercisesYet')}</p>
                 )}
 
-                <div className="pt-2">
-                    <AddExercise sessionId={session.id} />
-                </div>
+                {locked ? null : (
+                    <div className="pt-2">
+                        <AddExercise sessionId={session.id} />
+                    </div>
+                )}
             </div>
+
+            <ConfirmModal
+                analyticsId="session-complete-confirm"
+                open={confirmingComplete}
+                onClose={() => setConfirmingComplete(false)}
+                onConfirm={() => void onComplete()}
+                title={t('completeConfirmTitle')}
+                description={t('completeConfirmBody', { completed: progress.completed, total: progress.total })}
+                confirmLabel={t('complete')}
+                cancelLabel={t('cancel')}
+                pending={complete.isPending}
+            />
+
+            <ConfirmModal
+                analyticsId="session-unlock"
+                open={confirmingUnlock}
+                onClose={() => setConfirmingUnlock(false)}
+                onConfirm={() => {
+                    setUnlocked(true)
+                    setConfirmingUnlock(false)
+                }}
+                title={t('unlockConfirmTitle')}
+                description={t('unlockConfirmBody')}
+                confirmLabel={t('unlockConfirm')}
+                cancelLabel={t('cancel')}
+            />
         </div>
     )
 }

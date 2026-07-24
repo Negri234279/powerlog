@@ -9,6 +9,10 @@ const TABS = [
     { value: '/admin', key: 'overview' },
     { value: '/admin/exercises', key: 'exercises' },
     { value: '/admin/users', key: 'users' },
+    { value: '/admin/plans', key: 'plans' },
+    { value: '/admin/subscriptions', key: 'subscriptions' },
+    { value: '/admin/billing', key: 'billing' },
+    { value: '/admin/contact', key: 'contact' },
 ] as const
 
 /** Sub-navigation shared by every admin page — a sliding-pill segmented control. */

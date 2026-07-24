@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import { AiPlanDraftAggregate, type PlanDraftSet } from '../../../src/modules/ai/domain/entities/ai-plan-draft.entity'
 import { AiProviderVO } from '../../../src/modules/ai/domain/value-objects/ai-provider.vo'
 import type { AiProvider } from '../../../src/shared/ai-provider'
@@ -25,6 +27,11 @@ interface DraftOverrides {
     provider?: AiProvider
     model?: string
     sets?: PlanDraftSet[]
+    /** What the athlete asked for; omit for a draft generated unprompted. */
+    request?: string
+    requestId?: string
+    rationaleId?: string
+    now?: Date
 }
 
 export const AiPlanDraftMother = {
@@ -39,8 +46,25 @@ export const AiPlanDraftMother = {
             model: overrides.model ?? 'gpt-5',
             sets: overrides.sets ?? [planDraftSet()],
             rationale: 'Held the top set and added a back-off.',
-            rationaleId: 'message-1',
-            now: DEFAULT_NOW,
+            rationaleId: overrides.rationaleId ?? 'message-1',
+            request: overrides.request
+                ? { id: overrides.requestId ?? 'message-0', content: overrides.request }
+                : undefined,
+            now: overrides.now ?? DEFAULT_NOW,
+        })
+    },
+
+    /** The same draft with real UUIDs, for tests that put it in Postgres. */
+    persistable(overrides: DraftOverrides = {}): AiPlanDraftAggregate {
+        const entryId = overrides.entryId ?? randomUUID()
+
+        return AiPlanDraftMother.open({
+            id: randomUUID(),
+            sessionId: randomUUID(),
+            requestId: randomUUID(),
+            rationaleId: randomUUID(),
+            sets: [planDraftSet({ entryId })],
+            ...overrides,
         })
     },
 }

@@ -10,6 +10,8 @@ const TABS = [
     { id: 'profile', href: '/profile' },
     { id: 'security', href: '/profile/security' },
     { id: 'ai', href: '/profile/ai' },
+    { id: 'plan', href: '/profile/plan' },
+    { id: 'billing', href: '/profile/billing' },
 ] as const
 
 /** Horizontal sub-nav for the account area. Each tab is its own route, so
@@ -26,7 +28,7 @@ export function ProfileNav() {
     }
 
     return (
-        <nav className="flex items-center gap-1 overflow-x-auto">
+        <nav className="flex flex-wrap items-center gap-1.5">
             {TABS.map((tab) => (
                 <TrackedLink
                     analyticsId={`profile-nav-${tab.id}`}

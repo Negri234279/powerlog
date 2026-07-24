@@ -12,9 +12,11 @@ export interface ExerciseSessionHistoryFilter {
 
 /** One logged set of a past session, in the order it was performed. Weights are kg. */
 export interface ExerciseSessionHistorySet {
-    /** Programmed targets (optional). */
-    plannedWeightKg: number | null
-    plannedReps: number | null
+    /** Programmed targets (optional), each as the bounds of its range. */
+    plannedWeightKgMin: number | null
+    plannedWeightKgMax: number | null
+    plannedRepsMin: number | null
+    plannedRepsMax: number | null
     weightKg: number
     reps: number
     rpe: number | null

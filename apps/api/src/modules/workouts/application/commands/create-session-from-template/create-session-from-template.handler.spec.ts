@@ -7,6 +7,8 @@ import {
     InMemoryWorkoutSessionRepository,
     InMemoryWorkoutTemplateRepository,
 } from '../../../../../../tests/doubles/workouts'
+import { FakeEntitlements } from '../../../../../../tests/doubles/shared'
+import { PlanLimitReachedError } from '../../../../../shared/contracts/entitlements'
 import { WorkoutTemplateNotFoundError } from '../../../domain/errors/workouts.errors'
 import { CreateSessionFromTemplateCommand } from './create-session-from-template.command'
 import { CreateSessionFromTemplateHandler } from './create-session-from-template.handler'
@@ -19,8 +21,15 @@ function setup(seedOwner = OWNER) {
     const template = WorkoutTemplateMother.withTree(EXERCISE, { id: 't-1', ownerId: seedOwner })
     const templates = new InMemoryWorkoutTemplateRepository([template])
     const sessions = new InMemoryWorkoutSessionRepository()
-    const handler = new CreateSessionFromTemplateHandler(sessions, templates, new FakeClock(NOW), new FakeIdGenerator())
-    return { sessions, handler }
+    const entitlements = new FakeEntitlements()
+    const handler = new CreateSessionFromTemplateHandler(
+        sessions,
+        templates,
+        entitlements,
+        new FakeClock(NOW),
+        new FakeIdGenerator(),
+    )
+    return { sessions, entitlements, handler }
 }
 
 describe('CreateSessionFromTemplateHandler', () => {
@@ -38,8 +47,8 @@ describe('CreateSessionFromTemplateHandler', () => {
         expect(sets).toHaveLength(2)
         // Programmed targets are copied; performed values + e1RM stay empty.
         expect(sets[0]).toMatchObject({
-            plannedWeightKg: 100,
-            plannedReps: 5,
+            plannedWeightKg: { min: 100, max: 100 },
+            plannedReps: { min: 5, max: 5 },
             weightKg: null,
             reps: null,
             e1rmKg: null,
@@ -52,6 +61,18 @@ describe('CreateSessionFromTemplateHandler', () => {
 
         await expect(handler.execute(new CreateSessionFromTemplateCommand(OWNER, 't-1'))).rejects.toBeInstanceOf(
             WorkoutTemplateNotFoundError,
+        )
+        expect(sessions.size).toBe(0)
+    })
+
+    it('refuses to start a session from a template once the workout cap is reached', async () => {
+        // Starting a session — from a template or not — creates a workout, so it's
+        // the workout cap that gates it, not the template one.
+        const { sessions, entitlements, handler } = setup()
+        entitlements.onAthlete({ plan: 'athlete-free', maxWorkouts: 0 })
+
+        await expect(handler.execute(new CreateSessionFromTemplateCommand(OWNER, 't-1'))).rejects.toBeInstanceOf(
+            PlanLimitReachedError,
         )
         expect(sessions.size).toBe(0)
     })

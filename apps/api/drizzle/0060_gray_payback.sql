@@ -1,0 +1,1 @@
+ALTER TABLE "ai_mesocycle_drafts" ADD COLUMN "mesocycle_id" uuid;

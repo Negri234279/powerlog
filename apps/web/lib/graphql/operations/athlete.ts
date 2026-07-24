@@ -6,8 +6,26 @@ import { graphql } from '@/lib/graphql/__generated__'
 // ── Reads ────────────────────────────────────────────────────
 
 export const AthleteWorkoutHistoryDocument = graphql(`
-    query AthleteWorkoutHistory($athleteId: ID!, $limit: Int, $status: String, $cursor: String) {
-        athleteWorkoutHistory(athleteId: $athleteId, limit: $limit, status: $status, cursor: $cursor) {
+    query AthleteWorkoutHistory(
+        $athleteId: ID!
+        $limit: Int
+        $status: String
+        $from: String
+        $to: String
+        $exerciseId: ID
+        $query: String
+        $cursor: String
+    ) {
+        athleteWorkoutHistory(
+            athleteId: $athleteId
+            limit: $limit
+            status: $status
+            from: $from
+            to: $to
+            exerciseId: $exerciseId
+            query: $query
+            cursor: $cursor
+        ) {
             items {
                 id
                 status
@@ -62,6 +80,30 @@ export const AthleteExerciseStatsDocument = graphql(`
             totalReps
             bestE1rmKg
             heaviestWeightKg
+            successSets
+            failedSets
+        }
+    }
+`)
+
+export const AthleteExecutionDocument = graphql(`
+    query AthleteExecution($athleteId: ID!, $from: String, $to: String) {
+        athleteExecution(athleteId: $athleteId, from: $from, to: $to) {
+            adherenceRate
+            plannedCompleted
+            plannedMissed
+            plannedUpcoming
+            successRate
+            successSets
+            failedSets
+            pendingSets
+            loadCompliance
+            plannedSets
+            sessionsPerWeek
+            lastSessionAt
+            daysSinceLastSession
+            volumeChange
+            sessionsChange
         }
     }
 `)
@@ -78,13 +120,86 @@ export const AthleteExerciseSessionHistoryDocument = graphql(`
             performedAt
             status
             sets {
-                plannedWeightKg
-                plannedReps
+                plannedWeightKg {
+                    min
+                    max
+                }
+                plannedReps {
+                    min
+                    max
+                }
                 weightKg
                 reps
                 rpe
                 rir
                 e1rmKg
+            }
+        }
+    }
+`)
+
+export const AthleteExecutionSeriesDocument = graphql(`
+    query AthleteExecutionSeries($athleteId: ID!, $from: String, $to: String) {
+        athleteExecutionSeries(athleteId: $athleteId, from: $from, to: $to) {
+            bucketStart
+            plannedCompleted
+            plannedMissed
+            plannedLoadKg
+            actualLoadKg
+        }
+    }
+`)
+
+export const AthleteVolumeSeriesDocument = graphql(`
+    query AthleteVolumeSeries($athleteId: ID!, $from: String, $to: String) {
+        athleteVolumeSeries(athleteId: $athleteId, from: $from, to: $to) {
+            bucketStart
+            totalVolumeKg
+            totalSets
+            sessions
+        }
+    }
+`)
+
+export const AthleteTrainingDistributionDocument = graphql(`
+    query AthleteTrainingDistribution($athleteId: ID!, $from: String, $to: String) {
+        athleteTrainingDistribution(athleteId: $athleteId, from: $from, to: $to) {
+            byMuscle {
+                key
+                totalVolumeKg
+                totalSets
+            }
+            byCategory {
+                key
+                totalVolumeKg
+                totalSets
+            }
+            rpe {
+                value
+                sets
+            }
+            rir {
+                value
+                sets
+            }
+        }
+    }
+`)
+
+export const AthleteStrengthProgressionDocument = graphql(`
+    query AthleteStrengthProgression($athleteId: ID!, $exerciseId: ID!, $from: String, $to: String) {
+        athleteStrengthProgression(athleteId: $athleteId, exerciseId: $exerciseId, from: $from, to: $to) {
+            points {
+                performedAt
+                e1rmKg
+            }
+            trend {
+                slopePerWeekKg
+                r2
+                projections {
+                    weeks
+                    e1rmKg
+                }
             }
         }
     }

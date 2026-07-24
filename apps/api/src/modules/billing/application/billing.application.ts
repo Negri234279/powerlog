@@ -1,0 +1,78 @@
+import { AddPlanPriceHandler } from './commands/add-plan-price/add-plan-price.handler'
+import { AssignSubscriptionHandler } from './commands/assign-subscription/assign-subscription.handler'
+import { CreatePlanHandler } from './commands/create-plan/create-plan.handler'
+import { DeactivatePlanOfferHandler } from './commands/deactivate-plan-offer/deactivate-plan-offer.handler'
+import { DeactivatePlanPriceHandler } from './commands/deactivate-plan-price/deactivate-plan-price.handler'
+import { HandleGatewayEventHandler } from './commands/handle-gateway-event/handle-gateway-event.handler'
+import {
+    CancelSubscriptionHandler,
+    ChangePlanHandler,
+    ResumeSubscriptionHandler,
+} from './commands/manage-subscription/manage-subscription.handlers'
+import { RevokeSubscriptionHandler } from './commands/revoke-subscription/revoke-subscription.handler'
+import { SetPlanStatusHandler } from './commands/set-plan-status/set-plan-status.handler'
+import { StartCheckoutHandler } from './commands/start-checkout/start-checkout.handler'
+import { SyncPlanHandler } from './commands/sync-plan/sync-plan.handler'
+import { UpdatePlanHandler } from './commands/update-plan/update-plan.handler'
+import { UpsertPlanOfferHandler } from './commands/upsert-plan-offer/upsert-plan-offer.handler'
+import { RetryFailedWebhookHandler } from './commands/retry-failed-webhook/retry-failed-webhook.handler'
+import { RetryWebhookEventHandler } from './commands/retry-webhook-event/retry-webhook-event.handler'
+import { AdminBillingStatsHandler } from './queries/admin-billing-stats/admin-billing-stats.handler'
+import {
+    AdminBillingDriftHandler,
+    AdminGatewayStatusHandler,
+    AdminWebhookEventsHandler,
+} from './queries/admin-gateways/admin-gateways.handlers'
+import { AdminPlansHandler } from './queries/admin-plans/admin-plans.handler'
+import { AdminSubscriptionsHandler } from './queries/admin-subscriptions/admin-subscriptions.handler'
+import { GetInvoiceReceiptHandler } from './queries/get-invoice-receipt/get-invoice-receipt.handler'
+import { GetPlanMembershipHandler } from './queries/get-plan-membership/get-plan-membership.handler'
+import { GetUserBillingHandler } from './queries/get-user-billing/get-user-billing.handler'
+import { GetUserEntitlementsHandler } from './queries/get-user-entitlements/get-user-entitlements.handler'
+import {
+    AvailablePlansHandler,
+    BillingPortalUrlHandler,
+    MyInvoicesHandler,
+    MySubscriptionHandler,
+    TrialEligibilityHandler,
+} from './queries/my-billing/my-billing.handlers'
+
+/** CQRS command handlers for the billing module. */
+export const BILLING_COMMAND_HANDLERS = [
+    CreatePlanHandler,
+    UpdatePlanHandler,
+    SetPlanStatusHandler,
+    AddPlanPriceHandler,
+    DeactivatePlanPriceHandler,
+    AssignSubscriptionHandler,
+    RevokeSubscriptionHandler,
+    UpsertPlanOfferHandler,
+    DeactivatePlanOfferHandler,
+    SyncPlanHandler,
+    StartCheckoutHandler,
+    CancelSubscriptionHandler,
+    ResumeSubscriptionHandler,
+    ChangePlanHandler,
+    HandleGatewayEventHandler,
+    RetryWebhookEventHandler,
+    RetryFailedWebhookHandler,
+]
+
+/** CQRS query handlers for the billing module. */
+export const BILLING_QUERY_HANDLERS = [
+    GetUserEntitlementsHandler,
+    GetPlanMembershipHandler,
+    AdminPlansHandler,
+    AdminSubscriptionsHandler,
+    AdminBillingStatsHandler,
+    AvailablePlansHandler,
+    MySubscriptionHandler,
+    MyInvoicesHandler,
+    BillingPortalUrlHandler,
+    TrialEligibilityHandler,
+    AdminGatewayStatusHandler,
+    AdminWebhookEventsHandler,
+    AdminBillingDriftHandler,
+    GetInvoiceReceiptHandler,
+    GetUserBillingHandler,
+]

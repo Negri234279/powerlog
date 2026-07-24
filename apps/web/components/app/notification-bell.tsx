@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/cn'
-import { Bell, Calendar, Check, Close, Dumbbell, Users } from '@/components/ui/icons'
+import { formatNumericDate } from '@/lib/format-date'
+import { Bell, Calendar, Check, Close, CreditCard, Dumbbell, Users } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
 import {
     type NotificationItem,
@@ -29,6 +30,12 @@ function hrefFor(type: string): string | null {
         case 'mesocycle_assigned':
         case 'mesocycle_week_generated':
             return '/workouts'
+        // Everything about the subscription is decided on the plan page — including
+        // fixing the card, which is a click away from there.
+        case 'subscription_activated':
+        case 'subscription_canceled':
+        case 'subscription_payment_failed':
+            return '/profile/plan'
         default:
             return null
     }
@@ -232,10 +239,11 @@ function NotificationRow({
     onDelete: () => void
 }) {
     const t = useTranslations('notifications')
+    const locale = useLocale()
     const relative = useRelativeTime()
     const unread = notification.readAt === null
 
-    const { icon, message } = describe(notification, t)
+    const { icon, message } = describe(notification, t, locale)
 
     return (
         <li
@@ -284,6 +292,7 @@ function NotificationRow({
 function describe(
     notification: NotificationItem,
     t: ReturnType<typeof useTranslations<'notifications'>>,
+    locale: string,
 ): { icon: ReactNode; message: string } {
     const data = parseData(notification.data)
 
@@ -292,6 +301,9 @@ function describe(
     const name = typeof data['name'] === 'string' ? data['name'] : '—'
     const week = typeof data['week'] === 'number' ? data['week'] : 0
     const sessions = typeof data['sessions'] === 'number' ? data['sessions'] : 0
+    const plan = typeof data['plan'] === 'string' ? data['plan'] : '—'
+    const until =
+        typeof data['currentPeriodEnd'] === 'string' ? formatNumericDate(data['currentPeriodEnd'], locale) : '—'
 
     switch (notification.type) {
         case 'coach_invitation':
@@ -309,6 +321,13 @@ function describe(
                 icon: <Calendar className="size-4" />,
                 message: t('items.mesocycleWeekGenerated', { coach, week, sessions }),
             }
+        case 'subscription_activated':
+            return { icon: <CreditCard className="size-4" />, message: t('items.subscriptionActivated', { plan }) }
+        case 'subscription_canceled':
+            // Not "goodbye": they keep the plan until the period they paid for ends.
+            return { icon: <CreditCard className="size-4" />, message: t('items.subscriptionCanceled', { until }) }
+        case 'subscription_payment_failed':
+            return { icon: <CreditCard className="size-4" />, message: t('items.subscriptionPaymentFailed') }
         default:
             return { icon: <Bell className="size-4" />, message: t('items.generic') }
     }

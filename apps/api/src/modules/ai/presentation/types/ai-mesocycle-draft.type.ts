@@ -112,6 +112,12 @@ export class AiMesocycleDraftType {
     @Field(() => [AiMesocycleDraftMessageType])
     messages!: AiMesocycleDraftMessageType[]
 
+    @Field(() => ID, { nullable: true, description: 'The resolved draft this one continues, if any.' })
+    parentDraftId!: string | null
+
+    @Field(() => ID, { nullable: true, description: 'The block this draft became, once it was created.' })
+    mesocycleId!: string | null
+
     @Field(() => Date)
     createdAt!: Date
 

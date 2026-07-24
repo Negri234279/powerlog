@@ -1,14 +1,15 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type FormEvent, useState } from 'react'
+import { type SubmitEvent, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useResetPassword } from '@/lib/graphql/hooks/use-auth'
 import { AuthCard } from '@/components/auth/auth-card'
-import { Field, Input } from '@/components/ui/field'
+import { Field } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
+import { PasswordInput } from '@/components/ui/password-input'
 import { SubmitButton } from '@/components/ui/submit-button'
 import { TrackedLink } from '@/components/ui/tracked'
 
@@ -22,7 +23,7 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
     const [formError, setFormError] = useState<string | null>(null)
     const [done, setDone] = useState(false)
 
-    async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    async function onSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         if (!token) return
         const data = new FormData(event.currentTarget)
@@ -103,22 +104,15 @@ export function ResetPasswordForm({ token }: { token: string | null }) {
                     error={errors['newPassword']}
                     hint={t('fields.passwordHint')}
                 >
-                    <Input
+                    <PasswordInput
                         id="newPassword"
                         name="newPassword"
-                        type="password"
                         autoComplete="new-password"
                         placeholder="••••••••"
                     />
                 </Field>
                 <Field label={t('fields.confirmPassword')} htmlFor="confirm" error={errors['confirm']}>
-                    <Input
-                        id="confirm"
-                        name="confirm"
-                        type="password"
-                        autoComplete="new-password"
-                        placeholder="••••••••"
-                    />
+                    <PasswordInput id="confirm" name="confirm" autoComplete="new-password" placeholder="••••••••" />
                 </Field>
                 <FormError error={formError} />
                 <SubmitButton analyticsId="reset-submit" loading={reset.isPending}>

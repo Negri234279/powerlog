@@ -17,9 +17,12 @@ export interface AdminUsersFilters {
     isAdmin?: boolean | null
     verified?: boolean | null
     search?: string
+    /** Plan slugs — matches the plan in force, free plans included. */
+    plans?: string[]
 }
 
 const USERS_KEY = ['adminUsers']
+const DETAIL_KEY = ['adminUserDetail']
 const PAGE_SIZE = 30
 
 /** Filterable admin user listing, offset-paginated for infinite scroll. */
@@ -33,6 +36,7 @@ export function useAdminUsers(filters: AdminUsersFilters = {}) {
                 isAdmin: filters.isAdmin ?? null,
                 verified: filters.verified ?? null,
                 search: filters.search?.trim() ? filters.search.trim() : null,
+                plans: filters.plans?.length ? filters.plans : null,
                 limit: PAGE_SIZE,
                 offset: pageParam,
             }).then((r) => r.adminUsers),
@@ -50,7 +54,10 @@ export function useSetUserRole() {
     return useMutation({
         mutationFn: (input: { userId: string; role: string }) =>
             gqlRequest(SetUserRoleDocument, { input }).then((r) => r.setUserRole),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: USERS_KEY })
+            void queryClient.invalidateQueries({ queryKey: DETAIL_KEY })
+        },
     })
 }
 
@@ -61,6 +68,7 @@ export function useSetUserAdmin() {
             gqlRequest(SetUserAdminDocument, { input }).then((r) => r.setUserAdmin),
         onSuccess: () => {
             void queryClient.invalidateQueries({ queryKey: USERS_KEY })
+            void queryClient.invalidateQueries({ queryKey: DETAIL_KEY })
             void queryClient.invalidateQueries({ queryKey: ['adminStats'] })
         },
     })
@@ -73,6 +81,7 @@ export function useSetUserStatus() {
             gqlRequest(SetUserStatusDocument, { input }).then((r) => r.setUserStatus),
         onSuccess: () => {
             void queryClient.invalidateQueries({ queryKey: USERS_KEY })
+            void queryClient.invalidateQueries({ queryKey: DETAIL_KEY })
             void queryClient.invalidateQueries({ queryKey: ['adminStats'] })
         },
     })

@@ -6,19 +6,21 @@ import { useMemo, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { type AthleteHistoryItem, useAthleteHistory, useAthleteSession } from '@/lib/graphql/hooks/use-athlete'
 import { useExercises } from '@/lib/graphql/hooks/use-workouts'
+import { formatSessionDate } from '@/lib/format-date'
+import { formatRange as formatTargetRange, formatWeightRange } from '@/lib/range'
 import { formatWeight, type Units } from '@/lib/units'
+import { backParam } from '@/lib/workouts/back-param'
+import { formatRange, groupByWeek } from '@/lib/workouts/period'
+import { useHistoryFilters } from '@/lib/workouts/use-history-filters'
+import { HistoryFilterBar } from '@/components/workouts/history-filter-bar'
+import { PeriodNavigator } from '@/components/workouts/period-navigator'
+import { WeekHeading } from '@/components/workouts/week-heading'
 import { ChevronDown, Pencil } from '@/components/ui/icons'
+import { QueryError } from '@/components/ui/query-error'
 import { Skeleton } from '@/components/ui/skeleton'
-import { SlidingTabs } from '@/components/ui/sliding-tabs'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 
-type StatusFilter = 'all' | 'planned' | 'completed'
-
-const STATUS_FILTERS: readonly StatusFilter[] = ['all', 'planned', 'completed']
-
-function formatDate(iso: string, locale: string): string {
-    return new Date(iso).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })
-}
+const ANALYTICS_PREFIX = 'athlete-history'
 
 function StatusBadge({ status }: { status: string }) {
     const t = useTranslations('common.status')
@@ -74,10 +76,24 @@ function SessionPanel({
                         ) : (
                             entry.sets.map((set) => {
                                 const logged = set.weightKg !== null && set.reps !== null
-                                const weight = logged ? set.weightKg : set.plannedWeightKg
-                                const reps = logged ? set.reps : set.plannedReps
-                                const intensity =
-                                    set.rpe !== null ? `RPE ${set.rpe}` : set.rir !== null ? `RIR ${set.rir}` : null
+                                // Done: the single numbers lifted. Planned: the ranges
+                                // programmed (`50-55 × 5-8`), shown until the set is done.
+                                const main = logged
+                                    ? `${formatWeight(set.weightKg, units)} × ${set.reps}`
+                                    : set.plannedWeightKg && set.plannedReps
+                                      ? `${formatWeightRange(set.plannedWeightKg, units)} ${units} × ${formatTargetRange(set.plannedReps)}`
+                                      : null
+                                const intensity = logged
+                                    ? set.rpe !== null
+                                        ? `RPE ${set.rpe}`
+                                        : set.rir !== null
+                                          ? `RIR ${set.rir}`
+                                          : null
+                                    : set.plannedRpe
+                                      ? `RPE ${formatTargetRange(set.plannedRpe)}`
+                                      : set.plannedRir
+                                        ? `RIR ${formatTargetRange(set.plannedRir)}`
+                                        : null
 
                                 return (
                                     <div key={set.id} className="flex items-center gap-3 text-sm tabular-nums">
@@ -85,10 +101,8 @@ function SessionPanel({
                                             {set.order}
                                         </span>
                                         <span className="text-text">
-                                            {weight !== null && reps !== null
-                                                ? `${formatWeight(weight, units)} × ${reps}`
-                                                : '—'}
-                                            {!logged && weight !== null ? (
+                                            {main ?? '—'}
+                                            {!logged && main !== null ? (
                                                 <span className="text-text-faint"> · {t('plannedSuffix')}</span>
                                             ) : null}
                                         </span>
@@ -115,12 +129,14 @@ function SessionRow({
     units,
     nameById,
     canEdit,
+    backQuery,
 }: {
     athleteId: string
     session: AthleteHistoryItem
     units: Units
     nameById: Map<string, string>
     canEdit: boolean
+    backQuery: string
 }) {
     const t = useTranslations('coaching')
     const tw = useTranslations('workouts')
@@ -150,7 +166,7 @@ function SessionRow({
                             <ChevronDown className="size-4" />
                         </span>
                         <span className="font-display text-lg tracking-tight">
-                            {formatDate(session.performedAt, locale)}
+                            {formatSessionDate(session.performedAt, locale)}
                         </span>
                         <StatusBadge status={session.status} />
                     </TrackedButton>
@@ -163,7 +179,7 @@ function SessionRow({
                         {canEdit ? (
                             <TrackedLink
                                 analyticsId="athlete-session-edit-plan"
-                                href={`/coaching/athletes/${athleteId}/workouts/${session.id}`}
+                                href={`/coaching/athletes/${athleteId}/workouts/${session.id}${backParam(backQuery)}`}
                                 className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
                             >
                                 <Pencil className="size-3" /> {t('editPlan')}
@@ -192,58 +208,146 @@ function SessionRow({
 /** The athlete's session history, read-only — plus a shortcut to edit what the coach planned. */
 export function AthleteTraining({ athleteId, coachId, units }: { athleteId: string; coachId: string; units: Units }) {
     const t = useTranslations('coaching')
-    const [status, setStatus] = useState<StatusFilter>('all')
+    const tw = useTranslations('workouts')
+    const locale = useLocale()
 
-    const history = useAthleteHistory(athleteId, status === 'all' ? undefined : status)
+    // Opens on the current month: enough context to judge adherence and volume,
+    // where a week can read as empty for an athlete who trains sparsely.
+    const history = useHistoryFilters('month')
+    const query = useAthleteHistory(athleteId, history.filters)
     const { data: exercises } = useExercises()
 
     const nameById = useMemo(
         () => new Map((exercises ?? []).map((exercise) => [exercise.id, exercise.name])),
         [exercises],
     )
-    const sessions = history.data?.pages.flatMap((page) => page.items) ?? []
+
+    const sessions = useMemo(() => query.data?.pages.flatMap((page) => page.items) ?? [], [query.data])
+    const weeks = useMemo(() => groupByWeek(sessions, (session) => session.performedAt), [sessions])
+    // A single week needs no dividers, and neither does the week view itself.
+    const showWeeks = history.periodMode !== 'week' && weeks.length > 1
+
+    function renderRow(session: AthleteHistoryItem) {
+        return (
+            <SessionRow
+                key={session.id}
+                athleteId={athleteId}
+                session={session}
+                units={units}
+                nameById={nameById}
+                canEdit={session.plannedByUserId === coachId}
+                backQuery={history.queryString}
+            />
+        )
+    }
 
     return (
         <div className="space-y-4">
-            <SlidingTabs
-                analyticsId="athlete-history-status"
-                value={status}
-                onChange={(value) => setStatus(value as StatusFilter)}
-                items={STATUS_FILTERS.map((value) => ({ value, label: t(`filter.${value}`) }))}
+            <PeriodNavigator
+                analyticsPrefix={ANALYTICS_PREFIX}
+                mode={history.periodMode}
+                onMode={history.setPeriod}
+                onPrev={history.prevPeriod}
+                onNext={history.nextPeriod}
+                onCurrent={history.currentPeriod}
+                label={history.windowLabel()}
+                isCurrent={history.periodOffset === 0}
+                from={history.from}
+                to={history.to}
+                onFrom={history.setFrom}
+                onTo={history.setTo}
             />
 
-            {history.isLoading ? (
-                <div className="space-y-3">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                        <Skeleton key={i} className="h-[4.5rem] rounded-2xl" />
-                    ))}
-                </div>
-            ) : sessions.length === 0 ? (
-                <p className="text-sm text-text-faint">{t('noSessions')}</p>
-            ) : (
-                <div className="space-y-3">
-                    {sessions.map((session) => (
-                        <SessionRow
-                            key={session.id}
-                            athleteId={athleteId}
-                            session={session}
-                            units={units}
-                            nameById={nameById}
-                            canEdit={session.plannedByUserId === coachId}
-                        />
-                    ))}
-                </div>
-            )}
+            <HistoryFilterBar
+                analyticsPrefix={ANALYTICS_PREFIX}
+                exercises={exercises ?? []}
+                status={history.status}
+                onStatus={history.setStatus}
+                exerciseId={history.exerciseId}
+                onExercise={history.setExerciseId}
+                queryInput={history.queryInput}
+                onQuery={history.setQueryInput}
+                hasActiveFilters={history.hasActiveFilters}
+                onClear={history.clear}
+            />
 
-            {history.hasNextPage ? (
+            <div
+                className={cn(
+                    'transition-opacity duration-200',
+                    query.isPlaceholderData && 'pointer-events-none opacity-50',
+                )}
+            >
+                {query.isLoading ? (
+                    <div className="space-y-3">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <Skeleton key={i} className="h-[4.5rem] rounded-2xl" />
+                        ))}
+                    </div>
+                ) : query.isError ? (
+                    <QueryError
+                        message={t('trainingLoadError')}
+                        onRetry={() => void query.refetch()}
+                        analyticsId="athlete-history-retry"
+                    />
+                ) : sessions.length === 0 ? (
+                    // Three different kinds of "nothing here", three different next steps.
+                    <div className="rounded-2xl bg-bg/40 p-6 ring-1 ring-hairline">
+                        {history.hasActiveFilters ? (
+                            <>
+                                <p className="text-sm text-text">{tw('noMatching')}</p>
+                                <TrackedButton
+                                    analyticsId="athlete-history-clear-filters"
+                                    type="button"
+                                    onClick={history.clear}
+                                    className="mt-3 rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                                >
+                                    {tw('clearFilters')}
+                                </TrackedButton>
+                            </>
+                        ) : history.hasDateWindow ? (
+                            <>
+                                <p className="text-sm text-text">{tw('noSessionsInRange')}</p>
+                                <TrackedButton
+                                    analyticsId="athlete-history-view-all"
+                                    type="button"
+                                    onClick={() => history.setPeriod('all')}
+                                    className="mt-3 rounded-full px-4 py-2 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text"
+                                >
+                                    {tw('viewAll')}
+                                </TrackedButton>
+                            </>
+                        ) : (
+                            <p className="text-sm text-text-faint">{t('noSessions')}</p>
+                        )}
+                    </div>
+                ) : showWeeks ? (
+                    <div className="space-y-6">
+                        {weeks.map((week) => (
+                            <div key={week.key} className="space-y-3">
+                                <WeekHeading
+                                    label={formatRange('week', week.range, locale)}
+                                    sessions={week.items.length}
+                                    volumeKg={week.items.reduce((total, item) => total + item.totalVolumeKg, 0)}
+                                    units={units}
+                                />
+                                {week.items.map(renderRow)}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="space-y-3">{sessions.map(renderRow)}</div>
+                )}
+            </div>
+
+            {query.hasNextPage ? (
                 <TrackedButton
                     analyticsId="athlete-history-more"
                     type="button"
-                    onClick={() => void history.fetchNextPage()}
-                    disabled={history.isFetchingNextPage}
+                    onClick={() => void query.fetchNextPage()}
+                    disabled={query.isFetchingNextPage}
                     className="w-full rounded-full px-4 py-2.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text disabled:opacity-60"
                 >
-                    {history.isFetchingNextPage ? t('loading') : t('loadMore')}
+                    {query.isFetchingNextPage ? t('loading') : t('loadMore')}
                 </TrackedButton>
             ) : null}
         </div>

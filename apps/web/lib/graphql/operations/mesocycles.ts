@@ -33,10 +33,22 @@ export const MesocycleFieldsFragment = graphql(`
                     sets {
                         id
                         order
-                        plannedWeightKg
-                        plannedReps
-                        rpe
-                        rir
+                        plannedWeightKg {
+                            min
+                            max
+                        }
+                        plannedReps {
+                            min
+                            max
+                        }
+                        rpe {
+                            min
+                            max
+                        }
+                        rir {
+                            min
+                            max
+                        }
                         notes
                     }
                 }

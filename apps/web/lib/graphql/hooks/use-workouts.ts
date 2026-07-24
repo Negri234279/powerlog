@@ -9,6 +9,7 @@ import {
 
 import type {
     AddExerciseEntryInput,
+    CompleteSetInput,
     CreateWorkoutSessionInput,
     ExercisesQuery,
     ExerciseSessionHistoryQuery,
@@ -16,6 +17,8 @@ import type {
     LogSetInput,
     StrengthProgressionQuery,
     TrainingDistributionQuery,
+    TrainingExecutionQuery,
+    TrainingExecutionSeriesQuery,
     TrainingSummaryQuery,
     UpdateSetInput,
     UpdateWorkoutSessionInput,
@@ -26,6 +29,7 @@ import type {
 import { gqlRequest } from '@/lib/graphql/client'
 import {
     AddExerciseEntryDocument,
+    CompleteSetDocument,
     CompleteWorkoutSessionDocument,
     CreateWorkoutSessionDocument,
     DeleteWorkoutSessionDocument,
@@ -37,6 +41,8 @@ import {
     RemoveSetDocument,
     StrengthProgressionDocument,
     TrainingDistributionDocument,
+    TrainingExecutionDocument,
+    TrainingExecutionSeriesDocument,
     TrainingSummaryDocument,
     UpdateSetDocument,
     UpdateWorkoutSessionDocument,
@@ -57,6 +63,8 @@ export type TrainingSummaryData = TrainingSummaryQuery['trainingSummary']
 export type VolumeBucketData = VolumeSeriesQuery['volumeSeries'][number]
 export type StrengthProgressionData = StrengthProgressionQuery['strengthProgression']
 export type TrainingDistributionData = TrainingDistributionQuery['trainingDistribution']
+export type TrainingExecutionData = TrainingExecutionQuery['trainingExecution']
+export type ExecutionBucketData = TrainingExecutionSeriesQuery['trainingExecutionSeries'][number]
 
 // ── Queries ──────────────────────────────────────────────────
 
@@ -171,6 +179,22 @@ export function useTrainingDistribution(from?: string, to?: string) {
     })
 }
 
+/** Own adherence, set outcomes, load compliance and trends, optionally ranged. */
+export function useTrainingExecution(from?: string, to?: string) {
+    return useQuery({
+        queryKey: ['trainingExecution', from ?? null, to ?? null],
+        queryFn: () => gqlRequest(TrainingExecutionDocument, { from, to }).then((r) => r.trainingExecution),
+    })
+}
+
+/** Own weekly adherence + programmed-vs-executed load, optionally ranged. */
+export function useTrainingExecutionSeries(from?: string, to?: string) {
+    return useQuery({
+        queryKey: ['trainingExecutionSeries', from ?? null, to ?? null],
+        queryFn: () => gqlRequest(TrainingExecutionSeriesDocument, { from, to }).then((r) => r.trainingExecutionSeries),
+    })
+}
+
 // ── Mutations ────────────────────────────────────────────────
 
 // Every content mutation returns the full session: seed its detail cache and
@@ -219,6 +243,14 @@ export function useUpdateSet() {
     return useMutation({
         mutationFn: (input: UpdateSetInput) => gqlRequest(UpdateSetDocument, { input }),
         onSuccess: (r) => cacheSession(qc, r.updateSet),
+    })
+}
+
+export function useCompleteSet() {
+    const qc = useQueryClient()
+    return useMutation({
+        mutationFn: (input: CompleteSetInput) => gqlRequest(CompleteSetDocument, { input }),
+        onSuccess: (r) => cacheSession(qc, r.completeSet),
     })
 }
 

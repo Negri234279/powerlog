@@ -1,18 +1,18 @@
 import type { WorkoutSessionAggregate } from '../domain/entities/workout-session.entity'
 import type { WorkoutTemplateAggregate } from '../domain/entities/workout-template.entity'
-import type { RepsVO } from '../domain/value-objects/reps.vo'
-import type { RirVO } from '../domain/value-objects/rir.vo'
-import type { RpeVO } from '../domain/value-objects/rpe.vo'
-import type { WeightVO } from '../domain/value-objects/weight.vo'
+import type { RepsRangeVO } from '../domain/value-objects/reps-range.vo'
+import type { RirRangeVO } from '../domain/value-objects/rir-range.vo'
+import type { RpeRangeVO } from '../domain/value-objects/rpe-range.vo'
+import type { WeightRangeVO } from '../domain/value-objects/weight-range.vo'
 import type { IdGenerator } from './ports/id-generator.port'
 
 /** A programmed set (planned targets only) — the shape template + mesocycle-day
  *  sets share, so both can be materialized through the same helper. */
 export interface ProgrammedSet {
-    plannedWeight: WeightVO | null
-    plannedReps: RepsVO | null
-    rpe: RpeVO | null
-    rir: RirVO | null
+    plannedWeight: WeightRangeVO | null
+    plannedReps: RepsRangeVO | null
+    rpe: RpeRangeVO | null
+    rir: RirRangeVO | null
     notes: string | null
 }
 
@@ -25,8 +25,8 @@ export interface ProgrammedExercise {
 
 /**
  * Copy programmed exercises and their sets into a (fresh) session: each set
- * becomes a session set with only its `planned*`/intensity/notes filled in —
- * performed values stay empty until the athlete logs them. Reused by template and
+ * becomes a session set with only its `planned*`/notes filled in — performed
+ * values stay empty until the athlete logs them. Reused by template and
  * mesocycle materialization.
  */
 export function materializeProgrammedExercises(
@@ -45,8 +45,11 @@ export function materializeProgrammedExercises(
                     id: ids.uuid(),
                     plannedWeight: set.plannedWeight,
                     plannedReps: set.plannedReps,
-                    rpe: set.rpe,
-                    rir: set.rir,
+                    // A programmed set's rpe/rir IS the target, so it lands in the
+                    // session's planned_* fields — the performed ones stay empty
+                    // until the athlete marks the set done.
+                    plannedRpe: set.rpe,
+                    plannedRir: set.rir,
                     notes: set.notes,
                 },
                 now,

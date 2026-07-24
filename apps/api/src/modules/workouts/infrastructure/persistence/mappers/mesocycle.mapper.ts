@@ -3,16 +3,17 @@ import { MesocycleDaySetEntity } from '../../../domain/entities/mesocycle-day-se
 import { MesocycleAggregate } from '../../../domain/entities/mesocycle.entity'
 import { MicrocycleDayEntity } from '../../../domain/entities/microcycle-day.entity'
 import { MicrocycleEntity } from '../../../domain/entities/microcycle.entity'
-import { RepsVO } from '../../../domain/value-objects/reps.vo'
-import { RirVO } from '../../../domain/value-objects/rir.vo'
-import { RpeVO } from '../../../domain/value-objects/rpe.vo'
+import { RepsRangeVO } from '../../../domain/value-objects/reps-range.vo'
+import { RirRangeVO } from '../../../domain/value-objects/rir-range.vo'
+import { RpeRangeVO } from '../../../domain/value-objects/rpe-range.vo'
 import { MesocycleNameVO } from '../../../domain/value-objects/mesocycle-name.vo'
-import { WeightVO } from '../../../domain/value-objects/weight.vo'
+import { WeightRangeVO } from '../../../domain/value-objects/weight-range.vo'
 import type { mesocycleDayExercises } from '../schema/mesocycle-day-exercises.schema'
 import type { mesocycleDaySets } from '../schema/mesocycle-day-sets.schema'
 import type { mesocycleDays } from '../schema/mesocycle-days.schema'
 import type { mesocycleMicrocycles } from '../schema/mesocycle-microcycles.schema'
 import type { mesocycles } from '../schema/mesocycles.schema'
+import { rangeFromColumns } from './range-columns'
 
 type MesocycleRow = typeof mesocycles.$inferSelect
 type MicrocycleRow = typeof mesocycleMicrocycles.$inferSelect
@@ -69,10 +70,14 @@ export const MesocycleMapper = {
                             id: set.id,
                             dayExerciseId: exercise.id,
                             order: set.order,
-                            plannedWeightKg: set.plannedWeight?.value ?? null,
-                            plannedReps: set.plannedReps?.value ?? null,
-                            rpe: set.rpe?.value ?? null,
-                            rir: set.rir?.value ?? null,
+                            plannedWeightKgMin: set.plannedWeight?.min.value ?? null,
+                            plannedWeightKgMax: set.plannedWeight?.max.value ?? null,
+                            plannedRepsMin: set.plannedReps?.min.value ?? null,
+                            plannedRepsMax: set.plannedReps?.max.value ?? null,
+                            rpeMin: set.rpe?.min.value ?? null,
+                            rpeMax: set.rpe?.max.value ?? null,
+                            rirMin: set.rir?.min.value ?? null,
+                            rirMax: set.rir?.max.value ?? null,
                             notes: set.notes,
                         })
                     }
@@ -134,14 +139,22 @@ export const MesocycleMapper = {
                                     MesocycleDaySetEntity.rehydrate({
                                         id: setRow.id,
                                         order: setRow.order,
-                                        plannedWeight:
-                                            setRow.plannedWeightKg !== null
-                                                ? WeightVO.create(setRow.plannedWeightKg)
-                                                : null,
-                                        plannedReps:
-                                            setRow.plannedReps !== null ? RepsVO.create(setRow.plannedReps) : null,
-                                        rpe: setRow.rpe !== null ? RpeVO.create(setRow.rpe) : null,
-                                        rir: setRow.rir !== null ? RirVO.create(setRow.rir) : null,
+                                        plannedWeight: rangeFromColumns(
+                                            setRow.plannedWeightKgMin,
+                                            setRow.plannedWeightKgMax,
+                                            (min, max) => WeightRangeVO.create(min, max),
+                                        ),
+                                        plannedReps: rangeFromColumns(
+                                            setRow.plannedRepsMin,
+                                            setRow.plannedRepsMax,
+                                            (min, max) => RepsRangeVO.create(min, max),
+                                        ),
+                                        rpe: rangeFromColumns(setRow.rpeMin, setRow.rpeMax, (min, max) =>
+                                            RpeRangeVO.create(min, max),
+                                        ),
+                                        rir: rangeFromColumns(setRow.rirMin, setRow.rirMax, (min, max) =>
+                                            RirRangeVO.create(min, max),
+                                        ),
                                         notes: setRow.notes,
                                     }),
                                 ),

@@ -1,0 +1,69 @@
+import type { PlanAudience } from '../../../src/shared/contracts/entitlements'
+import type { SubscriptionAggregate } from '../../../src/modules/billing/domain/entities/subscription.entity'
+import { SubscriptionRepository } from '../../../src/modules/billing/domain/repositories/subscription.repository'
+import type { PaymentGateway } from '../../../src/modules/billing/domain/entities/subscription.entity'
+import { ENTITLING_STATUSES, LIVE_STATUSES } from '../../../src/modules/billing/domain/subscription-status'
+
+/** In-memory SubscriptionRepository implementing the real port. */
+export class InMemorySubscriptionRepository extends SubscriptionRepository {
+    private readonly byId = new Map<string, SubscriptionAggregate>()
+
+    constructor(seed: SubscriptionAggregate[] = []) {
+        super()
+        for (const subscription of seed) this.byId.set(subscription.id, subscription)
+    }
+
+    async save(subscription: SubscriptionAggregate): Promise<void> {
+        this.byId.set(subscription.id, subscription)
+    }
+
+    async findById(id: string): Promise<SubscriptionAggregate | null> {
+        return this.byId.get(id) ?? null
+    }
+
+    async findByGatewayId(gatewaySubscriptionId: string): Promise<SubscriptionAggregate | null> {
+        return (
+            [...this.byId.values()].find(
+                (subscription) => subscription.gatewaySubscriptionId === gatewaySubscriptionId,
+            ) ?? null
+        )
+    }
+
+    async findLiveByGateway(gateway: PaymentGateway): Promise<SubscriptionAggregate[]> {
+        return [...this.byId.values()].filter(
+            (subscription) => subscription.gateway === gateway && ENTITLING_STATUSES.includes(subscription.status),
+        )
+    }
+
+    async findLiveByUser(userId: string): Promise<SubscriptionAggregate | null> {
+        for (const subscription of this.byId.values()) {
+            if (subscription.userId === userId && LIVE_STATUSES.includes(subscription.status)) return subscription
+        }
+
+        return null
+    }
+
+    async findAllLiveByUser(userId: string): Promise<SubscriptionAggregate[]> {
+        return [...this.byId.values()].filter(
+            (subscription) => subscription.userId === userId && LIVE_STATUSES.includes(subscription.status),
+        )
+    }
+
+    async findLiveByUserAndAudience(userId: string, audience: PlanAudience): Promise<SubscriptionAggregate | null> {
+        for (const subscription of this.byId.values()) {
+            if (
+                subscription.userId === userId &&
+                subscription.audience === audience &&
+                LIVE_STATUSES.includes(subscription.status)
+            ) {
+                return subscription
+            }
+        }
+
+        return null
+    }
+
+    all(): SubscriptionAggregate[] {
+        return [...this.byId.values()]
+    }
+}

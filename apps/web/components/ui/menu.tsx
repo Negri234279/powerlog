@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 
 import { cn } from '@/lib/cn'
 import { useEnterExit } from '@/lib/hooks/use-enter-exit'
-import { EllipsisVertical } from './icons'
+import { ChevronDown, EllipsisVertical } from './icons'
 import { TrackedButton } from './tracked'
 
 export interface MenuItem {
@@ -33,10 +33,17 @@ export function Menu({
     label = 'Open menu',
     align = 'right',
     analyticsId,
+    trigger,
 }: {
     items: MenuItem[]
     label?: string
     align?: 'left' | 'right'
+    /**
+     * Text for a pill-shaped trigger showing the current choice. Omit for the
+     * default overflow (`⋯`) button — a row's actions menu has no current value
+     * to display, a single-select in a filter rail does.
+     */
+    trigger?: string
     /** Stable id for the trigger's `ui_click` event (e.g. `session-menu`). */
     analyticsId: string
 }) {
@@ -107,9 +114,22 @@ export function Menu({
                     e.stopPropagation()
                     setOpen((v) => !v)
                 }}
-                className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.06] hover:text-text"
+                className={
+                    trigger
+                        ? 'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-white/[0.04] hover:text-text'
+                        : 'grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.06] hover:text-text'
+                }
             >
-                <EllipsisVertical className="size-4" />
+                {trigger ? (
+                    <>
+                        {trigger}
+                        <ChevronDown
+                            className={cn('size-3.5 transition-transform duration-300', open && 'rotate-180')}
+                        />
+                    </>
+                ) : (
+                    <EllipsisVertical className="size-4" />
+                )}
             </TrackedButton>
 
             {mounted && coords
