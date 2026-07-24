@@ -17,7 +17,8 @@ import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { formatRange, formatWeightRange } from '@/lib/range'
 import { formatWeight, kgTo, type Units } from '@/lib/units'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
-import { Check, ChevronDown, Close, Pencil, Plus } from '@/components/ui/icons'
+import { Check, ChevronDown, Plus } from '@/components/ui/icons'
+import { Menu, type MenuItem } from '@/components/ui/menu'
 import { TrackedButton } from '@/components/ui/tracked'
 import { CompleteSetModal } from './complete-set-modal'
 import { ExerciseHistory } from './exercise-history'
@@ -62,9 +63,37 @@ function SetRow({
     const t = useTranslations('workouts')
     const update = useUpdateSet()
     const remove = useRemoveSet()
+    const duplicate = useLogSet()
     const [editing, setEditing] = useState(false)
     const [marking, setMarking] = useState(false)
     const [confirmingRemove, setConfirmingRemove] = useState(false)
+
+    // Duplicate carries only the planned targets over to a fresh pending set — you
+    // still log what you actually did. The API reads planned weight as range text
+    // in display units, so it's formatted the same way the edit form seeds it.
+    function onDuplicate() {
+        if (duplicate.isPending) return
+        duplicate.mutate({
+            sessionId,
+            entryId,
+            plannedWeight: set.plannedWeightKg ? formatWeightRange(set.plannedWeightKg, units) : null,
+            plannedReps: set.plannedReps ? formatRange(set.plannedReps) : null,
+            plannedRpe: set.plannedRpe ? formatRange(set.plannedRpe) : null,
+            plannedRir: set.plannedRir ? formatRange(set.plannedRir) : null,
+            unit: units,
+        })
+    }
+
+    const menuItems: MenuItem[] = [
+        { label: t('duplicate'), analyticsId: 'set-duplicate', onSelect: onDuplicate },
+        { label: t('edit'), analyticsId: 'set-edit', onSelect: () => setEditing(true) },
+        {
+            label: t('removeSet'),
+            analyticsId: 'set-remove-open',
+            onSelect: () => setConfirmingRemove(true),
+            destructive: true,
+        },
+    ]
 
     // Re-locking mid-edit closes the form rather than leaving it hanging.
     if (editing && !locked) {
@@ -158,31 +187,12 @@ function SetRow({
                 </TrackedButton>
             )}
 
-            {/* A pencil on phones, the word from sm up: the row already carries two
-                stacked lines and up to three controls, and "edit" is the one whose
-                icon needs no explaining. `aria-label` keeps the name either way. */}
+            {/* Duplicate / edit / remove live behind one ⋮ — the row already stacks
+                two lines and keeps "mark done" as its one prominent verb. */}
             {locked ? null : (
-                <>
-                    <TrackedButton
-                        analyticsId="set-edit"
-                        type="button"
-                        aria-label={t('edit')}
-                        onClick={() => setEditing(true)}
-                        className="grid size-7 shrink-0 self-start place-items-center rounded-full text-text-dim transition-colors duration-300 hover:bg-white/[0.04] hover:text-text sm:size-auto sm:px-2.5 sm:py-1"
-                    >
-                        <Pencil className="size-3.5 sm:hidden" />
-                        <span className="hidden text-xs sm:inline">{t('edit')}</span>
-                    </TrackedButton>
-                    <TrackedButton
-                        analyticsId="set-remove-open"
-                        type="button"
-                        aria-label={t('removeSet')}
-                        onClick={() => setConfirmingRemove(true)}
-                        className="grid size-7 shrink-0 self-start place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-white/[0.04] hover:text-ember disabled:opacity-50"
-                    >
-                        <Close className="size-3.5" />
-                    </TrackedButton>
-                </>
+                <div className="shrink-0 self-start">
+                    <Menu analyticsId="set-actions" label={t('setActions')} items={menuItems} />
+                </div>
             )}
 
             <ConfirmModal

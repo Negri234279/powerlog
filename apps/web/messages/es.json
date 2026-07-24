@@ -520,6 +520,8 @@
         "adding": "Añadiendo…",
         "planPrefix": "plan",
         "removeSet": "Quitar serie",
+        "duplicate": "Duplicar serie",
+        "setActions": "Acciones de la serie",
         "setRemoveTitle": "¿Eliminar la serie {index}?",
         "setRemoveBody": "La serie se eliminará. Esta acción no se puede deshacer.",
         "save": "Guardar",

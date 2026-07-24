@@ -520,6 +520,8 @@
         "adding": "Adding…",
         "planPrefix": "plan",
         "removeSet": "Remove set",
+        "duplicate": "Duplicate set",
+        "setActions": "Set actions",
         "setRemoveTitle": "Remove set {index}?",
         "setRemoveBody": "This set will be removed. This can’t be undone.",
         "save": "Save",
