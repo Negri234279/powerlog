@@ -27,7 +27,8 @@ import {
 import { Field, Input } from '@/components/ui/field'
 import { UpgradeGate, isPlanRefusal } from '@/components/billing/upgrade-gate'
 import { FormError } from '@/components/ui/form-error'
-import { Close, Plus, Trash } from '@/components/ui/icons'
+import { Plus, Trash } from '@/components/ui/icons'
+import { Menu, type MenuItem } from '@/components/ui/menu'
 import { TrackedButton } from '@/components/ui/tracked'
 import { ExercisePicker } from './exercise-picker'
 
@@ -221,6 +222,21 @@ export function TemplateBuilder({
         )
     }
 
+    // Clone one set and drop the copy right below it — so duplicating row 2 lands a
+    // new row 3, not a set appended at the end.
+    function duplicateSet(exerciseKey: string, setKey: string) {
+        setDraft((d) =>
+            d.map((e) => {
+                if (e.key !== exerciseKey) return e
+                const i = e.sets.findIndex((s) => s.key === setKey)
+                const source = e.sets[i]
+                if (!source) return e
+                const clone: DraftSet = { ...source, key: newKey() }
+                return { ...e, sets: [...e.sets.slice(0, i + 1), clone, ...e.sets.slice(i + 1)] }
+            }),
+        )
+    }
+
     async function onSave() {
         setError(null)
         setRawError(null)
@@ -329,6 +345,7 @@ export function TemplateBuilder({
                         onAddSet={() => addSet(exercise.key)}
                         onPatchSet={(setKey, patch) => patchSet(exercise.key, setKey, patch)}
                         onRemoveSet={(setKey) => removeSet(exercise.key, setKey)}
+                        onDuplicateSet={(setKey) => duplicateSet(exercise.key, setKey)}
                         onValidateSet={validateField}
                     />
                 ))}
@@ -392,6 +409,7 @@ function ExerciseCard({
     onAddSet,
     onPatchSet,
     onRemoveSet,
+    onDuplicateSet,
     onValidateSet,
 }: {
     exercise: DraftExercise
@@ -403,6 +421,7 @@ function ExerciseCard({
     onAddSet: () => void
     onPatchSet: (setKey: string, patch: Partial<DraftSet>) => void
     onRemoveSet: (setKey: string) => void
+    onDuplicateSet: (setKey: string) => void
     onValidateSet: (set: DraftSet, field: SetField) => void
 }) {
     const t = useTranslations('templates')
@@ -446,6 +465,7 @@ function ExerciseCard({
                             errors={errors}
                             onPatch={(patch) => onPatchSet(set.key, patch)}
                             onRemove={() => onRemoveSet(set.key)}
+                            onDuplicate={() => onDuplicateSet(set.key)}
                             onBlurField={(field) => onValidateSet(set, field)}
                         />
                     ))}
@@ -478,6 +498,7 @@ function SetRow({
     errors,
     onPatch,
     onRemove,
+    onDuplicate,
     onBlurField,
 }: {
     set: DraftSet
@@ -485,6 +506,7 @@ function SetRow({
     errors: Record<string, string>
     onPatch: (patch: Partial<DraftSet>) => void
     onRemove: () => void
+    onDuplicate: () => void
     onBlurField: (field: SetField) => void
 }) {
     const t = useTranslations('templates')
@@ -492,6 +514,12 @@ function SetRow({
     const weightError = errors[fieldKey(set.key, 'weight')]
     const repsError = errors[fieldKey(set.key, 'reps')]
     const intensityError = errors[fieldKey(set.key, 'intensity')]
+
+    // Fields are edited in place, so the row menu only ever holds duplicate + remove.
+    const menuItems: MenuItem[] = [
+        { label: tw('duplicate'), analyticsId: 'template-duplicate-set', onSelect: onDuplicate },
+        { label: tw('removeSet'), analyticsId: 'template-remove-set', onSelect: onRemove, destructive: true },
+    ]
 
     // items-start so the row number and remove button stay aligned to the inputs
     // even when an error message grows a cell taller.
@@ -558,15 +586,7 @@ function SetRow({
                 </div>
                 <CellError message={intensityError} />
             </div>
-            <TrackedButton
-                analyticsId="template-remove-set"
-                type="button"
-                onClick={onRemove}
-                aria-label={t('removeSet', { index })}
-                className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
-            >
-                <Close className="size-4" />
-            </TrackedButton>
+            <Menu analyticsId="template-set-actions" label={tw('setActions')} items={menuItems} />
         </div>
     )
 }

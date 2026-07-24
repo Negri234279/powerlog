@@ -11,7 +11,7 @@ import { Check } from '@/components/ui/icons'
 import { Menu, type MenuItem } from '@/components/ui/menu'
 import { TrackedButton } from '@/components/ui/tracked'
 import { CompleteSetModal } from './complete-set-modal'
-import { SetForm, type OutcomeValue } from './set-form'
+import { SetForm, type OutcomeValue, type SetValues } from './set-form'
 
 function intensitySuffix(set: WorkoutSetData): string {
     if (set.rpe !== null) return ` @${set.rpe}`
@@ -78,6 +78,28 @@ export function SetRow({
         duplicate.mutate({ sessionId, entryId, ...plannedSeed(set, units), unit: units })
     }
 
+    function onEdit(v: SetValues) {
+        update.mutate(
+            {
+                sessionId,
+                entryId,
+                setId: set.id,
+                plannedWeight: v.plannedWeight,
+                plannedReps: v.plannedReps,
+                plannedRpe: v.plannedRpe,
+                plannedRir: v.plannedRir,
+                weight: v.weight,
+                reps: v.reps,
+                rpe: v.rpe,
+                rir: v.rir,
+                // `pending` is the API's null: the edit is where a set goes back to unmarked.
+                outcome: v.outcome === 'pending' ? null : v.outcome,
+                unit: units,
+            },
+            { onSuccess: () => setMode('idle') },
+        )
+    }
+
     const menuItems: MenuItem[] = [
         { label: t('duplicate'), analyticsId: 'set-duplicate', onSelect: onDuplicate },
         { label: t('edit'), analyticsId: 'set-edit', onSelect: () => setMode('editing') },
@@ -90,7 +112,16 @@ export function SetRow({
     ]
 
     // Re-locking mid-edit closes the form rather than leaving it hanging.
-    if (mode === ' ' && !locked) {
+    if (mode === 'editing' && !locked) {
+        const initial: SetValues = {
+            ...plannedSeed(set, units),
+            weight: set.weightKg === null ? null : kgTo(units, set.weightKg),
+            reps: set.reps,
+            rpe: set.rpe,
+            rir: set.rir,
+            outcome: (set.outcome ?? 'pending') as OutcomeValue,
+        }
+
         return (
             <li className="py-2.5">
                 <SetForm
@@ -99,37 +130,9 @@ export function SetRow({
                     submitLabel={update.isPending ? t('saving') : t('save')}
                     pending={update.isPending}
                     showOutcome
-                    initial={{
-                        ...plannedSeed(set, units),
-                        weight: set.weightKg === null ? null : kgTo(units, set.weightKg),
-                        reps: set.reps,
-                        rpe: set.rpe,
-                        rir: set.rir,
-                        outcome: (set.outcome ?? 'pending') as OutcomeValue,
-                    }}
+                    initial={initial}
                     onCancel={() => setMode('idle')}
-                    onSubmit={(v) =>
-                        update.mutate(
-                            {
-                                sessionId,
-                                entryId,
-                                setId: set.id,
-                                plannedWeight: v.plannedWeight,
-                                plannedReps: v.plannedReps,
-                                plannedRpe: v.plannedRpe,
-                                plannedRir: v.plannedRir,
-                                weight: v.weight,
-                                reps: v.reps,
-                                rpe: v.rpe,
-                                rir: v.rir,
-                                // `pending` is the API's null: the edit is where a
-                                // set goes back to unmarked.
-                                outcome: v.outcome === 'pending' ? null : v.outcome,
-                                unit: units,
-                            },
-                            { onSuccess: () => setMode('idle') },
-                        )
-                    }
+                    onSubmit={onEdit}
                 />
             </li>
         )
