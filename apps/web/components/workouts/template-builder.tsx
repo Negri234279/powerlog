@@ -427,6 +427,8 @@ function ExerciseCard({
 }) {
     const t = useTranslations('templates')
     const tw = useTranslations('workouts')
+    const [confirmingRemove, setConfirmingRemove] = useState(false)
+
     return (
         <div className="rounded-2xl bg-shell p-1.5 ring-1 ring-hairline">
             <div className="inset-hi rounded-[calc(1rem-0.25rem)] bg-surface p-5">
@@ -435,13 +437,25 @@ function ExerciseCard({
                     <TrackedButton
                         analyticsId="template-remove-exercise"
                         type="button"
-                        onClick={onRemove}
+                        onClick={() => setConfirmingRemove(true)}
                         aria-label={t('removeExercise', { name })}
                         className="grid size-8 place-items-center rounded-full text-text-faint transition-colors duration-300 hover:bg-ember/10 hover:text-ember"
                     >
                         <Trash className="size-4" />
                     </TrackedButton>
                 </div>
+
+                <ConfirmModal
+                    analyticsId="template-remove-exercise"
+                    open={confirmingRemove}
+                    onClose={() => setConfirmingRemove(false)}
+                    onConfirm={onRemove}
+                    title={tw('entryRemoveTitle', { name })}
+                    description={tw('entryRemoveBody', { sets: exercise.sets.length })}
+                    confirmLabel={tw('entryRemove')}
+                    cancelLabel={tw('cancel')}
+                    destructive
+                />
 
                 <Input
                     value={exercise.notes}
@@ -452,7 +466,6 @@ function ExerciseCard({
 
                 <div className="mt-4 space-y-2">
                     <div className="grid grid-cols-[1.5rem_1fr_1fr_1.3fr_auto] items-center gap-2 px-1 font-mono text-[10px] uppercase tracking-widest text-text-faint">
-                        <span>#</span>
                         <span>{tw('weightLabel', { units })}</span>
                         <span>{tw('reps')}</span>
                         <span>{tw('intensity')}</span>
