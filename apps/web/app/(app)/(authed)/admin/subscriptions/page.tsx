@@ -21,6 +21,7 @@ import { Field, Input, Select } from '@/components/ui/field'
 import { FormError } from '@/components/ui/form-error'
 import { Plus } from '@/components/ui/icons'
 import { Modal } from '@/components/ui/modal'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SubmitButton } from '@/components/ui/submit-button'
 import { TextsReveal } from '@/components/ui/texts-reveal'
@@ -29,21 +30,30 @@ import { TrackedButton } from '@/components/ui/tracked'
 const STATUSES = ['incomplete', 'trialing', 'active', 'past_due', 'canceled', 'expired'] as const
 const GATEWAYS = ['stripe', 'paypal', 'manual'] as const
 
+/** All filter state in one object; each field maps to a query arg. */
+interface Filters {
+    statuses: string[]
+    gateways: string[]
+    search: string
+}
+
+const INITIAL_FILTERS: Filters = { statuses: [], gateways: [], search: '' }
+
 function formatAmount(amountCents: number, currency: string): string {
     return new Intl.NumberFormat('en', { style: 'currency', currency }).format(amountCents / 100)
 }
 
 export default function AdminSubscriptionsPage() {
     const t = useTranslations('admin')
-    const [status, setStatus] = useState('')
-    const [gateway, setGateway] = useState('')
-    const [search, setSearch] = useState('')
-    const debouncedSearch = useDebouncedValue(search, 300)
+    const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS)
+    const debouncedSearch = useDebouncedValue(filters.search, 300)
     const [assigning, setAssigning] = useState(false)
 
+    const patch = (next: Partial<Filters>) => setFilters((current) => ({ ...current, ...next }))
+
     const { data, isLoading } = useAdminSubscriptions({
-        status: status || undefined,
-        gateway: gateway || undefined,
+        statuses: filters.statuses,
+        gateways: filters.gateways,
         search: debouncedSearch || undefined,
     })
 
@@ -65,37 +75,30 @@ export default function AdminSubscriptionsPage() {
                 <div className="w-full sm:flex-1">
                     <ClearableSearch
                         analyticsId="admin-subscriptions-search"
-                        value={search}
-                        onChange={setSearch}
+                        value={filters.search}
+                        onChange={(search) => patch({ search })}
                         placeholder={t('subscriptionsSearch')}
                     />
                 </div>
-                <Select
-                    aria-label={t('subscriptionStatus')}
-                    value={status}
-                    onChange={(event) => setStatus(event.target.value)}
-                    className="w-auto! py-2.5"
-                >
-                    <option value="">{t('filterAnyStatus')}</option>
-                    {STATUSES.map((value) => (
-                        <option key={value} value={value}>
-                            {t(`subscriptionStatusValue.${value}` as 'subscriptionStatusValue.active')}
-                        </option>
-                    ))}
-                </Select>
-                <Select
-                    aria-label={t('subscriptionGateway')}
-                    value={gateway}
-                    onChange={(event) => setGateway(event.target.value)}
-                    className="w-auto! py-2.5"
-                >
-                    <option value="">{t('filterAnyGateway')}</option>
-                    {GATEWAYS.map((value) => (
-                        <option key={value} value={value}>
-                            {value}
-                        </option>
-                    ))}
-                </Select>
+                <MultiSelect
+                    analyticsId="admin-subscriptions-status"
+                    label={t('subscriptionStatus')}
+                    ariaLabel={t('subscriptionStatus')}
+                    options={STATUSES.map((value) => ({
+                        value,
+                        label: t(`subscriptionStatusValue.${value}` as 'subscriptionStatusValue.active'),
+                    }))}
+                    selected={filters.statuses}
+                    onChange={(statuses) => patch({ statuses })}
+                />
+                <MultiSelect
+                    analyticsId="admin-subscriptions-gateway"
+                    label={t('subscriptionGateway')}
+                    ariaLabel={t('subscriptionGateway')}
+                    options={GATEWAYS.map((value) => ({ value, label: value }))}
+                    selected={filters.gateways}
+                    onChange={(gateways) => patch({ gateways })}
+                />
                 <TrackedButton
                     analyticsId="admin-subscription-assign-open"
                     type="button"

@@ -279,7 +279,8 @@ const optionalArg = <T extends z.ZodTypeAny>(schema: T) => schema.nullish().tran
 
 export const audienceArg = optionalArg(audience)
 export const idArg = optionalArg(uuid)
-export const statusArg = optionalArg(subscriptionStatus)
+export const statusesArg = optionalArg(z.array(subscriptionStatus))
+export const gatewaysArg = optionalArg(z.array(gateway))
 export const gatewayArg = optionalArg(gateway)
 export const searchArg = optionalArg(z.string().trim().min(1).max(120))
 export const limitArg = optionalArg(z.coerce.number().int().min(1).max(100))

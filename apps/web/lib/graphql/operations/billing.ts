@@ -138,16 +138,16 @@ export const AdminBillingStatsDocument = graphql(`
 
 export const AdminSubscriptionsDocument = graphql(`
     query AdminSubscriptions(
-        $status: String
-        $gateway: String
+        $statuses: [String!]
+        $gateways: [String!]
         $planId: ID
         $search: String
         $limit: Int
         $offset: Int
     ) {
         adminSubscriptions(
-            status: $status
-            gateway: $gateway
+            statuses: $statuses
+            gateways: $gateways
             planId: $planId
             search: $search
             limit: $limit

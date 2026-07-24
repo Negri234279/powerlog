@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, count, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, inArray } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../../../../database/database.module'
 import {
@@ -30,8 +30,8 @@ export class DrizzleAdminSubscriptionReadModel extends AdminSubscriptionReadMode
         page: { limit: number; offset: number },
     ): Promise<AdminSubscriptionPage> {
         const where = and(
-            filter.status ? eq(subscriptions.status, filter.status) : undefined,
-            filter.gateway ? eq(subscriptions.gateway, filter.gateway) : undefined,
+            filter.statuses && filter.statuses.length > 0 ? inArray(subscriptions.status, filter.statuses) : undefined,
+            filter.gateways && filter.gateways.length > 0 ? inArray(subscriptions.gateway, filter.gateways) : undefined,
             filter.planId ? eq(subscriptions.planId, filter.planId) : undefined,
             filter.userId ? eq(subscriptions.userId, filter.userId) : undefined,
         )

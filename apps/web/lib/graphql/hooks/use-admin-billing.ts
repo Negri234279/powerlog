@@ -95,8 +95,8 @@ export function useAdminBillingStats() {
 }
 
 export interface AdminSubscriptionFilters {
-    status?: string
-    gateway?: string
+    statuses?: string[]
+    gateways?: string[]
     planId?: string
     search?: string
 }
@@ -106,8 +106,8 @@ export function useAdminSubscriptions(filters: AdminSubscriptionFilters = {}, of
         queryKey: [...SUBSCRIPTIONS_KEY, filters, offset],
         queryFn: () =>
             gqlRequest(AdminSubscriptionsDocument, {
-                status: filters.status || null,
-                gateway: filters.gateway || null,
+                statuses: filters.statuses?.length ? filters.statuses : null,
+                gateways: filters.gateways?.length ? filters.gateways : null,
                 planId: filters.planId || null,
                 search: filters.search?.trim() ? filters.search.trim() : null,
                 limit: PAGE_SIZE,

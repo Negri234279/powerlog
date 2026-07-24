@@ -1895,9 +1895,9 @@ type Query {
   adminPlans(audience: String): [AdminPlan!]!
 
   """
-  Subscriptions, filterable by status/gateway/plan and by exact email or handle.
+  Subscriptions, filterable by statuses/gateways/plan and by exact email or handle.
   """
-  adminSubscriptions(gateway: String, limit: Int, offset: Int, planId: ID, search: String, status: String): AdminSubscriptionPage!
+  adminSubscriptions(gateways: [String!], limit: Int, offset: Int, planId: ID, search: String, statuses: [String!]): AdminSubscriptionPage!
 
   """
   One support ticket with its full thread (admin only). Null if it does not exist.

@@ -53,12 +53,13 @@ import {
     createPlanSchema,
     gatewayArg,
     gatewayArgRequired,
+    gatewaysArg,
     idArg,
     limitArg,
     offsetArg,
     planStatusArg,
     searchArg,
-    statusArg,
+    statusesArg,
     webhookStatusArg,
     updatePlanSchema,
     upsertPlanOfferSchema,
@@ -114,20 +115,20 @@ export class AdminBillingResolver {
     }
 
     @Query(() => AdminSubscriptionPageType, {
-        description: 'Subscriptions, filterable by status/gateway/plan and by exact email or handle.',
+        description: 'Subscriptions, filterable by statuses/gateways/plan and by exact email or handle.',
     })
     async adminSubscriptions(
-        @Args('status', { type: () => String, nullable: true }, new ZodValidationPipe(statusArg))
-        status?: SubscriptionStatus,
-        @Args('gateway', { type: () => String, nullable: true }, new ZodValidationPipe(gatewayArg))
-        gateway?: PaymentGateway,
+        @Args('statuses', { type: () => [String], nullable: true }, new ZodValidationPipe(statusesArg))
+        statuses?: SubscriptionStatus[],
+        @Args('gateways', { type: () => [String], nullable: true }, new ZodValidationPipe(gatewaysArg))
+        gateways?: PaymentGateway[],
         @Args('planId', { type: () => ID, nullable: true }, new ZodValidationPipe(idArg)) planId?: string,
         @Args('search', { type: () => String, nullable: true }, new ZodValidationPipe(searchArg)) search?: string,
         @Args('limit', { type: () => Int, nullable: true }, new ZodValidationPipe(limitArg)) limit?: number,
         @Args('offset', { type: () => Int, nullable: true }, new ZodValidationPipe(offsetArg)) offset?: number,
     ): Promise<AdminSubscriptionsPageView> {
         const query = new AdminSubscriptionsQuery(
-            { status, gateway, planId, search },
+            { statuses, gateways, planId, search },
             limit ?? DEFAULT_LIMIT,
             offset ?? 0,
         )

@@ -11,8 +11,9 @@ import type { SubscriptionStatus } from '../../domain/subscription-status'
  * handle, and the SQL stays inside this module's tables.
  */
 export interface AdminSubscriptionFilter {
-    status?: SubscriptionStatus
-    gateway?: PaymentGateway
+    /** OR-ed within the set, AND-ed against the other filters. */
+    statuses?: SubscriptionStatus[]
+    gateways?: PaymentGateway[]
     /** Plan id, not slug: the row points at an id. */
     planId?: string
     userId?: string
