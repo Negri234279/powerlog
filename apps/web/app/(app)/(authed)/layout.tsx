@@ -20,7 +20,7 @@ export default async function AuthedLayout({ children }: { children: React.React
     // The marketing footer is a server component; pass it as a slot into the client
     // shell (which renders it with `mt-auto` so it sits at the bottom on short pages).
     return (
-        <AppShell initialUser={session} footer={<SiteFooter className="mt-auto" />}>
+        <AppShell initialUser={session} footer={<SiteFooter className="mt-auto" hideProduct />}>
             {children}
         </AppShell>
     )
