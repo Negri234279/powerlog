@@ -26,13 +26,21 @@ function hrefFor(item: string, locale: Locale): string {
     return '#'
 }
 
-export async function SiteFooter({ className }: { className?: string }) {
+export async function SiteFooter({ className, hideProduct }: { className?: string; hideProduct?: boolean }) {
     const t = await getTranslations('landing.footer')
     const locale = (await getLocale()) as Locale
 
+    // On authed routes the Product column is dead weight: its items are anchors into
+    // the landing (`/#features`, `/#pricing`…) that go nowhere useful once signed in.
+    const columns = hideProduct ? COLUMNS.filter((col) => col.id !== 'product') : COLUMNS
+
     return (
         <footer className={`border-t border-hairline px-6 py-16 md:px-8 ${className ?? ''}`}>
-            <div className="mx-auto grid max-w-[80rem] gap-12 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+            <div
+                className={`mx-auto grid max-w-[80rem] gap-12 ${
+                    hideProduct ? 'md:grid-cols-[1.4fr_repeat(2,1fr)]' : 'md:grid-cols-[1.4fr_repeat(3,1fr)]'
+                }`}
+            >
                 <div>
                     <TrackedLink
                         analyticsId="footer-wordmark"
@@ -47,7 +55,7 @@ export async function SiteFooter({ className }: { className?: string }) {
                     <p className="mt-4 max-w-xs text-body text-text-dim">{t('tagline')}</p>
                 </div>
 
-                {COLUMNS.map((col) => (
+                {columns.map((col) => (
                     <div key={col.id}>
                         <p className="font-mono text-eyebrow uppercase text-text-faint">{t(col.titleKey)}</p>
                         <ul className="mt-4 space-y-3">
