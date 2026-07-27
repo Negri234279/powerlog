@@ -4,6 +4,7 @@
             "dashboard": "Panel",
             "workouts": "Entrenamientos",
             "coaching": "Coaching",
+            "chat": "Chat",
             "admin": "Admin"
         },
         "profileAria": "Tu perfil",
@@ -49,7 +50,13 @@
         "title": "Chat",
         "openChat": "Abrir chat",
         "unreadOne": "1 sin leer",
-        "unreadOther": "{count} sin leer"
+        "unreadOther": "{count} sin leer",
+        "inboxTitle": "Mensajes",
+        "inboxSubtitle": "Tus conversaciones con coaches y atletas.",
+        "inboxEmpty": "Aún no hay conversaciones.",
+        "selectConversation": "Elige una conversación para empezar a chatear.",
+        "you": "Tú:",
+        "back": "Volver"
     },
     "coaching": {
         "eyebrow": "Coaching",

@@ -7,6 +7,10 @@ export const ListChatConversationsDocument = graphql(`
             conversationId
             otherParticipantId
             unreadCount
+            otherParticipant {
+                username
+                avatarUrl
+            }
             presence {
                 online
                 lastSeenAt

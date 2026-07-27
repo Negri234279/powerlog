@@ -11,7 +11,9 @@ import { hardLogout } from '@/lib/graphql/client'
 import { ArrowUpRight, Close, Mark, Menu } from '@/components/ui/icons'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import { NotificationBell } from '@/components/app/notification-bell'
+import { UnreadBadge } from '@/components/chat/unread-badge'
 import { ChatSocketProvider } from '@/lib/chat/chat-socket'
+import { useChatConversations } from '@/lib/graphql/hooks/use-chat'
 import { useLogout, useMe } from '@/lib/graphql/hooks/use-auth'
 import { useRealtime } from '@/lib/realtime/use-realtime'
 
@@ -19,6 +21,7 @@ const NAV = [
     { id: 'dashboard', href: '/dashboard' },
     { id: 'workouts', href: '/workouts' },
     { id: 'coaching', href: '/coaching' },
+    { id: 'chat', href: '/chat' },
 ] as const
 
 /** Authenticated chrome: top bar with nav + user + logout. The authed layout
@@ -47,6 +50,9 @@ export function AppShell({
     // One live-update stream for the whole authed app: what the coach (or athlete)
     // is looking at refreshes itself when the other side acts.
     useRealtime()
+
+    // Total unread across every conversation → the badge on the Chat nav item.
+    const chatUnread = (useChatConversations().data ?? []).reduce((sum, c) => sum + c.unreadCount, 0)
 
     // Prefer the live profile once loaded; fall back to the token's username so
     // the chrome never flashes empty on first paint.
@@ -132,13 +138,14 @@ export function AppShell({
                                         href={n.href}
                                         aria-current={isActive(n.href) ? 'page' : undefined}
                                         className={cn(
-                                            'rounded-full px-3.5 py-1.5 text-sm transition-colors duration-300',
+                                            'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm transition-colors duration-300',
                                             isActive(n.href)
                                                 ? 'bg-white/[0.06] text-text'
                                                 : 'text-text-dim hover:text-text',
                                         )}
                                     >
                                         {t(`nav.${n.id}`)}
+                                        {n.id === 'chat' ? <UnreadBadge count={chatUnread} /> : null}
                                     </TrackedLink>
                                 ))}
                             </nav>
@@ -238,7 +245,10 @@ export function AppShell({
                                                 : 'text-text-dim hover:bg-white/[0.04] hover:text-text',
                                         )}
                                     >
-                                        <span>{t(`nav.${n.id}`)}</span>
+                                        <span className="flex items-center gap-2">
+                                            {t(`nav.${n.id}`)}
+                                            {n.id === 'chat' ? <UnreadBadge count={chatUnread} /> : null}
+                                        </span>
                                         {isActive(n.href) ? (
                                             <span className="size-1.5 rounded-full bg-ember shadow-[0_0_12px_rgba(255,106,44,0.7)]" />
                                         ) : (

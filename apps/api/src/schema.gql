@@ -679,6 +679,9 @@ type ChatConversation {
   """Null when no messages yet."""
   lastMessage: ChatMessagePreview
 
+  """The other participant’s handle + avatar."""
+  otherParticipant: ChatParticipant!
+
   """The coach (athlete viewer) or athlete (coach viewer)."""
   otherParticipantId: ID!
 
@@ -716,6 +719,14 @@ type ChatMessagesPage {
 
   """Cursor for the next page; null when last."""
   nextCursor: String
+}
+
+type ChatParticipant {
+  """Resolved avatar URL; null → client default."""
+  avatarUrl: String
+
+  """The other participant’s public handle."""
+  username: String!
 }
 
 type ChatPresence {

@@ -1,6 +1,8 @@
 import { Module, type Provider } from '@nestjs/common'
 
+import { QueryBusProfileSnapshotReader } from '../../account/query-bus-profile-snapshot-reader'
 import { PresenceReadModule } from '../../presence/presence-read.module'
+import { ProfileSnapshotReader } from '../../shared/contracts/profile-snapshot-reader'
 import { AuthModule } from '../auth/auth.module'
 import { CoachingModule } from '../coaching/coaching.module'
 import { CHAT_COMMAND_HANDLERS, CHAT_EVENT_HANDLERS, CHAT_QUERY_HANDLERS } from './application/chat.application'
@@ -32,6 +34,9 @@ const ADAPTERS: Provider[] = [
     // no-op until then, so the Chat.1 shape and tests need no gateway.
     SettableChatPusher,
     { provide: ChatPusher, useExisting: SettableChatPusher },
+    // Resolves the other participant's handle/avatar for the inbox, over the
+    // QueryBus (global) — no import of the profile module.
+    { provide: ProfileSnapshotReader, useClass: QueryBusProfileSnapshotReader },
 ]
 
 @Module({

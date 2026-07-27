@@ -4,6 +4,7 @@
             "dashboard": "Dashboard",
             "workouts": "Workouts",
             "coaching": "Coaching",
+            "chat": "Chat",
             "admin": "Admin"
         },
         "profileAria": "Your profile",
@@ -49,7 +50,13 @@
         "title": "Chat",
         "openChat": "Open chat",
         "unreadOne": "1 unread",
-        "unreadOther": "{count} unread"
+        "unreadOther": "{count} unread",
+        "inboxTitle": "Messages",
+        "inboxSubtitle": "Your conversations with coaches and athletes.",
+        "inboxEmpty": "No conversations yet.",
+        "selectConversation": "Select a conversation to start chatting.",
+        "you": "You:",
+        "back": "Back"
     },
     "coaching": {
         "eyebrow": "Coaching",

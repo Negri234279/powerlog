@@ -1,6 +1,6 @@
 'use client'
 
-import { useFormatter, useTranslations } from 'next-intl'
+import { useFormatter, useNow, useTranslations } from 'next-intl'
 
 import { cn } from '@/lib/cn'
 import type { Presence } from '@/lib/chat/chat-socket'
@@ -12,12 +12,15 @@ import type { Presence } from '@/lib/chat/chat-socket'
 export function PresenceBadge({ presence }: { presence: Presence | undefined }) {
     const t = useTranslations('chat')
     const format = useFormatter()
+    // A shared "now" so relativeTime doesn't fall back per-call (and stays stable
+    // between the server render and hydration).
+    const now = useNow()
 
     const online = presence?.online ?? false
     const label = online
         ? t('online')
         : presence?.lastSeenAt
-          ? t('lastSeen', { time: format.relativeTime(new Date(presence.lastSeenAt)) })
+          ? t('lastSeen', { time: format.relativeTime(new Date(presence.lastSeenAt), now) })
           : t('offline')
 
     return (

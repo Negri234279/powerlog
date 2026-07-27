@@ -43,6 +43,10 @@ function toConversationView(row: ChatConversationView): ChatConversationType {
     return {
         conversationId: row.conversationId,
         otherParticipantId: row.otherParticipantId,
+        otherParticipant: {
+            username: row.otherParticipant.username,
+            avatarUrl: row.otherParticipant.avatarUrl,
+        },
         lastMessage: row.lastMessage,
         unreadCount: row.unreadCount,
         presence: { online: row.presence.online, lastSeenAt: row.presence.lastSeenAt },

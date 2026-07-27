@@ -79,6 +79,16 @@ export class ChatPresenceType {
     lastSeenAt?: Date | null
 }
 
+/** The other participant's public identity, for the inbox row. */
+@ObjectType('ChatParticipant')
+export class ChatParticipantType {
+    @Field({ description: 'The other participant’s public handle.' })
+    username!: string
+
+    @Field(() => String, { nullable: true, description: 'Resolved avatar URL; null → client default.' })
+    avatarUrl?: string | null
+}
+
 /** One inbox row: a conversation from the caller's side. */
 @ObjectType('ChatConversation')
 export class ChatConversationType {
@@ -87,6 +97,9 @@ export class ChatConversationType {
 
     @Field(() => ID, { description: 'The coach (athlete viewer) or athlete (coach viewer).' })
     otherParticipantId!: string
+
+    @Field(() => ChatParticipantType, { description: 'The other participant’s handle + avatar.' })
+    otherParticipant!: ChatParticipantType
 
     @Field(() => ChatMessagePreviewType, { nullable: true, description: 'Null when no messages yet.' })
     lastMessage?: ChatMessagePreviewType | null
