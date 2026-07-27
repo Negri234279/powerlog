@@ -1,5 +1,6 @@
 import { Module, type Provider } from '@nestjs/common'
 
+import { PresenceReadModule } from '../../presence/presence-read.module'
 import { AuthModule } from '../auth/auth.module'
 import { CoachingModule } from '../coaching/coaching.module'
 import { CHAT_COMMAND_HANDLERS, CHAT_EVENT_HANDLERS, CHAT_QUERY_HANDLERS } from './application/chat.application'
@@ -35,9 +36,10 @@ const ADAPTERS: Provider[] = [
 
 @Module({
     // AuthModule for the shared JwtCookieGuard; CoachingModule exports CoachLinks
-    // (authorizes who may write in a conversation). DatabaseModule (DRIZZLE),
-    // CqrsModule and ObservabilityModule are global.
-    imports: [AuthModule, CoachingModule],
+    // (authorizes who may write in a conversation); PresenceReadModule → PresenceReader
+    // (the inbox's live presence). DatabaseModule (DRIZZLE), CqrsModule and
+    // ObservabilityModule are global.
+    imports: [AuthModule, CoachingModule, PresenceReadModule],
     providers: [
         ...ADAPTERS,
         ...CHAT_COMMAND_HANDLERS,

@@ -10,7 +10,7 @@ import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
 import { MarkConversationDeliveredCommand } from '../../application/commands/mark-conversation-delivered/mark-conversation-delivered.command'
 import { MarkConversationReadCommand } from '../../application/commands/mark-conversation-read/mark-conversation-read.command'
 import { SendChatMessageCommand } from '../../application/commands/send-chat-message/send-chat-message.command'
-import type { ChatInboxRow } from '../../application/ports/chat-inbox.read-model'
+import type { ChatConversationView } from '../../application/queries/list-chat-conversations/list-chat-conversations.handler'
 import { ListChatConversationsQuery } from '../../application/queries/list-chat-conversations/list-chat-conversations.query'
 import type { ChatMessagesPage } from '../../application/queries/list-chat-messages/list-chat-messages.handler'
 import { ListChatMessagesQuery } from '../../application/queries/list-chat-messages/list-chat-messages.query'
@@ -39,12 +39,13 @@ function toMessageView(message: MessageEntity, status: ChatReadStatus | null): C
     }
 }
 
-function toConversationView(row: ChatInboxRow): ChatConversationType {
+function toConversationView(row: ChatConversationView): ChatConversationType {
     return {
         conversationId: row.conversationId,
         otherParticipantId: row.otherParticipantId,
         lastMessage: row.lastMessage,
         unreadCount: row.unreadCount,
+        presence: { online: row.presence.online, lastSeenAt: row.presence.lastSeenAt },
     }
 }
 
@@ -80,7 +81,7 @@ export class ChatResolver {
     })
     async listChatConversations(@CurrentUser() user: AuthUser): Promise<ChatConversationType[]> {
         const query = new ListChatConversationsQuery(user.userId)
-        const rows = await this.queryBus.execute<ListChatConversationsQuery, ChatInboxRow[]>(query)
+        const rows = await this.queryBus.execute<ListChatConversationsQuery, ChatConversationView[]>(query)
 
         return rows.map(toConversationView)
     }

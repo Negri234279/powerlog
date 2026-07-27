@@ -69,6 +69,16 @@ export class ChatMessagePreviewType {
     createdAt!: Date
 }
 
+/** The other participant's presence: online now + durable last-seen. */
+@ObjectType('ChatPresence')
+export class ChatPresenceType {
+    @Field({ description: 'Whether the other participant has a live socket open right now.' })
+    online!: boolean
+
+    @Field(() => Date, { nullable: true, description: 'When they were last seen; null if never.' })
+    lastSeenAt?: Date | null
+}
+
 /** One inbox row: a conversation from the caller's side. */
 @ObjectType('ChatConversation')
 export class ChatConversationType {
@@ -83,4 +93,7 @@ export class ChatConversationType {
 
     @Field(() => Int, { description: 'Messages from the other party past the caller’s read cursor.' })
     unreadCount!: number
+
+    @Field(() => ChatPresenceType, { description: 'Live presence of the other participant.' })
+    presence!: ChatPresenceType
 }

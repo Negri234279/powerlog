@@ -682,6 +682,9 @@ type ChatConversation {
   """The coach (athlete viewer) or athlete (coach viewer)."""
   otherParticipantId: ID!
 
+  """Live presence of the other participant."""
+  presence: ChatPresence!
+
   """Messages from the other party past the caller’s read cursor."""
   unreadCount: Int!
 }
@@ -713,6 +716,14 @@ type ChatMessagesPage {
 
   """Cursor for the next page; null when last."""
   nextCursor: String
+}
+
+type ChatPresence {
+  """When they were last seen; null if never."""
+  lastSeenAt: DateTime
+
+  """Whether the other participant has a live socket open right now."""
+  online: Boolean!
 }
 
 """Delivery state of a sent message: sent, delivered, or read."""
