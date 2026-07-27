@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { FakeClock, FakePresenceBroadcaster, InMemoryPresenceStore } from '../../tests/doubles/presence'
 import { FakeCoachLinks } from '../../tests/doubles/shared/fake-coach-links'
 import { silentLogger } from '../../tests/doubles/shared/silent-logger'
+import { gaugeValue, testGauge } from '../../tests/doubles/shared/test-gauge'
 import { InMemoryOnlineRegistry } from './online/in-memory-online-registry'
 import { PresenceService } from './presence.service'
 
@@ -16,6 +17,7 @@ describe('PresenceService', () => {
     let coachLinks: FakeCoachLinks
     let broadcaster: FakePresenceBroadcaster
     let clock: FakeClock
+    let onlineUsers: ReturnType<typeof testGauge>
     let service: PresenceService
 
     beforeEach(() => {
@@ -25,7 +27,8 @@ describe('PresenceService', () => {
         coachLinks = new FakeCoachLinks().link(COACH, ATHLETE)
         broadcaster = new FakePresenceBroadcaster()
         clock = new FakeClock(new Date('2026-05-01T10:00:00.000Z'))
-        service = new PresenceService(registry, store, coachLinks, broadcaster, clock, silentLogger())
+        onlineUsers = testGauge()
+        service = new PresenceService(registry, store, coachLinks, broadcaster, clock, silentLogger(), onlineUsers)
     })
 
     afterEach(() => {
@@ -40,6 +43,18 @@ describe('PresenceService', () => {
             recipientIds: [COACH],
             update: { userId: ATHLETE, online: true, lastSeenAt: null },
         })
+    })
+
+    it('tracks the online-users gauge on the first/last connection only', async () => {
+        await service.onConnect(ATHLETE)
+        await service.onConnect(ATHLETE) // second socket — no change
+        expect(await gaugeValue(onlineUsers)).toBe(1)
+
+        await service.onDisconnect(ATHLETE) // one socket left — still online
+        expect(await gaugeValue(onlineUsers)).toBe(1)
+
+        await service.onDisconnect(ATHLETE) // last socket — offline
+        expect(await gaugeValue(onlineUsers)).toBe(0)
     })
 
     it('does not re-emit online for a second socket of the same user', async () => {

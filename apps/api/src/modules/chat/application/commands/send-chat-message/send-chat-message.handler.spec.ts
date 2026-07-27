@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { FakeCoachLinks } from '../../../../../../tests/doubles/shared/fake-coach-links'
 import { silentLogger } from '../../../../../../tests/doubles/shared/silent-logger'
+import { counterValue, testCounter } from '../../../../../../tests/doubles/shared/test-counter'
 import {
     FakeChatPusher,
     FakeClock,
@@ -32,6 +33,7 @@ describe('SendChatMessageHandler', () => {
     let participantStates: InMemoryParticipantStateRepository
     let coachLinks: FakeCoachLinks
     let pusher: FakeChatPusher
+    let metrics: ReturnType<typeof testCounter>
     let handler: SendChatMessageHandler
 
     beforeEach(() => {
@@ -42,6 +44,7 @@ describe('SendChatMessageHandler', () => {
         participantStates = new InMemoryParticipantStateRepository(messages)
         coachLinks = new FakeCoachLinks().link(COACH, ATHLETE)
         pusher = new FakeChatPusher()
+        metrics = testCounter(['status'])
         handler = new SendChatMessageHandler(
             conversations,
             messages,
@@ -51,12 +54,14 @@ describe('SendChatMessageHandler', () => {
             new FakeClock(),
             pusher,
             silentLogger(),
+            metrics,
         )
     })
 
     it('should_persist_a_message_when_the_pair_is_linked', async () => {
         const message = await handler.execute(new SendChatMessageCommand(COACH, CONVERSATION, '  hi there  '))
 
+        expect(await counterValue(metrics, { status: 'sent' })).toBe(1)
         expect(message.id).toBe('msg-1')
         expect(message.senderId).toBe(COACH)
         // Body is trimmed by the domain VO.
@@ -85,6 +90,7 @@ describe('SendChatMessageHandler', () => {
             ConversationReadOnlyError,
         )
         expect(messages.all(CONVERSATION)).toHaveLength(0)
+        expect(await counterValue(metrics, { status: 'blocked' })).toBe(1)
     })
 
     it('should_reject_a_message_to_a_missing_conversation', async () => {

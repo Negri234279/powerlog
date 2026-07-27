@@ -1,6 +1,9 @@
 import { Injectable, type OnModuleDestroy } from '@nestjs/common'
+import { InjectMetric } from '@willsoto/nestjs-prometheus'
 import { PinoLogger } from 'nestjs-pino'
+import type { Gauge } from 'prom-client'
 
+import { METRIC } from '../observability/metrics'
 import { CoachLinks } from '../shared/contracts/coach-links'
 import { Clock } from './clock'
 import { OnlineRegistry } from './online/online-registry'
@@ -32,6 +35,7 @@ export class PresenceService implements OnModuleDestroy {
         private readonly broadcaster: PresenceBroadcaster,
         private readonly clock: Clock,
         private readonly logger: PinoLogger,
+        @InjectMetric(METRIC.presenceOnlineUsers) private readonly onlineUsers: Gauge<string>,
     ) {
         this.logger.setContext(PresenceService.name)
     }
@@ -44,6 +48,9 @@ export class PresenceService implements OnModuleDestroy {
         const { firstConnection } = await this.online.connect(userId)
         if (!firstConnection) return
 
+        // The registry count went 0 → 1: this user is now online. The gauge tracks
+        // that transition (not the delayed offline emit), so a refresh nets to zero.
+        this.onlineUsers.inc()
         this.logger.debug({ userId }, 'presence online')
         await this.broadcast(userId, { online: true, lastSeenAt: null })
     }
@@ -56,6 +63,9 @@ export class PresenceService implements OnModuleDestroy {
         const { lastDisconnection } = await this.online.disconnect(userId)
         if (!lastDisconnection) return
 
+        // Registry count hit 0 — offline for the gauge immediately (the grace only
+        // delays telling counterparties, not the online-set size).
+        this.onlineUsers.dec()
         this.clearOfflineTimer(userId)
         const timer = setTimeout(() => {
             void this.finalizeOffline(userId)

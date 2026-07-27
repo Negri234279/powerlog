@@ -11,11 +11,14 @@ import {
     WebSocketGateway,
     WebSocketServer,
 } from '@nestjs/websockets'
+import { InjectMetric } from '@willsoto/nestjs-prometheus'
 import { trace } from '@opentelemetry/api'
 import { PinoLogger } from 'nestjs-pino'
+import type { Gauge } from 'prom-client'
 import type { Server, Socket } from 'socket.io'
 
 import type { Env } from '../config/env'
+import { METRIC } from '../observability/metrics'
 import { TokenSigner } from '../modules/auth/application/ports/token-signer.port'
 import { MarkConversationDeliveredCommand } from '../modules/chat/application/commands/mark-conversation-delivered/mark-conversation-delivered.command'
 import { MarkConversationReadCommand } from '../modules/chat/application/commands/mark-conversation-read/mark-conversation-read.command'
@@ -85,6 +88,7 @@ export class ChatGateway
         private readonly tokenSigner: TokenSigner,
         config: ConfigService<Env, true>,
         private readonly logger: PinoLogger,
+        @InjectMetric(METRIC.chatWsConnections) private readonly connections: Gauge<string>,
     ) {
         this.cookieName = config.get('AUTH_COOKIE_NAME', { infer: true })
         this.logger.setContext(ChatGateway.name)
@@ -118,6 +122,7 @@ export class ChatGateway
         }
 
         client.data.userId = userId
+        this.connections.inc()
 
         await client.join(this.userRoom(userId))
         await this.presence.onConnect(userId)
@@ -128,6 +133,8 @@ export class ChatGateway
     async handleDisconnect(client: Socket): Promise<void> {
         const userId = client.data.userId as string | undefined
         if (!userId) return
+
+        this.connections.dec()
 
         await this.presence.onDisconnect(userId)
         this.logger.debug({ userId }, 'ws disconnected')

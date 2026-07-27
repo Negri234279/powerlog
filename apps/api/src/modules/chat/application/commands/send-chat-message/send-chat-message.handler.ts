@@ -1,6 +1,9 @@
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { InjectMetric } from '@willsoto/nestjs-prometheus'
 import { PinoLogger } from 'nestjs-pino'
+import type { Counter } from 'prom-client'
 
+import { METRIC } from '../../../../../observability/metrics'
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
 import { MessageEntity } from '../../../domain/entities/message.entity'
 import { ParticipantStateEntity } from '../../../domain/entities/participant-state.entity'
@@ -35,6 +38,7 @@ export class SendChatMessageHandler implements ICommandHandler<SendChatMessageCo
         private readonly clock: Clock,
         private readonly pusher: ChatPusher,
         private readonly logger: PinoLogger,
+        @InjectMetric(METRIC.chatMessages) private readonly messagesSent: Counter<string>,
     ) {
         this.logger.setContext(SendChatMessageHandler.name)
     }
@@ -52,7 +56,10 @@ export class SendChatMessageHandler implements ICommandHandler<SendChatMessageCo
         // Writing requires a live link — history stays readable after unlink, but
         // nobody can send. The conversation never caches this; it's checked here.
         const linked = await this.coachLinks.areLinked(conversation.coachId, conversation.athleteId)
-        if (!linked) throw new ConversationReadOnlyError()
+        if (!linked) {
+            this.messagesSent.inc({ status: 'blocked' })
+            throw new ConversationReadOnlyError()
+        }
 
         const now = this.clock.now()
         const message = MessageEntity.create({
@@ -74,6 +81,7 @@ export class SendChatMessageHandler implements ICommandHandler<SendChatMessageCo
 
         await this.participantStates.upsert(senderState)
 
+        this.messagesSent.inc({ status: 'sent' })
         this.logger.info({ conversationId: conversation.id }, 'chat message sent')
 
         // Best-effort live fan-out; a push failure never fails the send (GraphQL is
