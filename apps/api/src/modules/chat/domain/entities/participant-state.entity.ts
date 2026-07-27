@@ -60,7 +60,7 @@ export class ParticipantStateEntity {
     get lastReadMessageId(): string | null {
         return this.props.lastReadMessageId
     }
-    
+
     get lastReadAt(): Date | null {
         return this.props.lastReadAt
     }

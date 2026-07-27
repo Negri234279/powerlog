@@ -30,7 +30,7 @@ export class MarkConversationReadHandler implements ICommandHandler<MarkConversa
         if (!conversation) {
             throw new ConversationNotFoundError()
         }
-        
+
         if (!conversation.involves(command.userId)) {
             throw new NotYourConversationError()
         }

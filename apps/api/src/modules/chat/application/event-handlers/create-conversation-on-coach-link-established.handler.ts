@@ -35,7 +35,7 @@ export class CreateConversationOnCoachLinkEstablished implements IEventHandler<C
             now: this.clock.now(),
         })
         const saved = await this.conversations.createIfAbsent(conversation)
-        
+
         this.logger.info({ conversationId: saved.id }, 'chat conversation created on coach link')
     }
 }

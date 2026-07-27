@@ -35,7 +35,7 @@ export class DrizzlePresenceStore extends PresenceStore {
             .select({ userId: userPresence.userId, lastSeenAt: userPresence.lastSeenAt })
             .from(userPresence)
             .where(inArray(userPresence.userId, userIds))
-            
+
         return new Map(rows.map((row) => [row.userId, row.lastSeenAt]))
     }
 }

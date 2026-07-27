@@ -42,7 +42,7 @@ export class MarkConversationDeliveredHandler implements ICommandHandler<MarkCon
         if (state.lastDeliveredMessageId === latest.id) return false
 
         state.markDelivered(latest.id)
-        
+
         await this.participantStates.upsert(state)
 
         const other = conversation.otherParticipant(command.userId)

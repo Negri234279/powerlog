@@ -49,7 +49,7 @@ export class DrizzleMessageRepository extends MessageRepository {
             .where(eq(chatMessages.conversationId, conversationId))
             .orderBy(desc(chatMessages.createdAt), desc(chatMessages.id))
             .limit(1)
-            
+
         return row ? MessageMapper.toDomain(row) : null
     }
 }

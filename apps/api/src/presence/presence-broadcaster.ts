@@ -1,5 +1,3 @@
-import { Injectable } from '@nestjs/common'
-
 /** A presence transition to push to interested clients. */
 export interface PresenceUpdate {
     userId: string
@@ -16,15 +14,4 @@ export interface PresenceUpdate {
  */
 export abstract class PresenceBroadcaster {
     abstract emit(recipientIds: string[], update: PresenceUpdate): Promise<void>
-}
-
-/**
- * No-op broadcaster for Chat.2a — there's no gateway yet, so transitions go
- * nowhere. Chat.2b replaces this binding; `PresenceService` doesn't change.
- */
-@Injectable()
-export class NullPresenceBroadcaster extends PresenceBroadcaster {
-    async emit(): Promise<void> {
-        // Intentionally does nothing until Chat.2b wires the gateway.
-    }
 }

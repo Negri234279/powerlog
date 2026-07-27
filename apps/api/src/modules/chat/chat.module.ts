@@ -15,7 +15,7 @@ import { DrizzleChatInboxReadModel } from './infrastructure/persistence/read-mod
 import { DrizzleConversationRepository } from './infrastructure/persistence/repositories/drizzle-conversation.repository'
 import { DrizzleMessageRepository } from './infrastructure/persistence/repositories/drizzle-message.repository'
 import { DrizzleParticipantStateRepository } from './infrastructure/persistence/repositories/drizzle-participant-state.repository'
-import { NullChatPusher } from './infrastructure/push/null-chat-pusher'
+import { SettableChatPusher } from './infrastructure/push/settable-chat-pusher'
 import { SystemClock } from './infrastructure/time/system-clock'
 import { CHAT_RESOLVERS } from './presentation/chat.presentation'
 
@@ -27,8 +27,10 @@ const ADAPTERS: Provider[] = [
     { provide: ChatInboxReadModel, useClass: DrizzleChatInboxReadModel },
     { provide: Clock, useClass: SystemClock },
     { provide: IdGenerator, useClass: UuidGenerator },
-    // No-op until Chat.2 swaps in the WebSocket gateway.
-    { provide: ChatPusher, useClass: NullChatPusher },
+    // The WebSocket gateway registers itself as the delegate on init (Chat.2b);
+    // no-op until then, so the Chat.1 shape and tests need no gateway.
+    SettableChatPusher,
+    { provide: ChatPusher, useExisting: SettableChatPusher },
 ]
 
 @Module({
@@ -43,5 +45,7 @@ const ADAPTERS: Provider[] = [
         ...CHAT_EVENT_HANDLERS,
         ...CHAT_RESOLVERS,
     ],
+    // The gateway (Chat.2b) injects SettableChatPusher to register itself.
+    exports: [SettableChatPusher],
 })
 export class ChatModule {}

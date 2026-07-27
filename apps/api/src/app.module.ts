@@ -20,6 +20,7 @@ import { MailModule } from './mail/mail.module'
 import { AiSettingsModule } from './modules/ai/ai-settings.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { BillingModule } from './modules/billing/billing.module'
+import { GatewayModule } from './gateway/gateway.module'
 import { ChatModule } from './modules/chat/chat.module'
 import { CoachingModule } from './modules/coaching/coaching.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
@@ -138,6 +139,8 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
         SupportModule,
         // Coach↔athlete chat (Chat.1: domain/app/persistence over GraphQL).
         ChatModule,
+        // WebSocket transport for presence + live chat (Chat.2b).
+        GatewayModule,
     ],
     providers: [AppResolver, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],
 })
