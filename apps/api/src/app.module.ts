@@ -29,6 +29,7 @@ import { WorkoutsModule } from './modules/workouts/workouts.module'
 import { logContextMixin } from './observability/log-context.mixin'
 import { ObservabilityModule } from './observability/observability.module'
 import { QueueModule } from './queue/queue.module'
+import { PresenceModule } from './presence/presence.module'
 import { RealtimeModule } from './realtime/realtime.module'
 import { RedisModule } from './redis/redis.module'
 import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
@@ -121,6 +122,8 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
         MailModule,
         AiModule,
         RealtimeModule,
+        // Transversal presence (online + last-seen) over the realtime socket.
+        PresenceModule,
         // Feature modules (added per milestone):
         AuthModule,
         ProfileModule,

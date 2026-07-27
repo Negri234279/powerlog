@@ -47,3 +47,4 @@ export * from '../modules/billing/infrastructure/persistence/schema/trial-redemp
 export * from '../modules/chat/infrastructure/persistence/schema/chat-conversations.schema'
 export * from '../modules/chat/infrastructure/persistence/schema/chat-messages.schema'
 export * from '../modules/chat/infrastructure/persistence/schema/chat-participant-state.schema'
+export * from '../presence/infrastructure/schema/user-presence.schema'

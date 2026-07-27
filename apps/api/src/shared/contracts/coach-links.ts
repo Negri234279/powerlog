@@ -25,4 +25,11 @@ export abstract class CoachLinks {
      * per athlete and then running a per-athlete rollup — N+1 twice over.
      */
     abstract athletesOf(coachId: string): Promise<CoachedAthlete[]>
+    /**
+     * Every user linked to `userId`, in either direction: the coaches of an
+     * athlete plus the athletes of a coach (a user can be both). This is the set
+     * of people who care that `userId` came online — presence fans out only to
+     * them, never a global broadcast.
+     */
+    abstract counterpartyIdsOf(userId: string): Promise<string[]>
 }

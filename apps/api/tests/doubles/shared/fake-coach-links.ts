@@ -27,4 +27,14 @@ export class FakeCoachLinks extends CoachLinks {
             .filter(([pair]) => pair.startsWith(`${coachId}:`))
             .map(([pair, since]) => ({ athleteId: pair.slice(coachId.length + 1), since }))
     }
+
+    async counterpartyIdsOf(userId: string): Promise<string[]> {
+        const counterparties = new Set<string>()
+        for (const pair of this.pairs.keys()) {
+            const [coachId, athleteId] = pair.split(':') as [string, string]
+            if (coachId === userId) counterparties.add(athleteId)
+            if (athleteId === userId) counterparties.add(coachId)
+        }
+        return [...counterparties]
+    }
 }

@@ -6,8 +6,12 @@ config({ path: '.env' })
 
 export default defineConfig({
     dialect: 'postgresql',
-    // Every module keeps its Drizzle tables under this path.
-    schema: './src/modules/**/infrastructure/persistence/schema/*.schema.ts',
+    // Feature modules keep tables under src/modules/**; transversal modules
+    // (e.g. src/presence) keep theirs under their own infrastructure/schema.
+    schema: [
+        './src/modules/**/infrastructure/persistence/schema/*.schema.ts',
+        './src/presence/infrastructure/schema/*.schema.ts',
+    ],
     out: './drizzle',
     dbCredentials: {
         url: process.env['DATABASE_URL'] ?? '',
