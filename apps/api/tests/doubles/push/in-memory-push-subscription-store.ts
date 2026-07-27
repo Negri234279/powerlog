@@ -26,7 +26,7 @@ export class InMemoryPushSubscriptionStore extends PushSubscriptionStore {
         if (!row || row.userId !== userId) return false
 
         this.rows.delete(endpoint)
-        
+
         return true
     }
 

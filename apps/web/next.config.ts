@@ -70,6 +70,21 @@ const nextConfig: NextConfig = {
             { source: '/api/:path*', destination: `${apiInternalUrl}/:path*` },
         ]
     },
+    async headers() {
+        return [
+            {
+                // The service worker must never be cached (or a stale worker sticks
+                // around after a deploy) and needs the /-scope header to control the
+                // whole origin from a public/ path.
+                source: '/sw.js',
+                headers: [
+                    { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+                    { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+                    { key: 'Service-Worker-Allowed', value: '/' },
+                ],
+            },
+        ]
+    },
 }
 
 export default withNextIntl(nextConfig)

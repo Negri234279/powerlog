@@ -111,7 +111,19 @@ Lo que se implementó:
   mutaciones (registrar/borrar, sin claves ⇒ respuesta de no-soportado).
 - **Checkpoint**: typecheck + lint + tests verdes. Nada visible aún.
 
-### Push.2 — PWA en la web (instalable, sin push aún)
+### Push.2 — PWA en la web (instalable, sin push aún) ✅ HECHO
+> **Completado.** `app/manifest.ts` (standalone, tema obsidiana `#07070a`), iconos
+> generados desde el SVG de marca (`public/icons/` 192/512/maskable-512/badge-72 +
+> `app/apple-icon.png`), `public/sw.js` (push → `showNotification`, `notificationclick`
+> → enfoca pestaña abierta y navega, o abre una; colapsa por `tag`), `headers()` en
+> `next.config` para `/sw.js` (`no-cache` + `Service-Worker-Allowed: /`), y
+> `ServiceWorkerRegistrar` (cliente headless) montado en `Providers` (registra en toda
+> la app). Web **typecheck + build verdes** (`/manifest.webmanifest` sale en las rutas).
+> **Desviación del plan**: el `InstallPrompt` + el hook `use-install-state` se mueven a
+> **Push.3**, donde van junto al toggle en `/profile` (misma superficie, misma detección
+> iOS/standalone). Falta validación manual de instalación en un móvil real.
+
+Lo que se implementó:
 - `app/manifest.ts` (nombre, `display: standalone`, `theme_color`, iconos 192/512/
   maskable). Iconos reales en `public/`.
 - `public/sw.js`: `push` → `showNotification(title, {body, icon, badge, data})`;
