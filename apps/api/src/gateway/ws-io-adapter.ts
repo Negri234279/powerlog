@@ -31,8 +31,14 @@ export class WsIoAdapter extends IoAdapter {
     async connectToRedis(): Promise<void> {
         if (!this.redis) return
 
-        const pubClient = this.redis.duplicate()
-        const subClient = this.redis.duplicate()
+        // The adapter's `RedisAdapter` constructor `psubscribe`s immediately, before
+        // the duplicated connection is ready. The shared client runs with
+        // `enableOfflineQueue: false` (fail fast, degrade) — inherited, that psubscribe
+        // throws "Stream isn't writeable" and crashes boot. These two pub/sub
+        // connections must buffer until connected instead, like any normal ioredis
+        // client the adapter expects.
+        const pubClient = this.redis.duplicate({ enableOfflineQueue: true })
+        const subClient = this.redis.duplicate({ enableOfflineQueue: true })
 
         this.redisAdapter = createAdapter(pubClient, subClient)
     }
