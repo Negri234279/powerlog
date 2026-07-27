@@ -11,6 +11,7 @@ import { hardLogout } from '@/lib/graphql/client'
 import { ArrowUpRight, Close, Mark, Menu } from '@/components/ui/icons'
 import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
 import { NotificationBell } from '@/components/app/notification-bell'
+import { ChatWidget } from '@/components/chat/chat-widget'
 import { UnreadBadge } from '@/components/chat/unread-badge'
 import { ChatSocketProvider } from '@/lib/chat/chat-socket'
 import { useChatConversations } from '@/lib/graphql/hooks/use-chat'
@@ -284,6 +285,9 @@ export function AppShell({
 
                 {footer}
             </div>
+
+            {/* Global chat launcher — bubble bottom-right on every authed page. */}
+            <ChatWidget />
         </ChatSocketProvider>
     )
 }

@@ -1,7 +1,6 @@
 import { getTranslations } from 'next-intl/server'
 
 import { requireRole } from '@/lib/auth/session'
-import { AthleteChatRail } from '@/components/coaching/athlete-chat-rail'
 import { AthleteHeader } from '@/components/coaching/athlete-header'
 import { AthleteNav } from '@/components/coaching/athlete-nav'
 import { AthleteNote } from '@/components/coaching/athlete-note'
@@ -41,41 +40,36 @@ export default async function AthleteDetailLayout({
     const t = await getTranslations('coaching')
 
     return (
-        // The chat rail is a second column from xl; below that it stacks under the
-        // sections. It's mounted by the layout, so it survives navigation between
-        // Training / Stats / Plan without re-opening the socket or losing unreads.
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
-            <div className="space-y-6">
-                {/* Back link and identity are one block, not two rungs of the page's
-                    even rhythm — hence the tighter gap and the wrapper. The chevron
-                    and the -ml-2 padding are what stop it reading as another caption
-                    line: it used to share the header eyebrow's exact type treatment,
-                    and its hit area was the glyph box. */}
-                <div>
-                    <TrackedLink
-                        analyticsId="athlete-back"
-                        href="/coaching"
-                        className="-ml-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-sm text-text-dim transition-colors duration-300 hover:text-text"
-                    >
-                        <ChevronLeft className="size-4" />
-                        {t('backToCoaching')}
-                    </TrackedLink>
+        // Chat is reachable everywhere via the global chat widget (bubble, bottom-right)
+        // and the /chat tab — so the athlete detail no longer pins a chat rail here.
+        <div className="space-y-6">
+            {/* Back link and identity are one block, not two rungs of the page's
+                even rhythm — hence the tighter gap and the wrapper. The chevron
+                and the -ml-2 padding are what stop it reading as another caption
+                line: it used to share the header eyebrow's exact type treatment,
+                and its hit area was the glyph box. */}
+            <div>
+                <TrackedLink
+                    analyticsId="athlete-back"
+                    href="/coaching"
+                    className="-ml-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-sm text-text-dim transition-colors duration-300 hover:text-text"
+                >
+                    <ChevronLeft className="size-4" />
+                    {t('backToCoaching')}
+                </TrackedLink>
 
-                    <div className="mt-3">
-                        <AthleteHeader athleteId={id} />
-                    </div>
-                </div>
-
-                <AthleteNote athleteId={id} />
-
-                <AthleteNav athleteId={id} />
-
-                <div className="rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
-                    <div className="inset-hi rounded-[calc(2rem-0.375rem)] bg-surface p-6 md:p-8">{children}</div>
+                <div className="mt-3">
+                    <AthleteHeader athleteId={id} />
                 </div>
             </div>
 
-            <AthleteChatRail athleteId={id} />
+            <AthleteNote athleteId={id} />
+
+            <AthleteNav athleteId={id} />
+
+            <div className="rounded-[2rem] bg-shell p-1.5 ring-1 ring-hairline">
+                <div className="inset-hi rounded-[calc(2rem-0.375rem)] bg-surface p-6 md:p-8">{children}</div>
+            </div>
         </div>
     )
 }

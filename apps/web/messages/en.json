@@ -56,7 +56,9 @@
         "inboxEmpty": "No conversations yet.",
         "selectConversation": "Select a conversation to start chatting.",
         "you": "You:",
-        "back": "Back"
+        "back": "Back",
+        "collapse": "Collapse chat",
+        "close": "Close chat"
     },
     "coaching": {
         "eyebrow": "Coaching",

@@ -56,7 +56,9 @@
         "inboxEmpty": "Aún no hay conversaciones.",
         "selectConversation": "Elige una conversación para empezar a chatear.",
         "you": "Tú:",
-        "back": "Volver"
+        "back": "Volver",
+        "collapse": "Contraer chat",
+        "close": "Cerrar chat"
     },
     "coaching": {
         "eyebrow": "Coaching",

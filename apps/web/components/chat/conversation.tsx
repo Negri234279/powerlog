@@ -37,6 +37,7 @@ export function Conversation({
     otherAvatarUrl,
     initialPresence,
     readOnly = false,
+    bare = false,
     className,
 }: {
     conversationId: string
@@ -45,6 +46,8 @@ export function Conversation({
     otherAvatarUrl?: string | null
     initialPresence?: Presence
     readOnly?: boolean
+    /** Drop the panel's own bg/ring/rounded — the embedder (chat widget) supplies it. */
+    bare?: boolean
     className?: string
 }) {
     const t = useTranslations('chat')
@@ -54,7 +57,8 @@ export function Conversation({
     return (
         <div
             className={cn(
-                'flex h-full flex-col overflow-hidden rounded-2xl bg-surface ring-1 ring-hairline',
+                'flex h-full flex-col overflow-hidden',
+                !bare && 'rounded-2xl bg-surface ring-1 ring-hairline',
                 className,
             )}
         >

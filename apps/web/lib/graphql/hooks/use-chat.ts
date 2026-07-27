@@ -2,6 +2,8 @@ import { type InfiniteData, useInfiniteQuery, useQuery, useQueryClient, type Que
 
 import type { ListChatConversationsQuery, ListChatMessagesQuery } from '@/lib/graphql/__generated__/graphql'
 import { gqlRequest } from '@/lib/graphql/client'
+import { useMe } from '@/lib/graphql/hooks/use-auth'
+import { useMyAthletes, useMyCoaches } from '@/lib/graphql/hooks/use-coaching'
 import { ListChatConversationsDocument, ListChatMessagesDocument } from '@/lib/graphql/operations/chat'
 
 export type ChatConversation = ListChatConversationsQuery['listChatConversations'][number]
@@ -34,6 +36,22 @@ export function useConversationWith(otherParticipantId: string, enabled = true) 
     const conversation = query.data?.find((row) => row.otherParticipantId === otherParticipantId)
 
     return { conversation, isLoading: query.isLoading }
+}
+
+/**
+ * The ids of everyone the caller is currently linked to (their coaches ∪ their
+ * athletes). A conversation whose counterpart is NOT in this set is read-only —
+ * the link is broken, history stays but nobody can send.
+ */
+export function useLinkedCounterpartIds(): Set<string> {
+    const { data: me } = useMe()
+    const coaches = useMyCoaches()
+    const athletes = useMyAthletes(me?.role === 'coach')
+
+    return new Set<string>([
+        ...(coaches.data ?? []).map((c) => c.userId),
+        ...(athletes.data ?? []).map((a) => a.userId),
+    ])
 }
 
 /**
