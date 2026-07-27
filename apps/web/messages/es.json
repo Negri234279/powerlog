@@ -35,6 +35,22 @@
             "subscriptionPaymentFailed": "Tu pago ha fallado — actualiza la tarjeta para no perder el plan"
         }
     },
+    "chat": {
+        "online": "En línea",
+        "offline": "Desconectado",
+        "lastSeen": "Última vez {time}",
+        "typing": "escribiendo…",
+        "placeholder": "Escribe un mensaje…",
+        "send": "Enviar",
+        "empty": "Aún no hay mensajes — saluda.",
+        "loadOlder": "Cargar mensajes anteriores",
+        "readOnly": "Esta conversación es de solo lectura — ya no estáis vinculados.",
+        "sendError": "No se pudo enviar tu mensaje. Inténtalo de nuevo.",
+        "title": "Chat",
+        "openChat": "Abrir chat",
+        "unreadOne": "1 sin leer",
+        "unreadOther": "{count} sin leer"
+    },
     "coaching": {
         "eyebrow": "Coaching",
         "title": "Coaching",

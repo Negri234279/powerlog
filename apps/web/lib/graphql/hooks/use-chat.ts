@@ -24,6 +24,19 @@ export function useChatConversations(enabled = true) {
 }
 
 /**
+ * The inbox row for the conversation with one counterpart (a coach or athlete),
+ * resolved by their user id — the entry point both placements use to turn a
+ * counterpart into a conversation id + its presence + unread count. `undefined`
+ * while loading or when no conversation exists yet.
+ */
+export function useConversationWith(otherParticipantId: string, enabled = true) {
+    const query = useChatConversations(enabled)
+    const conversation = query.data?.find((row) => row.otherParticipantId === otherParticipantId)
+
+    return { conversation, isLoading: query.isLoading }
+}
+
+/**
  * A conversation's messages, keyset-paginated newest-first. Pages arrive newest
  * → oldest; the view flattens + reverses them to render oldest at the top. Live
  * socket messages are merged into page 0 by the chat socket provider.

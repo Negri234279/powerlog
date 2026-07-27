@@ -35,6 +35,22 @@
             "subscriptionPaymentFailed": "Your payment failed — update your card to keep your plan"
         }
     },
+    "chat": {
+        "online": "Online",
+        "offline": "Offline",
+        "lastSeen": "Last seen {time}",
+        "typing": "typing…",
+        "placeholder": "Write a message…",
+        "send": "Send",
+        "empty": "No messages yet — say hello.",
+        "loadOlder": "Load earlier messages",
+        "readOnly": "This conversation is read-only — you're no longer linked.",
+        "sendError": "Couldn't send your message. Try again.",
+        "title": "Chat",
+        "openChat": "Open chat",
+        "unreadOne": "1 unread",
+        "unreadOther": "{count} unread"
+    },
     "coaching": {
         "eyebrow": "Coaching",
         "title": "Coaching",

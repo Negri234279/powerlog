@@ -2,8 +2,10 @@
 
 import { useTranslations } from 'next-intl'
 
+import { UnreadBadge } from '@/components/chat/unread-badge'
 import { initials } from '@/lib/user-name'
 import { TrackedLink } from '@/components/ui/tracked'
+import { useConversationWith } from '@/lib/graphql/hooks/use-chat'
 
 import type { RosterRow } from './use-roster'
 
@@ -32,10 +34,11 @@ function isNew(row: RosterRow): boolean {
  */
 export function RosterIdentity({ row, reason }: { row: RosterRow; reason: string | null }) {
     const t = useTranslations('coaching.roster')
+    const { conversation } = useConversationWith(row.user.userId)
 
     return (
         <span className="flex min-w-0 items-center gap-3">
-            <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-white/[0.06] font-mono text-xs uppercase text-text ring-1 ring-hairline">
+            <span className="relative grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-white/[0.06] font-mono text-xs uppercase text-text ring-1 ring-hairline">
                 {row.user.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={row.user.avatarUrl} alt="" className="size-full object-cover" />
@@ -61,6 +64,10 @@ export function RosterIdentity({ row, reason }: { row: RosterRow; reason: string
                             {t('new')}
                         </span>
                     ) : null}
+                    {/* Above the row's stretched overlay link so it reads as its own chip. */}
+                    <span className="relative z-10">
+                        <UnreadBadge count={conversation?.unreadCount ?? 0} />
+                    </span>
                 </span>
 
                 {reason ? <span className="sr-only">{reason}</span> : null}

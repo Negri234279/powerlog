@@ -83,6 +83,22 @@ export const Check = (p: SVGProps<SVGSVGElement>) => (
     </Icon>
 )
 
+/** Two overlapping checks — the "delivered/read" double tick. */
+export const CheckDouble = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <path d="m2 12.5 4.5 4.5L16 7" />
+        <path d="m11 17 1 1 8-11" />
+    </Icon>
+)
+
+/** Paper-plane send glyph for the chat composer. */
+export const Send = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <path d="M4.5 12 20 4l-4.5 16-4-6.5z" />
+        <path d="M8 13.5 20 4" />
+    </Icon>
+)
+
 export const Plus = (p: SVGProps<SVGSVGElement>) => (
     <Icon {...p}>
         <path d="M12 5v14M5 12h14" />
