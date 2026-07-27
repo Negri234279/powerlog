@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport'
 import { AdminGuard } from '../../auth/admin.guard'
 import { JwtCookieGuard } from '../../auth/jwt-cookie.guard'
 import type { Env } from '../../config/env'
+import { PresenceReadModule } from '../../presence/presence-read.module'
 import { QueryBusProfileSnapshotReader } from '../../account/query-bus-profile-snapshot-reader'
 import { QueryBusUserBillingReader } from '../../admin-user-detail/query-bus-user-billing-reader'
 import { QueryBusUserCoachingReader } from '../../admin-user-detail/query-bus-user-coaching-reader'
@@ -97,7 +98,9 @@ const GOOGLE_STRATEGY: Provider = {
 }
 
 @Module({
-    imports: [PassportModule],
+    // PresenceReadModule → PresenceReader for the admin user detail (isOnline +
+    // real last-seen). It depends only on globals, so no cycle with auth.
+    imports: [PassportModule, PresenceReadModule],
     controllers: [GoogleOAuthController],
     providers: [
         ...ADAPTERS,

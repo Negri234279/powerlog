@@ -83,6 +83,29 @@ export const Check = (p: SVGProps<SVGSVGElement>) => (
     </Icon>
 )
 
+/** Two overlapping checks — the "delivered/read" double tick. */
+export const CheckDouble = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <path d="m2 12.5 4.5 4.5L16 7" />
+        <path d="m11 17 1 1 8-11" />
+    </Icon>
+)
+
+/** Rounded speech bubble — the chat toggle. */
+export const ChatBubble = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1-.9-3.8A8.38 8.38 0 0 1 12.5 3a8.38 8.38 0 0 1 8.5 8.5z" />
+    </Icon>
+)
+
+/** Paper-plane send glyph for the chat composer. */
+export const Send = (p: SVGProps<SVGSVGElement>) => (
+    <Icon {...p}>
+        <path d="M4.5 12 20 4l-4.5 16-4-6.5z" />
+        <path d="M8 13.5 20 4" />
+    </Icon>
+)
+
 export const Plus = (p: SVGProps<SVGSVGElement>) => (
     <Icon {...p}>
         <path d="M12 5v14M5 12h14" />

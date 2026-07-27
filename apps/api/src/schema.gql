@@ -251,7 +251,12 @@ type AdminUserAccount {
   id: ID!
   isAdmin: Boolean!
 
-  """Last active (newest session issued), or null if never."""
+  """Whether the user has a live realtime socket open right now."""
+  isOnline: Boolean!
+
+  """
+  Last active: the durable presence timestamp when available, else the newest session issued; null if never.
+  """
   lastSeenAt: DateTime
 
   """"athlete" | "coach"."""
@@ -666,6 +671,77 @@ type BillingWebhookEventPage {
 input ChangePasswordInput {
   currentPassword: String
   newPassword: String!
+}
+
+type ChatConversation {
+  conversationId: ID!
+
+  """Null when no messages yet."""
+  lastMessage: ChatMessagePreview
+
+  """The other participant’s handle + avatar."""
+  otherParticipant: ChatParticipant!
+
+  """The coach (athlete viewer) or athlete (coach viewer)."""
+  otherParticipantId: ID!
+
+  """Live presence of the other participant."""
+  presence: ChatPresence!
+
+  """Messages from the other party past the caller’s read cursor."""
+  unreadCount: Int!
+}
+
+type ChatMessage {
+  body: String!
+  conversationId: ID!
+  createdAt: DateTime!
+  id: ID!
+
+  """Message kind; "text" in v1."""
+  kind: String!
+  senderId: ID!
+
+  """Double-check for the caller’s own messages; null for received ones."""
+  status: ChatReadStatus
+}
+
+type ChatMessagePreview {
+  body: String!
+  createdAt: DateTime!
+  id: ID!
+  senderId: ID!
+}
+
+type ChatMessagesPage {
+  hasNextPage: Boolean!
+  items: [ChatMessage!]!
+
+  """Cursor for the next page; null when last."""
+  nextCursor: String
+}
+
+type ChatParticipant {
+  """Resolved avatar URL; null → client default."""
+  avatarUrl: String
+
+  """The other participant’s public handle."""
+  username: String!
+}
+
+type ChatPresence {
+  """When they were last seen; null if never."""
+  lastSeenAt: DateTime
+
+  """Whether the other participant has a live socket open right now."""
+  online: Boolean!
+}
+
+"""Delivery state of a sent message: sent, delivered, or read."""
+enum ChatReadStatus {
+  delivered
+  read
+  sent
 }
 
 type CheckoutSession {
@@ -1412,6 +1488,16 @@ type Mutation {
   """Mark every notification read; returns how many changed."""
   markAllNotificationsRead: Int!
 
+  """
+  Advance the caller’s delivery cursor to the latest message; true if it moved.
+  """
+  markConversationDelivered(conversationId: ID!): Boolean!
+
+  """
+  Advance the caller’s read cursor to the latest message; true if it moved.
+  """
+  markConversationRead(conversationId: ID!): Boolean!
+
   """Mark one notification read (no-op if not the caller’s)."""
   markNotificationRead(id: ID!): Boolean!
 
@@ -1469,6 +1555,9 @@ type Mutation {
 
   """Revoke one session by id (logs out that device)."""
   revokeSession(id: String!): Boolean!
+
+  """Send a text message to a conversation."""
+  sendChatMessage(body: String!, conversationId: ID!): ChatMessage!
 
   """
   Send a contact/support message (public). Opens a support ticket and notifies the team.
@@ -2048,6 +2137,12 @@ type Query {
 
   """The exercise catalog, optionally filtered by category."""
   exercises(category: String): [Exercise!]!
+
+  """The caller’s chat inbox: one row per conversation, most recent first."""
+  listChatConversations: [ChatConversation!]!
+
+  """A conversation’s messages, newest first (keyset-paginated)."""
+  listChatMessages(conversationId: ID!, cursor: String, limit: Int): ChatMessagesPage!
 
   """The currently authenticated user."""
   me: Me!

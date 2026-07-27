@@ -11,6 +11,8 @@ import type { Server } from 'node:http'
 
 import { AppModule } from './app.module'
 import type { Env } from './config/env'
+import { WsIoAdapter } from './gateway/ws-io-adapter'
+import { REDIS } from './redis/redis.module'
 
 async function bootstrap(): Promise<void> {
     // rawBody: keep the unparsed body (req.rawBody) so the Resend webhook can
@@ -29,6 +31,13 @@ async function bootstrap(): Promise<void> {
     const config = app.get(ConfigService<Env, true>)
     const port = config.get('API_PORT', { infer: true })
     const drainTimeoutMs = config.get('SHUTDOWN_DRAIN_TIMEOUT_MS', { infer: true })
+
+    // Socket.IO shares this HTTP server (path '/ws'). engine.io validates the
+    // handshake origin itself, so CORS is set on the adapter, not just enableCors.
+    // The Redis adapter (rooms across instances) turns on only when REDIS_URL is set.
+    const wsAdapter = new WsIoAdapter(app, app.get(REDIS), config.get('WEB_ORIGIN', { infer: true }))
+    await wsAdapter.connectToRedis()
+    app.useWebSocketAdapter(wsAdapter)
 
     await app.listen(port)
 

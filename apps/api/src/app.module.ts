@@ -20,6 +20,8 @@ import { MailModule } from './mail/mail.module'
 import { AiSettingsModule } from './modules/ai/ai-settings.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { BillingModule } from './modules/billing/billing.module'
+import { GatewayModule } from './gateway/gateway.module'
+import { ChatModule } from './modules/chat/chat.module'
 import { CoachingModule } from './modules/coaching/coaching.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
 import { ProfileModule } from './modules/profile/profile.module'
@@ -28,6 +30,7 @@ import { WorkoutsModule } from './modules/workouts/workouts.module'
 import { logContextMixin } from './observability/log-context.mixin'
 import { ObservabilityModule } from './observability/observability.module'
 import { QueueModule } from './queue/queue.module'
+import { PresenceModule } from './presence/presence.module'
 import { RealtimeModule } from './realtime/realtime.module'
 import { RedisModule } from './redis/redis.module'
 import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
@@ -120,6 +123,8 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
         MailModule,
         AiModule,
         RealtimeModule,
+        // Transversal presence (online + last-seen) over the realtime socket.
+        PresenceModule,
         // Feature modules (added per milestone):
         AuthModule,
         ProfileModule,
@@ -132,6 +137,10 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
         BillingModule,
         // Public contact form → support tickets (+ admin surface, Block 2.2).
         SupportModule,
+        // Coach↔athlete chat (Chat.1: domain/app/persistence over GraphQL).
+        ChatModule,
+        // WebSocket transport for presence + live chat (Chat.2b).
+        GatewayModule,
     ],
     providers: [AppResolver, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],
 })

@@ -57,6 +57,9 @@ export const METRIC = {
     aiGenerationsQueued: 'powerlog_ai_generations_queued_total',
     aiGenerationDuration: 'powerlog_ai_generation_duration_seconds',
     supportTicketsOpened: 'powerlog_support_tickets_opened_total',
+    chatWsConnections: 'powerlog_chat_ws_connections',
+    chatMessages: 'powerlog_chat_messages_total',
+    presenceOnlineUsers: 'powerlog_presence_online_users',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -432,5 +435,27 @@ export const metricsProviders = [
         name: METRIC.billingDrift,
         help: 'Disagreements between our subscriptions and the gateway’s. Should be 0.',
         labelNames: ['gateway'],
+    }),
+    // Chat WebSocket transport (set by ChatGateway). One connection per open tab of
+    // a signed-in user; falling to 0 while HTTP traffic continues is the signal that
+    // the proxy stopped passing WS upgrades (the app still answers 200 — silent).
+    makeGaugeProvider({
+        name: METRIC.chatWsConnections,
+        help: 'Currently open chat WebSocket connections.',
+    }),
+    // Chat messages by outcome (set by SendChatMessageHandler). `blocked` counts the
+    // CONVERSATION_READ_ONLY refusals — already in domain_errors_total, but this is
+    // the chat-specific cut. `status` is a bounded enum (no ids).
+    makeCounterProvider({
+        name: METRIC.chatMessages,
+        help: 'Chat messages, by outcome (sent / blocked).',
+        labelNames: ['status'],
+    }),
+    // Users currently online over the realtime socket (set by PresenceService on the
+    // online↔offline transitions). Per process: a user connected to two replicas
+    // counts twice in the summed series.
+    makeGaugeProvider({
+        name: METRIC.presenceOnlineUsers,
+        help: 'Users currently online over the realtime socket (per process).',
     }),
 ]
