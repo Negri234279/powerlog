@@ -33,7 +33,14 @@ export class AdminUserAccountType {
     @Field()
     updatedAt!: Date
 
-    @Field(() => Date, { nullable: true, description: 'Last active (newest session issued), or null if never.' })
+    @Field({ description: 'Whether the user has a live realtime socket open right now.' })
+    isOnline!: boolean
+
+    @Field(() => Date, {
+        nullable: true,
+        description:
+            'Last active: the durable presence timestamp when available, else the newest session issued; null if never.',
+    })
     lastSeenAt!: Date | null
 }
 

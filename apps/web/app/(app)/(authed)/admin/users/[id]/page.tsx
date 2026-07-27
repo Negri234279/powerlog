@@ -178,6 +178,12 @@ function Detail({ data, locale, cap, bool, subStatus, t }: DetailProps) {
                             </Tooltip>
                         </div>
                         <p className="mt-0.5 truncate font-mono text-xs text-text-dim">{account.email}</p>
+                        {account.isOnline ? (
+                            <p className="mt-1 flex items-center gap-1.5 text-xs text-pr">
+                                <span className="block size-2 shrink-0 rounded-full bg-pr" />
+                                {t('detailOnline')}
+                            </p>
+                        ) : null}
                     </div>
                     <Management account={account} who={who} />
                 </div>
@@ -209,7 +215,16 @@ function Detail({ data, locale, cap, bool, subStatus, t }: DetailProps) {
                     )}
                     <Row label={t('detailRegistered')}>{formatNumericDate(account.createdAt, locale)}</Row>
                     <Row label={t('detailLastSeen')}>
-                        {account.lastSeenAt ? formatNumericDate(account.lastSeenAt, locale) : t('detailNever')}
+                        {account.isOnline ? (
+                            <span className="flex items-center gap-1.5 text-pr">
+                                <span className="block size-2 shrink-0 rounded-full bg-pr" />
+                                {t('detailOnline')}
+                            </span>
+                        ) : account.lastSeenAt ? (
+                            formatNumericDate(account.lastSeenAt, locale)
+                        ) : (
+                            t('detailNever')
+                        )}
                     </Row>
                 </Section>
 

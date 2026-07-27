@@ -170,7 +170,7 @@ export class ChatGateway
             }
 
         await client.leave(this.conversationRoom(parsed.data.conversationId))
-        
+
         return {
             ok: true,
         }

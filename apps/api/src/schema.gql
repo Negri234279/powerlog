@@ -251,7 +251,12 @@ type AdminUserAccount {
   id: ID!
   isAdmin: Boolean!
 
-  """Last active (newest session issued), or null if never."""
+  """Whether the user has a live realtime socket open right now."""
+  isOnline: Boolean!
+
+  """
+  Last active: the durable presence timestamp when available, else the newest session issued; null if never.
+  """
   lastSeenAt: DateTime
 
   """"athlete" | "coach"."""
