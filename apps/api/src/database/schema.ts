@@ -44,3 +44,6 @@ export * from '../modules/billing/infrastructure/persistence/schema/subscription
 export * from '../modules/billing/infrastructure/persistence/schema/invoices.schema'
 export * from '../modules/billing/infrastructure/persistence/schema/billing-webhook-events.schema'
 export * from '../modules/billing/infrastructure/persistence/schema/trial-redemptions.schema'
+export * from '../modules/chat/infrastructure/persistence/schema/chat-conversations.schema'
+export * from '../modules/chat/infrastructure/persistence/schema/chat-messages.schema'
+export * from '../modules/chat/infrastructure/persistence/schema/chat-participant-state.schema'

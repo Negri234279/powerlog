@@ -12,6 +12,12 @@ export class FakeCoachLinks extends CoachLinks {
         return this
     }
 
+    /** Break a link, modelling `removeAthlete`/`leaveCoach`. */
+    unlink(coachId: string, athleteId: string): this {
+        this.pairs.delete(`${coachId}:${athleteId}`)
+        return this
+    }
+
     async areLinked(coachId: string, athleteId: string): Promise<boolean> {
         return this.pairs.has(`${coachId}:${athleteId}`)
     }

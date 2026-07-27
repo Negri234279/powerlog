@@ -20,6 +20,7 @@ import { MailModule } from './mail/mail.module'
 import { AiSettingsModule } from './modules/ai/ai-settings.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { BillingModule } from './modules/billing/billing.module'
+import { ChatModule } from './modules/chat/chat.module'
 import { CoachingModule } from './modules/coaching/coaching.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
 import { ProfileModule } from './modules/profile/profile.module'
@@ -132,6 +133,8 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
         BillingModule,
         // Public contact form → support tickets (+ admin surface, Block 2.2).
         SupportModule,
+        // Coach↔athlete chat (Chat.1: domain/app/persistence over GraphQL).
+        ChatModule,
     ],
     providers: [AppResolver, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],
 })
