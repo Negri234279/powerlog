@@ -12,6 +12,10 @@ const schema = z.object({
     // Same-origin BFF path by default; the rewrite in next.config forwards it to
     // the API (handling the dev :3000 → :4000 port hop server-side).
     NEXT_PUBLIC_API_URL: z.string().min(1).default('http://localhost:4000'),
+    // Socket.IO endpoint (presence + live chat). Points DIRECTLY at the API — Next
+    // rewrites don't forward the WS Upgrade — so it's an absolute URL, not a BFF
+    // path. Dev = the API on the host; prod = https://api.powerlog.negri.es.
+    NEXT_PUBLIC_WS_URL: z.string().min(1).default('http://localhost:4000'),
     // Default to the same-origin BFF proxy path (resolved against the live origin
     // in the browser) so localhost and dev tunnels both work without CORS.
     NEXT_PUBLIC_GRAPHQL_URL: z.string().min(1).default('/api/graphql'),
@@ -29,6 +33,7 @@ const schema = z.object({
 
 const parsed = schema.safeParse({
     NEXT_PUBLIC_API_URL: process.env['NEXT_PUBLIC_API_URL'],
+    NEXT_PUBLIC_WS_URL: process.env['NEXT_PUBLIC_WS_URL'],
     NEXT_PUBLIC_GRAPHQL_URL: process.env['NEXT_PUBLIC_GRAPHQL_URL'],
     NEXT_PUBLIC_GRAFANA_URL: process.env['NEXT_PUBLIC_GRAFANA_URL'],
     NEXT_PUBLIC_APP_VERSION: process.env['NEXT_PUBLIC_APP_VERSION'],
@@ -42,6 +47,7 @@ if (!parsed.success) {
 
 export const env = {
     apiUrl: parsed.data.NEXT_PUBLIC_API_URL,
+    wsUrl: parsed.data.NEXT_PUBLIC_WS_URL,
     graphqlUrl: parsed.data.NEXT_PUBLIC_GRAPHQL_URL,
     grafanaUrl: parsed.data.NEXT_PUBLIC_GRAFANA_URL ?? null,
     webVersion: parsed.data.NEXT_PUBLIC_APP_VERSION,

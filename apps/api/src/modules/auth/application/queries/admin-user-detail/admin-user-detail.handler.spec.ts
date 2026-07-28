@@ -8,6 +8,7 @@ import type { UserCoachingSummary } from '../../../../../shared/contracts/user-c
 import { UserCoachingReader } from '../../../../../shared/contracts/user-coaching'
 import type { UserTrainingSummary } from '../../../../../shared/contracts/user-training'
 import { UserTrainingReader } from '../../../../../shared/contracts/user-training'
+import { FakePresenceReader } from '../../../../../../tests/doubles/presence'
 import { FakeEntitlements, FakeProfiles } from '../../../../../../tests/doubles/shared'
 import {
     type AdminUserAccount,
@@ -96,6 +97,7 @@ function build(
         billing?: UserBillingSummary | Error
         coaching?: UserCoachingSummary | Error
         training?: UserTrainingSummary | Error
+        presence?: FakePresenceReader
     } = {},
 ): AdminUserDetailHandler {
     return new AdminUserDetailHandler(
@@ -105,6 +107,7 @@ function build(
         new StubBilling(overrides.billing ?? billing),
         new StubCoaching(overrides.coaching ?? coaching),
         new StubTraining(overrides.training ?? training),
+        overrides.presence ?? new FakePresenceReader(),
     )
 }
 
@@ -145,5 +148,42 @@ describe('AdminUserDetailHandler', () => {
 
         expect(result?.profile).toBeNull()
         expect(result?.account.id).toBe(userId)
+    })
+
+    it('should_prefer_the_presence_last_seen_and_report_online', async () => {
+        const presenceSeen = new Date('2026-06-30T12:00:00.000Z')
+        const handler = build({
+            presence: new FakePresenceReader().set(userId, { online: true, lastSeenAt: presenceSeen }),
+        })
+
+        const result = await handler.execute(new AdminUserDetailQuery(userId))
+
+        expect(result?.account.isOnline).toBe(true)
+        // The durable presence value wins over the refresh-token proxy on the account.
+        expect(result?.account.lastSeenAt).toEqual(presenceSeen)
+    })
+
+    it('should_fall_back_to_the_proxy_last_seen_for_a_user_who_never_opened_the_socket', async () => {
+        // Default FakePresenceReader: offline, no presence row.
+        const handler = build()
+
+        const result = await handler.execute(new AdminUserDetailQuery(userId))
+
+        expect(result?.account.isOnline).toBe(false)
+        expect(result?.account.lastSeenAt).toEqual(new Date('2026-06-25T00:00:00.000Z'))
+    })
+
+    it('should_stay_offline_with_the_proxy_last_seen_when_presence_read_fails', async () => {
+        class BrokenPresence extends FakePresenceReader {
+            override snapshot(): Promise<never> {
+                return Promise.reject(new Error('presence down'))
+            }
+        }
+        const handler = build({ presence: new BrokenPresence() })
+
+        const result = await handler.execute(new AdminUserDetailQuery(userId))
+
+        expect(result?.account.isOnline).toBe(false)
+        expect(result?.account.lastSeenAt).toEqual(new Date('2026-06-25T00:00:00.000Z'))
     })
 })

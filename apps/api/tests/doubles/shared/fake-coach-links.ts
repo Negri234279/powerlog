@@ -12,6 +12,12 @@ export class FakeCoachLinks extends CoachLinks {
         return this
     }
 
+    /** Break a link, modelling `removeAthlete`/`leaveCoach`. */
+    unlink(coachId: string, athleteId: string): this {
+        this.pairs.delete(`${coachId}:${athleteId}`)
+        return this
+    }
+
     async areLinked(coachId: string, athleteId: string): Promise<boolean> {
         return this.pairs.has(`${coachId}:${athleteId}`)
     }
@@ -20,5 +26,15 @@ export class FakeCoachLinks extends CoachLinks {
         return [...this.pairs.entries()]
             .filter(([pair]) => pair.startsWith(`${coachId}:`))
             .map(([pair, since]) => ({ athleteId: pair.slice(coachId.length + 1), since }))
+    }
+
+    async counterpartyIdsOf(userId: string): Promise<string[]> {
+        const counterparties = new Set<string>()
+        for (const pair of this.pairs.keys()) {
+            const [coachId, athleteId] = pair.split(':') as [string, string]
+            if (coachId === userId) counterparties.add(athleteId)
+            if (athleteId === userId) counterparties.add(coachId)
+        }
+        return [...counterparties]
     }
 }

@@ -4,6 +4,7 @@
             "dashboard": "Dashboard",
             "workouts": "Workouts",
             "coaching": "Coaching",
+            "chat": "Chat",
             "admin": "Admin"
         },
         "profileAria": "Your profile",
@@ -34,6 +35,30 @@
             "subscriptionCanceled": "Your plan won’t renew — you keep it until {until}",
             "subscriptionPaymentFailed": "Your payment failed — update your card to keep your plan"
         }
+    },
+    "chat": {
+        "online": "Online",
+        "offline": "Offline",
+        "lastSeen": "Last seen {time}",
+        "typing": "typing…",
+        "placeholder": "Write a message…",
+        "send": "Send",
+        "empty": "No messages yet — say hello.",
+        "loadOlder": "Load earlier messages",
+        "readOnly": "This conversation is read-only — you're no longer linked.",
+        "sendError": "Couldn't send your message. Try again.",
+        "title": "Chat",
+        "openChat": "Open chat",
+        "unreadOne": "1 unread",
+        "unreadOther": "{count} unread",
+        "inboxTitle": "Messages",
+        "inboxSubtitle": "Your conversations with coaches and athletes.",
+        "inboxEmpty": "No conversations yet.",
+        "selectConversation": "Select a conversation to start chatting.",
+        "you": "You:",
+        "back": "Back",
+        "collapse": "Collapse chat",
+        "close": "Close chat"
     },
     "coaching": {
         "eyebrow": "Coaching",
@@ -1018,6 +1043,7 @@
         "detailPasswordNo": "Google only",
         "detailRegistered": "Registered",
         "detailLastSeen": "Last seen",
+        "detailOnline": "Online now",
         "detailUpdated": "Updated",
         "detailName": "Name",
         "detailLocale": "Locale",

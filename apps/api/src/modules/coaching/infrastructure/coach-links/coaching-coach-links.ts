@@ -20,4 +20,11 @@ export class CoachingCoachLinks extends CoachLinks {
     async athletesOf(coachId: string): Promise<CoachedAthlete[]> {
         return this.links.athletesOf(coachId)
     }
+
+    async counterpartyIdsOf(userId: string): Promise<string[]> {
+        // A user can be both a coach and an athlete; union both directions and
+        // dedupe (the same pair can't appear twice, but be safe).
+        const [coaches, athletes] = await Promise.all([this.links.coachIdsOf(userId), this.links.athleteIdsOf(userId)])
+        return [...new Set([...coaches, ...athletes])]
+    }
 }

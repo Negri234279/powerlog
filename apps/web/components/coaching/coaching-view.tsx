@@ -6,11 +6,13 @@ import { useState } from 'react'
 import { BecomeCoachModal } from '@/components/coaching/become-coach-modal'
 import { InviteAthleteModal } from '@/components/coaching/invite-athlete-modal'
 import { AthleteRoster, RosterSkeleton } from '@/components/coaching/roster/athlete-roster'
+import { UnreadBadge } from '@/components/chat/unread-badge'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
 import { FormError } from '@/components/ui/form-error'
 import { Plus, Users } from '@/components/ui/icons'
 import { TextsReveal } from '@/components/ui/texts-reveal'
-import { TrackedButton } from '@/components/ui/tracked'
+import { TrackedButton, TrackedLink } from '@/components/ui/tracked'
+import { useConversationWith } from '@/lib/graphql/hooks/use-chat'
 import type { SessionRole } from '@/lib/auth/session'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import {
@@ -134,6 +136,7 @@ function CoachRow({ coach }: { coach: CoachUser }) {
     const leave = useLeaveCoach()
     const [confirming, setConfirming] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const { conversation } = useConversationWith(coach.userId)
 
     function onLeave() {
         setError(null)
@@ -145,8 +148,15 @@ function CoachRow({ coach }: { coach: CoachUser }) {
 
     return (
         <div className="flex items-center gap-3 rounded-2xl bg-bg/40 p-4 ring-1 ring-hairline">
-            <Avatar username={coach.username} src={coach.avatarUrl} />
-            <UserIdentity user={coach} />
+            <TrackedLink
+                analyticsId="coaching-open-coach-chat"
+                href={`/coaching/coaches/${coach.userId}`}
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-xl transition-opacity duration-300 hover:opacity-90"
+            >
+                <Avatar username={coach.username} src={coach.avatarUrl} />
+                <UserIdentity user={coach} />
+                <UnreadBadge count={conversation?.unreadCount ?? 0} />
+            </TrackedLink>
             <TrackedButton
                 analyticsId="coaching-leave-coach"
                 type="button"

@@ -40,6 +40,8 @@ export default async function AthleteDetailLayout({
     const t = await getTranslations('coaching')
 
     return (
+        // Chat is reachable everywhere via the global chat widget (bubble, bottom-right)
+        // and the /chat tab — so the athlete detail no longer pins a chat rail here.
         <div className="space-y-6">
             {/* Back link and identity are one block, not two rungs of the page's
                 even rhythm — hence the tighter gap and the wrapper. The chevron
