@@ -1,48 +1,333 @@
 # ─────────────────────────────────────────────────────────────
-# STAGING — simulate PROD locally. This is an OVERRIDE layered on top of
-# ../prod/compose.yml: it only changes what differs (images BUILT LOCALLY instead
-# of pulled, APP_ENV=staging, staging env_file). Everything else — the isolated
-# topology, shared Postgres via PgBouncer, the obs stack and its shared configs —
-# comes from prod (+ ../observability).
+# STAGING — ALL-IN-ONE, self-contained, depends on nothing external. Same shape
+# as DEV (its own Postgres + Redis + the FULL observability stack + Mailpit +
+# pgAdmin + Grafana), but it runs the app as PRODUCTION builds (target:
+# production, images built locally, entrypoint migrates then starts) with
+# APP_ENV=staging — so it simulates prod without needing pi-infra's shared
+# Postgres or the `monitoring`/`db` networks.
 #
 # Setup once: cp infra/staging/staging.env.example infra/staging/staging.env
-# Run it (note the TWO -f files; prod first so its relative paths resolve):
-#   1) in pi-infra:  docker compose -f core/docker-compose.yml up -d
-#   2) here:         docker compose \
-#                      -f infra/prod/compose.yml -f infra/staging/compose.yml \
-#                      up -d --build
+# Run it:
+#   docker compose -f infra/staging/compose.yml \
+#     --env-file infra/staging/staging.env up --build
 #
-# Needs the external `monitoring` + `db` networks (pi-infra/scripts/create-network.sh).
+# Coexists with the dev stack: SERVICE names stay `powerlog-*` (so the shared
+# ../observability configs are byte-identical to dev/prod), but everything global
+# to the host is staging-scoped — project `powerlog-staging`, network
+# `powerlog-staging-net`, `*-staging` container names, `*_staging` volumes, and
+# offset host ports. `docker compose ... up` for dev and staging can run at once.
 # ─────────────────────────────────────────────────────────────
 name: powerlog-staging
 
 services:
+  # ── App ──────────────────────────────────────────────────────
+  powerlog-postgres:
+    image: postgres:16-alpine
+    container_name: powerlog-postgres-staging
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-powerlog}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-powerlog}
+      POSTGRES_DB: ${POSTGRES_DB:-powerlog}
+      POSTGRES_EXPORTER_USER: ${POSTGRES_EXPORTER_USER:-powerlog_exporter}
+      POSTGRES_EXPORTER_PASSWORD: ${POSTGRES_EXPORTER_PASSWORD:-powerlog_exporter}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-powerlog} -d ${POSTGRES_DB:-powerlog}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "${POSTGRES_PORT:-25432}:5432"
+    volumes:
+      - pgdata_staging:/var/lib/postgresql/data
+      - ../docker/postgres/initdb:/docker-entrypoint-initdb.d:ro
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+  powerlog-postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    container_name: powerlog-postgres-exporter-staging
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_EXPORTER_USER:-powerlog_exporter}:${POSTGRES_EXPORTER_PASSWORD:-powerlog_exporter}@powerlog-postgres:5432/${POSTGRES_DB:-powerlog}?sslmode=disable"
+    depends_on:
+      powerlog-postgres:
+        condition: service_healthy
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+  # Pub/sub for the realtime (SSE) fan-out; queues + cache later. appendonly +
+  # noeviction mirror prod (BullMQ can't lose keys → cached values carry own TTL).
+  powerlog-redis:
+    image: redis:7-alpine
+    container_name: powerlog-redis-staging
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    ports:
+      - "${REDIS_PORT:-26379}:6379"
+    volumes:
+      - redisdata_staging:/data
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+  # Redis internals for Grafana (memory vs maxmemory, ops/s, keyspace, clients).
+  powerlog-redis-exporter:
+    image: oliver006/redis_exporter:v1.67.0
+    container_name: powerlog-redis-exporter-staging
+    environment:
+      REDIS_ADDR: redis://powerlog-redis:6379
+    depends_on:
+      powerlog-redis:
+        condition: service_healthy
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+  powerlog-pgadmin:
+    image: dpage/pgadmin4:9.8
+    container_name: powerlog-pgadmin-staging
+    ports:
+      - "${PGADMIN_PORT:-5051}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-demo@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-secret}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+  # Production build (target: production). No source bind-mounts, no hot-reload —
+  # the image entrypoint applies pending Drizzle migrations, then starts the API.
   powerlog-api:
     image: powerlog/api:staging
+    container_name: powerlog-api-staging
     pull_policy: build
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile.api
       target: production
-    environment:
-      APP_ENV: staging
     env_file:
-      - path: ./staging.env
+      - path: ./.powerlog-api-staging.env
         required: false
+    # These override any connection vars in staging.env so the app always targets
+    # THIS stack's services (no PgBouncer here — migrator + runtime both go direct
+    # to the local Postgres). Secrets/app config live in staging.env.
+    environment:
+      NODE_ENV: production
+      APP_ENV: staging
+      API_PORT: ${API_PORT:-4000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-powerlog}:${POSTGRES_PASSWORD:-powerlog}@powerlog-postgres:5432/${POSTGRES_DB:-powerlog}
+      MIGRATIONS_DATABASE_URL: postgresql://${POSTGRES_USER:-powerlog}:${POSTGRES_PASSWORD:-powerlog}@powerlog-postgres:5432/${POSTGRES_DB:-powerlog}
+      REDIS_URL: redis://powerlog-redis:6379
+      COOKIE_SECURE: "false"
+      # Available if you set MAIL_TRANSPORT=smtp in staging.env (default: resend).
+      SMTP_HOST: powerlog-mailpit
+      SMTP_PORT: "1025"
+      OTEL_SERVICE_NAME: powerlog-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://powerlog-tempo:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+    depends_on:
+      powerlog-postgres:
+        condition: service_healthy
+      powerlog-redis:
+        condition: service_healthy
+      powerlog-mailpit:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:${API_PORT:-4000}/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # The entrypoint applies pending migrations before listening.
+      start_period: 60s
+    ports:
+      - "${API_PORT:-4001}:4000"
+    networks: [powerlog-net]
+    restart: unless-stopped
 
+  # Production build (Next standalone). Next bakes the /api and /faro rewrite
+  # targets + Faro's app.environment at BUILD time, so they come from the build
+  # ARGs below — the API_INTERNAL_URL/FARO_INTERNAL_URL defaults already point at
+  # this stack's `powerlog-*` service DNS; only APP_ENV/SITE_URL need overriding.
   powerlog-web:
     image: powerlog/web:staging
+    container_name: powerlog-web-staging
     pull_policy: build
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile.web
       target: production
+      args:
+        APP_ENV: staging
+        SITE_URL: ${SITE_URL:-http://localhost:4116}
     env_file:
-      - path: ./staging.env
+      - path: ./.powerlog-web-staging.env
         required: false
+    environment:
+      NODE_ENV: production
+      APP_ENV: staging
+      PORT: 3000
+      API_INTERNAL_URL: http://powerlog-api:4000
+      # Server-side traces (@vercel/otel in instrumentation.ts) → this stack's Tempo.
+      OTEL_SERVICE_NAME: powerlog-web
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://powerlog-tempo:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment.name=staging
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+    depends_on:
+      powerlog-api:
+        condition: service_healthy
+      powerlog-alloy:
+        condition: service_started
+    ports:
+      - "${WEB_PORT:-4116}:3000"
+    networks: [powerlog-net]
+    restart: unless-stopped
 
-  # Pick up the staging Discord webhook (if set) for the alert secret.
+  # ── Mail (staging catch-all) ─────────────────────────────────
+  # Available for MAIL_TRANSPORT=smtp; staging.env defaults to resend like prod.
+  powerlog-mailpit:
+    image: axllent/mailpit:latest
+    container_name: powerlog-mailpit-staging
+    ports:
+      - "${MAILPIT_SMTP_PORT:-22525}:1025"
+      - "${MAILPIT_UI_PORT:-28025}:8025"
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+  # ── Observability (shared single-source configs in ../observability) ──
+  powerlog-prometheus:
+    image: prom/prometheus:latest
+    container_name: powerlog-prometheus-staging
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-otlp-receiver
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+    volumes:
+      - ../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../observability/prometheus/rules:/etc/prometheus/rules:ro
+      - ./scrape.d:/etc/prometheus/scrape.d:ro
+      - prometheus_staging:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9091}:9090"
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+  powerlog-loki:
+    image: grafana/loki:latest
+    container_name: powerlog-loki-staging
+    command: ["-config.file=/etc/loki/loki-config.yaml"]
+    volumes:
+      - ../observability/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki_staging:/loki
+    ports:
+      - "${LOKI_PORT:-23100}:3100"
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+  powerlog-tempo:
+    image: grafana/tempo:latest
+    container_name: powerlog-tempo-staging
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ../observability/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo_staging:/var/tempo
+    ports:
+      - "${TEMPO_PORT:-23200}:3200"
+      - "${TEMPO_OTLP_GRPC_PORT:-24317}:4317"
+      - "${TEMPO_OTLP_HTTP_PORT:-24318}:4318"
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+  powerlog-alloy:
+    image: grafana/alloy:latest
+    container_name: powerlog-alloy-staging
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ../observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_staging:/var/lib/alloy/data
+    ports:
+      - "${ALLOY_PORT:-22345}:12345"
+      # faro.receiver — browser RUM proxied here via the web's /faro rewrite.
+      - "${FARO_PORT:-22347}:12347"
+    depends_on:
+      - powerlog-loki
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+  # Alertmanager for parity with prod (same shared config). The Discord webhook is
+  # optional in staging — alerts are still visible in Prometheus/Grafana.
   powerlog-alertmanager-init:
+    image: busybox:1.37
+    container_name: powerlog-alertmanager-init-staging
+    command:
+      - sh
+      - -c
+      - 'printf "%s" "$$POWERLOG_DISCORD_WEBHOOK_URL" > /secrets/discord_webhook_url && echo ok'
+    environment:
+      POWERLOG_DISCORD_WEBHOOK_URL: ${POWERLOG_DISCORD_WEBHOOK_URL:-}
     env_file:
       - path: ./staging.env
         required: false
+    volumes:
+      - alertmanager_staging:/secrets
+    restart: "no"
+
+  powerlog-alertmanager:
+    image: prom/alertmanager:v0.28.0
+    container_name: powerlog-alertmanager-staging
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - ../observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_staging:/etc/alertmanager/secrets:ro
+    depends_on:
+      powerlog-alertmanager-init:
+        condition: service_completed_successfully
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+  powerlog-grafana:
+    image: grafana/grafana:latest
+    container_name: powerlog-grafana-staging
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
+    volumes:
+      - ../observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_staging:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-23000}:3000"
+    depends_on:
+      - powerlog-prometheus
+      - powerlog-loki
+      - powerlog-tempo
+    networks: [powerlog-net]
+    restart: unless-stopped
+
+volumes:
+  pgdata_staging:
+  redisdata_staging:
+  prometheus_staging:
+  loki_staging:
+  tempo_staging:
+  alloy_staging:
+  alertmanager_staging:
+  grafana_staging:
+
+networks:
+  powerlog-net:
+    name: powerlog-staging-net
