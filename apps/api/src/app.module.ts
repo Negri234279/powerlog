@@ -31,6 +31,7 @@ import { logContextMixin } from './observability/log-context.mixin'
 import { ObservabilityModule } from './observability/observability.module'
 import { QueueModule } from './queue/queue.module'
 import { PresenceModule } from './presence/presence.module'
+import { PushModule } from './push/push.module'
 import { RealtimeModule } from './realtime/realtime.module'
 import { RedisModule } from './redis/redis.module'
 import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
@@ -125,6 +126,8 @@ import { GqlThrottlerGuard } from './throttler/gql-throttler.guard'
         RealtimeModule,
         // Transversal presence (online + last-seen) over the realtime socket.
         PresenceModule,
+        // Transversal Web Push channel (browser notifications, app closed).
+        PushModule,
         // Feature modules (added per milestone):
         AuthModule,
         ProfileModule,

@@ -1,10 +1,11 @@
-import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
+import { CommandHandler, EventBus, type ICommandHandler } from '@nestjs/cqrs'
 import { InjectMetric } from '@willsoto/nestjs-prometheus'
 import { PinoLogger } from 'nestjs-pino'
 import type { Counter } from 'prom-client'
 
 import { METRIC } from '../../../../../observability/metrics'
 import { CoachLinks } from '../../../../../shared/contracts/coach-links'
+import { ChatMessageSentIntegrationEvent } from '../../../../../shared/integration-events/chat-message-sent.integration-event'
 import { MessageEntity } from '../../../domain/entities/message.entity'
 import { ParticipantStateEntity } from '../../../domain/entities/participant-state.entity'
 import {
@@ -19,6 +20,9 @@ import { ChatPusher } from '../../ports/chat-pusher.port'
 import { Clock } from '../../ports/clock.port'
 import { IdGenerator } from '../../ports/id-generator.port'
 import { SendChatMessageCommand } from './send-chat-message.command'
+
+/** How much of the message body rides in the push notification preview. */
+const PREVIEW_MAX_LENGTH = 140
 
 /**
  * The single write path for sending a message — GraphQL today, the WS gateway in
@@ -38,6 +42,7 @@ export class SendChatMessageHandler implements ICommandHandler<SendChatMessageCo
         private readonly clock: Clock,
         private readonly pusher: ChatPusher,
         private readonly logger: PinoLogger,
+        private readonly eventBus: EventBus,
         @InjectMetric(METRIC.chatMessages) private readonly messagesSent: Counter<string>,
     ) {
         this.logger.setContext(SendChatMessageHandler.name)
@@ -91,6 +96,20 @@ export class SendChatMessageHandler implements ICommandHandler<SendChatMessageCo
             recipientIds: [conversation.coachId, conversation.athleteId],
             message,
         })
+
+        // Feed the transversal Web Push channel — it re-engages the recipient when
+        // they're offline (it checks presence itself). Off the command path: a bus
+        // subscriber, not a blocking call.
+        const preview =
+            message.body.length > PREVIEW_MAX_LENGTH ? `${message.body.slice(0, PREVIEW_MAX_LENGTH)}…` : message.body
+        const chatMessageSent = new ChatMessageSentIntegrationEvent(
+            conversation.id,
+            conversation.coachId,
+            conversation.athleteId,
+            command.senderId,
+            preview,
+        )
+        this.eventBus.publish(chatMessageSent)
 
         return message
     }

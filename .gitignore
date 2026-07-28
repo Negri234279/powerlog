@@ -14,9 +14,7 @@ build/
 
 # env
 .env
-.env.local
-.dev.env
-.env.*.local
+*.env
 !.env.example
 # Per-env deploy secrets (the *.env.example stays tracked).
 infra/prod/powerlog.env

@@ -81,6 +81,34 @@ pasarela, fallidos, replay).
 > para webhooks, tiene que ser de **un nivel** (`powerlog-api.negri.es`) o pagar el
 > certificado avanzado.
 
+## Web Push (VAPID)
+
+Browser push notifications (`src/push/`) re-engage a user with the app **closed**
+(coach plans a session, AI queue ready, chat while offline). Optional like Redis and
+the payment gateways: with no keys the channel is simply off and the app runs
+unchanged.
+
+- **Generate the key pair ONCE** and reuse it forever:
+    ```bash
+    npx web-push generate-vapid-keys
+    ```
+    Put the pair in the env (`VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`) plus a
+    `VAPID_SUBJECT` (a `mailto:`/`https:` contact). Only the private key is a secret;
+    the public key is served to the browser via the `pushPublicKey` GraphQL query.
+- **⚠️ Rotating the pair invalidates every existing browser subscription** — every
+  device silently stops receiving until it re-subscribes. Treat the keys as stable
+  secrets; don't regenerate them casually.
+- **iOS caveat**: Safari only delivers Web Push to a PWA **installed to the home
+  screen** (16.4+), and offers no install prompt — the user must use _Share → Add to
+  Home Screen_. The web toggle (`/profile/security`) detects this and guides them.
+- **Dead subscriptions self-prune**: when the push service returns 404/410 the row is
+  deleted at send time — there is no cron. There is deliberately no idle-time prune
+  (`last_seen_at` only moves on re-register, so it isn't a reliable liveness signal).
+- **Signals**: `powerlog_push_sent_total{status=sent|gone|error}` and the
+  `powerlog_push_subscriptions` gauge; the `powerlog · Web Push` dashboard and the
+  `PowerlogPushDeliveryErrors` alert (sustained `error` deliveries ⇒ check the VAPID
+  keys / push service reachability; `gone` is normal churn).
+
 ## Notes
 
 - **Secrets**: each env ships a `*.env.example`; copy it (to `.env` for dev/test,

@@ -48,3 +48,4 @@ export * from '../modules/chat/infrastructure/persistence/schema/chat-conversati
 export * from '../modules/chat/infrastructure/persistence/schema/chat-messages.schema'
 export * from '../modules/chat/infrastructure/persistence/schema/chat-participant-state.schema'
 export * from '../presence/infrastructure/schema/user-presence.schema'
+export * from '../push/infrastructure/schema/push-subscription.schema'
