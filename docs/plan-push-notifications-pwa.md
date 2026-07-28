@@ -152,7 +152,22 @@ Lo que se implementó:
   distintos: no soportado / iOS-instala-primero / permiso denegado).
 - **Checkpoint**: suscripción real guardada en la BD desde un móvil.
 
-### Push.4 — Disparadores (los casos de uso)
+### Push.4 — Disparadores (los casos de uso) ✅ HECHO
+> **Completado.** `PushNotifier.send` acepta ahora un **factory `(locale) => PushPayload`**
+> y `PushService` lo renderiza **por dispositivo** (locale guardado en la suscripción).
+> Copia es/en en `src/push/push-copy.ts`. Handlers en `src/push/event-handlers/`:
+> `push-on-session-planned`, `push-on-mesocycle-assigned`, `push-on-coach-invitation`
+> (solo si el invitado ya tiene cuenta), `push-on-ai-generation-settled` (solo en éxito;
+> deeplink a la draft de session_plan, resto a `/workouts/ai`), y `push-on-chat-message`
+> **con guard de presencia** (`OnlineRegistry`: si el destinatario está online, no hay push;
+> deeplink a su lado de la conversación). El chat estrena `ChatMessageSentIntegrationEvent`
+> publicado por `SendChatMessageHandler` (así el chat no importa el módulo push). `PushModule`
+> importa `PresenceReadModule` (OnlineRegistry compartido con el gateway) + `AuthModule`
+> (UserDirectory). **+17 tests** (handlers, factory-form, guard de presencia, evento de chat);
+> **suite completa 1416 verde**, typecheck/lint/format OK. Con las VAPID keys ya puestas en el
+> API, el push sale de verdad — falta la prueba manual en un móvil real.
+
+Lo que se implementó:
 - `push/event-handlers/` con `push-on-session-planned`, `push-on-mesocycle-assigned`,
   `push-on-ai-generation-settled`, `push-on-coach-invitation`, `push-on-subscription-changed`
   — calcados de los de realtime, pero construyendo **título+cuerpo+deeplink localizados**.

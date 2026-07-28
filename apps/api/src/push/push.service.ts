@@ -6,7 +6,7 @@ import type { Counter } from 'prom-client'
 import { METRIC } from '../observability/metrics'
 import { PushNotifier } from './push-notifier'
 import { PushSubscriptionStore } from './push-subscription-store'
-import type { PushPayload, StoredPushSubscription } from './push.types'
+import type { PushInput, StoredPushSubscription } from './push.types'
 import { PushTransport } from './sender/push-transport'
 
 /**
@@ -28,7 +28,7 @@ export class PushService extends PushNotifier {
         this.logger.setContext(PushService.name)
     }
 
-    async send(userIds: readonly string[], payload: PushPayload): Promise<void> {
+    async send(userIds: readonly string[], payload: PushInput): Promise<void> {
         // `publicKey === null` is the "push not configured" signal — skip the DB
         // lookup entirely.
         if (this.transport.publicKey === null || userIds.length === 0) return
@@ -39,8 +39,11 @@ export class PushService extends PushNotifier {
         await Promise.all(subscriptions.map((subscription) => this.deliverOne(subscription, payload)))
     }
 
-    private async deliverOne(subscription: StoredPushSubscription, payload: PushPayload): Promise<void> {
-        const outcome = await this.transport.deliver(subscription, payload)
+    private async deliverOne(subscription: StoredPushSubscription, payload: PushInput): Promise<void> {
+        // A factory renders the text in this device's own locale; a plain payload
+        // is used as-is for everyone.
+        const rendered = typeof payload === 'function' ? payload(subscription.locale) : payload
+        const outcome = await this.transport.deliver(subscription, rendered)
 
         this.sent.inc({ status: outcome })
 

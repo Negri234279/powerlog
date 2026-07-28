@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { FakeCoachLinks } from '../../../../../../tests/doubles/shared/fake-coach-links'
+import { RecordingEventBus } from '../../../../../../tests/doubles/shared/recording-event-bus'
 import { silentLogger } from '../../../../../../tests/doubles/shared/silent-logger'
 import { counterValue, testCounter } from '../../../../../../tests/doubles/shared/test-counter'
 import {
@@ -19,6 +20,7 @@ import {
     MessageTooLongError,
     NotYourConversationError,
 } from '../../../domain/errors/chat.errors'
+import { ChatMessageSentIntegrationEvent } from '../../../../../shared/integration-events/chat-message-sent.integration-event'
 import { MessageBodyVO } from '../../../domain/value-objects/message-body.vo'
 import { SendChatMessageCommand } from './send-chat-message.command'
 import { SendChatMessageHandler } from './send-chat-message.handler'
@@ -33,6 +35,7 @@ describe('SendChatMessageHandler', () => {
     let participantStates: InMemoryParticipantStateRepository
     let coachLinks: FakeCoachLinks
     let pusher: FakeChatPusher
+    let events: RecordingEventBus
     let metrics: ReturnType<typeof testCounter>
     let handler: SendChatMessageHandler
 
@@ -44,6 +47,7 @@ describe('SendChatMessageHandler', () => {
         participantStates = new InMemoryParticipantStateRepository(messages)
         coachLinks = new FakeCoachLinks().link(COACH, ATHLETE)
         pusher = new FakeChatPusher()
+        events = new RecordingEventBus()
         metrics = testCounter(['status'])
         handler = new SendChatMessageHandler(
             conversations,
@@ -54,6 +58,7 @@ describe('SendChatMessageHandler', () => {
             new FakeClock(),
             pusher,
             silentLogger(),
+            events.asEventBus(),
             metrics,
         )
     })
@@ -81,6 +86,26 @@ describe('SendChatMessageHandler', () => {
 
         expect(pusher.posted).toHaveLength(1)
         expect(pusher.posted[0]?.recipientIds).toEqual([COACH, ATHLETE])
+    })
+
+    it('should_publish_a_ChatMessageSent_event_carrying_the_participants_and_a_preview', async () => {
+        await handler.execute(new SendChatMessageCommand(COACH, CONVERSATION, 'hi there'))
+
+        const event = events.firstOf(ChatMessageSentIntegrationEvent)
+        expect(event).toMatchObject({
+            conversationId: CONVERSATION,
+            coachId: COACH,
+            athleteId: ATHLETE,
+            senderId: COACH,
+            preview: 'hi there',
+        })
+    })
+
+    it('should_not_publish_a_ChatMessageSent_event_when_the_send_is_blocked', async () => {
+        coachLinks.unlink(COACH, ATHLETE)
+
+        await expect(handler.execute(new SendChatMessageCommand(COACH, CONVERSATION, 'hi'))).rejects.toThrow()
+        expect(events.firstOf(ChatMessageSentIntegrationEvent)).toBeUndefined()
     })
 
     it('should_block_sending_after_the_pair_is_unlinked', async () => {

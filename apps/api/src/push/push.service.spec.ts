@@ -40,6 +40,19 @@ describe('PushService', () => {
         expect(await counterValue(sent, { status: 'sent' })).toBe(2)
     })
 
+    it('renders a factory payload in each device’s own locale', async () => {
+        await store.save({ userId: 'user-1', endpoint: 'https://push/es', p256dh: 'p', auth: 'a', locale: 'es' })
+        await store.save({ userId: 'user-1', endpoint: 'https://push/en', p256dh: 'p', auth: 'a', locale: 'en' })
+
+        await service.send(['user-1'], (locale) => ({ title: 't', body: locale === 'es' ? 'Hola' : 'Hi' }))
+
+        const bodyByEndpoint = Object.fromEntries(
+            transport.delivered.map((d) => [d.subscription.endpoint, d.payload.body]),
+        )
+        expect(bodyByEndpoint['https://push/es']).toBe('Hola')
+        expect(bodyByEndpoint['https://push/en']).toBe('Hi')
+    })
+
     it('prunes a subscription the push service reports as gone', async () => {
         await store.save(sub('user-1', 'https://push/dead'))
         transport.returns('gone')

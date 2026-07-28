@@ -12,6 +12,14 @@ export interface PushPayload {
     tag?: string
 }
 
+/** Builds the payload for one device's locale — so the same event renders in each
+ *  recipient's language (the locale is stored per subscription). */
+export type PushPayloadFactory = (locale: string) => PushPayload
+
+/** What `PushNotifier.send` accepts: a ready payload (same text for everyone) or a
+ *  per-locale factory (localised per device). */
+export type PushInput = PushPayload | PushPayloadFactory
+
 /** A subscription as the browser hands it to us, on register. */
 export interface PushSubscriptionInput {
     userId: string
