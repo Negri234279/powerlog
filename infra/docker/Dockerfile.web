@@ -66,10 +66,20 @@ ARG APP_ENV=prod
 # time only, so it lives here rather than in the runtime env file. Override the
 # ARG to build for another domain.
 ARG SITE_URL=https://powerlog.negri.es
+# Client-side public vars — Next inlines these into the browser bundle at BUILD
+# time (runtime env is ignored for NEXT_PUBLIC_*), so they MUST be present now.
+# NEXT_PUBLIC_WS_URL points the browser's Socket.IO client (presence + live chat)
+# DIRECTLY at the API's public origin; the default is the prod domain. Override
+# the ARG to build for another environment (e.g. staging). NEXT_PUBLIC_API_URL
+# stays same-origin (the BFF rewrite), so its localhost default is fine.
+ARG NEXT_PUBLIC_WS_URL=https://api-powerlog.negri.es
+ARG NEXT_PUBLIC_API_URL=http://localhost:4000
 ENV API_INTERNAL_URL=${API_INTERNAL_URL} \
     FARO_INTERNAL_URL=${FARO_INTERNAL_URL} \
     APP_ENV=${APP_ENV} \
-    SITE_URL=${SITE_URL}
+    SITE_URL=${SITE_URL} \
+    NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL} \
+    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY . .
 RUN pnpm --filter @powerlog/web build
 
