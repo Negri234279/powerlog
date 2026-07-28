@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
+import { LOGOUT_MARKER_COOKIE, LOGOUT_MARKER_MAX_AGE_SECONDS } from '@/lib/auth/logout-marker'
 import { serverEnv } from '@/lib/env.server'
 import { log } from '@/lib/log/server'
 
@@ -55,9 +56,19 @@ function loggedOutRedirect(): NextResponse {
         secure: serverEnv.cookieSecure,
         maxAge: 0,
     }
-    
+
     res.cookies.set(serverEnv.authCookieName, '', expire)
     res.cookies.set(serverEnv.refreshCookieName, '', expire)
+
+    // Belt-and-braces: tell the proxy we just logged out, so /login sticks even if
+    // the refresh cookie above couldn't be cleared — otherwise it loops (see the
+    // proxy). Host-only + short-lived: it only needs to survive the hop to /login.
+    res.cookies.set(LOGOUT_MARKER_COOKIE, '1', {
+        path: '/',
+        secure: serverEnv.cookieSecure,
+        sameSite: 'lax',
+        maxAge: LOGOUT_MARKER_MAX_AGE_SECONDS,
+    })
 
     return res
 }
