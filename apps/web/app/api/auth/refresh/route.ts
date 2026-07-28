@@ -44,8 +44,21 @@ function relativeRedirect(path: string): NextResponse {
  */
 function loggedOutRedirect(): NextResponse {
     const res = relativeRedirect('/login')
-    res.cookies.set(serverEnv.authCookieName, '', { path: '/', maxAge: 0 })
-    res.cookies.set(serverEnv.refreshCookieName, '', { path: '/', maxAge: 0 })
+    // A cookie is only deleted by a Set-Cookie carrying the SAME Domain (and Path)
+    // it was set with. The API sets these with COOKIE_DOMAIN, so we must expire them
+    // with it too — miss the Domain and a domain-scoped `pl_rt` survives, the proxy
+    // keeps seeing a session, and /login bounces back to /dashboard in an infinite
+    // loop (only broken by clearing storage by hand).
+    const expire = {
+        path: '/',
+        domain: serverEnv.cookieDomain,
+        secure: serverEnv.cookieSecure,
+        maxAge: 0,
+    }
+    
+    res.cookies.set(serverEnv.authCookieName, '', expire)
+    res.cookies.set(serverEnv.refreshCookieName, '', expire)
+
     return res
 }
 

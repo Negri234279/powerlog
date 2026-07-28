@@ -32,6 +32,15 @@ const schema = z.object({
     /** Cookie names, kept in sync with the API defaults (AUTH_/REFRESH_COOKIE_NAME). */
     AUTH_COOKIE_NAME: z.string().min(1).default('pl_at'),
     REFRESH_COOKIE_NAME: z.string().min(1).default('pl_rt'),
+    /**
+     * Cookie Domain/Secure, kept in sync with the API (COOKIE_DOMAIN / COOKIE_SECURE).
+     * The web expires the auth cookies itself on a failed refresh, and a cookie is
+     * only deleted by a Set-Cookie carrying the SAME Domain (and Secure) it was set
+     * with. Miss the Domain and a domain-scoped `pl_rt` survives → the proxy keeps
+     * seeing a session and /login loops back to /dashboard forever.
+     */
+    COOKIE_DOMAIN: z.string().optional(),
+    COOKIE_SECURE: z.stringbool().default(false),
 })
 
 const parsed = schema.safeParse({
@@ -43,6 +52,8 @@ const parsed = schema.safeParse({
     JWT_AUDIENCE: process.env['JWT_AUDIENCE'],
     AUTH_COOKIE_NAME: process.env['AUTH_COOKIE_NAME'],
     REFRESH_COOKIE_NAME: process.env['REFRESH_COOKIE_NAME'],
+    COOKIE_DOMAIN: process.env['COOKIE_DOMAIN'],
+    COOKIE_SECURE: process.env['COOKIE_SECURE'],
 })
 
 if (!parsed.success) {
@@ -96,6 +107,9 @@ export const serverEnv = {
     jwtAudience: data.JWT_AUDIENCE,
     authCookieName: data.AUTH_COOKIE_NAME,
     refreshCookieName: data.REFRESH_COOKIE_NAME,
+    /** Undefined → host-only cookie (dev). Mirrors the API's COOKIE_DOMAIN. */
+    cookieDomain: data.COOKIE_DOMAIN,
+    cookieSecure: data.COOKIE_SECURE,
     /** RS256 public key PEM (read + validated lazily, then cached). */
     get jwtPublicKeyPem(): string {
         return readPublicKeyPem()
