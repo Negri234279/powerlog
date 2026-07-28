@@ -134,7 +134,17 @@ Lo que se implementó:
 - **Checkpoint**: la web se instala en móvil (Android + iOS), el SW se registra.
   Verificación manual en el móvil (con `--experimental-https` en local).
 
-### Push.3 — Cablear la suscripción (web ↔ API)
+### Push.3 — Cablear la suscripción (web ↔ API) ✅ HECHO
+> **Completado.** `lib/graphql/operations/push.ts` (`pushPublicKey`/`register`/`remove`)
+> + `lib/pwa/use-install-state.ts` (isIOS/isStandalone) + `lib/pwa/use-push-notifications.ts`
+> (permiso → `pushManager.subscribe` con la clave del `pushPublicKey` → mutación; estado en
+> un enum `PushStatus`). `NotificationsCard` en `/profile/security` pinta cada estado
+> (loading/off/on/denied/unsupported/unavailable/**ios-needs-install** con la guía de
+> "Añadir a pantalla de inicio" inline). i18n **es/en** completo, `TrackedButton`. Codegen +
+> typecheck + **build de la web verdes**. Degrada solo: sin VAPID en el API la card muestra
+> "no disponible". Falta la prueba manual del flujo completo en un móvil real.
+
+Lo que se implementó:
 - Toggle "Activar notificaciones" en `/profile` (o en el shell): gesto de usuario →
   `Notification.requestPermission()` → `pushManager.subscribe(applicationServerKey)`
   → mutación `registerPushSubscription`. Desactivar ⇒ `unsubscribe` + mutación.
