@@ -95,9 +95,13 @@ LABEL org.opencontainers.image.title="powerlog — Web" \
     org.opencontainers.image.source="" \
     org.opencontainers.image.licenses=""
 
-COPY --from=build /app/apps/web/.next/standalone ./
-COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=build /app/apps/web/public ./apps/web/public
+# --chown=node:node so the runtime user (USER node, below) owns the tree it must
+# write at runtime: Next persists its ISR/prerender + segment cache under
+# .next/cache and .next/server/app. COPY --from defaults to root:root ownership,
+# which made those writes fail with EACCES (cache silently disabled + log noise).
+COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./
+COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
 USER node
 EXPOSE 3000
 CMD ["node", "apps/web/server.js"]
