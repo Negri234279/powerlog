@@ -38,4 +38,8 @@ export class InMemoryPushSubscriptionStore extends PushSubscriptionStore {
     async deleteByEndpoint(endpoint: string): Promise<void> {
         this.rows.delete(endpoint)
     }
+
+    async count(): Promise<number> {
+        return this.rows.size
+    }
 }

@@ -18,4 +18,7 @@ export abstract class PushSubscriptionStore {
 
     /** Prune a subscription the push service reported as gone (404/410). */
     abstract deleteByEndpoint(endpoint: string): Promise<void>
+
+    /** Total subscriptions across all users — the adoption gauge, sampled at scrape. */
+    abstract count(): Promise<number>
 }

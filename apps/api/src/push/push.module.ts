@@ -14,6 +14,7 @@ import { DrizzlePushSubscriptionStore } from './infrastructure/drizzle-push-subs
 import { PushResolver } from './presentation/push.resolver'
 import { PushNotifier } from './push-notifier'
 import { PushService } from './push.service'
+import { PushStateMetrics } from './push-state-metrics'
 import { PushSubscriptionStore } from './push-subscription-store'
 import { NoopPushTransport } from './sender/noop-push-transport'
 import { PushTransport } from './sender/push-transport'
@@ -61,6 +62,7 @@ const TRANSPORT: Provider = {
         TRANSPORT,
         { provide: PushSubscriptionStore, useClass: DrizzlePushSubscriptionStore },
         { provide: PushNotifier, useClass: PushService },
+        PushStateMetrics,
         PushResolver,
         ...EVENT_HANDLERS,
     ],

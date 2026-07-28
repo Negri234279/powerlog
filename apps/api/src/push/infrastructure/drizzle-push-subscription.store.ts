@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import { type Database, DRIZZLE } from '../../database/database.module'
 import { PushSubscriptionStore } from '../push-subscription-store'
@@ -70,5 +70,11 @@ export class DrizzlePushSubscriptionStore extends PushSubscriptionStore {
 
     async deleteByEndpoint(endpoint: string): Promise<void> {
         await this.db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint))
+    }
+
+    async count(): Promise<number> {
+        const [row] = await this.db.select({ count: sql<number>`count(*)::int` }).from(pushSubscriptions)
+
+        return row?.count ?? 0
     }
 }

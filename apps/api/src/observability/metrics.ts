@@ -61,6 +61,7 @@ export const METRIC = {
     chatMessages: 'powerlog_chat_messages_total',
     presenceOnlineUsers: 'powerlog_presence_online_users',
     pushSent: 'powerlog_push_sent_total',
+    pushSubscriptions: 'powerlog_push_subscriptions',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -467,5 +468,12 @@ export const metricsProviders = [
         name: METRIC.pushSent,
         help: 'Web Push deliveries attempted, by outcome (sent / gone / error).',
         labelNames: ['status'],
+    }),
+    // How many browser push subscriptions exist right now — the adoption signal,
+    // sampled at scrape time (set by PushStateMetrics). 0 while the feature is
+    // configured means nobody has opted in yet.
+    makeGaugeProvider({
+        name: METRIC.pushSubscriptions,
+        help: 'Current number of registered Web Push subscriptions.',
     }),
 ]

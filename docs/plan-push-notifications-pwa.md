@@ -181,7 +181,19 @@ Lo que se implementó:
   (online ⇒ no push; offline ⇒ push) con el `OnlineRegistry` real/doble.
 - **Checkpoint**: los 3 casos que pediste llegan al móvil con la app cerrada.
 
-### Push.5 — Cierre
+### Push.5 — Cierre ✅ HECHO
+> **Completado.** Gauge `powerlog_push_subscriptions` (scrape-time vía `PushStateMetrics` +
+> `store.count()`), alerta `PowerlogPushDeliveryErrors` (grupo `powerlog-push`: errores
+> sostenidos ⇒ VAPID mal / push service caído; `gone` no cuenta), dashboard
+> `powerlog-push.json` (suscripciones, enviados/podados/errores 24h, tasa por outcome), envs
+> VAPID en los tres `*.env.example`, y sección **Web Push (VAPID)** en `infra/README.md`
+> (generar/rotar, caveat iOS, auto-poda 404/410). **Poda por tiempo descartada a propósito**:
+> los endpoints muertos se podan en el envío; `last_seen_at` solo se mueve al re-registrar, no
+> es señal de vida fiable. +9 tests; typecheck/typecheck:test/lint/format verdes, push e2e OK
+> (la app arranca con el nuevo provider). Recordar `docker restart powerlog-prometheus
+> powerlog-grafana` para que Grafana/Prometheus recojan el dashboard + la alerta nuevos.
+
+Lo que se implementó:
 - Alerta si `powerlog_push_sent_total{status="failed"}` sube de forma sostenida
   (VAPID mal configurada, proveedor caído).
 - Limpieza periódica de suscripciones sin `last_seen_at` reciente (opcional).

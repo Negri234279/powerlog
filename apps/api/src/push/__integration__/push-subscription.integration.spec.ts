@@ -110,4 +110,13 @@ describe('Push subscription store (integration)', () => {
     it('returns an empty list for no users without hitting the db', async () => {
         expect(await store.findByUsers([])).toEqual([])
     })
+
+    it('counts every subscription across users', async () => {
+        expect(await store.count()).toBe(0)
+
+        await store.save(makeInput())
+        await store.save(makeInput())
+
+        expect(await store.count()).toBe(2)
+    })
 })
