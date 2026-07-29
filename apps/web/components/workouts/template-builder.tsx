@@ -93,7 +93,7 @@ export function TemplateBuilder({
     function validateName() {
         setErrors((prev) => {
             const next = { ...prev }
-            
+
             if (name.trim() === '') {
                 next['name'] = t('nameRequired')
             } else {

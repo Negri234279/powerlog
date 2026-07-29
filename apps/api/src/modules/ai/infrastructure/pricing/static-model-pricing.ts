@@ -285,6 +285,13 @@ const PRICES: Record<AiProvider, Record<string, ModelPrice>> = {
     },
 }
 
+/**
+ * Every model id the app knows a price for, across providers. The allowlist a
+ * metric label is normalised against — the pricing table is the one place that
+ * already enumerates "models we recognise", so labels and costs never drift.
+ */
+export const KNOWN_MODEL_IDS: readonly string[] = Object.values(PRICES).flatMap((table) => Object.keys(table))
+
 @Injectable()
 export class StaticModelPricing extends ModelPricing {
     priceFor(provider: AiProvider, model: string): ModelPrice | null {

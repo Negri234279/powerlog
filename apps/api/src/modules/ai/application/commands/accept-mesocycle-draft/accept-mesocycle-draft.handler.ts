@@ -3,7 +3,9 @@ import { PinoLogger } from 'nestjs-pino'
 
 import { AiMesocycleDraftNotFoundError } from '../../../domain/errors/ai-mesocycle.errors'
 import { AiMesocycleDraftRepository } from '../../../domain/repositories/ai-mesocycle-draft.repository'
+import { AiGenerationMetrics } from '../../ports/ai-generation-metrics.port'
 import { Clock } from '../../ports/clock.port'
+import { countRefinements } from '../../services/count-refinements'
 import { type AiMesocycleDraftView, toAiMesocycleDraftView } from '../../views/ai-mesocycle-draft.view'
 import { AcceptMesocycleDraftCommand } from './accept-mesocycle-draft.command'
 
@@ -22,6 +24,7 @@ export class AcceptMesocycleDraftHandler implements ICommandHandler<AcceptMesocy
     constructor(
         private readonly drafts: AiMesocycleDraftRepository,
         private readonly clock: Clock,
+        private readonly metrics: AiGenerationMetrics,
         private readonly logger: PinoLogger,
     ) {
         this.logger.setContext(AcceptMesocycleDraftHandler.name)
@@ -33,6 +36,9 @@ export class AcceptMesocycleDraftHandler implements ICommandHandler<AcceptMesocy
 
         draft.accept(this.clock.now())
         await this.drafts.save(draft)
+
+        this.metrics.recordDraftSettled('mesocycle', 'accepted', draft.model)
+        this.metrics.recordRefinementsBeforeAccept('mesocycle', draft.model, countRefinements(draft.messages))
 
         this.logger.info({ weeks: draft.weeks, days: draft.proposal.days.length }, 'mesocycle draft accepted')
 

@@ -56,6 +56,8 @@ export const METRIC = {
     revenueCents: 'powerlog_revenue_cents_total',
     aiGenerationsQueued: 'powerlog_ai_generations_queued_total',
     aiGenerationDuration: 'powerlog_ai_generation_duration_seconds',
+    aiDraftOutcome: 'powerlog_ai_draft_outcome_total',
+    aiRefinementsBeforeAccept: 'powerlog_ai_refinements_before_accept',
     supportTicketsOpened: 'powerlog_support_tickets_opened_total',
     chatWsConnections: 'powerlog_chat_ws_connections',
     chatMessages: 'powerlog_chat_messages_total',
@@ -71,6 +73,11 @@ const DURATION_BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 1
 // completion takes tens of seconds, so DURATION_BUCKETS would pile everything
 // into the +Inf bucket and lose all resolution.
 const LLM_DURATION_BUCKETS = [0.25, 0.5, 1, 2.5, 5, 10, 20, 30, 60, 120]
+
+// Refinement rounds before a draft is accepted. A count, not a latency: the
+// thread caps at ~9 refinements, and what matters is the low end (0 = accepted
+// as first proposed). Anything past 5 lands in +Inf and is simply "a lot".
+const REFINEMENT_BUCKETS = [0, 1, 2, 3, 4, 5]
 
 /** Prometheus metric providers, registered on the default registry. */
 export const metricsProviders = [
@@ -241,6 +248,23 @@ export const metricsProviders = [
         help: 'End-to-end duration of AI generations in seconds, queue wait included.',
         labelNames: ['kind', 'status'],
         buckets: LLM_DURATION_BUCKETS,
+    }),
+    // Draft quality, the signal the duration histograms can't carry: whether the
+    // output was kept. `outcome` is accepted/discarded; `model` is normalised to a
+    // bounded allowlist by the adapter (BYOK ids are unbounded), unknown → `other`.
+    makeCounterProvider({
+        name: METRIC.aiDraftOutcome,
+        help: 'Count of AI drafts that reached a terminal state, by kind, outcome and model.',
+        labelNames: ['kind', 'outcome', 'model'],
+    }),
+    // How many times the athlete had to send it back before accepting. Observed
+    // only on acceptance — a discarded draft never "finished". 0 = accepted as
+    // first proposed. Same normalised `model` label as the outcome counter.
+    makeHistogramProvider({
+        name: METRIC.aiRefinementsBeforeAccept,
+        help: 'Refinement rounds a draft went through before being accepted, by kind and model.',
+        labelNames: ['kind', 'model'],
+        buckets: REFINEMENT_BUCKETS,
     }),
     // Contact/support tickets opened, by category (set by PrometheusSupportMetrics).
     // The notification email is already counted by MeteredMailer as type=contact;
