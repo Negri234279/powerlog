@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
+import { cn } from '@/lib/cn'
 import { track } from '@/lib/analytics/events'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
@@ -47,6 +48,10 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
     const [confirmingDelete, setConfirmingDelete] = useState(false)
     const [actionError, setActionError] = useState<string | null>(null)
     const [statusFilter, setStatusFilter] = useState<string[]>([])
+    // Whether the AI plan panel is showing its full-width card. When it is, the
+    // status filter drops below it on narrow screens instead of being squeezed
+    // against the card's edge.
+    const [aiExpanded, setAiExpanded] = useState(false)
     // A completed session opens read-only; unlocking is a deliberate, confirmed
     // step so a stray tap while training can't rewrite what already happened.
     const [unlocked, setUnlocked] = useState(false)
@@ -257,9 +262,11 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
 
             {/* `items-start` + a growing AI slot so this row holds up in both of the
                 panel's shapes: a pill next to the filter when closed, and a
-                full-width card with the filter still at its top-right when open. */}
-            <div className="mt-8 flex flex-wrap items-start gap-3">
-                <div className="min-w-0 flex-1">
+                full-width card when open. Once the card is open, the row stacks on
+                narrow screens so the status filter drops below it instead of
+                squeezing the card — it stays at the card's top-right from `sm` up. */}
+            <div className={cn('mt-8 flex items-start gap-3', aiExpanded ? 'flex-col sm:flex-row' : 'flex-wrap')}>
+                <div className={cn('min-w-0', aiExpanded ? 'w-full sm:flex-1' : 'flex-1')}>
                     {/* Only a planned session has targets left to program. */}
                     {completed ? null : (
                         <AiPlanPanel
@@ -267,12 +274,13 @@ export function SessionEditor({ sessionId, back }: { sessionId: string; back: Ba
                             entries={session.entries}
                             nameById={nameById}
                             units={units}
+                            onExpandedChange={setAiExpanded}
                         />
                     )}
                 </div>
 
                 {session.entries.length > 0 ? (
-                    <div className="shrink-0">
+                    <div className={cn(aiExpanded ? 'w-full sm:w-auto sm:shrink-0' : 'shrink-0')}>
                         <MultiSelect
                             analyticsId="session-entries-filter-status"
                             label={t('filterStatus')}
