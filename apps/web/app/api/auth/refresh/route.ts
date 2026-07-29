@@ -71,12 +71,14 @@ function loggedOutRedirect(): NextResponse {
     // Belt-and-braces: tell the proxy we just logged out, so /login sticks even if a
     // cookie above couldn't be cleared — otherwise it loops (see the proxy).
     // Host-only + short-lived: it only needs to survive the hop to /login.
-    res.cookies.set(LOGOUT_MARKER_COOKIE, '1', {
-        path: '/',
-        secure: serverEnv.cookieSecure,
-        sameSite: 'lax',
-        maxAge: LOGOUT_MARKER_MAX_AGE_SECONDS,
-    })
+    //
+    // Appended raw, NOT via `res.cookies.set`: constructing `ResponseCookies` reparses
+    // the Set-Cookie headers into a by-name map, which collapses our same-name
+    // host-only/Domain `pl_rt`/`pl_at` pairs into one AND drops their `Max-Age=0` — so
+    // the auth cookies would no longer be cleared at all.
+    const marker = [`${LOGOUT_MARKER_COOKIE}=1`, 'Path=/', `Max-Age=${LOGOUT_MARKER_MAX_AGE_SECONDS}`, 'SameSite=Lax']
+    if (serverEnv.cookieSecure) marker.push('Secure')
+    res.headers.append('set-cookie', marker.join('; '))
 
     return res
 }
