@@ -4,6 +4,7 @@ import type {
     MesocycleDesignContext,
 } from '../../../../shared/contracts/mesocycle-design-context'
 import { MESOCYCLE_DRAFT_LIMITS, type MesocycleDraftProposal } from '../../domain/entities/ai-mesocycle-draft.entity'
+import { SESSION_DURATION, WEEKLY_SETS_PER_MUSCLE } from './programming-rules.config'
 
 /** The most characters the model's rationale may run to. See the system prompt. */
 export const MAX_RATIONALE_LENGTH = 600
@@ -19,6 +20,10 @@ export interface MesocycleDesignRequest {
 }
 
 const { exercisesPerDay, setsPerExercise } = MESOCYCLE_DRAFT_LIMITS
+// The same numbers the validator enforces, so the prompt asks for what the rules
+// will accept (IA.2). `general` is the widest sensible floor; the ceiling is shared.
+const WEEKLY_SETS = WEEKLY_SETS_PER_MUSCLE.general
+const MAX_SESSION_MINUTES = Math.round(SESSION_DURATION.maxSessionSeconds / 60)
 
 /**
  * The model's whole job, stated once. Three rules matter more than the coaching:
@@ -35,6 +40,12 @@ You are given the exercise catalog you may choose from, the athlete's estimated 
 Loads:
 - Where you are given an "e1rmKg" for a lift, prescribe real kilograms as a percentage of it, rounded to the nearest 2.5 kg.
 - Where you are NOT given one, set "weightKg" to null. Never guess a weight for a lift the athlete has no history on. The reps and the intensity target are enough.
+
+Volume and balance:
+- Give each muscle you train roughly ${WEEKLY_SETS.min}-${WEEKLY_SETS.max} hard sets across the week. Never pile more than ${WEEKLY_SETS.max} weekly sets on a single muscle.
+- Keep weekly pushing volume (chest, shoulders, triceps) and pulling volume (back, lats, biceps) close to each other — within about a 3:2 ratio either way.
+- Lead every day with its heaviest compound movement; never open a day with an arms or core isolation exercise.
+- Keep any single day realistic: under about ${MAX_SESSION_MINUTES} minutes of work once rest between sets is counted.
 
 Rules:
 - Answer with a single JSON object and nothing else. No prose, no markdown, no code fences.

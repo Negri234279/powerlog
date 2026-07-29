@@ -58,6 +58,7 @@ export const METRIC = {
     aiGenerationDuration: 'powerlog_ai_generation_duration_seconds',
     aiDraftOutcome: 'powerlog_ai_draft_outcome_total',
     aiRefinementsBeforeAccept: 'powerlog_ai_refinements_before_accept',
+    aiRuleWarning: 'powerlog_ai_rule_warning_total',
     supportTicketsOpened: 'powerlog_support_tickets_opened_total',
     chatWsConnections: 'powerlog_chat_ws_connections',
     chatMessages: 'powerlog_chat_messages_total',
@@ -265,6 +266,14 @@ export const metricsProviders = [
         help: 'Refinement rounds a draft went through before being accepted, by kind and model.',
         labelNames: ['kind', 'model'],
         buckets: REFINEMENT_BUCKETS,
+    }),
+    // Soft programming rules tripped by an accepted mesocycle week (IA.2). `rule`
+    // is a bounded id from RULE_WARNINGS — the signal for which rules are worth
+    // promoting to hard rejections once the noise is understood.
+    makeCounterProvider({
+        name: METRIC.aiRuleWarning,
+        help: 'Count of soft AI programming-rule warnings, by rule.',
+        labelNames: ['rule'],
     }),
     // Contact/support tickets opened, by category (set by PrometheusSupportMetrics).
     // The notification email is already counted by MeteredMailer as type=contact;

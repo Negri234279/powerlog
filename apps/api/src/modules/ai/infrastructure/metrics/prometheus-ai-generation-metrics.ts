@@ -14,6 +14,7 @@ export class PrometheusAiGenerationMetrics extends AiGenerationMetrics {
         @InjectMetric(METRIC.aiGenerationDuration) private readonly duration: Histogram<string>,
         @InjectMetric(METRIC.aiDraftOutcome) private readonly draftOutcome: Counter<string>,
         @InjectMetric(METRIC.aiRefinementsBeforeAccept) private readonly refinements: Histogram<string>,
+        @InjectMetric(METRIC.aiRuleWarning) private readonly ruleWarning: Counter<string>,
     ) {
         super()
     }
@@ -32,5 +33,9 @@ export class PrometheusAiGenerationMetrics extends AiGenerationMetrics {
 
     recordRefinementsBeforeAccept(kind: string, model: string, count: number): void {
         this.refinements.observe({ kind, model: normalizeModelLabel(model) }, count)
+    }
+
+    recordRuleWarning(rule: string): void {
+        this.ruleWarning.inc({ rule })
     }
 }

@@ -24,6 +24,7 @@ export class RecordingAiGenerationMetrics extends AiGenerationMetrics {
     readonly settled: { kind: string; status: string; durationSeconds: number }[] = []
     readonly draftsSettled: { kind: string; outcome: string; model: string }[] = []
     readonly refinementsBeforeAccept: { kind: string; model: string; count: number }[] = []
+    readonly ruleWarnings: string[] = []
     private broken = false
 
     /** Simulate a misconfigured metric — prom-client throws on a bad observation. */
@@ -53,5 +54,11 @@ export class RecordingAiGenerationMetrics extends AiGenerationMetrics {
         if (this.broken) throw new Error('Value is not a valid number: undefined')
 
         this.refinementsBeforeAccept.push({ kind, model, count })
+    }
+
+    recordRuleWarning(rule: string): void {
+        if (this.broken) throw new Error('Value is not a valid number: undefined')
+
+        this.ruleWarnings.push(rule)
     }
 }

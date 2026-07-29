@@ -35,6 +35,7 @@ const adapter = () =>
         fromDeclaration<Histogram<string>>(METRIC.aiGenerationDuration),
         fromDeclaration<Counter<string>>(METRIC.aiDraftOutcome),
         fromDeclaration<Histogram<string>>(METRIC.aiRefinementsBeforeAccept),
+        fromDeclaration<Counter<string>>(METRIC.aiRuleWarning),
     )
 
 describe('PrometheusAiGenerationMetrics', () => {
@@ -49,6 +50,7 @@ describe('PrometheusAiGenerationMetrics', () => {
             duration,
             fromDeclaration<Counter<string>>(METRIC.aiDraftOutcome),
             fromDeclaration<Histogram<string>>(METRIC.aiRefinementsBeforeAccept),
+            fromDeclaration<Counter<string>>(METRIC.aiRuleWarning),
         )
 
         metrics.recordSettled('session_plan', 'succeeded', 9.8)
@@ -73,6 +75,7 @@ describe('PrometheusAiGenerationMetrics', () => {
             fromDeclaration<Histogram<string>>(METRIC.aiGenerationDuration),
             outcome,
             fromDeclaration<Histogram<string>>(METRIC.aiRefinementsBeforeAccept),
+            fromDeclaration<Counter<string>>(METRIC.aiRuleWarning),
         )
 
         // A date-suffixed BYOK id folds onto its known base — the label the query
@@ -96,6 +99,7 @@ describe('PrometheusAiGenerationMetrics', () => {
             fromDeclaration<Histogram<string>>(METRIC.aiGenerationDuration),
             fromDeclaration<Counter<string>>(METRIC.aiDraftOutcome),
             refinements,
+            fromDeclaration<Counter<string>>(METRIC.aiRuleWarning),
         )
 
         metrics.recordRefinementsBeforeAccept('session_plan', 'gpt-5', 3)
@@ -108,5 +112,22 @@ describe('PrometheusAiGenerationMetrics', () => {
                 sample.labels['model'] === 'gpt-5',
         )
         expect(sum?.value).toBe(3)
+    })
+
+    it('counts a soft rule warning under its rule label', async () => {
+        const ruleWarning = fromDeclaration<Counter<string>>(METRIC.aiRuleWarning)
+        const metrics = new PrometheusAiGenerationMetrics(
+            fromDeclaration<Counter<string>>(METRIC.aiGenerationsQueued),
+            fromDeclaration<Histogram<string>>(METRIC.aiGenerationDuration),
+            fromDeclaration<Counter<string>>(METRIC.aiDraftOutcome),
+            fromDeclaration<Histogram<string>>(METRIC.aiRefinementsBeforeAccept),
+            ruleWarning,
+        )
+
+        metrics.recordRuleWarning('weekly_volume_low')
+
+        const { values } = await ruleWarning.get()
+        const sample = values.find((candidate) => candidate.labels['rule'] === 'weekly_volume_low')
+        expect(sample?.value).toBe(1)
     })
 })

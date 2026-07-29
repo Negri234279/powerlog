@@ -6,6 +6,7 @@ import {
     FakeSecretCipher,
     InMemoryAiMesocycleDraftRepository,
     InMemoryAiProviderConfigRepository,
+    RecordingAiGenerationMetrics,
     StubLlmProviderClient,
     StubMesocycleDesignContextReader,
     stubRegistry,
@@ -58,7 +59,7 @@ describe('GenerateMesocycleDraftHandler', () => {
         return new GenerateMesocycleDraftHandler(
             drafts,
             reader,
-            new MesocycleDesigner(new AiProviderResolver(configs), conversation),
+            new MesocycleDesigner(new AiProviderResolver(configs), conversation, new RecordingAiGenerationMetrics()),
             entitlements,
             new FakeClock(),
             new FakeIdGenerator('draft'),

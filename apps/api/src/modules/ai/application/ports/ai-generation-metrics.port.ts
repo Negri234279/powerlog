@@ -24,4 +24,10 @@ export abstract class AiGenerationMetrics {
      * distribution means the first proposal is missing more often.
      */
     abstract recordRefinementsBeforeAccept(kind: string, model: string, count: number): void
+    /**
+     * A soft programming-rule was tripped by an answer that was still accepted (a
+     * warning, not a rejection). `rule` is a bounded id. These are the rules worth
+     * watching before deciding which to promote to hard rejections.
+     */
+    abstract recordRuleWarning(rule: string): void
 }
