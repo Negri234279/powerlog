@@ -31,6 +31,13 @@ export class AuthCookies {
         return parseDurationMs(this.config.get('REFRESH_EXPIRES_IN', { infer: true }))
     }
 
+    // The Domain the cookies were set with *before* the host-only switch. Kept only
+    // so `clear()` can expire those legacy Domain-scoped cookies; not used to set.
+    // Remove (with the COOKIE_DOMAIN env) once all such cookies have expired (~30d).
+    private get legacyDomain(): string | undefined {
+        return this.config.get('COOKIE_DOMAIN', { infer: true })
+    }
+
     constructor(private readonly config: ConfigService<Env, true>) {}
 
     setSession(res: Response, tokens: SessionTokens): void {
@@ -43,6 +50,17 @@ export class AuthCookies {
         const base = this.options()
         res.clearCookie(this.accessName, base)
         res.clearCookie(this.refreshName, base)
+
+        // Belt-and-braces: also expire any legacy Domain-scoped cookies from when we
+        // set Domain=COOKIE_DOMAIN. A cookie is only deleted by a Set-Cookie carrying
+        // the SAME Domain it was set with, so without this an orphaned Domain-scoped
+        // pl_rt survives, shadows the fresh host-only cookie, and every refresh fails
+        // (INVALID_REFRESH_TOKEN → 15-min logout). Remove once these have expired.
+        if (this.legacyDomain) {
+            const domainScoped = { ...base, domain: this.legacyDomain }
+            res.clearCookie(this.accessName, domainScoped)
+            res.clearCookie(this.refreshName, domainScoped)
+        }
     }
 
     readRefresh(req: Request): string | undefined {
@@ -50,12 +68,15 @@ export class AuthCookies {
         return cookies?.[this.refreshName]
     }
 
+    // Host-only cookies: no `domain`. Setting a Domain made the browser store a
+    // second, separately-scoped cookie; an orphaned copy then shadowed the valid one
+    // and broke refresh. Everything is first-party to the web origin, so Domain buys
+    // nothing. Legacy Domain-scoped cookies are expired in `clear()`.
     private options(maxAge?: number): CookieOptions {
         return {
             httpOnly: true,
             sameSite: 'lax',
             secure: this.config.get('COOKIE_SECURE', { infer: true }),
-            domain: this.config.get('COOKIE_DOMAIN', { infer: true }),
             path: '/',
             ...(maxAge !== undefined ? { maxAge } : {}),
         }
