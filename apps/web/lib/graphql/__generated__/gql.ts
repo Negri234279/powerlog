@@ -112,6 +112,8 @@ type Documents = {
     "\n    mutation SendChatMessage($conversationId: ID!, $body: String!) {\n        sendChatMessage(conversationId: $conversationId, body: $body) {\n            id\n            conversationId\n            senderId\n            kind\n            body\n            createdAt\n            status\n        }\n    }\n": typeof types.SendChatMessageDocument,
     "\n    mutation MarkConversationRead($conversationId: ID!) {\n        markConversationRead(conversationId: $conversationId)\n    }\n": typeof types.MarkConversationReadDocument,
     "\n    mutation MarkConversationDelivered($conversationId: ID!) {\n        markConversationDelivered(conversationId: $conversationId)\n    }\n": typeof types.MarkConversationDeliveredDocument,
+    "\n    mutation ClearConversation($conversationId: ID!) {\n        clearConversation(conversationId: $conversationId)\n    }\n": typeof types.ClearConversationDocument,
+    "\n    mutation DeleteConversation($conversationId: ID!) {\n        deleteConversation(conversationId: $conversationId)\n    }\n": typeof types.DeleteConversationDocument,
     "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": typeof types.MyAthletesDocument,
     "\n    query MyAthleteRoster($from: String, $to: String) {\n        myAthleteRoster(from: $from, to: $to) {\n            athleteId\n            coachedSince\n            lastSessionAt\n            daysSinceLastSession\n            nextSessionAt\n            adherenceRate\n            plannedCompleted\n            plannedMissed\n            plannedDue\n            attention\n        }\n    }\n": typeof types.MyAthleteRosterDocument,
     "\n    query MyAthlete($athleteId: ID!) {\n        myAthlete(athleteId: $athleteId) {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": typeof types.MyAthleteDocument,
@@ -144,6 +146,9 @@ type Documents = {
     "\n    query Ping {\n        ping\n    }\n": typeof types.PingDocument,
     "\n    query MyProfile {\n        myProfile {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n            createdAt\n            updatedAt\n        }\n    }\n": typeof types.MyProfileDocument,
     "\n    mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n        }\n    }\n": typeof types.UpdateProfileDocument,
+    "\n    query PushPublicKey {\n        pushPublicKey\n    }\n": typeof types.PushPublicKeyDocument,
+    "\n    mutation RegisterPushSubscription($input: RegisterPushSubscriptionInput!) {\n        registerPushSubscription(input: $input)\n    }\n": typeof types.RegisterPushSubscriptionDocument,
+    "\n    mutation RemovePushSubscription($endpoint: String!) {\n        removePushSubscription(endpoint: $endpoint)\n    }\n": typeof types.RemovePushSubscriptionDocument,
     "\n    mutation SendContactMessage($input: ContactInput!) {\n        sendContactMessage(input: $input)\n    }\n": typeof types.SendContactMessageDocument,
     "\n    query AdminSupportTickets(\n        $statuses: [String!]\n        $categories: [String!]\n        $search: String\n        $limit: Int\n        $offset: Int\n    ) {\n        adminSupportTickets(\n            statuses: $statuses\n            categories: $categories\n            search: $search\n            limit: $limit\n            offset: $offset\n        ) {\n            rows {\n                id\n                category\n                subject\n                status\n                requesterEmail\n                requesterName\n                requesterUserId\n                requesterUsername\n                messageCount\n                createdAt\n                lastMessageAt\n            }\n            total\n            limit\n            offset\n        }\n    }\n": typeof types.AdminSupportTicketsDocument,
     "\n    query AdminSupportTicket($id: ID!) {\n        adminSupportTicket(id: $id) {\n            id\n            category\n            subject\n            status\n            requesterEmail\n            requesterName\n            requesterUserId\n            requesterUsername\n            createdAt\n            updatedAt\n            lastMessageAt\n            messages {\n                id\n                direction\n                body\n                authorUserId\n                createdAt\n            }\n        }\n    }\n": typeof types.AdminSupportTicketDocument,
@@ -277,6 +282,8 @@ const documents: Documents = {
     "\n    mutation SendChatMessage($conversationId: ID!, $body: String!) {\n        sendChatMessage(conversationId: $conversationId, body: $body) {\n            id\n            conversationId\n            senderId\n            kind\n            body\n            createdAt\n            status\n        }\n    }\n": types.SendChatMessageDocument,
     "\n    mutation MarkConversationRead($conversationId: ID!) {\n        markConversationRead(conversationId: $conversationId)\n    }\n": types.MarkConversationReadDocument,
     "\n    mutation MarkConversationDelivered($conversationId: ID!) {\n        markConversationDelivered(conversationId: $conversationId)\n    }\n": types.MarkConversationDeliveredDocument,
+    "\n    mutation ClearConversation($conversationId: ID!) {\n        clearConversation(conversationId: $conversationId)\n    }\n": types.ClearConversationDocument,
+    "\n    mutation DeleteConversation($conversationId: ID!) {\n        deleteConversation(conversationId: $conversationId)\n    }\n": types.DeleteConversationDocument,
     "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": types.MyAthletesDocument,
     "\n    query MyAthleteRoster($from: String, $to: String) {\n        myAthleteRoster(from: $from, to: $to) {\n            athleteId\n            coachedSince\n            lastSessionAt\n            daysSinceLastSession\n            nextSessionAt\n            adherenceRate\n            plannedCompleted\n            plannedMissed\n            plannedDue\n            attention\n        }\n    }\n": types.MyAthleteRosterDocument,
     "\n    query MyAthlete($athleteId: ID!) {\n        myAthlete(athleteId: $athleteId) {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": types.MyAthleteDocument,
@@ -309,6 +316,9 @@ const documents: Documents = {
     "\n    query Ping {\n        ping\n    }\n": types.PingDocument,
     "\n    query MyProfile {\n        myProfile {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n            createdAt\n            updatedAt\n        }\n    }\n": types.MyProfileDocument,
     "\n    mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n        }\n    }\n": types.UpdateProfileDocument,
+    "\n    query PushPublicKey {\n        pushPublicKey\n    }\n": types.PushPublicKeyDocument,
+    "\n    mutation RegisterPushSubscription($input: RegisterPushSubscriptionInput!) {\n        registerPushSubscription(input: $input)\n    }\n": types.RegisterPushSubscriptionDocument,
+    "\n    mutation RemovePushSubscription($endpoint: String!) {\n        removePushSubscription(endpoint: $endpoint)\n    }\n": types.RemovePushSubscriptionDocument,
     "\n    mutation SendContactMessage($input: ContactInput!) {\n        sendContactMessage(input: $input)\n    }\n": types.SendContactMessageDocument,
     "\n    query AdminSupportTickets(\n        $statuses: [String!]\n        $categories: [String!]\n        $search: String\n        $limit: Int\n        $offset: Int\n    ) {\n        adminSupportTickets(\n            statuses: $statuses\n            categories: $categories\n            search: $search\n            limit: $limit\n            offset: $offset\n        ) {\n            rows {\n                id\n                category\n                subject\n                status\n                requesterEmail\n                requesterName\n                requesterUserId\n                requesterUsername\n                messageCount\n                createdAt\n                lastMessageAt\n            }\n            total\n            limit\n            offset\n        }\n    }\n": types.AdminSupportTicketsDocument,
     "\n    query AdminSupportTicket($id: ID!) {\n        adminSupportTicket(id: $id) {\n            id\n            category\n            subject\n            status\n            requesterEmail\n            requesterName\n            requesterUserId\n            requesterUsername\n            createdAt\n            updatedAt\n            lastMessageAt\n            messages {\n                id\n                direction\n                body\n                authorUserId\n                createdAt\n            }\n        }\n    }\n": types.AdminSupportTicketDocument,
@@ -753,6 +763,14 @@ export function graphql(source: "\n    mutation MarkConversationDelivered($conve
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n    mutation ClearConversation($conversationId: ID!) {\n        clearConversation(conversationId: $conversationId)\n    }\n"): (typeof documents)["\n    mutation ClearConversation($conversationId: ID!) {\n        clearConversation(conversationId: $conversationId)\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation DeleteConversation($conversationId: ID!) {\n        deleteConversation(conversationId: $conversationId)\n    }\n"): (typeof documents)["\n    mutation DeleteConversation($conversationId: ID!) {\n        deleteConversation(conversationId: $conversationId)\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n"): (typeof documents)["\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -878,6 +896,18 @@ export function graphql(source: "\n    query MyProfile {\n        myProfile {\n 
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n        }\n    }\n"): (typeof documents)["\n    mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n            userId\n            displayName\n            firstName\n            lastName\n            birthDate\n            sex\n            heightCm\n            bio\n            country\n            timezone\n            locale\n            avatarUrl\n        }\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    query PushPublicKey {\n        pushPublicKey\n    }\n"): (typeof documents)["\n    query PushPublicKey {\n        pushPublicKey\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation RegisterPushSubscription($input: RegisterPushSubscriptionInput!) {\n        registerPushSubscription(input: $input)\n    }\n"): (typeof documents)["\n    mutation RegisterPushSubscription($input: RegisterPushSubscriptionInput!) {\n        registerPushSubscription(input: $input)\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation RemovePushSubscription($endpoint: String!) {\n        removePushSubscription(endpoint: $endpoint)\n    }\n"): (typeof documents)["\n    mutation RemovePushSubscription($endpoint: String!) {\n        removePushSubscription(endpoint: $endpoint)\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

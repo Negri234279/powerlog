@@ -7,6 +7,8 @@ import type { AuthUser } from '../../../../auth/auth-user'
 import { CurrentUser } from '../../../../auth/current-user.decorator'
 import { JwtCookieGuard } from '../../../../auth/jwt-cookie.guard'
 import { ZodValidationPipe } from '../../../../shared/zod-validation.pipe'
+import { ClearConversationCommand } from '../../application/commands/clear-conversation/clear-conversation.command'
+import { DeleteConversationCommand } from '../../application/commands/delete-conversation/delete-conversation.command'
 import { MarkConversationDeliveredCommand } from '../../application/commands/mark-conversation-delivered/mark-conversation-delivered.command'
 import { MarkConversationReadCommand } from '../../application/commands/mark-conversation-read/mark-conversation-read.command'
 import { SendChatMessageCommand } from '../../application/commands/send-chat-message/send-chat-message.command'
@@ -125,5 +127,29 @@ export class ChatResolver {
         const command = new MarkConversationDeliveredCommand(user.userId, conversationId)
 
         return this.commandBus.execute<MarkConversationDeliveredCommand, boolean>(command)
+    }
+
+    @Mutation(() => Boolean, {
+        description: 'Clear the caller’s view of a conversation (hide its history; keep it in the inbox).',
+    })
+    async clearConversation(
+        @CurrentUser() user: AuthUser,
+        @Args('conversationId', { type: () => ID }, new ZodValidationPipe(uuidArg)) conversationId: string,
+    ): Promise<boolean> {
+        const command = new ClearConversationCommand(user.userId, conversationId)
+
+        return this.commandBus.execute<ClearConversationCommand, boolean>(command)
+    }
+
+    @Mutation(() => Boolean, {
+        description: 'Delete the caller’s view of a conversation (clear it and drop it from the inbox until a new message).',
+    })
+    async deleteConversation(
+        @CurrentUser() user: AuthUser,
+        @Args('conversationId', { type: () => ID }, new ZodValidationPipe(uuidArg)) conversationId: string,
+    ): Promise<boolean> {
+        const command = new DeleteConversationCommand(user.userId, conversationId)
+
+        return this.commandBus.execute<DeleteConversationCommand, boolean>(command)
     }
 }

@@ -35,6 +35,20 @@ describe('ListChatMessagesHandler', () => {
             MessageMother.create().withId(id).in(CONVERSATION).from(from).createdAtTime(new Date(at)).build(),
         )
 
+    it('should_hide_messages_at_or_before_the_viewers_clear_watermark', async () => {
+        await seed('m-1', COACH, '2026-01-01T10:00:00Z')
+        await seed('m-2', COACH, '2026-01-01T10:01:00Z')
+        await seed('m-3', COACH, '2026-01-01T10:02:00Z')
+        // The coach cleared their chat at 10:01 — only strictly-newer messages remain.
+        const cleared = ParticipantStateEntity.empty(CONVERSATION, COACH)
+        cleared.clear(new Date('2026-01-01T10:01:00Z'))
+        await participantStates.upsert(cleared)
+
+        const page = await handler.execute(new ListChatMessagesQuery(COACH, CONVERSATION, 10))
+
+        expect(page.items.map((i) => i.message.id)).toEqual(['m-3'])
+    })
+
     it('should_paginate_by_cursor_newest_first', async () => {
         await seed('m-1', COACH, '2026-01-01T10:00:00Z')
         await seed('m-2', COACH, '2026-01-01T10:01:00Z')
@@ -61,6 +75,8 @@ describe('ListChatMessagesHandler', () => {
             lastDeliveredMessageId: 'm-2',
             lastReadMessageId: 'm-1',
             lastReadAt: new Date('2026-01-01T10:00:30Z'),
+            clearedAt: null,
+            hiddenAt: null,
         })
         await participantStates.upsert(athleteState)
 

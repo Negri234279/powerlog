@@ -11,6 +11,7 @@ export default defineConfig({
     schema: [
         './src/modules/**/infrastructure/persistence/schema/*.schema.ts',
         './src/presence/infrastructure/schema/*.schema.ts',
+        './src/push/infrastructure/schema/*.schema.ts',
     ],
     out: './drizzle',
     dbCredentials: {

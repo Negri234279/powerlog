@@ -144,6 +144,20 @@ export const envSchema = z.object({
     PAYPAL_WEBHOOK_ID: z.string().default(''),
     PAYPAL_ENV: z.enum(['sandbox', 'live']).default('sandbox'),
 
+    // ── Web Push (VAPID) ───────────────────────────────────────────
+    // Optional on purpose, like REDIS_URL and the payment keys: with no key pair
+    // the push channel is simply off — `pushPublicKey` returns null, the register
+    // mutation returns false, and nothing is ever sent — and the app runs
+    // unchanged (dev and the test suites live here). Generate the pair once with
+    // `web-push generate-vapid-keys`; ROTATING them invalidates every existing
+    // browser subscription. The public key is served to the client via GraphQL;
+    // the private key never leaves the API.
+    VAPID_PUBLIC_KEY: z.string().default(''),
+    VAPID_PRIVATE_KEY: z.string().default(''),
+    // The VAPID `sub` claim: a mailto: or https: contact the push service can
+    // reach about this application server. Only used when the key pair is set.
+    VAPID_SUBJECT: z.string().default('mailto:admin@powerlog.app'),
+
     // ── Observability (OpenTelemetry → Tempo) ──────────────────────
     OTEL_SERVICE_NAME: z.string().default('powerlog-api'),
     // OTLP/HTTP base endpoint. Empty (or OTEL_SDK_DISABLED) disables exporting.

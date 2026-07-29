@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
+import { LOGOUT_MARKER_COOKIE } from '@/lib/auth/logout-marker'
+
 // The refresh cookie name matches the API default (REFRESH_COOKIE_NAME). Because
 // the browser only talks to the same-origin BFF proxy (/api/*), this HTTPOnly
 // cookie is first-party here, so the proxy can read it.
@@ -55,6 +57,17 @@ export function proxy(req: NextRequest) {
     // the user: /dashboard's gate fails the refresh, which clears both cookies and
     // drops them on /login — from where the landing is reachable again.
     if (SIGNED_IN_ELSEWHERE.includes(pathname) && hasSession) {
+        // Circuit breaker: a just-failed refresh sets this marker on its way to
+        // /login. If the refresh cookie couldn't be cleared (e.g. a Domain
+        // mismatch), bouncing this "still signed in" user back to /dashboard would
+        // fail the refresh again and loop forever. Honour the marker once — keep
+        // them on /login and consume it, so a genuine later login isn't affected.
+        if (req.cookies.has(LOGOUT_MARKER_COOKIE)) {
+            const res = NextResponse.next()
+            res.cookies.set(LOGOUT_MARKER_COOKIE, '', { path: '/', maxAge: 0 })
+            return res
+        }
+
         const url = req.nextUrl.clone()
         url.pathname = '/dashboard'
         return NextResponse.redirect(url)

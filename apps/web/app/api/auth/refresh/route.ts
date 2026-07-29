@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
+import { LOGOUT_MARKER_COOKIE, LOGOUT_MARKER_MAX_AGE_SECONDS } from '@/lib/auth/logout-marker'
 import { serverEnv } from '@/lib/env.server'
 import { log } from '@/lib/log/server'
 
@@ -36,6 +37,14 @@ function relativeRedirect(path: string): NextResponse {
     return new NextResponse(null, { status: 307, headers: { location: path } })
 }
 
+/** A Set-Cookie string that expires `name` immediately in the given scope. */
+function expiredCookie(name: string, domain?: string): string {
+    const parts = [`${name}=`, 'Path=/', 'Max-Age=0', 'HttpOnly', 'SameSite=Lax']
+    if (serverEnv.cookieSecure) parts.push('Secure')
+    if (domain) parts.push(`Domain=${domain}`)
+    return parts.join('; ')
+}
+
 /**
  * Redirect to login with the auth cookies cleared. A failed refresh means the
  * session is dead, so we drop the stale cookies — otherwise `pl_rt` lingers for
@@ -44,8 +53,33 @@ function relativeRedirect(path: string): NextResponse {
  */
 function loggedOutRedirect(): NextResponse {
     const res = relativeRedirect('/login')
-    res.cookies.set(serverEnv.authCookieName, '', { path: '/', maxAge: 0 })
-    res.cookies.set(serverEnv.refreshCookieName, '', { path: '/', maxAge: 0 })
+
+    // Expire the auth cookies in BOTH scopes: the host-only scope the API now sets,
+    // and the legacy Domain-scoped one (a cookie is only deleted by a Set-Cookie
+    // carrying the SAME Domain it was set with). Without the Domain-scoped expiry an
+    // orphaned `pl_rt` survives, shadows the fresh host-only cookie, and every
+    // refresh fails → the 15-min logout. Same-name duplicates must be *separate*
+    // Set-Cookie headers, so we append raw strings — `res.cookies.set` is a by-name
+    // map and would collapse them into one.
+    for (const name of [serverEnv.authCookieName, serverEnv.refreshCookieName]) {
+        res.headers.append('set-cookie', expiredCookie(name))
+        if (serverEnv.cookieDomain) {
+            res.headers.append('set-cookie', expiredCookie(name, serverEnv.cookieDomain))
+        }
+    }
+
+    // Belt-and-braces: tell the proxy we just logged out, so /login sticks even if a
+    // cookie above couldn't be cleared — otherwise it loops (see the proxy).
+    // Host-only + short-lived: it only needs to survive the hop to /login.
+    //
+    // Appended raw, NOT via `res.cookies.set`: constructing `ResponseCookies` reparses
+    // the Set-Cookie headers into a by-name map, which collapses our same-name
+    // host-only/Domain `pl_rt`/`pl_at` pairs into one AND drops their `Max-Age=0` — so
+    // the auth cookies would no longer be cleared at all.
+    const marker = [`${LOGOUT_MARKER_COOKIE}=1`, 'Path=/', `Max-Age=${LOGOUT_MARKER_MAX_AGE_SECONDS}`, 'SameSite=Lax']
+    if (serverEnv.cookieSecure) marker.push('Secure')
+    res.headers.append('set-cookie', marker.join('; '))
+
     return res
 }
 
@@ -59,12 +93,13 @@ function loggedOutRedirect(): NextResponse {
  */
 export async function GET(req: NextRequest): Promise<NextResponse> {
     const next = sanitizeNext(req.nextUrl.searchParams.get('next'))
+    const cookieHeader = req.headers.get('cookie') ?? ''
 
     let apiRes: Response
     try {
         apiRes = await fetch(`${serverEnv.apiInternalUrl}/graphql`, {
             method: 'POST',
-            headers: { 'content-type': 'application/json', cookie: req.headers.get('cookie') ?? '' },
+            headers: { 'content-type': 'application/json', cookie: cookieHeader },
             body: JSON.stringify({ query: 'mutation { refresh { id } }' }),
             cache: 'no-store',
         })

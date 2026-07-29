@@ -1359,6 +1359,11 @@ type Mutation {
   changePlan(planPriceId: ID!): String
 
   """
+  Clear the caller’s view of a conversation (hide its history; keep it in the inbox).
+  """
+  clearConversation(conversationId: ID!): Boolean!
+
+  """
   Mark a set done (success | failed), logging what was actually performed.
   """
   completeSet(input: CompleteSetInput!): WorkoutSession!
@@ -1411,6 +1416,11 @@ type Mutation {
 
   """Forget the stored key for a provider. Idempotent."""
   deleteAiProviderKey(provider: String!): Boolean!
+
+  """
+  Delete the caller’s view of a conversation (clear it and drop it from the inbox until a new message).
+  """
+  deleteConversation(conversationId: ID!): Boolean!
 
   """Delete a catalog exercise (blocked if used in any workout)."""
   deleteExercise(exerciseId: ID!): Boolean!
@@ -1524,12 +1534,22 @@ type Mutation {
   register(input: RegisterInput!): Me!
 
   """
+  Register a browser push subscription for the caller. False when push is not configured.
+  """
+  registerPushSubscription(input: RegisterPushSubscriptionInput!): Boolean!
+
+  """
   Stop coaching an athlete (coaches only). They keep everything you planned for them; you lose access to it.
   """
   removeAthlete(athleteId: ID!): Boolean!
 
   """Remove an exercise (and its sets) from a session."""
   removeExerciseEntry(entryId: ID!, sessionId: ID!): WorkoutSession!
+
+  """
+  Remove one of the caller's push subscriptions by endpoint (no-op if not theirs).
+  """
+  removePushSubscription(endpoint: String!): Boolean!
 
   """Remove a set from an exercise entry."""
   removeSet(entryId: ID!, sessionId: ID!, setId: ID!): WorkoutSession!
@@ -2227,6 +2247,11 @@ type Query {
   """
   planDraftById(draftId: ID!): AiPlanDraft
 
+  """
+  VAPID public key for Web Push subscriptions; null when push is not configured.
+  """
+  pushPublicKey: String
+
   """The proposal awaiting a decision on this session, if any."""
   sessionPlanDraft(sessionId: ID!): AiPlanDraft
 
@@ -2317,6 +2342,23 @@ input RegisterInput {
 
   """Public handle: 3–30 chars of a–z, 0–9 or underscore."""
   username: String!
+}
+
+input RegisterPushSubscriptionInput {
+  """The subscription's auth secret (base64url)."""
+  auth: String!
+
+  """The push service URL the browser issued for this subscription."""
+  endpoint: String!
+
+  """UI locale, for localising the notification text (defaults to en)."""
+  locale: String
+
+  """The subscription's p256dh public key (base64url)."""
+  p256dh: String!
+
+  """User-agent string, for a future "your devices" view."""
+  userAgent: String
 }
 
 input ResetPasswordInput {

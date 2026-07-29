@@ -60,6 +60,8 @@ export const METRIC = {
     chatWsConnections: 'powerlog_chat_ws_connections',
     chatMessages: 'powerlog_chat_messages_total',
     presenceOnlineUsers: 'powerlog_presence_online_users',
+    pushSent: 'powerlog_push_sent_total',
+    pushSubscriptions: 'powerlog_push_subscriptions',
 } as const
 
 // Latency buckets in seconds (web/API request + DB call range).
@@ -457,5 +459,21 @@ export const metricsProviders = [
     makeGaugeProvider({
         name: METRIC.presenceOnlineUsers,
         help: 'Users currently online over the realtime socket (per process).',
+    }),
+    // Web Push deliveries by outcome (set by PushService). `gone` counts the
+    // subscriptions the push service dropped (404/410) — pruned on the spot; a
+    // rising `error` is a VAPID misconfiguration or a push service outage.
+    // `status` is a bounded enum (sent/gone/error), no ids.
+    makeCounterProvider({
+        name: METRIC.pushSent,
+        help: 'Web Push deliveries attempted, by outcome (sent / gone / error).',
+        labelNames: ['status'],
+    }),
+    // How many browser push subscriptions exist right now — the adoption signal,
+    // sampled at scrape time (set by PushStateMetrics). 0 while the feature is
+    // configured means nobody has opted in yet.
+    makeGaugeProvider({
+        name: METRIC.pushSubscriptions,
+        help: 'Current number of registered Web Push subscriptions.',
     }),
 ]
