@@ -1,10 +1,22 @@
-import { type InfiniteData, useInfiniteQuery, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import {
+    type InfiniteData,
+    useInfiniteQuery,
+    useMutation,
+    useQuery,
+    useQueryClient,
+    type QueryClient,
+} from '@tanstack/react-query'
 
 import type { ListChatConversationsQuery, ListChatMessagesQuery } from '@/lib/graphql/__generated__/graphql'
 import { gqlRequest } from '@/lib/graphql/client'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import { useMyAthletes, useMyCoaches } from '@/lib/graphql/hooks/use-coaching'
-import { ListChatConversationsDocument, ListChatMessagesDocument } from '@/lib/graphql/operations/chat'
+import {
+    ClearConversationDocument,
+    DeleteConversationDocument,
+    ListChatConversationsDocument,
+    ListChatMessagesDocument,
+} from '@/lib/graphql/operations/chat'
 
 export type ChatConversation = ListChatConversationsQuery['listChatConversations'][number]
 export type ChatMessagesPage = ListChatMessagesQuery['listChatMessages']
@@ -22,6 +34,36 @@ export function useChatConversations(enabled = true) {
         queryFn: async () => (await gqlRequest(ListChatConversationsDocument)).listChatConversations,
         enabled,
         retry: false,
+    })
+}
+
+/**
+ * "Clear chat": hide the conversation's history from the caller only (the row
+ * stays in the inbox). Refreshes the inbox and drops the now-cleared message cache.
+ */
+export function useClearConversation() {
+    const qc = useQueryClient()
+    return useMutation({
+        mutationFn: (conversationId: string) => gqlRequest(ClearConversationDocument, { conversationId }),
+        onSuccess: (_data, conversationId) => {
+            void qc.invalidateQueries({ queryKey: CHAT_CONVERSATIONS_KEY })
+            void qc.invalidateQueries({ queryKey: chatMessagesKey(conversationId) })
+        },
+    })
+}
+
+/**
+ * "Delete chat": clear the conversation and drop it from the caller's inbox until a
+ * newer message arrives. Per-user — the counterpart keeps their view.
+ */
+export function useDeleteConversation() {
+    const qc = useQueryClient()
+    return useMutation({
+        mutationFn: (conversationId: string) => gqlRequest(DeleteConversationDocument, { conversationId }),
+        onSuccess: (_data, conversationId) => {
+            void qc.invalidateQueries({ queryKey: CHAT_CONVERSATIONS_KEY })
+            void qc.removeQueries({ queryKey: chatMessagesKey(conversationId) })
+        },
     })
 }
 

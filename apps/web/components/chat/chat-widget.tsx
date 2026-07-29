@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
 import { Conversation } from '@/components/chat/conversation'
-import { InboxRow } from '@/components/chat/inbox-row'
+import { ConversationRow } from '@/components/chat/conversation-row'
 import { UnreadBadge } from '@/components/chat/unread-badge'
 import { ChatBubble, ChevronLeft, Close, Spinner } from '@/components/ui/icons'
 import { TrackedButton } from '@/components/ui/tracked'
@@ -99,11 +99,14 @@ export function ChatWidget() {
                                 ) : (
                                     <div className="divide-y divide-hairline">
                                         {rows.map((row) => (
-                                            <InboxRow
+                                            <ConversationRow
                                                 key={row.conversationId}
                                                 row={row}
                                                 meId={me.id}
                                                 onSelect={() => setSelectedId(row.conversationId)}
+                                                onDeleted={(id) =>
+                                                    setSelectedId((current) => (current === id ? null : current))
+                                                }
                                             />
                                         ))}
                                     </div>

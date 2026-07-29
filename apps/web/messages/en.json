@@ -58,7 +58,15 @@
         "you": "You:",
         "back": "Back",
         "collapse": "Collapse chat",
-        "close": "Close chat"
+        "close": "Close chat",
+        "rowMenu": "Conversation options",
+        "clearChat": "Clear chat",
+        "deleteChat": "Delete chat",
+        "cancel": "Cancel",
+        "clearChatTitle": "Clear this chat?",
+        "clearChatBody": "Your messages with {user} will be hidden for you only. The conversation stays in your list and {user} keeps their history.",
+        "deleteChatTitle": "Delete this chat?",
+        "deleteChatBody": "The chat with {user} will disappear from your list and its history will be hidden for you. {user} keeps theirs, and the conversation reappears if they message you."
     },
     "coaching": {
         "eyebrow": "Coaching",

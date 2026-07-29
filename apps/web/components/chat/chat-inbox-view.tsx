@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { Conversation } from '@/components/chat/conversation'
-import { InboxRow } from '@/components/chat/inbox-row'
+import { ConversationRow } from '@/components/chat/conversation-row'
 import { ChevronLeft, Spinner } from '@/components/ui/icons'
 import { TextsReveal } from '@/components/ui/texts-reveal'
 import { TrackedButton } from '@/components/ui/tracked'
@@ -54,12 +54,13 @@ export function ChatInboxView() {
                     ) : (
                         <div className="divide-y divide-hairline">
                             {rows.map((row) => (
-                                <InboxRow
+                                <ConversationRow
                                     key={row.conversationId}
                                     row={row}
                                     selected={row.conversationId === selectedId}
                                     meId={me?.id}
                                     onSelect={() => setSelectedId(row.conversationId)}
+                                    onDeleted={(id) => setSelectedId((current) => (current === id ? null : current))}
                                 />
                             ))}
                         </div>

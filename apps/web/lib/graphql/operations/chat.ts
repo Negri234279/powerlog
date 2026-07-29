@@ -69,3 +69,17 @@ export const MarkConversationDeliveredDocument = graphql(`
         markConversationDelivered(conversationId: $conversationId)
     }
 `)
+
+/** Clear the caller's view of a conversation (hide history; keep it in the inbox). */
+export const ClearConversationDocument = graphql(`
+    mutation ClearConversation($conversationId: ID!) {
+        clearConversation(conversationId: $conversationId)
+    }
+`)
+
+/** Delete the caller's view of a conversation (clear it and drop it from the inbox). */
+export const DeleteConversationDocument = graphql(`
+    mutation DeleteConversation($conversationId: ID!) {
+        deleteConversation(conversationId: $conversationId)
+    }
+`)

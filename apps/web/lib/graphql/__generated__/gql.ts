@@ -112,6 +112,8 @@ type Documents = {
     "\n    mutation SendChatMessage($conversationId: ID!, $body: String!) {\n        sendChatMessage(conversationId: $conversationId, body: $body) {\n            id\n            conversationId\n            senderId\n            kind\n            body\n            createdAt\n            status\n        }\n    }\n": typeof types.SendChatMessageDocument,
     "\n    mutation MarkConversationRead($conversationId: ID!) {\n        markConversationRead(conversationId: $conversationId)\n    }\n": typeof types.MarkConversationReadDocument,
     "\n    mutation MarkConversationDelivered($conversationId: ID!) {\n        markConversationDelivered(conversationId: $conversationId)\n    }\n": typeof types.MarkConversationDeliveredDocument,
+    "\n    mutation ClearConversation($conversationId: ID!) {\n        clearConversation(conversationId: $conversationId)\n    }\n": typeof types.ClearConversationDocument,
+    "\n    mutation DeleteConversation($conversationId: ID!) {\n        deleteConversation(conversationId: $conversationId)\n    }\n": typeof types.DeleteConversationDocument,
     "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": typeof types.MyAthletesDocument,
     "\n    query MyAthleteRoster($from: String, $to: String) {\n        myAthleteRoster(from: $from, to: $to) {\n            athleteId\n            coachedSince\n            lastSessionAt\n            daysSinceLastSession\n            nextSessionAt\n            adherenceRate\n            plannedCompleted\n            plannedMissed\n            plannedDue\n            attention\n        }\n    }\n": typeof types.MyAthleteRosterDocument,
     "\n    query MyAthlete($athleteId: ID!) {\n        myAthlete(athleteId: $athleteId) {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": typeof types.MyAthleteDocument,
@@ -280,6 +282,8 @@ const documents: Documents = {
     "\n    mutation SendChatMessage($conversationId: ID!, $body: String!) {\n        sendChatMessage(conversationId: $conversationId, body: $body) {\n            id\n            conversationId\n            senderId\n            kind\n            body\n            createdAt\n            status\n        }\n    }\n": types.SendChatMessageDocument,
     "\n    mutation MarkConversationRead($conversationId: ID!) {\n        markConversationRead(conversationId: $conversationId)\n    }\n": types.MarkConversationReadDocument,
     "\n    mutation MarkConversationDelivered($conversationId: ID!) {\n        markConversationDelivered(conversationId: $conversationId)\n    }\n": types.MarkConversationDeliveredDocument,
+    "\n    mutation ClearConversation($conversationId: ID!) {\n        clearConversation(conversationId: $conversationId)\n    }\n": types.ClearConversationDocument,
+    "\n    mutation DeleteConversation($conversationId: ID!) {\n        deleteConversation(conversationId: $conversationId)\n    }\n": types.DeleteConversationDocument,
     "\n    query MyAthletes {\n        myAthletes {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": types.MyAthletesDocument,
     "\n    query MyAthleteRoster($from: String, $to: String) {\n        myAthleteRoster(from: $from, to: $to) {\n            athleteId\n            coachedSince\n            lastSessionAt\n            daysSinceLastSession\n            nextSessionAt\n            adherenceRate\n            plannedCompleted\n            plannedMissed\n            plannedDue\n            attention\n        }\n    }\n": types.MyAthleteRosterDocument,
     "\n    query MyAthlete($athleteId: ID!) {\n        myAthlete(athleteId: $athleteId) {\n            userId\n            username\n            firstName\n            lastName\n            avatarUrl\n        }\n    }\n": types.MyAthleteDocument,
@@ -756,6 +760,14 @@ export function graphql(source: "\n    mutation MarkConversationRead($conversati
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n    mutation MarkConversationDelivered($conversationId: ID!) {\n        markConversationDelivered(conversationId: $conversationId)\n    }\n"): (typeof documents)["\n    mutation MarkConversationDelivered($conversationId: ID!) {\n        markConversationDelivered(conversationId: $conversationId)\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation ClearConversation($conversationId: ID!) {\n        clearConversation(conversationId: $conversationId)\n    }\n"): (typeof documents)["\n    mutation ClearConversation($conversationId: ID!) {\n        clearConversation(conversationId: $conversationId)\n    }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n    mutation DeleteConversation($conversationId: ID!) {\n        deleteConversation(conversationId: $conversationId)\n    }\n"): (typeof documents)["\n    mutation DeleteConversation($conversationId: ID!) {\n        deleteConversation(conversationId: $conversationId)\n    }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

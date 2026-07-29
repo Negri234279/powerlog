@@ -18,11 +18,13 @@ export function InboxRow({
     selected = false,
     meId,
     onSelect,
+    className,
 }: {
     row: ChatConversation
     selected?: boolean
     meId: string | undefined
     onSelect: () => void
+    className?: string
 }) {
     const t = useTranslations('chat')
     const socket = useChatSocket()
@@ -41,6 +43,7 @@ export function InboxRow({
             className={cn(
                 'flex w-full items-center gap-3 px-3 py-3 text-left transition-colors duration-200 hover:bg-white/[0.03]',
                 selected && 'bg-white/[0.05]',
+                className,
             )}
         >
             <span className="relative shrink-0">
