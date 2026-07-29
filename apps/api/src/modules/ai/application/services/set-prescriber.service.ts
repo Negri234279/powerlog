@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 
+import type { AiProvider } from '../../../../shared/ai-provider'
 import type { LlmMessage } from '../../../../ai/llm-provider.port'
 import type { SessionPlanContext } from '../../../../shared/contracts/session-plan-context'
 import type { AiProviderConfigAggregate } from '../../domain/entities/ai-provider-config.entity'
@@ -21,14 +22,20 @@ export class SetPrescriber {
         return this.resolver.resolve(userId)
     }
 
+    /** The config for a specific provider (a refinement runs on the draft's own). */
+    async resolveConfigForProvider(userId: string, provider: AiProvider): Promise<AiProviderConfigAggregate> {
+        return this.resolver.resolveProvider(userId, provider)
+    }
+
     /**
      * Asks the model to program the session. `thread` carries the refinement
-     * conversation so far (empty on the first proposal).
+     * conversation so far (empty on the first proposal), and `model` forces the
+     * draft's model on a refinement so the conversation stays on one model.
      */
     async prescribe(
         config: AiProviderConfigAggregate,
         context: SessionPlanContext,
-        options: { thread?: readonly LlmMessage[]; extraInfo?: string | null } = {},
+        options: { thread?: readonly LlmMessage[]; extraInfo?: string | null; model?: string } = {},
     ): Promise<ParsedPlan> {
         const expectedEntryIds = context.exercises.map((exercise) => exercise.entryId)
         const messages: LlmMessage[] = [
@@ -38,7 +45,7 @@ export class SetPrescriber {
 
         return this.conversation.ask(
             config,
-            { system: PLAN_SYSTEM_PROMPT, messages },
+            { system: PLAN_SYSTEM_PROMPT, messages, model: options.model },
             (text) => parsePlanResponse(text, expectedEntryIds),
             () => new InvalidAiPlanResponseError(),
         )

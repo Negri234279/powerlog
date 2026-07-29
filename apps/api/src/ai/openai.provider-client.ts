@@ -6,8 +6,20 @@ import {
     type LlmCompletionRequest,
     type LlmModel,
     LlmProviderClient,
+    type LlmSystemBlock,
 } from './llm-provider.port'
 import { callProvider } from './provider-error'
+
+/**
+ * OpenAI takes a single system message, not cache-annotated blocks: caching is
+ * automatic on the prompt prefix. Join the blocks in order — the stable ones lead,
+ * so the shared prefix is as long as possible — and drop the `cache` flags.
+ */
+function toOpenAiSystemText(system: string | LlmSystemBlock[] | undefined): string | undefined {
+    if (system === undefined || typeof system === 'string') return system
+
+    return system.map((block) => block.text).join('\n\n')
+}
 
 const REQUEST_TIMEOUT_MS = 120_000
 const DEFAULT_MAX_TOKENS = 4096
@@ -62,11 +74,12 @@ export class OpenAiProviderClient extends LlmProviderClient {
         const client = this.clientFor(request.apiKey)
 
         return callProvider(this.provider, async () => {
+            const systemText = toOpenAiSystemText(request.system)
             const response = await client.chat.completions.create({
                 model: request.model,
                 max_completion_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
                 messages: [
-                    ...(request.system ? [{ role: 'system' as const, content: request.system }] : []),
+                    ...(systemText ? [{ role: 'system' as const, content: systemText }] : []),
                     ...request.messages,
                 ],
             })

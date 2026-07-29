@@ -90,6 +90,16 @@ function serialiseCatalog(catalog: readonly CatalogExercise[]): string {
         .join('\n')
 }
 
+/**
+ * The catalog as a standalone system block (IA.3). It is identical for every user
+ * and every call, so it lives in `system` behind a cache cut point rather than in
+ * the volatile user prompt — the ~6–8k tokens are then read from cache on the
+ * second call onward (a refinement, or the next athlete on the same model).
+ */
+export function buildMesocycleCatalogBlock(catalog: readonly CatalogExercise[]): string {
+    return `Exercise catalog — you may only program these, addressed by slug:\n${serialiseCatalog(catalog)}`
+}
+
 function serialiseStrength(strength: readonly AthleteStrength[]): string {
     if (strength.length === 0) return 'None on record — this athlete has no logged training. Leave every weight null.'
 
@@ -120,13 +130,13 @@ export function buildMesocycleUserPrompt(context: MesocycleDesignContext, reques
         goal: request.goal,
     }
 
+    // The exercise catalog is NOT here: it is a stable, per-nobody block that rides
+    // in `system` behind a cache cut point (see `buildMesocycleCatalogBlock`). Only
+    // the volatile, per-athlete parts belong in the user prompt.
     return `Design the template training week for this block.
 
 Block parameters (these are fixed — design to them):
 ${JSON.stringify(parameters, null, 2)}
-
-Exercise catalog — you may only program these, addressed by slug:
-${serialiseCatalog(context.catalog)}
 
 The athlete's estimated one-rep max on the lifts they have trained:
 ${serialiseStrength(context.strength)}${serialiseRequest(request.prompt)}`

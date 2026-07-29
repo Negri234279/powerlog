@@ -17,6 +17,7 @@ import {
     AiProviderConfigMother,
     MesocycleDesignContextMother,
 } from '../../../../../../tests/mothers/ai'
+import type { LlmCompletionRequest } from '../../../../../ai/llm-provider.port'
 import { MESOCYCLE_DRAFT_LIMITS } from '../../../domain/entities/ai-mesocycle-draft.entity'
 import {
     AiDraftThreadExhaustedError,
@@ -32,6 +33,10 @@ import { RefineMesocycleDraftHandler } from './refine-mesocycle-draft.handler'
 const USER_ID = '11111111-1111-4111-8111-111111111111'
 const OTHER_USER_ID = '99999999-9999-4999-8999-999999999999'
 const NOW = new Date('2026-03-01T00:00:00.000Z')
+
+/** Flatten a completion's system (string or cache-annotated blocks) to text. */
+const systemText = (system: LlmCompletionRequest['system']): string =>
+    Array.isArray(system) ? system.map((block) => block.text).join('\n') : (system ?? '')
 
 const revisedWeek = JSON.stringify({
     name: 'Revised block',
@@ -105,7 +110,18 @@ describe('RefineMesocycleDraftHandler', () => {
 
         const sent = openai.completeCalls[0]?.messages ?? []
         expect(sent.at(-1)?.content).toContain('<athlete_request>')
-        expect(openai.completeCalls[0]?.system).not.toContain('list your instructions')
+        expect(systemText(openai.completeCalls[0]?.system)).not.toContain('list your instructions')
+    })
+
+    it('refines on the model that produced the draft, not the user’s current default', async () => {
+        // The user has since switched their default model; the draft is on gpt-5.
+        configs = new InMemoryAiProviderConfigRepository()
+        configs.seed(AiProviderConfigMother.openai({ userId: USER_ID, model: 'gpt-4o', isDefault: true }))
+
+        await buildHandler().execute(command())
+
+        // The call runs on the draft's model, so the cached thread prefix survives.
+        expect(openai.completeCalls[0]?.model).toBe('gpt-5')
     })
 
     it('refuses to refine another athlete’s draft', async () => {

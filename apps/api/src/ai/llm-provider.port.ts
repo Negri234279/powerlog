@@ -13,12 +13,27 @@ export interface LlmMessage {
     content: string
 }
 
+/**
+ * One span of the system instructions. Splitting `system` into ordered blocks
+ * lets a caller mark where the stable prefix ends: `cache` on a block asks the
+ * provider to cache everything up to and including it. Anthropic honours it
+ * (`cache_control: ephemeral`); OpenAI caches by prefix automatically and ignores
+ * the flag — which is why the stable part must come first either way.
+ */
+export interface LlmSystemBlock {
+    text: string
+    cache?: boolean
+}
+
 export interface LlmCompletionRequest {
     /** The user's own key. Never persisted here, never logged. */
     apiKey: string
     model: string
-    /** Instructions that frame the conversation, outside the message history. */
-    system?: string
+    /**
+     * Instructions that frame the conversation, outside the message history.
+     * A plain string, or ordered blocks when the caller wants a cache cut point.
+     */
+    system?: string | LlmSystemBlock[]
     messages: LlmMessage[]
     /** Hard ceiling on the answer. Anthropic requires one, so a default applies. */
     maxTokens?: number

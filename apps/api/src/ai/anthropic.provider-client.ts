@@ -7,11 +7,29 @@ import {
     type LlmCompletionRequest,
     type LlmModel,
     LlmProviderClient,
+    type LlmSystemBlock,
 } from './llm-provider.port'
 import { callProvider } from './provider-error'
 
 const REQUEST_TIMEOUT_MS = 120_000
 const DEFAULT_MAX_TOKENS = 4096
+
+/**
+ * Anthropic accepts `system` as a string or as an array of text blocks; only the
+ * array form can carry `cache_control`. A cached block marks the end of the
+ * prefix Anthropic should reuse across calls (the ~5-minute ephemeral cache).
+ */
+function toAnthropicSystem(
+    system: string | LlmSystemBlock[] | undefined,
+): string | Anthropic.TextBlockParam[] | undefined {
+    if (system === undefined || typeof system === 'string') return system
+
+    return system.map((block) => ({
+        type: 'text',
+        text: block.text,
+        ...(block.cache ? { cache_control: { type: 'ephemeral' } } : {}),
+    }))
+}
 
 /**
  * Anthropic adapter. Like the OpenAI one, a client is built per call because the
@@ -44,10 +62,11 @@ export class AnthropicProviderClient extends LlmProviderClient {
         const client = this.clientFor(request.apiKey)
 
         return callProvider(this.provider, async () => {
+            const system = toAnthropicSystem(request.system)
             const response = await client.messages.create({
                 model: request.model,
                 max_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
-                ...(request.system ? { system: request.system } : {}),
+                ...(system !== undefined ? { system } : {}),
                 messages: request.messages,
             })
 
