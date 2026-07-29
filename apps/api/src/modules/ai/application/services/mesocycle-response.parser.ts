@@ -11,8 +11,10 @@ import { ModelAnswerRejection, parseJsonObject } from './model-answer'
 
 const { daysPerWeek, exercisesPerDay, setsPerExercise } = MESOCYCLE_DRAFT_LIMITS
 
+// No `weightKg`: the model prescribes reps and an intensity target, and the
+// backend computes the kilograms from the athlete's e1RM (see `fillMesocycleLoads`
+// / `load-calculator`). A stray `weightKg` the model sends anyway is stripped.
 const setSchema = z.object({
-    weightKg: z.number().positive().max(1000).nullish(),
     reps: z.number().int().min(1).max(100).nullish(),
     rpe: z.number().min(1).max(10).nullish(),
     rir: z.number().int().min(0).max(10).nullish(),
@@ -105,7 +107,9 @@ export function parseMesocycleResponse(
 
                         return {
                             order: index + 1,
-                            plannedWeightKg: set.weightKg ?? null,
+                            // Filled by the backend from the athlete's e1RM; the
+                            // model no longer prescribes a weight.
+                            plannedWeightKg: null,
                             plannedReps: set.reps ?? null,
                             rpe,
                             rir,

@@ -14,6 +14,7 @@ import {
     MESOCYCLE_SYSTEM_PROMPT,
     type MesocycleDesignRequest,
 } from './mesocycle-prompt.service'
+import { fillMesocycleLoads } from './mesocycle-load-filler'
 import { type ParsedMesocycle, parseMesocycleResponse } from './mesocycle-response.parser'
 import { evaluateMesocycleRules } from './programming-rules'
 import { goalToObjective } from './programming-rules.config'
@@ -70,10 +71,13 @@ export class MesocycleDesigner {
             // soft warnings are counted on the answer that was ultimately kept.
             (text) => {
                 const parsed = parseMesocycleResponse(text, catalog, request.trainingDays)
-                const { warnings } = evaluateMesocycleRules(parsed.proposal, catalog, { objective })
+                // The model returned reps + intensity; the backend computes the
+                // kilos from the athlete's e1RM before the rules or the caller see it.
+                const proposal = fillMesocycleLoads(parsed.proposal, catalog, context.strength)
+                const { warnings } = evaluateMesocycleRules(proposal, catalog, { objective })
                 for (const rule of warnings) this.metrics.recordRuleWarning(rule)
 
-                return parsed
+                return { rationale: parsed.rationale, proposal }
             },
             () => new InvalidAiMesocycleResponseError(),
         )
