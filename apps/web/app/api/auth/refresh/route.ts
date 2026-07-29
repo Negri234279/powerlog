@@ -83,12 +83,13 @@ function loggedOutRedirect(): NextResponse {
  */
 export async function GET(req: NextRequest): Promise<NextResponse> {
     const next = sanitizeNext(req.nextUrl.searchParams.get('next'))
+    const cookieHeader = req.headers.get('cookie') ?? ''
 
     let apiRes: Response
     try {
         apiRes = await fetch(`${serverEnv.apiInternalUrl}/graphql`, {
             method: 'POST',
-            headers: { 'content-type': 'application/json', cookie: req.headers.get('cookie') ?? '' },
+            headers: { 'content-type': 'application/json', cookie: cookieHeader },
             body: JSON.stringify({ query: 'mutation { refresh { id } }' }),
             cache: 'no-store',
         })
@@ -102,8 +103,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // cookies is the success signal (GraphQL errors still return HTTP 200).
     const setCookies = apiRes.headers.getSetCookie()
     if (!apiRes.ok || setCookies.length === 0) {
+        // TEMP DIAGNOSTIC (remove once confirmed): count how many refresh cookies the
+        // browser sent. A rejected refresh with `refreshCount >= 2` proves a duplicate
+        // `pl_rt` (orphaned Domain-scoped cookie shadowing the valid one) is being
+        // replayed — the suspected cause of the 15-min logout on mobile.
+        const refreshCount = cookieHeader
+            .split(';')
+            .filter((c) => c.trimStart().startsWith(`${serverEnv.refreshCookieName}=`)).length
+
         // Expired / revoked / reuse-detected refresh → user is bounced to login.
-        log.warn('session refresh rejected', { status: apiRes.status, next })
+        log.warn('session refresh rejected', { status: apiRes.status, next, refreshCount })
         return loggedOutRedirect()
     }
 
