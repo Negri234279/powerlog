@@ -12,6 +12,9 @@ export interface MessageListFilter {
     /** Page size (the impl fetches one extra row to compute `hasNextPage`). */
     limit: number
     cursor?: ChatCursor
+    /** Lower bound (exclusive): only messages strictly after this time. Set to the
+     *  viewer's "clear chat" watermark so cleared history stays hidden from them. */
+    after?: Date
 }
 
 /** A keyset page: trimmed rows plus whether another page follows. */

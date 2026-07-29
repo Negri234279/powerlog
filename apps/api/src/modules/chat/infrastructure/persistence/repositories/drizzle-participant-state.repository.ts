@@ -38,6 +38,8 @@ export class DrizzleParticipantStateRepository extends ParticipantStateRepositor
                     lastDeliveredMessageId: row.lastDeliveredMessageId,
                     lastReadMessageId: row.lastReadMessageId,
                     lastReadAt: row.lastReadAt,
+                    clearedAt: row.clearedAt,
+                    hiddenAt: row.hiddenAt,
                 },
             })
     }

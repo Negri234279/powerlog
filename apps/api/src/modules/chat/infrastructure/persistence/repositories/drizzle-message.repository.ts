@@ -29,6 +29,10 @@ export class DrizzleMessageRepository extends MessageRepository {
                 sql`(${chatMessages.createdAt}, ${chatMessages.id}) < (${filter.cursor.createdAt.toISOString()}::timestamptz, ${filter.cursor.id}::uuid)`,
             )
         }
+        if (filter.after) {
+            // The viewer's "clear chat" watermark: cleared history stays hidden.
+            conditions.push(sql`${chatMessages.createdAt} > ${filter.after.toISOString()}::timestamptz`)
+        }
 
         const rows = await this.db
             .select()

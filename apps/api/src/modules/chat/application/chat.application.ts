@@ -1,3 +1,5 @@
+import { ClearConversationHandler } from './commands/clear-conversation/clear-conversation.handler'
+import { DeleteConversationHandler } from './commands/delete-conversation/delete-conversation.handler'
 import { MarkConversationDeliveredHandler } from './commands/mark-conversation-delivered/mark-conversation-delivered.handler'
 import { MarkConversationReadHandler } from './commands/mark-conversation-read/mark-conversation-read.handler'
 import { SendChatMessageHandler } from './commands/send-chat-message/send-chat-message.handler'
@@ -11,6 +13,8 @@ export const CHAT_COMMAND_HANDLERS = [
     SendChatMessageHandler,
     MarkConversationReadHandler,
     MarkConversationDeliveredHandler,
+    ClearConversationHandler,
+    DeleteConversationHandler,
 ]
 
 /** CQRS query handlers for the chat module. */

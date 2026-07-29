@@ -470,6 +470,13 @@
       "when": 1785193130786,
       "tag": "0066_opposite_romulus",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1785284246943,
+      "tag": "0067_legal_nova",
+      "breakpoints": true
     }
   ]
 }
