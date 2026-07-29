@@ -27,6 +27,11 @@ export const aiUsage = pgTable(
         model: text('model').notNull(),
         inputTokens: integer('input_tokens').notNull(),
         outputTokens: integer('output_tokens').notNull(),
+        // Canonical disjoint cache figures (see `LlmUsage`). Default 0 so historical
+        // rows and providers without caching read back cleanly. Their cost is folded
+        // into `total_cost`, not split into its own column.
+        cacheReadInputTokens: integer('cache_read_input_tokens').notNull().default(0),
+        cacheCreationInputTokens: integer('cache_creation_input_tokens').notNull().default(0),
         // USD per 1M tokens at the time of the call; null → price unknown.
         inputPricePerMtok: numeric('input_price_per_mtok', { precision: 12, scale: 6 }),
         outputPricePerMtok: numeric('output_price_per_mtok', { precision: 12, scale: 6 }),

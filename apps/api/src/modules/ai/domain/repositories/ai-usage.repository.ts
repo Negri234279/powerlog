@@ -7,6 +7,9 @@ export interface AiUsageEntry {
     model: string
     inputTokens: number
     outputTokens: number
+    /** Canonical disjoint cache figures (see `LlmUsage`); 0 when caching didn't apply. */
+    cacheReadInputTokens: number
+    cacheCreationInputTokens: number
     inputPricePerMTok: number | null
     outputPricePerMTok: number | null
     inputCost: number | null

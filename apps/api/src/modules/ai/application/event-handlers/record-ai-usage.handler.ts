@@ -25,7 +25,14 @@ export class RecordAiUsageHandler implements IEventHandler<AiUsageRecordedEvent>
 
     async handle(event: AiUsageRecordedEvent): Promise<void> {
         const price = this.pricing.priceFor(event.provider, event.model)
-        const cost = price ? computeCost(price, event.inputTokens, event.outputTokens) : null
+        const cost = price
+            ? computeCost(price, {
+                  inputTokens: event.inputTokens,
+                  outputTokens: event.outputTokens,
+                  cacheReadInputTokens: event.cacheReadInputTokens,
+                  cacheCreationInputTokens: event.cacheCreationInputTokens,
+              })
+            : null
 
         try {
             await this.usage.record({
@@ -34,6 +41,8 @@ export class RecordAiUsageHandler implements IEventHandler<AiUsageRecordedEvent>
                 model: event.model,
                 inputTokens: event.inputTokens,
                 outputTokens: event.outputTokens,
+                cacheReadInputTokens: event.cacheReadInputTokens,
+                cacheCreationInputTokens: event.cacheCreationInputTokens,
                 inputPricePerMTok: price?.inputUsdPerMTok ?? null,
                 outputPricePerMTok: price?.outputUsdPerMTok ?? null,
                 inputCost: cost?.inputCost ?? null,

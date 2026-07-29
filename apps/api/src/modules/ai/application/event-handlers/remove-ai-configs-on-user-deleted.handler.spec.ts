@@ -27,6 +27,8 @@ const usageEntry = (userId: string): AiUsageEntry => ({
     model: 'gpt-5',
     inputTokens: 100,
     outputTokens: 50,
+    cacheReadInputTokens: 0,
+    cacheCreationInputTokens: 0,
     inputPricePerMTok: null,
     outputPricePerMTok: null,
     inputCost: null,

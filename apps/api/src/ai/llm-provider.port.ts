@@ -24,9 +24,23 @@ export interface LlmCompletionRequest {
     maxTokens?: number
 }
 
+/**
+ * Tokens a completion billed, in a **canonical, disjoint** shape: `inputTokens`
+ * counts only full-price input, and the two cache figures are separate on top of
+ * it — total input = `inputTokens + cacheReadInputTokens + cacheCreationInputTokens`.
+ *
+ * Adapters normalise to this: Anthropic already reports it this way (its
+ * `input_tokens` excludes cached tokens), but OpenAI folds cached tokens *into*
+ * `prompt_tokens`, so its adapter subtracts them out. Keeping the shape uniform is
+ * what lets pricing add the three at their own rates without knowing the provider.
+ */
 export interface LlmUsage {
     inputTokens: number
     outputTokens: number
+    /** Cached input read back at a discount. 0 when caching didn't hit (or apply). */
+    cacheReadInputTokens?: number
+    /** Input written to the cache at a premium. 0 for providers that don't charge it. */
+    cacheCreationInputTokens?: number
 }
 
 export interface LlmCompletion {

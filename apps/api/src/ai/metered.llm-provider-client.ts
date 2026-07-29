@@ -45,8 +45,12 @@ export class MeteredLlmProviderClient extends LlmProviderClient {
     async complete(request: LlmCompletionRequest): Promise<LlmCompletion> {
         const completion = await this.measure('complete', () => this.inner.complete(request))
 
+        const cacheReadTokens = completion.usage.cacheReadInputTokens ?? 0
+        const cacheCreationTokens = completion.usage.cacheCreationInputTokens ?? 0
+
         this.tokens.inc({ provider: this.provider, direction: 'input' }, completion.usage.inputTokens)
         this.tokens.inc({ provider: this.provider, direction: 'output' }, completion.usage.outputTokens)
+        if (cacheReadTokens > 0) this.tokens.inc({ provider: this.provider, direction: 'cache_read' }, cacheReadTokens)
 
         this.logger?.info(
             {
@@ -54,6 +58,10 @@ export class MeteredLlmProviderClient extends LlmProviderClient {
                 model: completion.model,
                 inputTokens: completion.usage.inputTokens,
                 outputTokens: completion.usage.outputTokens,
+                // The verification signal for IA.3: a repeated refinement that keeps
+                // returning 0 here means something volatile slipped into the prefix.
+                cacheReadTokens,
+                cacheCreationTokens,
             },
             'llm completion',
         )

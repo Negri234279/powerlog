@@ -87,6 +87,8 @@ export class AiConversation {
                     completion.model,
                     completion.usage.inputTokens,
                     completion.usage.outputTokens,
+                    completion.usage.cacheReadInputTokens ?? 0,
+                    completion.usage.cacheCreationInputTokens ?? 0,
                     new Date(),
                 ),
             )

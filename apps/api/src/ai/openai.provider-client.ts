@@ -71,12 +71,21 @@ export class OpenAiProviderClient extends LlmProviderClient {
                 ],
             })
 
+            // OpenAI folds cached tokens INTO `prompt_tokens` (unlike Anthropic),
+            // so subtract them back out to reach the canonical disjoint shape.
+            // Prompt caching is automatic on long prompts; OpenAI does not bill a
+            // separate cache-write, so creation is always 0.
+            const promptTokens = response.usage?.prompt_tokens ?? 0
+            const cachedTokens = response.usage?.prompt_tokens_details?.cached_tokens ?? 0
+
             return {
                 text: response.choices[0]?.message.content ?? '',
                 model: response.model,
                 usage: {
-                    inputTokens: response.usage?.prompt_tokens ?? 0,
+                    inputTokens: Math.max(0, promptTokens - cachedTokens),
                     outputTokens: response.usage?.completion_tokens ?? 0,
+                    cacheReadInputTokens: cachedTokens,
+                    cacheCreationInputTokens: 0,
                 },
             }
         })

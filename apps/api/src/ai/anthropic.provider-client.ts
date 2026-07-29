@@ -64,8 +64,12 @@ export class AnthropicProviderClient extends LlmProviderClient {
                 text,
                 model: response.model,
                 usage: {
+                    // Anthropic's `input_tokens` already excludes cached tokens, so
+                    // the three figures are disjoint — exactly the canonical shape.
                     inputTokens: response.usage.input_tokens,
                     outputTokens: response.usage.output_tokens,
+                    cacheReadInputTokens: response.usage.cache_read_input_tokens ?? 0,
+                    cacheCreationInputTokens: response.usage.cache_creation_input_tokens ?? 0,
                 },
             }
         })
