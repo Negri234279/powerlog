@@ -17,6 +17,8 @@ import type { ModelPrice } from '../../domain/pricing/model-price'
 const PRICES: Record<AiProvider, Record<string, ModelPrice>> = {
     anthropic: {
         'claude-fable-5': { inputUsdPerMTok: 10, outputUsdPerMTok: 50 },
+        'claude-mythos-5': { inputUsdPerMTok: 10, outputUsdPerMTok: 50 },
+        'claude-opus-5': { inputUsdPerMTok: 5, outputUsdPerMTok: 25 },
         'claude-opus-4-8': { inputUsdPerMTok: 5, outputUsdPerMTok: 25 },
         'claude-opus-4-7': { inputUsdPerMTok: 5, outputUsdPerMTok: 25 },
         'claude-opus-4-6': { inputUsdPerMTok: 5, outputUsdPerMTok: 25 },
