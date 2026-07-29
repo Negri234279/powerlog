@@ -22,7 +22,13 @@ export class InMemoryMessageRepository extends MessageRepository {
     }
 
     async list(filter: MessageListFilter): Promise<MessageSlice> {
-        const ordered = this.orderedDesc(filter.conversationId)
+        let ordered = this.orderedDesc(filter.conversationId)
+
+        if (filter.after) {
+            // The viewer's "clear chat" watermark: only messages strictly after it.
+            const lowerBound = filter.after
+            ordered = ordered.filter((m) => m.createdAt.getTime() > lowerBound.getTime())
+        }
 
         const after = filter.cursor
             ? ordered.filter((m) => {

@@ -58,7 +58,15 @@
         "you": "Tú:",
         "back": "Volver",
         "collapse": "Contraer chat",
-        "close": "Cerrar chat"
+        "close": "Cerrar chat",
+        "rowMenu": "Opciones de la conversación",
+        "clearChat": "Vaciar chat",
+        "deleteChat": "Eliminar chat",
+        "cancel": "Cancelar",
+        "clearChatTitle": "¿Vaciar el chat?",
+        "clearChatBody": "Se ocultarán los mensajes con {user} solo para ti. La conversación seguirá en tu lista y {user} conservará su historial.",
+        "deleteChatTitle": "¿Eliminar el chat?",
+        "deleteChatBody": "El chat con {user} desaparecerá de tu lista y su historial quedará oculto para ti. {user} conservará el suyo, y la conversación reaparecerá si te escribe."
     },
     "coaching": {
         "eyebrow": "Coaching",

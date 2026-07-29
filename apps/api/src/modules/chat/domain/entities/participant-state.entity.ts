@@ -4,6 +4,10 @@ export interface ParticipantStateProps {
     lastDeliveredMessageId: string | null
     lastReadMessageId: string | null
     lastReadAt: Date | null
+    /** "Clear chat" watermark: this user hides messages at/before it. Null = none. */
+    clearedAt: Date | null
+    /** "Delete chat" watermark: hidden from this user's inbox until a newer message. */
+    hiddenAt: Date | null
 }
 
 /**
@@ -17,7 +21,7 @@ export interface ParticipantStateProps {
 export class ParticipantStateEntity {
     private constructor(private readonly props: ParticipantStateProps) {}
 
-    /** A fresh cursor: nothing delivered or read yet. */
+    /** A fresh cursor: nothing delivered or read yet, no clear/hide watermark. */
     static empty(conversationId: string, userId: string): ParticipantStateEntity {
         return new ParticipantStateEntity({
             conversationId,
@@ -25,6 +29,8 @@ export class ParticipantStateEntity {
             lastDeliveredMessageId: null,
             lastReadMessageId: null,
             lastReadAt: null,
+            clearedAt: null,
+            hiddenAt: null,
         })
     }
 
@@ -45,6 +51,17 @@ export class ParticipantStateEntity {
         this.props.lastReadAt = now
     }
 
+    /** "Clear chat": hide this user's messages up to now; the row stays in the inbox. */
+    clear(now: Date): void {
+        this.props.clearedAt = now
+    }
+
+    /** "Delete chat": clear history AND drop from the inbox until a newer message. */
+    hide(now: Date): void {
+        this.props.clearedAt = now
+        this.props.hiddenAt = now
+    }
+
     get conversationId(): string {
         return this.props.conversationId
     }
@@ -63,5 +80,13 @@ export class ParticipantStateEntity {
 
     get lastReadAt(): Date | null {
         return this.props.lastReadAt
+    }
+
+    get clearedAt(): Date | null {
+        return this.props.clearedAt
+    }
+
+    get hiddenAt(): Date | null {
+        return this.props.hiddenAt
     }
 }

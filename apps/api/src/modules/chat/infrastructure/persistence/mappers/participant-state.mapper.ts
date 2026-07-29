@@ -12,6 +12,8 @@ export const ParticipantStateMapper = {
             lastDeliveredMessageId: row.lastDeliveredMessageId,
             lastReadMessageId: row.lastReadMessageId,
             lastReadAt: row.lastReadAt,
+            clearedAt: row.clearedAt,
+            hiddenAt: row.hiddenAt,
         })
     },
 
@@ -22,6 +24,8 @@ export const ParticipantStateMapper = {
             lastDeliveredMessageId: state.lastDeliveredMessageId,
             lastReadMessageId: state.lastReadMessageId,
             lastReadAt: state.lastReadAt,
+            clearedAt: state.clearedAt,
+            hiddenAt: state.hiddenAt,
         }
     },
 }

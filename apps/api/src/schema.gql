@@ -1359,6 +1359,11 @@ type Mutation {
   changePlan(planPriceId: ID!): String
 
   """
+  Clear the caller’s view of a conversation (hide its history; keep it in the inbox).
+  """
+  clearConversation(conversationId: ID!): Boolean!
+
+  """
   Mark a set done (success | failed), logging what was actually performed.
   """
   completeSet(input: CompleteSetInput!): WorkoutSession!
@@ -1411,6 +1416,11 @@ type Mutation {
 
   """Forget the stored key for a provider. Idempotent."""
   deleteAiProviderKey(provider: String!): Boolean!
+
+  """
+  Delete the caller’s view of a conversation (clear it and drop it from the inbox until a new message).
+  """
+  deleteConversation(conversationId: ID!): Boolean!
 
   """Delete a catalog exercise (blocked if used in any workout)."""
   deleteExercise(exerciseId: ID!): Boolean!

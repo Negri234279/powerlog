@@ -70,6 +70,7 @@ export function SetRow({
     const remove = useRemoveSet()
     const duplicate = useLogSet()
     const [mode, setMode] = useState<RowMode>('idle')
+    const done = set.outcome !== null
 
     // Duplicate carries only the planned targets over to a fresh pending set — you
     // still log what you actually did.
@@ -101,6 +102,9 @@ export function SetRow({
     }
 
     const menuItems: MenuItem[] = [
+        ...(done
+            ? []
+            : [{ label: t('markDone'), analyticsId: 'set-complete-menu', onSelect: () => setMode('marking') }]),
         { label: t('duplicate'), analyticsId: 'set-duplicate', onSelect: onDuplicate },
         { label: t('edit'), analyticsId: 'set-edit', onSelect: () => setMode('editing') },
         {
@@ -140,7 +144,6 @@ export function SetRow({
 
     const hasPlanned =
         set.plannedWeightKg !== null || set.plannedReps !== null || set.plannedRpe !== null || set.plannedRir !== null
-    const done = set.outcome !== null
 
     return (
         <li className="flex items-center gap-3 py-2.5 font-mono text-sm tabular-nums">
@@ -173,16 +176,20 @@ export function SetRow({
                     analyticsId="set-complete-open"
                     type="button"
                     onClick={() => setMode('marking')}
-                    className="inline-flex items-center gap-1 self-start rounded-full px-2.5 py-1 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-pr/10 hover:text-pr"
+                    aria-label={t('markDone')}
+                    className="inline-flex items-center gap-1 self-center rounded-full px-2 py-1 text-xs text-text-dim ring-1 ring-hairline transition-colors duration-300 hover:bg-pr/10 hover:text-pr sm:px-2.5"
                 >
-                    <Check className="size-3" /> {t('markDone')}
+                    {/* Icon-only on mobile so it doesn't squeeze the set/plan line into
+                        wrapping; the label returns from sm up. */}
+                    <Check className="size-3" />
+                    <span className="hidden sm:inline">{t('markDone')}</span>
                 </TrackedButton>
             )}
 
             {/* Duplicate / edit / remove live behind one ⋮ — the row already stacks
                 two lines and keeps "mark done" as its one prominent verb. */}
             {locked ? null : (
-                <div className="shrink-0 self-start">
+                <div className="shrink-0 self-center">
                     <Menu analyticsId="set-actions" label={t('setActions')} items={menuItems} />
                 </div>
             )}

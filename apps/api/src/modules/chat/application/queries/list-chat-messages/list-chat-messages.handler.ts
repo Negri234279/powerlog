@@ -46,8 +46,12 @@ export class ListChatMessagesHandler implements IQueryHandler<ListChatMessagesQu
         const other = conversation.otherParticipant(query.viewerId)!
         const receiver = await this.participantStates.receiverCursor(conversation.id, other)
 
+        // The viewer's "clear chat" watermark hides everything at/before it from them.
+        const viewerState = await this.participantStates.get(conversation.id, query.viewerId)
+        const after = viewerState?.clearedAt ?? undefined
+
         const cursor = query.cursor ? decodeChatCursor(query.cursor) : undefined
-        const slice = await this.messages.list({ conversationId: conversation.id, limit: query.limit, cursor })
+        const slice = await this.messages.list({ conversationId: conversation.id, limit: query.limit, cursor, after })
 
         const items: ChatMessageView[] = slice.items.map((message) => ({
             message,
