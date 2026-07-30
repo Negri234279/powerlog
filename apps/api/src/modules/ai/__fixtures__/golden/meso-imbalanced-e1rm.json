@@ -1,0 +1,15 @@
+{
+    "name": "meso-imbalanced-e1rm",
+    "provider": "anthropic",
+    "model": "claude-opus-4-8",
+    "request": {
+        "weeks": 4,
+        "trainingDays": [0, 3],
+        "goal": "strength",
+        "prompt": "Bench is way ahead of my squat. Two full-body days a week."
+    },
+    "strength": [
+        { "slug": "low-bar-squat", "e1rmKg": 100, "lastTrainedAt": "2026-07-19T00:00:00.000Z" },
+        { "slug": "bench-press", "e1rmKg": 140, "lastTrainedAt": "2026-07-23T00:00:00.000Z" }
+    ]
+}
