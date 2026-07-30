@@ -1,11 +1,69 @@
 # Mejoras de la planificación con IA (sesión y mesociclo)
 
-> **Propuesta, no plan cerrado.** Redactada tras revisar `src/modules/ai/`
-> completo (prompts, parsers, conversación, contexto, adaptadores). Hay una
-> sección de **decisiones abiertas** que necesita respuesta antes de tocar los
-> bloques que dependen de ellas. El resto se puede implementar tal cual.
-> Implementar **por sub-bloques con checkpoint** como el resto del proyecto:
-> un bloque, resumen, esperar OK. Nada de este documento está implementado.
+> **Estado (actualizado julio 2026).** Este documento nació como propuesta; ahora
+> mezcla el diseño original (que se conserva como referencia) con el **estado real
+> de implementación**. Lo hecho: **IA.1, IA.2, IA.3, IA.5, IA.7, IA.8‑parte 1 y el
+> golden‑set/`ai:eval`**. Pendientes: **IA.4, IA.6 y IA.8‑parte 2** (los tres con
+> fricción real, ver abajo). El detalle por bloque y las decisiones tomadas están
+> en **[Estado de implementación](#estado-de-implementación-julio-2026)**; cada
+> sección de bloque abre además con un recuadro de estado. Se implementó por
+> sub‑bloques con checkpoint, como el resto del proyecto.
+
+## Estado de implementación (julio 2026)
+
+**Leyenda:** ✅ hecho · 🟡 parcial · ⛔ pendiente (con motivo).
+
+| Bloque    | Estado | Alcance real                                                                                       |
+| --------- | ------ | -------------------------------------------------------------------------------------------------- |
+| IA.1      | ✅     | Métricas de outcome + refinamientos. **Mesociclo y sesión** (los 4 handlers terminales).           |
+| IA.2      | ✅     | Reglas semánticas + progresión. **Solo mesociclo** (la sesión no elige ejercicios).                |
+| IA.3      | ✅     | Contabilidad de caché **ambos**; caché del catálogo activo **solo mesociclo**; refine usa el modelo del draft **ambos**. |
+| IA.4      | ⛔     | Structured outputs. **Riesgo alto**: hay que verificar `output_config`/`response_format` contra los SDKs en vivo. |
+| IA.5      | ✅     | Cargas en backend. **Solo mesociclo** (la sesión sigue pidiéndole los kilos al modelo).            |
+| IA.6      | ⛔     | Contexto (equipamiento/nivel/lesiones). **Bloqueado** por las decisiones de perfil abiertas.       |
+| IA.7      | ✅     | Progresión multi‑semana + expansión en backend. **Mesociclo** (backend + cliente web).             |
+| IA.8      | 🟡     | **Parte 1 (modelo por tarea) hecha, ambos.** Parte 2 (capacidades/`thinking` vía Models API) pendiente — riesgo SDK. |
+| golden‑set| ✅     | `ai:eval` + colector determinista testeado. **Solo mesociclo.**                                    |
+
+**Qué toca cada cosa — mesociclo vs sesión.** Las mejoras de *infraestructura*
+llegaron a ambos; las de *calidad de contenido* se concentraron en el mesociclo:
+
+- **Ambos:** IA.1 (métricas), IA.3 (contabilidad de tokens de caché + refine sobre
+  el modelo del draft), IA.8‑p1 (modelo por tarea).
+- **Solo mesociclo:** IA.2 (reglas), IA.3 (caché del catálogo activo), IA.5 (cargas
+  en backend), IA.7 (progresión), golden‑set.
+- **La sesión NO recibió** reglas de programación (no aplican: el atleta ya eligió
+  los ejercicios) **ni** cálculo de cargas en backend. La sesión sigue pidiéndole
+  los pesos al modelo (`plan-prompt.service`). Llevar **IA.5 a la sesión** es el
+  pendiente de más ROI para paridad de calidad (el `load-calculator` es genérico y
+  el contexto de sesión ya trae e1RM por entrada); no se hizo por alcance.
+
+**Pendientes y por qué están pendientes.**
+
+- **IA.4 (structured outputs) — riesgo SDK.** Las formas de `output_config`
+  (Anthropic) / `response_format` (OpenAI) deben verificarse contra el SDK **en
+  vivo** (a ciegas puede meter un 400 en prod), y los zod usan `.nullish()`,
+  incompatible con el modo `strict` sin transformar el esquema. zod v4 ya trae
+  `z.toJSONSchema()`. No hacer de memoria.
+- **IA.8‑parte 2 (capacidades / `thinking`) — riesgo SDK.** Leer `capabilities`
+  (adaptiveThinking/effort/structuredOutputs) de la Models API y activar
+  `thinking`/`effort` solo donde se soporte. Misma advertencia. Es lo que IA.4
+  necesita para su capability‑check.
+- **IA.6 (contexto) — bloqueado por decisiones.** Requiere decidir qué campos
+  añadir al perfil (equipamiento, nivel, lesiones) + el contrato `AthleteProfileReader`.
+  Ver [Decisiones abiertas](#decisiones-abiertas-bloquean-ia6-y-parte-de-ia7).
+
+**Sobre modelos custom / fine‑tuning / RAG / agentes (discusión, no plan).** El
+sistema es **BYOK**: el usuario trae su clave y elige el modelo. Como la
+aritmética (IA.5), las reglas (IA.2/7) y el formato (parser+retry) ya viven en
+código determinista, al modelo le queda poco margen (elegir ejercicios y orden),
+así que el ROI de un fine‑tune es bajo hoy. Un fine‑tune/modelo propio solo tiene
+sentido con (a) dataset de cientos de drafts etiquetados —sale de IA.1 + del
+feedback del atleta— y (b) pasar de BYOK a modelo hospedado (cambio de arquitectura
+y de costes). RAG está desaconsejado (las reglas en el system prompt, cacheables y
+auditables, ganan aquí). El camino de valor real: **IA.6 → feedback del atleta →
+dataset → recién ahí plantear fine‑tuning**, y en paralelo IA.8‑p2 para exprimir
+los modelos que el usuario ya trae.
 
 ## Qué se propone, en una tabla
 
@@ -64,6 +122,11 @@ Los tres primeros son baratos y dan la instrumentación para juzgar los demás.
 
 ## Decisiones abiertas (bloquean IA.6 y parte de IA.7)
 
+> **Estado.** **Resueltas e implementadas:** *modelo por tarea* (IA.8‑p1 — sí, con
+> fallback al modelo por defecto) y *UI del builder* (IA.7 — sí, el builder recibe los
+> `microcycles` ya expandidos). **Siguen abiertas y bloquean IA.6:** equipamiento
+> disponible, nivel de experiencia, lesiones/limitaciones y peso corporal.
+
 | Tema                            | Pregunta                                                                                                                                                             | Recomendación                                                                                                                     |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | Peso corporal                   | No existe en el esquema. `profiles` tiene `birthDate`, `sex`, `heightCm` y nada más. Sin peso no hay ratios de fuerza relativa ni prescripción sensata en calistenia. | Tabla nueva `body_measurements` (serie temporal, no columna en `profiles`) — es un bloque propio, ver "Fuera de alcance".         |
@@ -76,6 +139,14 @@ Los tres primeros son baratos y dan la instrumentación para juzgar los demás.
 ---
 
 ## IA.1 — Métricas de calidad del draft
+
+> **Estado: ✅ hecho (mesociclo y sesión).** Métricas `powerlog_ai_draft_outcome_total{kind,outcome,model}`
+> (contador) y `powerlog_ai_refinements_before_accept{kind,model}` (histograma)
+> enganchadas en los 4 handlers terminales. `model` normalizado contra la allowlist
+> de precios (`normalizeModelLabel`); desconocido → `other`. **Desviación del plan:**
+> los refinamientos se cuentan como `mensajes assistant − 1` (exacto), no como
+> "mensajes user" (que se desviaría en 1 cuando hay request inicial). El golden‑set/
+> `ai:eval` que este bloque propone **se hizo** (ver la sub‑sección **Golden set** abajo).
 
 **El problema.** `AiGenerationMetrics` mide si el trabajo terminó y cuánto tardó.
 No mide si lo que produjo servía. La señal existe y está sin explotar: un draft
@@ -107,9 +178,17 @@ nueva.
 > desconocido bajo `other`. El resto de métricas del repo ya sigue esa regla de
 > etiquetas de baja cardinalidad (`observability/metrics.ts:115`).
 
-**Golden set.** Además de la telemetría en producción, un conjunto de ~30
-contextos guardados como fixtures, para poder comparar prompts sin esperar a que
-lleguen usuarios:
+**Golden set.** ✅ **Hecho.** Vive en `apps/api/src/modules/ai/__eval__/` (colector
+`collect-violations.ts` + su spec, que **sí corre en CI**) y `__fixtures__/golden/`
+(`_catalog.json` compartido + 3 fixtures `meso-*.json`, ampliables). El script
+`pnpm --filter @powerlog/api ai:eval` (CLI `ai-eval.ts`, **fuera de CI**) manda cada
+fixture a un modelo real con la key en el entorno y reporta violaciones por regla.
+La mitad determinista (el validador) está testeada; solo la llamada al proveedor es
+manual. Primera corrida real (Opus 4.8): 3/3 defendibles, aviso recurrente
+`weekly_volume_low` — señal para afinar el piso de volumen. Diseño original:
+
+Además de la telemetría en producción, un conjunto de ~30 contextos guardados como
+fixtures, para poder comparar prompts sin esperar a que lleguen usuarios:
 
 ```
 apps/api/src/modules/ai/__fixtures__/golden/
@@ -136,6 +215,16 @@ descartado a mano en local, y el script de eval corriendo contra ≥3 fixtures.
 ---
 
 ## IA.2 — Validación semántica en los parsers
+
+> **Estado: ✅ hecho (solo mesociclo).** `application/services/programming-rules.ts`
+> + `programming-rules.config.ts` (los rangos son la fuente única que también lee
+> el prompt). 4 reglas duras (rechazo → retry existente) + 4 avisos
+> (`powerlog_ai_rule_warning_total{rule}`). **Decisión:** solo mesociclo — la sesión
+> no elige ejercicios y su parser no tiene taxonomía, así que `parsePlanResponse`
+> queda estructural. **Decisión:** empezar con **bounds anchos** (rechazo solo por
+> excesos claros) para no romper generaciones válidas ni la suite. `goalToObjective`
+> mapea el goal libre → strength/hypertrophy/general. Las reglas de **progresión**
+> (IA.7) viven aquí también (`assertProgressionIsSound`).
 
 **El problema.** `parseMesocycleResponse` y `parsePlanResponse` validan estructura
 (Zod: cotas de sets, reps, RPE, slug existente, días exactos). No validan nada de
@@ -182,6 +271,18 @@ mismos números, y el golden set de IA.1 reportando violaciones por regla.
 ---
 
 ## IA.3 — Prompt caching del catálogo
+
+> **Estado: ✅ hecho.** Contrato `system` ampliado a bloques (`LlmSystemBlock[]` con
+> flag `cache`): Anthropic emite `cache_control: ephemeral`; OpenAI aplana a un
+> system message (caché por prefijo automático). El catálogo se movió al `system`
+> cacheado **solo en el mesociclo** (la sesión no lleva catálogo → no se cachea).
+> **Contabilidad de caché completa y en AMBOS flujos** (evita el bug de facturación):
+> `LlmUsage`/`ai_usage`/`AiUsageRecordedEvent` ganan `cacheRead/cacheCreationInputTokens`
+> (migración `0068`); `computeCost` los tarifica (read 0.1×, write 1.25× del input por
+> defecto). **Clave descubierta:** semántica canónica **disjunta** — Anthropic ya
+> excluye los cacheados de `input_tokens`; OpenAI los incluye en `prompt_tokens` y el
+> adaptador los resta. El refinamiento usa el **modelo guardado en el draft** (ya no
+> re‑resuelve la config), que es lo que preserva el caché del hilo — en ambos flujos.
 
 **El problema.** El catálogo de 274 ejercicios es **idéntico para todos los
 usuarios y para todas las llamadas**, y se reenvía entero cada vez: en cada
@@ -270,6 +371,14 @@ medido antes/después.
 
 ## IA.4 — Structured outputs
 
+> **Estado: ⛔ pendiente — riesgo SDK.** No implementado. Motivos: (1) las formas de
+> `output_config` (Anthropic) / `response_format` (OpenAI) hay que verificarlas contra
+> el SDK **en vivo** — a ciegas puede meter un 400 en prod; (2) los zod usan
+> `.nullish()`, incompatible con `strict` (todo campo debe ir en `required` +
+> `additionalProperties:false`) → hay que transformar el esquema; zod v4 ya trae
+> `z.toJSONSchema()`. La degradación segura ante modelos sin soporte necesita el
+> capability‑check de IA.8‑parte 2.
+
 **El problema.** El contrato de salida se pide en prosa ("Answer with a single
 JSON object and nothing else. No prose, no markdown, no code fences") y se valida
 después. Cuando el modelo falla el formato, `AiConversation.ask` reintenta — y ese
@@ -323,6 +432,15 @@ sin soporte degradando sin error visible, y la tasa de reintentos por formato
 ---
 
 ## IA.5 — Cargas calculadas en backend, no por el modelo
+
+> **Estado: ✅ hecho (solo mesociclo).** `domain/load-calculator.ts` (`prescribeLoad`:
+> tabla RTS reps‑al‑fallo→%1RM + Epley de fallback, incrementos por equipamiento, cap
+> a e1RM, null sin e1RM/bodyweight/intensidad) + `application/services/mesocycle-load-filler.ts`
+> (rellena `plannedWeightKg` tras el parse). El esquema de respuesta del mesociclo
+> pierde `weightKg`; el system prompt ya no pide kilos. **Pendiente de valor:** llevar
+> esto **a la sesión** — el `load-calculator` es genérico y el contexto de sesión ya
+> trae e1RM por entrada; no se hizo por alcance, es el mayor ROI para paridad de
+> calidad en la sesión.
 
 **El problema.** `mesocycle-prompt.service.ts:36` le pide al modelo:
 
@@ -385,6 +503,12 @@ cargas coherentes.
 ---
 
 ## IA.6 — Contexto: fatiga, tendencia, perfil, equipamiento
+
+> **Estado: ⛔ pendiente — bloqueado por decisiones.** Nada implementado. Necesita
+> resolver las [decisiones abiertas](#decisiones-abiertas-bloquean-ia6-y-parte-de-ia7)
+> (equipamiento disponible, nivel de experiencia, lesiones, peso corporal) y el
+> contrato nuevo `AthleteProfileReader` hacia el módulo `profile`. Es el bloque de
+> más impacto en calidad que queda; conviene abrirlo con una ronda de diseño.
 
 **El problema.** El prompt de sesión recibe 6 sesiones crudas por ejercicio
 (`HISTORY_LIMIT` en `planning/query-bus-session-plan-context-reader.ts:8`) y le
@@ -474,6 +598,17 @@ rechazando equipamiento no disponible.
 
 ## IA.7 — Progresión multi-semana del mesociclo
 
+> **Estado: ✅ hecho (mesociclo, backend + cliente web).** `MesocycleDraftProposal`
+> gana `progression` + `microcycles`; `domain/mesocycle-expander.ts` expande la semana
+> plantilla a N microciclos (linear_percent / double_progression / rpe_ramp, deload,
+> incremento de series solo en compuestos, cap a e1RM). **Decisión (elegida contigo):**
+> la expansión vive **en el designer** —que tiene e1RM + catálogo— con e1RM real, y se
+> **guardan** los microciclos; `days` (plantilla) coexiste con `microcycles[0].days`
+> para minimizar el refactor. `rehydrate` tolera drafts legacy (progresión neutra =
+> clon). **Decisión:** la regla "≥4 semanas necesitan deload" solo dispara si la
+> progresión **acumula** (paso o series > 0), para no romper el default. Cliente web:
+> el builder consume `microcycles` en vez de replicar la semana.
+
 **El problema — el más grande del módulo.** De
 `ai-mesocycle-draft.entity.ts:96`:
 
@@ -540,6 +675,17 @@ backend, con cargas coherentes semana a semana y tests de tabla del expansor.
 ---
 
 ## IA.8 — Modelo y parámetros por tipo de tarea
+
+> **Estado: 🟡 parte 1 hecha (ambos flujos); parte 2 pendiente.** **Parte 1 (modelo
+> por tarea):** `ai_provider_configs` gana `mesocycle_model`/`session_plan_model`
+> (migración `0069`, aditiva); `config.modelFor(kind)` cae al modelo por defecto si no
+> hay uno de tarea; `generate-mesocycle`/`generate-session-plan` usan el modelo de su
+> tarea y lo estampan en el draft (el refine ya corre sobre `draft.model`); mutation
+> `setAiProviderTaskModel`. **Parte 2 (⛔ riesgo SDK, no hecha):** leer `capabilities`
+> (adaptiveThinking / effort / structuredOutputs, maxInputTokens) de la Models API,
+> guardarlas junto a la config, y activar `thinking`/`effort` solo donde se soporte —
+> verificar la forma de la Models API en vivo, no de memoria. Es también lo que
+> desbloquea la degradación segura de IA.4.
 
 **El problema.** `ai_provider_configs` guarda **un** `model` por proveedor y las
 cuatro tareas (`session_plan`, `mesocycle` y sus refinamientos) lo comparten. No
@@ -635,7 +781,11 @@ thinking, uno moderno con effort activo, y coste/latencia por tarea medidos.
   conjugados, ondulación diaria compleja), es rediseñar IA.7, no ampliarlo.
 - **Fine-tuning o modelo propio.** No antes de tener el golden set de IA.1 con
   varios cientos de drafts aceptados/descartados etiquetados. Hasta entonces no
-  hay dataset ni forma de medir si mejoraría.
+  hay dataset ni forma de medir si mejoraría. _Nota (julio 2026): el **harness** de
+  eval ya existe (`ai:eval`), pero el **dataset** etiquetado no — sale de la
+  telemetría de IA.1 + del feedback explícito del atleta. Además, con BYOK, servir
+  un fine‑tune a todos exige pasar a modelo hospedado (otro modelo de costes). Es un
+  destino, no un siguiente paso._
 - **RAG sobre literatura de entrenamiento.** Suena bien y casi nunca supera a
   meter las reglas en el system prompt, que además es cacheable y auditable.
   Reconsiderar solo si el validador de IA.2 se vuelve inmanejable.
