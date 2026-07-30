@@ -444,7 +444,7 @@ type AiMesocycleDraft {
   athleteId: ID
   createdAt: DateTime!
 
-  """The template week."""
+  """The template week (= microcycles[0].days)."""
   days: [AiMesocycleDraftDay!]!
   goal: String
   id: ID!
@@ -452,6 +452,9 @@ type AiMesocycleDraft {
   """The block this draft became, once it was created."""
   mesocycleId: ID
   messages: [AiMesocycleDraftMessage!]!
+
+  """The expanded block, one entry per week."""
+  microcycles: [AiMesocycleDraftMicrocycle!]!
 
   """The model that produced this proposal."""
   model: String!
@@ -461,6 +464,9 @@ type AiMesocycleDraft {
 
   """The resolved draft this one continues, if any."""
   parentDraftId: ID
+
+  """How the block progresses week to week."""
+  progression: AiMesocycleDraftProgression!
 
   """"openai" or "anthropic"."""
   provider: String!
@@ -501,6 +507,31 @@ type AiMesocycleDraftMessage {
 
   """"user" or "assistant"."""
   role: String!
+}
+
+type AiMesocycleDraftMicrocycle {
+  days: [AiMesocycleDraftDay!]!
+
+  """0-based position in the block."""
+  index: Int!
+  isDeload: Boolean!
+}
+
+type AiMesocycleDraftProgression {
+  """Volume multiplier on a deload week."""
+  deloadFactor: Float!
+
+  """0-based week indices that are deloads."""
+  deloadWeeks: [Int!]!
+
+  """"linear_percent", "double_progression" or "rpe_ramp"."""
+  model: String!
+
+  """% the load climbs each non-deload week."""
+  weeklyIntensityStepPct: Float!
+
+  """Sets added each non-deload week to the main lifts."""
+  weeklySetIncrement: Int!
 }
 
 type AiMesocycleDraftSet {

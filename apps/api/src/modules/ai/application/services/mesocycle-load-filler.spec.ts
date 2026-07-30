@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { AthleteStrength, CatalogExercise } from '../../../../shared/contracts/mesocycle-design-context'
-import type { DraftMesocycleSet, MesocycleDraftProposal } from '../../domain/entities/ai-mesocycle-draft.entity'
+import type { DraftMesocycleDay, DraftMesocycleSet } from '../../domain/entities/ai-mesocycle-draft.entity'
 import { fillMesocycleLoads } from './mesocycle-load-filler'
 
 const catalogEntry = (slug: string, equipment: string): CatalogExercise => ({
@@ -31,36 +31,34 @@ const set = (overrides: Partial<DraftMesocycleSet> = {}): DraftMesocycleSet => (
     ...overrides,
 })
 
-const proposalWith = (slug: string, sets: DraftMesocycleSet[]): MesocycleDraftProposal => ({
-    name: 'block',
-    days: [{ dayOffset: 0, label: null, exercises: [{ exerciseId: `id-${slug}`, slug, name: slug, notes: null, sets }] }],
-})
+const daysWith = (slug: string, sets: DraftMesocycleSet[]): DraftMesocycleDay[] => [
+    { dayOffset: 0, label: null, exercises: [{ exerciseId: `id-${slug}`, slug, name: slug, notes: null, sets }] },
+]
 
-const firstSetWeight = (proposal: MesocycleDraftProposal) =>
-    proposal.days[0]?.exercises[0]?.sets[0]?.plannedWeightKg
+const firstSetWeight = (days: DraftMesocycleDay[]) => days[0]?.exercises[0]?.sets[0]?.plannedWeightKg
 
 describe('fillMesocycleLoads', () => {
     it('computes the weight from the athlete’s e1RM, reps and intensity', () => {
         // 5 reps @ RPE 8 → 7 RTF → 81.1% of 180 = 146.0 → nearest 2.5 → 145.
-        const filled = fillMesocycleLoads(proposalWith('low-bar-squat', [set()]), catalog, strength)
+        const filled = fillMesocycleLoads(daysWith('low-bar-squat', [set()]), catalog, strength)
 
         expect(firstSetWeight(filled)).toBe(145)
     })
 
     it('leaves the weight null for a lift the athlete has no e1RM on', () => {
-        const filled = fillMesocycleLoads(proposalWith('bench-press', [set()]), catalog, strength)
+        const filled = fillMesocycleLoads(daysWith('bench-press', [set()]), catalog, strength)
 
         expect(firstSetWeight(filled)).toBeNull()
     })
 
     it('leaves the weight null for a bodyweight movement', () => {
-        const filled = fillMesocycleLoads(proposalWith('push-up', [set()]), catalog, strength)
+        const filled = fillMesocycleLoads(daysWith('push-up', [set()]), catalog, strength)
 
         expect(firstSetWeight(filled)).toBeNull()
     })
 
     it('leaves the weight null for a set with no target reps', () => {
-        const filled = fillMesocycleLoads(proposalWith('low-bar-squat', [set({ plannedReps: null })]), catalog, strength)
+        const filled = fillMesocycleLoads(daysWith('low-bar-squat', [set({ plannedReps: null })]), catalog, strength)
 
         expect(firstSetWeight(filled)).toBeNull()
     })

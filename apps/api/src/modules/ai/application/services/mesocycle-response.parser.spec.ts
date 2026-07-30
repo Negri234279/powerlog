@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { CATALOG_IDS, MesocycleDesignContextMother } from '../../../../../tests/mothers/ai'
 import type { CatalogExercise } from '../../../../shared/contracts/mesocycle-design-context'
+import { DEFAULT_PROGRESSION } from '../../domain/entities/ai-mesocycle-draft.entity'
 import { MAX_RATIONALE_LENGTH } from './mesocycle-prompt.service'
 import { parseMesocycleResponse } from './mesocycle-response.parser'
 import { ModelAnswerRejection } from './model-answer'
@@ -33,7 +34,7 @@ describe('parseMesocycleResponse', () => {
     it('resolves each slug to the catalog’s own id and canonical name', () => {
         const parsed = parse(answer())
 
-        const exercise = parsed.proposal.days[0]?.exercises[0]
+        const exercise = parsed.days[0]?.exercises[0]
         expect(exercise?.exerciseId).toBe(CATALOG_IDS.squat)
         expect(exercise?.name).toBe('Low-Bar Back Squat')
     })
@@ -47,13 +48,31 @@ describe('parseMesocycleResponse', () => {
 
         const parsed = parse(answer({ days }))
 
-        expect(parsed.proposal.days[0]?.exercises[0]?.sets.map((set) => set.order)).toEqual([1, 2])
+        expect(parsed.days[0]?.exercises[0]?.sets.map((set) => set.order)).toEqual([1, 2])
     })
 
     it('takes the JSON even when the model wraps it in a code fence', () => {
         const parsed = parse(`Here you go:\n\`\`\`json\n${answer()}\n\`\`\``)
 
-        expect(parsed.proposal.name).toBe('Strength block')
+        expect(parsed.name).toBe('Strength block')
+    })
+
+    it('defaults the progression to the neutral one when the model omits it', () => {
+        expect(parse(answer()).progression).toEqual(DEFAULT_PROGRESSION)
+    })
+
+    it('parses a progression the model provides', () => {
+        const progression = {
+            model: 'rpe_ramp',
+            weeklyIntensityStepPct: 2.5,
+            weeklySetIncrement: 1,
+            deloadWeeks: [2],
+            deloadFactor: 0.6,
+        }
+
+        const parsed = parse(answer({ progression }))
+
+        expect(parsed.progression).toEqual(progression)
     })
 
     describe('rejects an answer that', () => {

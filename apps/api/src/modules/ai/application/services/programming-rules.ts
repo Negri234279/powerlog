@@ -1,5 +1,10 @@
 import type { CatalogExercise } from '../../../../shared/contracts/mesocycle-design-context'
-import type { DraftMesocycleDay, MesocycleDraftProposal } from '../../domain/entities/ai-mesocycle-draft.entity'
+import type {
+    DraftMesocycleDay,
+    DraftMicrocycle,
+    MesocycleDraftProposal,
+    MesocycleProgression,
+} from '../../domain/entities/ai-mesocycle-draft.entity'
 import { ModelAnswerRejection } from './model-answer'
 import {
     CONSECUTIVE_DAY_HIGH_VOLUME,
@@ -63,6 +68,43 @@ export function evaluateMesocycleRules(
     collectPatternOverlapWarnings(days, warnings)
 
     return { warnings: [...warnings] }
+}
+
+/**
+ * Progression checks over the expanded block (IA.7), extending the single-week
+ * rules above. Hard violations throw `ModelAnswerRejection` so the model retries:
+ * a long block with no deload is unrecoverable, and a set ramp that pushes any
+ * working week past the weekly volume ceiling is over-reaching. The e1RM cap is
+ * already enforced by the expander, so no rule re-checks it here.
+ */
+export function assertProgressionIsSound(
+    microcycles: readonly DraftMicrocycle[],
+    catalog: ReadonlyMap<string, CatalogExercise>,
+    opts: { objective: TrainingObjective; weeks: number; progression: MesocycleProgression },
+): void {
+    // A block that actually accumulates (load or volume climbs) needs a deload to
+    // stay recoverable once it runs 4+ weeks. A neutral/clone progression does not
+    // accumulate, so it is exempt — that keeps the pre-IA.7 default working.
+    const accumulates = opts.progression.weeklyIntensityStepPct > 0 || opts.progression.weeklySetIncrement > 0
+    if (opts.weeks >= 4 && accumulates && opts.progression.deloadWeeks.length === 0) {
+        throw new ModelAnswerRejection(
+            'a block of 4 weeks or more that ramps load or volume needs at least one deload week',
+        )
+    }
+
+    const { max } = WEEKLY_SETS_PER_MUSCLE[opts.objective]
+    for (const microcycle of microcycles) {
+        if (microcycle.isDeload) continue
+
+        const setsByMuscle = weeklySetsByMuscle(resolveDays(microcycle.days, catalog))
+        for (const [muscle, sets] of setsByMuscle) {
+            if (sets > max) {
+                throw new ModelAnswerRejection(
+                    `by week ${microcycle.index + 1} the set ramp puts ${sets} weekly sets on "${muscle}"; keep every week at ${max} or fewer and ease the weekly set increment`,
+                )
+            }
+        }
+    }
 }
 
 function resolveDays(days: readonly DraftMesocycleDay[], catalog: ReadonlyMap<string, CatalogExercise>): ResolvedDay[] {

@@ -81,6 +81,20 @@ function repsToFailure(reps: number, rpe: number | null, rir: number | null): nu
     return null
 }
 
+/**
+ * Round a weight to the equipment's real increment. Null for a bodyweight
+ * movement (no external load) or a non-positive result. Used by the mesocycle
+ * expander to keep every week's progressed load on a loadable number.
+ */
+export function roundToIncrement(weightKg: number, equipment: string): number | null {
+    const increment = EQUIPMENT_INCREMENT_KG[equipment]
+    if (increment === null || increment === undefined) return null
+
+    const rounded = Math.round(weightKg / increment) * increment
+
+    return rounded > 0 ? rounded : null
+}
+
 export interface LoadInput {
     /** The athlete's estimated 1RM on this lift, or null if they have no history. */
     e1rmKg: number | null

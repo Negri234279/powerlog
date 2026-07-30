@@ -46,6 +46,13 @@ Volume and balance:
 - Lead every day with its heaviest compound movement; never open a day with an arms or core isolation exercise.
 - Keep any single day realistic: under about ${MAX_SESSION_MINUTES} minutes of work once rest between sets is counted.
 
+Progression — you design ONE template week; the system expands it into every week of the block from a "progression" object you return. Do not write the other weeks yourself.
+- "model": "linear_percent" (the load climbs a fixed % each week), "double_progression" (reps climb first, then load), or "rpe_ramp" (the intensity climbs).
+- "weeklyIntensityStepPct": how much the working load climbs each non-deload week, e.g. 2.5. Use 0 for no load progression.
+- "weeklySetIncrement": sets added each non-deload week to the main compound lifts, e.g. 1. Use 0 for no volume accumulation.
+- "deloadWeeks": 0-based week indices that are deloads (never week 0). A block of 4 weeks or more should include at least one.
+- "deloadFactor": the volume multiplier on a deload week, e.g. 0.5.
+
 Rules:
 - Answer with a single JSON object and nothing else. No prose, no markdown, no code fences.
 - Use ONLY the exercise "slug" values from the catalog you were given. Never invent one.
@@ -61,6 +68,7 @@ Answer with exactly this shape:
 {
   "name": "a short name for the block",
   "rationale": "two or three sentences on how you designed this week",
+  "progression": { "model": "linear_percent", "weeklyIntensityStepPct": 2.5, "weeklySetIncrement": 1, "deloadWeeks": [3], "deloadFactor": 0.5 },
   "days": [
     {
       "dayOffset": 0,

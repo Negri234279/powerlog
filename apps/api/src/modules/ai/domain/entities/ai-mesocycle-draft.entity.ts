@@ -53,10 +53,55 @@ export interface DraftMesocycleDay {
     exercises: DraftMesocycleExercise[]
 }
 
-/** What the model proposes: a name for the block, and the one week it designed. */
+/** How the block is periodised across its weeks (IA.7). */
+export type ProgressionModel = 'linear_percent' | 'double_progression' | 'rpe_ramp'
+
+/**
+ * The declarative progression the model chooses; the backend expands it into the
+ * block's microcycles rather than asking the model to write every week out. A
+ * neutral progression (`DEFAULT_PROGRESSION`) reproduces the pre-IA.7 behaviour:
+ * the template week repeated unchanged.
+ */
+export interface MesocycleProgression {
+    model: ProgressionModel
+    /** % the working load climbs each non-deload week (over the template load). */
+    weeklyIntensityStepPct: number
+    /** Sets added per non-deload week to the main lifts (0 = no accumulation). */
+    weeklySetIncrement: number
+    /** 0-based week indices that are deloads. Never the first week. */
+    deloadWeeks: number[]
+    /** Volume multiplier applied on a deload week (0 < factor ≤ 1). */
+    deloadFactor: number
+}
+
+/** The block repeated unchanged: what a legacy draft (no progression) becomes. */
+export const DEFAULT_PROGRESSION: MesocycleProgression = {
+    model: 'linear_percent',
+    weeklyIntensityStepPct: 0,
+    weeklySetIncrement: 0,
+    deloadWeeks: [],
+    deloadFactor: 1,
+}
+
+/** One expanded week of the block — the template after the progression is applied. */
+export interface DraftMicrocycle {
+    /** 0-based position in the block. */
+    index: number
+    isDeload: boolean
+    days: DraftMesocycleDay[]
+}
+
+/**
+ * What the model proposes, expanded by the backend. `days` is the template week
+ * the model designed (identical to `microcycles[0].days`); it is kept alongside
+ * the expansion so a refinement revises the week the model actually wrote, while
+ * `microcycles` is what the client renders — no more client-side replication.
+ */
 export interface MesocycleDraftProposal {
     name: string
     days: DraftMesocycleDay[]
+    progression: MesocycleProgression
+    microcycles: DraftMicrocycle[]
 }
 
 export interface AiMesocycleDraftProps {
@@ -131,7 +176,7 @@ export class AiMesocycleDraftAggregate {
         now: Date
     }): AiMesocycleDraftAggregate {
         assertWeeksInRange(input.weeks)
-        assertProposalIsUsable(input.proposal, input.trainingDays)
+        assertProposalIsUsable(input.proposal, input.trainingDays, input.weeks)
 
         const request = input.request
             ? [
@@ -221,10 +266,13 @@ export class AiMesocycleDraftAggregate {
 
     static rehydrate(props: AiMesocycleDraftProps): AiMesocycleDraftAggregate {
         // `proposal` comes back from a jsonb column, which Postgres does not
-        // shape-check. The invariants are re-asserted rather than trusted.
-        assertProposalIsUsable(props.proposal, props.trainingDays)
+        // shape-check. A draft written before IA.7 has no progression/microcycles;
+        // normalise it to the neutral progression (the template repeated) so old
+        // drafts keep working. The invariants are then re-asserted, not trusted.
+        const proposal = normaliseLegacyProposal(props.proposal, props.weeks)
+        assertProposalIsUsable(proposal, props.trainingDays, props.weeks)
 
-        return new AiMesocycleDraftAggregate(props)
+        return new AiMesocycleDraftAggregate({ ...props, proposal })
     }
 
     /**
@@ -253,7 +301,7 @@ export class AiMesocycleDraftAggregate {
      */
     revise(proposal: MesocycleDraftProposal, input: { rationaleId: string; rationale: string }, now: Date): void {
         this.requireOpen()
-        assertProposalIsUsable(proposal, this.props.trainingDays)
+        assertProposalIsUsable(proposal, this.props.trainingDays, this.props.weeks)
 
         this.props.proposal = proposal
         this.props.messages.push(
@@ -368,15 +416,30 @@ function assertWeeksInRange(weeks: number): void {
  * from a structured, zod-validated field, never from the free-text prompt, so
  * text smuggled into the prompt cannot reshape the block it is asked to design.
  */
-function assertProposalIsUsable(proposal: MesocycleDraftProposal, trainingDays: readonly number[]): void {
+function assertProposalIsUsable(
+    proposal: MesocycleDraftProposal,
+    trainingDays: readonly number[],
+    weeks: number,
+): void {
+    if (proposal.name.trim() === '') throw new InvalidMesocycleDraftProposalError('it has no name')
+
+    assertWeekIsUsable(proposal.days, trainingDays)
+    assertProgressionIsUsable(proposal.progression, weeks)
+
+    if (proposal.microcycles.length === 0) throw new InvalidMesocycleDraftProposalError('the block has no microcycles')
+    // Every microcycle is the template's shape after progression: same days.
+    for (const microcycle of proposal.microcycles) assertWeekIsUsable(microcycle.days, trainingDays)
+}
+
+/** A single week trains exactly `trainingDays`, within the structural bounds. */
+function assertWeekIsUsable(days: readonly DraftMesocycleDay[], trainingDays: readonly number[]): void {
     const { daysPerWeek, exercisesPerDay, setsPerExercise } = MESOCYCLE_DRAFT_LIMITS
 
-    if (proposal.name.trim() === '') throw new InvalidMesocycleDraftProposalError('it has no name')
-    assertCount(proposal.days.length, daysPerWeek, 'training days in the week')
+    assertCount(days.length, daysPerWeek, 'training days in the week')
 
     const requested = new Set(trainingDays)
     const seen = new Set<number>()
-    for (const day of proposal.days) {
+    for (const day of days) {
         if (!requested.has(day.dayOffset)) {
             throw new InvalidMesocycleDraftProposalError(`day ${day.dayOffset} is not one of the days asked for`)
         }
@@ -396,7 +459,63 @@ function assertProposalIsUsable(proposal: MesocycleDraftProposal, trainingDays: 
         throw new InvalidMesocycleDraftProposalError(`${unprogrammed.length} of the requested days were left empty`)
     }
 
-    assertIntensityIsUnambiguous(proposal.days.flatMap((day) => day.exercises.flatMap((exercise) => exercise.sets)))
+    assertIntensityIsUnambiguous(days.flatMap((day) => day.exercises.flatMap((exercise) => exercise.sets)))
+}
+
+/**
+ * Structural invariants of a progression — the ones a corrupted row or a
+ * jailbroken answer must not slip past. The training-quality rules (a long block
+ * needs a deload, the last week must not exceed the athlete's e1RM) live in the
+ * programming rules, where they are handed back to the model to fix.
+ */
+function assertProgressionIsUsable(progression: MesocycleProgression, weeks: number): void {
+    if (progression.weeklyIntensityStepPct < 0) {
+        throw new InvalidMesocycleDraftProposalError('the weekly intensity step cannot be negative')
+    }
+    if (!Number.isInteger(progression.weeklySetIncrement) || progression.weeklySetIncrement < 0) {
+        throw new InvalidMesocycleDraftProposalError('the weekly set increment must be a non-negative integer')
+    }
+    if (progression.deloadFactor <= 0 || progression.deloadFactor > 1) {
+        throw new InvalidMesocycleDraftProposalError('the deload factor must be between 0 and 1')
+    }
+
+    const seen = new Set<number>()
+    for (const week of progression.deloadWeeks) {
+        if (!Number.isInteger(week) || week < 0 || week >= weeks) {
+            throw new InvalidMesocycleDraftProposalError(`deload week ${week} is outside the block's ${weeks} weeks`)
+        }
+        if (week === 0) throw new InvalidMesocycleDraftProposalError('the first week cannot be a deload')
+        if (seen.has(week)) throw new InvalidMesocycleDraftProposalError(`deload week ${week} is listed twice`)
+        seen.add(week)
+    }
+}
+
+/**
+ * Bring a possibly-legacy proposal to the IA.7 shape. A draft written before IA.7
+ * has `days` but no `progression`/`microcycles`; treat it as the neutral
+ * progression — the template week repeated `weeks` times, unchanged.
+ */
+function normaliseLegacyProposal(proposal: MesocycleDraftProposal, weeks: number): MesocycleDraftProposal {
+    if (proposal.microcycles?.length && proposal.progression) return proposal
+
+    const microcycles: DraftMicrocycle[] = Array.from({ length: weeks }, (_, index) => ({
+        index,
+        isDeload: false,
+        days: cloneDays(proposal.days),
+    }))
+
+    return { name: proposal.name, days: proposal.days, progression: DEFAULT_PROGRESSION, microcycles }
+}
+
+/** Deep-copy a week's days, so cloned microcycles never share nested references. */
+function cloneDays(days: readonly DraftMesocycleDay[]): DraftMesocycleDay[] {
+    return days.map((day) => ({
+        ...day,
+        exercises: day.exercises.map((exercise) => ({
+            ...exercise,
+            sets: exercise.sets.map((set) => ({ ...set })),
+        })),
+    }))
 }
 
 function assertCount(count: number, bounds: { min: number; max: number }, what: string): void {

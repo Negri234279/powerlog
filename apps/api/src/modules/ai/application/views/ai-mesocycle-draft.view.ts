@@ -1,4 +1,4 @@
-import type { AiMesocycleDraftAggregate } from '../../domain/entities/ai-mesocycle-draft.entity'
+import type { AiMesocycleDraftAggregate, DraftMesocycleDay } from '../../domain/entities/ai-mesocycle-draft.entity'
 
 export interface AiMesocycleDraftSetView {
     order: number
@@ -21,6 +21,22 @@ export interface AiMesocycleDraftDayView {
     dayOffset: number
     label: string | null
     exercises: AiMesocycleDraftExerciseView[]
+}
+
+/** One expanded week of the block, as the client renders it (IA.7). */
+export interface AiMesocycleDraftMicrocycleView {
+    index: number
+    isDeload: boolean
+    days: AiMesocycleDraftDayView[]
+}
+
+/** How the block advances week to week; the backend already applied it. */
+export interface AiMesocycleDraftProgressionView {
+    model: string
+    weeklyIntensityStepPct: number
+    weeklySetIncrement: number
+    deloadWeeks: number[]
+    deloadFactor: number
 }
 
 export interface AiMesocycleDraftMessageView {
@@ -47,7 +63,12 @@ export interface AiMesocycleDraftView {
     goal: string | null
     /** The name the model proposed for the block. */
     name: string
+    /** The template week (identical to `microcycles[0].days`). */
     days: AiMesocycleDraftDayView[]
+    /** How the block progresses; already applied to `microcycles`. */
+    progression: AiMesocycleDraftProgressionView
+    /** The expanded block: one entry per week, ready to render. */
+    microcycles: AiMesocycleDraftMicrocycleView[]
     messages: AiMesocycleDraftMessageView[]
     /** The resolved draft this one continues, if any. */
     parentDraftId: string | null
@@ -57,7 +78,20 @@ export interface AiMesocycleDraftView {
     updatedAt: Date
 }
 
+function toDayView(day: DraftMesocycleDay): AiMesocycleDraftDayView {
+    return {
+        dayOffset: day.dayOffset,
+        label: day.label,
+        exercises: day.exercises.map((exercise) => ({
+            ...exercise,
+            sets: exercise.sets.map((set) => ({ ...set })),
+        })),
+    }
+}
+
 export function toAiMesocycleDraftView(draft: AiMesocycleDraftAggregate): AiMesocycleDraftView {
+    const { proposal } = draft
+
     return {
         id: draft.id,
         athleteId: draft.athleteId,
@@ -67,14 +101,13 @@ export function toAiMesocycleDraftView(draft: AiMesocycleDraftAggregate): AiMeso
         weeks: draft.weeks,
         trainingDays: [...draft.trainingDays],
         goal: draft.goal,
-        name: draft.proposal.name,
-        days: draft.proposal.days.map((day) => ({
-            dayOffset: day.dayOffset,
-            label: day.label,
-            exercises: day.exercises.map((exercise) => ({
-                ...exercise,
-                sets: exercise.sets.map((set) => ({ ...set })),
-            })),
+        name: proposal.name,
+        days: proposal.days.map(toDayView),
+        progression: { ...proposal.progression, deloadWeeks: [...proposal.progression.deloadWeeks] },
+        microcycles: proposal.microcycles.map((microcycle) => ({
+            index: microcycle.index,
+            isDeload: microcycle.isDeload,
+            days: microcycle.days.map(toDayView),
         })),
         messages: draft.messages.map((message) => ({
             id: message.id,

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { CatalogExercise } from '../../../../shared/contracts/mesocycle-design-context'
-import type { DraftMesocycleExercise, MesocycleDraftProposal } from '../../domain/entities/ai-mesocycle-draft.entity'
+import {
+    DEFAULT_PROGRESSION,
+    type DraftMesocycleExercise,
+    type MesocycleDraftProposal,
+} from '../../domain/entities/ai-mesocycle-draft.entity'
 import { ModelAnswerRejection } from './model-answer'
 import { evaluateMesocycleRules } from './programming-rules'
 
@@ -43,10 +47,16 @@ const ex = (slug: string, sets: number): DraftMesocycleExercise => ({
     })),
 })
 
-const week = (...days: { dayOffset: number; exercises: DraftMesocycleExercise[] }[]): MesocycleDraftProposal => ({
-    name: 'Test block',
-    days: days.map((day) => ({ dayOffset: day.dayOffset, label: null, exercises: day.exercises })),
-})
+const week = (...days: { dayOffset: number; exercises: DraftMesocycleExercise[] }[]): MesocycleDraftProposal => {
+    const mapped = days.map((day) => ({ dayOffset: day.dayOffset, label: null, exercises: day.exercises }))
+
+    return {
+        name: 'Test block',
+        days: mapped,
+        progression: DEFAULT_PROGRESSION,
+        microcycles: [{ index: 0, isDeload: false, days: mapped }],
+    }
+}
 
 const evaluate = (proposal: MesocycleDraftProposal, objective: 'strength' | 'hypertrophy' | 'general' = 'general') =>
     evaluateMesocycleRules(proposal, catalog, { objective })
