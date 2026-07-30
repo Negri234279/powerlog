@@ -35,6 +35,24 @@ describe('AiProviderConfigAggregate', () => {
         expect(config.model).toBeNull()
     })
 
+    it('runs a task on its own model, or falls back to the default model', () => {
+        const config = AiProviderConfigMother.create({ model: 'gpt-5' })
+
+        // No per-task choice yet → both tasks use the provider default.
+        expect(config.modelFor('mesocycle')).toBe('gpt-5')
+        expect(config.modelFor('session_plan')).toBe('gpt-5')
+
+        config.setTaskModel('mesocycle', 'claude-opus-5', LATER)
+
+        // The mesocycle task takes its own model; the session plan still falls back.
+        expect(config.modelFor('mesocycle')).toBe('claude-opus-5')
+        expect(config.modelFor('session_plan')).toBe('gpt-5')
+
+        // Clearing it goes back to the default.
+        config.setTaskModel('mesocycle', null, LATER)
+        expect(config.modelFor('mesocycle')).toBe('gpt-5')
+    })
+
     it('disables without discarding the stored key', () => {
         const config = AiProviderConfigMother.create()
 

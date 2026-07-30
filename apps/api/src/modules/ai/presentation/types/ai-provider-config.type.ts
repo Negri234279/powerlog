@@ -20,6 +20,18 @@ export class AiProviderConfigType {
     @Field(() => String, { nullable: true, description: 'Selected model id; null → none picked yet.' })
     model!: string | null
 
+    @Field(() => String, {
+        nullable: true,
+        description: 'Model for block design; null → uses the default model (IA.8).',
+    })
+    mesocycleModel!: string | null
+
+    @Field(() => String, {
+        nullable: true,
+        description: 'Model for session programming; null → uses the default model (IA.8).',
+    })
+    sessionPlanModel!: string | null
+
     @Field(() => Boolean, { description: 'Whether powerlog may use this key.' })
     enabled!: boolean
 

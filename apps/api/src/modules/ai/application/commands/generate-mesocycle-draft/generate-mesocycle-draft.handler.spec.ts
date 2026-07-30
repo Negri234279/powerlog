@@ -139,6 +139,18 @@ describe('GenerateMesocycleDraftHandler', () => {
         expect(await drafts.findOpenByUser(USER_ID, OTHER_ATHLETE_ID)).toMatchObject({ id: forLuis.id })
     })
 
+    it('runs the block on the mesocycle-task model when one is set, and stamps the draft with it', async () => {
+        const config = AiProviderConfigMother.openai({ userId: USER_ID, model: 'gpt-5', isDefault: true })
+        config.setTaskModel('mesocycle', 'gpt-5-pro', new Date())
+        configs = new InMemoryAiProviderConfigRepository()
+        configs.seed(config)
+
+        const view = await buildHandler().execute(command())
+
+        expect(openai.completeCalls[0]?.model).toBe('gpt-5-pro')
+        expect(view.model).toBe('gpt-5-pro')
+    })
+
     it('fails before calling the provider when no default is configured', async () => {
         configs = new InMemoryAiProviderConfigRepository()
 

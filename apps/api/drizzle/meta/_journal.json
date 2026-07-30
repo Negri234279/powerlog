@@ -484,6 +484,13 @@
       "when": 1785363950892,
       "tag": "0068_woozy_vector",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1785421311843,
+      "tag": "0069_colorful_jack_power",
+      "breakpoints": true
     }
   ]
 }

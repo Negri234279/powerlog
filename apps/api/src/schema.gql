@@ -613,11 +613,17 @@ type AiProviderConfig {
   """Last four characters of the stored key."""
   keyLast4: String!
 
+  """Model for block design; null → uses the default model (IA.8)."""
+  mesocycleModel: String
+
   """Selected model id; null → none picked yet."""
   model: String
 
   """"openai" or "anthropic"."""
   provider: String!
+
+  """Model for session programming; null → uses the default model (IA.8)."""
+  sessionPlanModel: String
   updatedAt: DateTime!
 }
 
@@ -1629,6 +1635,11 @@ type Mutation {
   setAiProviderKey(input: SetAiProviderKeyInput!): AiProviderConfig!
 
   """
+  Select the model used for one AI task (mesocycle or session_plan); null falls back to the default.
+  """
+  setAiProviderTaskModel(input: SetAiProviderTaskModelInput!): AiProviderConfig!
+
+  """
   Set (or clear, when the body is empty) your private note on an athlete (coaches only).
   """
   setAthleteNote(athleteId: ID!, body: String!): Boolean!
@@ -2430,6 +2441,17 @@ input SetAiProviderKeyInput {
   apiKey: String!
 
   """Model to select; must be callable with this key."""
+  model: String
+
+  """"openai" or "anthropic"."""
+  provider: String!
+}
+
+input SetAiProviderTaskModelInput {
+  """The task: "mesocycle" or "session_plan"."""
+  kind: String!
+
+  """Model id, or null to fall back to the default model."""
   model: String
 
   """"openai" or "anthropic"."""
