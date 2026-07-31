@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { track } from '@/lib/analytics/events'
 import { cn } from '@/lib/cn'
 import { useErrorMessage } from '@/lib/graphql/use-error-message'
-import type { AiMesocycleDraft } from '@/lib/graphql/hooks/use-ai-mesocycle'
+import type { AiMesocycleDraft, AiMesocycleDraftDay } from '@/lib/graphql/hooks/use-ai-mesocycle'
 import { useMe } from '@/lib/graphql/hooks/use-auth'
 import { type ExerciseData, useExercises } from '@/lib/graphql/hooks/use-workouts'
 import {
@@ -214,11 +214,11 @@ function templateToDraftExercises(template: WorkoutTemplateData, units: Units): 
 }
 
 /**
- * One AI-designed week as editable draft days, with fresh keys on every call — so
- * replicating it across weeks never shares React identity between them.
+ * A block of AI-designed days as editable draft days, with fresh keys on every
+ * call — so weeks that share the same template never share React identity.
  */
-function daysFromAiProposal(proposal: AiMesocycleDraft, units: Units): DraftDay[] {
-    return [...proposal.days]
+function draftDaysFromAi(days: AiMesocycleDraftDay[], units: Units): DraftDay[] {
+    return [...days]
         .sort((a, b) => a.dayOffset - b.dayOffset)
         .map((day) => ({
             key: newKey(),
@@ -233,17 +233,24 @@ function daysFromAiProposal(proposal: AiMesocycleDraft, units: Units): DraftDay[
         }))
 }
 
+/** The proposal's template week (for filling a single week in the builder). */
+function daysFromAiProposal(proposal: AiMesocycleDraft, units: Units): DraftDay[] {
+    return draftDaysFromAi(proposal.days, units)
+}
+
 /**
- * Turn an AI proposal into the editable draft tree. The model designs **one**
- * template week; it is repeated across the block's weeks here, in the client,
- * because that is where the athlete then edits each week's progression.
+ * Turn an AI proposal into the editable draft tree. The backend already expanded
+ * the block into `microcycles` (IA.7) — one per week, with the progression and
+ * loads applied — so the client just renders them. No more client-side replication.
  */
 function draftFromAiProposal(proposal: AiMesocycleDraft, units: Units): DraftWeek[] {
-    return Array.from({ length: proposal.weeks }, () => ({
-        key: newKey(),
-        label: '',
-        days: daysFromAiProposal(proposal, units),
-    }))
+    return [...proposal.microcycles]
+        .sort((a, b) => a.index - b.index)
+        .map((microcycle) => ({
+            key: newKey(),
+            label: '',
+            days: draftDaysFromAi(microcycle.days, units),
+        }))
 }
 
 /**

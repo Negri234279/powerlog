@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { type SubmitEvent, useMemo, useState } from 'react'
+import { type SubmitEvent, useEffect, useMemo, useState } from 'react'
 
 import { track } from '@/lib/analytics/events'
 import { FormError } from '@/components/ui/form-error'
@@ -40,11 +40,18 @@ export function AiPlanPanel({
     entries,
     nameById,
     units,
+    onExpandedChange,
 }: {
     sessionId: string
     entries: Entries
     nameById: Map<string, string>
     units: Units
+    /**
+     * Reports whether the panel is showing its full-width card (open, or a live
+     * draft to review) vs. the collapsed pill. The parent uses it to drop the
+     * neighbouring status filter below the card on narrow screens.
+     */
+    onExpandedChange?: (expanded: boolean) => void
 }) {
     const t = useTranslations('aiPlan')
     const errorMessage = useErrorMessage()
@@ -66,6 +73,14 @@ export function AiPlanPanel({
     const [rawError, setRawError] = useState<unknown>(null)
     const [extraInfo, setExtraInfo] = useState('')
     const [open, setOpen] = useState(false)
+
+    // Card mode is either an explicit open or a live draft the athlete must
+    // review; both make the panel want the full row. Reported up so the status
+    // filter beside it can move out of the way (see `SessionEditor`).
+    const expanded = open || draft != null
+    useEffect(() => {
+        onExpandedChange?.(expanded)
+    }, [expanded, onExpandedChange])
 
     /** Every exercise of the session, for the per-exercise generate buttons. */
     const programmable = useMemo(
@@ -163,7 +178,7 @@ export function AiPlanPanel({
 
     // Collapsed by default: the panel only needs to be a nudge until the athlete
     // wants it. A live draft always expands — there's a proposal to review.
-    if (!open && !draft) {
+    if (!expanded) {
         return (
             <div className="flex flex-wrap items-center gap-4">
                 <TrackedButton

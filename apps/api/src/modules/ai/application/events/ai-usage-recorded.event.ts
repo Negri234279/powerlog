@@ -14,6 +14,9 @@ export class AiUsageRecordedEvent {
         readonly model: string,
         readonly inputTokens: number,
         readonly outputTokens: number,
+        /** Canonical disjoint cache figures (see `LlmUsage`); 0 when caching didn't apply. */
+        readonly cacheReadInputTokens: number,
+        readonly cacheCreationInputTokens: number,
         readonly occurredAt: Date,
     ) {}
 }

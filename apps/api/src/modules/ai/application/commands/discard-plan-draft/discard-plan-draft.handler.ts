@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs'
 
 import { AiPlanDraftNotFoundError } from '../../../domain/errors/ai-plan.errors'
 import { AiPlanDraftRepository } from '../../../domain/repositories/ai-plan-draft.repository'
+import { AiGenerationMetrics } from '../../ports/ai-generation-metrics.port'
 import { Clock } from '../../ports/clock.port'
 import { DiscardPlanDraftCommand } from './discard-plan-draft.command'
 
@@ -10,6 +11,7 @@ export class DiscardPlanDraftHandler implements ICommandHandler<DiscardPlanDraft
     constructor(
         private readonly drafts: AiPlanDraftRepository,
         private readonly clock: Clock,
+        private readonly metrics: AiGenerationMetrics,
     ) {}
 
     async execute(command: DiscardPlanDraftCommand): Promise<boolean> {
@@ -20,6 +22,8 @@ export class DiscardPlanDraftHandler implements ICommandHandler<DiscardPlanDraft
         // model suggested and why they said no.
         draft.discard(this.clock.now())
         await this.drafts.save(draft)
+
+        this.metrics.recordDraftSettled('session_plan', 'discarded', draft.model)
 
         return true
     }

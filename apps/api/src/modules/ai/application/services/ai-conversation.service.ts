@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { EventBus } from '@nestjs/cqrs'
 import { PinoLogger } from 'nestjs-pino'
 
-import type { LlmMessage } from '../../../../ai/llm-provider.port'
+import type { LlmMessage, LlmSystemBlock } from '../../../../ai/llm-provider.port'
 import { LlmProviderRegistry } from '../../../../ai/llm-provider.registry'
 import type { AiProviderConfigAggregate } from '../../domain/entities/ai-provider-config.entity'
 import { AiUsageRecordedEvent } from '../events/ai-usage-recorded.event'
@@ -24,9 +24,16 @@ function buildRetryPrompt(reason: string): string {
 }
 
 export interface AiConversationRequest {
-    system: string
+    system: string | LlmSystemBlock[]
     messages: LlmMessage[]
     maxTokens?: number
+    /**
+     * Force a specific model instead of the config's default. A refinement passes
+     * the model that produced the draft, so the whole thread runs on one model —
+     * the prompt cache is per-model, and re-resolving the user's (possibly changed)
+     * default would throw the cached prefix away.
+     */
+    model?: string
 }
 
 /**
@@ -65,7 +72,7 @@ export class AiConversation {
     ): Promise<T> {
         const apiKey = this.cipher.decrypt(config.encryptedKey)
         const client = this.providers.for(config.provider.value)
-        const model = config.model as string
+        const model = request.model ?? (config.model as string)
         const messages = [...request.messages]
 
         for (let attempt = 1; attempt <= 2; attempt++) {
@@ -87,6 +94,8 @@ export class AiConversation {
                     completion.model,
                     completion.usage.inputTokens,
                     completion.usage.outputTokens,
+                    completion.usage.cacheReadInputTokens ?? 0,
+                    completion.usage.cacheCreationInputTokens ?? 0,
                     new Date(),
                 ),
             )

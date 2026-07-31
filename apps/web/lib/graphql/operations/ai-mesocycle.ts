@@ -41,6 +41,35 @@ export const AiMesocycleDraftFieldsFragment = graphql(`
                 }
             }
         }
+        progression {
+            model
+            weeklyIntensityStepPct
+            weeklySetIncrement
+            deloadWeeks
+            deloadFactor
+        }
+        microcycles {
+            index
+            isDeload
+            days {
+                dayOffset
+                label
+                exercises {
+                    exerciseId
+                    slug
+                    name
+                    notes
+                    sets {
+                        order
+                        plannedWeightKg
+                        plannedReps
+                        rpe
+                        rir
+                        notes
+                    }
+                }
+            }
+        }
         messages {
             id
             role

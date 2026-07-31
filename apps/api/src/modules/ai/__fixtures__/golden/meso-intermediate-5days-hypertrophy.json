@@ -1,0 +1,17 @@
+{
+    "name": "meso-intermediate-5days-hypertrophy",
+    "provider": "anthropic",
+    "model": "claude-opus-4-8",
+    "request": {
+        "weeks": 5,
+        "trainingDays": [0, 1, 3, 4, 5],
+        "goal": "hypertrophy",
+        "prompt": "Two years of training. Upper/lower-ish split, want more arm and back volume."
+    },
+    "strength": [
+        { "slug": "low-bar-squat", "e1rmKg": 160, "lastTrainedAt": "2026-07-20T00:00:00.000Z" },
+        { "slug": "bench-press", "e1rmKg": 110, "lastTrainedAt": "2026-07-22T00:00:00.000Z" },
+        { "slug": "conventional-deadlift", "e1rmKg": 200, "lastTrainedAt": "2026-07-18T00:00:00.000Z" },
+        { "slug": "overhead-press", "e1rmKg": 65, "lastTrainedAt": "2026-07-21T00:00:00.000Z" }
+    ]
+}

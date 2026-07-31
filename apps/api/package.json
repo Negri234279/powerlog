@@ -1,6 +1,6 @@
 {
     "name": "@powerlog/api",
-    "version": "1.11.2",
+    "version": "1.12.0",
     "private": true,
     "scripts": {
         "build": "nest build",
@@ -12,6 +12,7 @@
         "typecheck:test": "tsc -p tsconfig.spec.json",
         "test": "vitest run",
         "test:watch": "vitest",
+        "ai:eval": "npx --yes tsx src/modules/ai/__eval__/ai-eval.ts",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate",
         "db:studio": "drizzle-kit studio",

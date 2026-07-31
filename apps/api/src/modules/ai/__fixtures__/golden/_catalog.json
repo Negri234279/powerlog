@@ -1,0 +1,138 @@
+[
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000001",
+        "slug": "low-bar-squat",
+        "name": "Low-Bar Back Squat",
+        "category": "squat",
+        "equipment": "barbell",
+        "primaryMuscle": "quads"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000002",
+        "slug": "front-squat",
+        "name": "Front Squat",
+        "category": "squat",
+        "equipment": "barbell",
+        "primaryMuscle": "quads"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000003",
+        "slug": "bench-press",
+        "name": "Bench Press",
+        "category": "bench",
+        "equipment": "barbell",
+        "primaryMuscle": "chest"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000004",
+        "slug": "incline-db-press",
+        "name": "Incline Dumbbell Press",
+        "category": "chest",
+        "equipment": "dumbbell",
+        "primaryMuscle": "chest"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000005",
+        "slug": "conventional-deadlift",
+        "name": "Conventional Deadlift",
+        "category": "deadlift",
+        "equipment": "barbell",
+        "primaryMuscle": "hamstrings"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000006",
+        "slug": "romanian-deadlift",
+        "name": "Romanian Deadlift",
+        "category": "legs",
+        "equipment": "barbell",
+        "primaryMuscle": "hamstrings"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000007",
+        "slug": "barbell-row",
+        "name": "Barbell Row",
+        "category": "back",
+        "equipment": "barbell",
+        "primaryMuscle": "back"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000008",
+        "slug": "lat-pulldown",
+        "name": "Lat Pulldown",
+        "category": "back",
+        "equipment": "cable",
+        "primaryMuscle": "lats"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000009",
+        "slug": "pull-up",
+        "name": "Pull-Up",
+        "category": "back",
+        "equipment": "bodyweight",
+        "primaryMuscle": "lats"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000010",
+        "slug": "overhead-press",
+        "name": "Overhead Press",
+        "category": "shoulders",
+        "equipment": "barbell",
+        "primaryMuscle": "shoulders"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000011",
+        "slug": "lateral-raise",
+        "name": "Lateral Raise",
+        "category": "shoulders",
+        "equipment": "dumbbell",
+        "primaryMuscle": "shoulders"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000012",
+        "slug": "barbell-curl",
+        "name": "Barbell Curl",
+        "category": "arms",
+        "equipment": "barbell",
+        "primaryMuscle": "biceps"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000013",
+        "slug": "triceps-pushdown",
+        "name": "Triceps Pushdown",
+        "category": "arms",
+        "equipment": "cable",
+        "primaryMuscle": "triceps"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000014",
+        "slug": "leg-press",
+        "name": "Leg Press",
+        "category": "legs",
+        "equipment": "machine",
+        "primaryMuscle": "quads"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000015",
+        "slug": "leg-curl",
+        "name": "Seated Leg Curl",
+        "category": "legs",
+        "equipment": "machine",
+        "primaryMuscle": "hamstrings"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000016",
+        "slug": "standing-calf-raise",
+        "name": "Standing Calf Raise",
+        "category": "legs",
+        "equipment": "machine",
+        "primaryMuscle": "calves"
+    },
+    {
+        "exerciseId": "11111111-0000-4000-8000-000000000017",
+        "slug": "hanging-leg-raise",
+        "name": "Hanging Leg Raise",
+        "category": "core",
+        "equipment": "bodyweight",
+        "primaryMuscle": "core"
+    }
+]

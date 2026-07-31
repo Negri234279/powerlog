@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 
+import type { AiProvider } from '../../../../shared/ai-provider'
 import type { AiProviderConfigAggregate } from '../../domain/entities/ai-provider-config.entity'
 import { AiModelNotSelectedError, NoDefaultAiProviderError } from '../../domain/errors/ai-plan.errors'
 import { AiProviderConfigRepository } from '../../domain/repositories/ai-provider-config.repository'
@@ -19,6 +20,22 @@ export class AiProviderResolver {
         const config = all.find((candidate) => candidate.isDefault && candidate.enabled)
         if (!config) throw new NoDefaultAiProviderError()
         if (!config.model) throw new AiModelNotSelectedError()
+
+        return config
+    }
+
+    /**
+     * The config for a *specific* provider, enabled. Used when a draft must be
+     * refined on the same provider that produced it — the caller supplies the
+     * model to run (the draft's), so the config's own model is not required and is
+     * not read. Fails as `NoDefaultAiProviderError` if that provider is no longer
+     * enabled, exactly like resolving a missing default.
+     */
+    async resolveProvider(userId: string, provider: AiProvider): Promise<AiProviderConfigAggregate> {
+        const all = await this.configs.findAllByUser(userId)
+
+        const config = all.find((candidate) => candidate.provider.value === provider && candidate.enabled)
+        if (!config) throw new NoDefaultAiProviderError()
 
         return config
     }

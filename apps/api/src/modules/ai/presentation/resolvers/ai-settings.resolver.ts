@@ -12,6 +12,7 @@ import { DeleteAiProviderKeyCommand } from '../../application/commands/delete-ai
 import { SetAiProviderDefaultCommand } from '../../application/commands/set-ai-provider-default/set-ai-provider-default.command'
 import { SetAiProviderEnabledCommand } from '../../application/commands/set-ai-provider-enabled/set-ai-provider-enabled.command'
 import { SetAiProviderKeyCommand } from '../../application/commands/set-ai-provider-key/set-ai-provider-key.command'
+import { SetAiProviderTaskModelCommand } from '../../application/commands/set-ai-provider-task-model/set-ai-provider-task-model.command'
 import { UpdateAiProviderModelCommand } from '../../application/commands/update-ai-provider-model/update-ai-provider-model.command'
 import { GetMyAiSettingsQuery } from '../../application/queries/get-my-ai-settings/get-my-ai-settings.query'
 import { GetMyAiUsageQuery } from '../../application/queries/get-my-ai-usage/get-my-ai-usage.query'
@@ -21,6 +22,7 @@ import type { AiUsageSummaryView } from '../../application/views/ai-usage.view'
 import { aiProviderSchema } from '../inputs/ai-provider.schema'
 import { SetAiProviderEnabledInput, setAiProviderEnabledSchema } from '../inputs/set-ai-provider-enabled.input'
 import { SetAiProviderKeyInput, setAiProviderKeySchema } from '../inputs/set-ai-provider-key.input'
+import { SetAiProviderTaskModelInput, setAiProviderTaskModelSchema } from '../inputs/set-ai-provider-task-model.input'
 import { UpdateAiProviderModelInput, updateAiProviderModelSchema } from '../inputs/update-ai-provider-model.input'
 import { AiModelType } from '../types/ai-model.type'
 import { AiProviderConfigType } from '../types/ai-provider-config.type'
@@ -92,6 +94,24 @@ export class AiSettingsResolver {
         const command = new UpdateAiProviderModelCommand(user.userId, input.provider, input.model)
 
         return toType(await this.commandBus.execute<UpdateAiProviderModelCommand, AiProviderConfigView>(command))
+    }
+
+    @Mutation(() => AiProviderConfigType, {
+        description:
+            'Select the model used for one AI task (mesocycle or session_plan); null falls back to the default.',
+    })
+    async setAiProviderTaskModel(
+        @CurrentUser() user: AuthUser,
+        @Args('input', new ZodValidationPipe(setAiProviderTaskModelSchema)) input: SetAiProviderTaskModelInput,
+    ): Promise<AiProviderConfigType> {
+        const command = new SetAiProviderTaskModelCommand(
+            user.userId,
+            input.provider,
+            input.kind as 'mesocycle' | 'session_plan',
+            input.model,
+        )
+
+        return toType(await this.commandBus.execute<SetAiProviderTaskModelCommand, AiProviderConfigView>(command))
     }
 
     @Mutation(() => AiProviderConfigType, { description: 'Enable or disable a configured provider.' })

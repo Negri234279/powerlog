@@ -1,0 +1,12 @@
+{
+    "name": "meso-beginner-no-history-3days-strength",
+    "provider": "anthropic",
+    "model": "claude-opus-4-8",
+    "request": {
+        "weeks": 4,
+        "trainingDays": [0, 2, 4],
+        "goal": "strength",
+        "prompt": "First real training block. Full barbell gym. Squat, bench and deadlift focus."
+    },
+    "strength": []
+}

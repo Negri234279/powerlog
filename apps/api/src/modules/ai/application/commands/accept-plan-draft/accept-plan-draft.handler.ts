@@ -4,7 +4,9 @@ import { PinoLogger } from 'nestjs-pino'
 import { SessionPlanApplier } from '../../../../../shared/contracts/session-plan-applier'
 import { AiPlanDraftNotFoundError, AiPlanDraftNotOpenError } from '../../../domain/errors/ai-plan.errors'
 import { AiPlanDraftRepository } from '../../../domain/repositories/ai-plan-draft.repository'
+import { AiGenerationMetrics } from '../../ports/ai-generation-metrics.port'
 import { Clock } from '../../ports/clock.port'
+import { countRefinements } from '../../services/count-refinements'
 import { type AiPlanDraftView, toAiPlanDraftView } from '../../views/ai-plan-draft.view'
 import { AcceptPlanDraftCommand } from './accept-plan-draft.command'
 
@@ -20,6 +22,7 @@ export class AcceptPlanDraftHandler implements ICommandHandler<AcceptPlanDraftCo
         private readonly drafts: AiPlanDraftRepository,
         private readonly applier: SessionPlanApplier,
         private readonly clock: Clock,
+        private readonly metrics: AiGenerationMetrics,
         private readonly logger: PinoLogger,
     ) {
         this.logger.setContext(AcceptPlanDraftHandler.name)
@@ -40,6 +43,9 @@ export class AcceptPlanDraftHandler implements ICommandHandler<AcceptPlanDraftCo
 
         draft.accept(this.clock.now())
         await this.drafts.save(draft)
+
+        this.metrics.recordDraftSettled('session_plan', 'accepted', draft.model)
+        this.metrics.recordRefinementsBeforeAccept('session_plan', draft.model, countRefinements(draft.messages))
 
         this.logger.info({ sessionId: draft.sessionId, sets: draft.sets.length }, 'session plan accepted')
 
