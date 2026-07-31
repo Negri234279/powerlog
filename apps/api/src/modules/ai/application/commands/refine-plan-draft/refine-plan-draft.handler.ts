@@ -31,7 +31,9 @@ export class RefinePlanDraftHandler implements ICommandHandler<RefinePlanDraftCo
         const draft = await this.drafts.findById(command.draftId)
         if (!draft || draft.userId !== command.userId) throw new AiPlanDraftNotFoundError()
 
-        const config = await this.prescriber.resolveConfig(command.userId)
+        // The draft's own provider, and its own model below — a refinement stays on
+        // the model that produced it, rather than a default the user may have changed.
+        const config = await this.prescriber.resolveConfigForProvider(command.userId, draft.provider.value)
 
         // The same scope the draft was made with: a draft for one exercise must be
         // revised against that exercise alone, or the model is handed sets it never
@@ -44,7 +46,7 @@ export class RefinePlanDraftHandler implements ICommandHandler<RefinePlanDraftCo
             { role: 'user' as const, content: buildRefinePrompt(command.message, draft.sets) },
         ]
 
-        const parsed = await this.prescriber.prescribe(config, context, { thread })
+        const parsed = await this.prescriber.prescribe(config, context, { thread, model: draft.model })
         const now = this.clock.now()
 
         // Recorded only once the model answered: a failed call leaves no trace of

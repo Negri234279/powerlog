@@ -17,6 +17,7 @@ import { RefinePlanDraftHandler } from './commands/refine-plan-draft/refine-plan
 import { SetAiProviderDefaultHandler } from './commands/set-ai-provider-default/set-ai-provider-default.handler'
 import { SetAiProviderEnabledHandler } from './commands/set-ai-provider-enabled/set-ai-provider-enabled.handler'
 import { SetAiProviderKeyHandler } from './commands/set-ai-provider-key/set-ai-provider-key.handler'
+import { SetAiProviderTaskModelHandler } from './commands/set-ai-provider-task-model/set-ai-provider-task-model.handler'
 import { UpdateAiProviderModelHandler } from './commands/update-ai-provider-model/update-ai-provider-model.handler'
 import { LinkMesocycleOnCreatedFromDraft } from './event-handlers/link-mesocycle-on-created-from-draft.handler'
 import { RecordAiUsageHandler } from './event-handlers/record-ai-usage.handler'
@@ -40,6 +41,7 @@ import { SetPrescriber } from './services/set-prescriber.service'
 export const AI_COMMAND_HANDLERS = [
     SetAiProviderKeyHandler,
     UpdateAiProviderModelHandler,
+    SetAiProviderTaskModelHandler,
     SetAiProviderEnabledHandler,
     SetAiProviderDefaultHandler,
     DeleteAiProviderKeyHandler,

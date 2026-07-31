@@ -6,6 +6,7 @@ import {
     FakeSecretCipher,
     InMemoryAiMesocycleDraftRepository,
     InMemoryAiProviderConfigRepository,
+    RecordingAiGenerationMetrics,
     StubLlmProviderClient,
     stubRegistry,
 } from '../../../../../../tests/doubles/ai'
@@ -41,6 +42,7 @@ describe('ForkMesocycleDraftHandler', () => {
                     silentLogger(),
                     new RecordingEventBus().asEventBus(),
                 ),
+                new RecordingAiGenerationMetrics(),
             ),
             entitlements,
             new FakeClock(),

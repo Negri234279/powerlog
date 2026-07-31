@@ -142,7 +142,8 @@ export class ChatResolver {
     }
 
     @Mutation(() => Boolean, {
-        description: 'Delete the caller’s view of a conversation (clear it and drop it from the inbox until a new message).',
+        description:
+            'Delete the caller’s view of a conversation (clear it and drop it from the inbox until a new message).',
     })
     async deleteConversation(
         @CurrentUser() user: AuthUser,

@@ -37,7 +37,10 @@ export class RefineMesocycleDraftHandler implements ICommandHandler<RefineMesocy
         // A resolved draft, or one whose thread is spent, must not cost a request.
         draft.requireRefinable()
 
-        const config = await this.designer.resolveConfig(command.userId)
+        // The draft's own provider, and its own model below — a refinement stays on
+        // the model that produced it so the cached catalog prefix survives, rather
+        // than re-resolving a default the user may have changed since.
+        const config = await this.designer.resolveConfigForProvider(command.userId, draft.provider.value)
         // The same trainee the draft was designed for — a refinement must not
         // silently re-anchor the block on the coach's own numbers.
         const context = await this.context.read(command.userId, draft.athleteId)
@@ -53,7 +56,7 @@ export class RefineMesocycleDraftHandler implements ICommandHandler<RefineMesocy
             prompt: null,
         }
 
-        const designed = await this.designer.design(config, context, request, { thread })
+        const designed = await this.designer.design(config, context, request, { thread, model: draft.model })
         const now = this.clock.now()
 
         // Recorded only once the model answered: a failed call leaves no trace of

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import {
     AiMesocycleDraftAggregate,
+    DEFAULT_PROGRESSION,
     type DraftMesocycleDay,
     type DraftMesocycleExercise,
     type DraftMesocycleSet,
@@ -39,11 +40,18 @@ export const mesocycleDraftDay = (overrides: Partial<DraftMesocycleDay> = {}): D
     ...overrides,
 })
 
-export const mesocycleDraftProposal = (overrides: Partial<MesocycleDraftProposal> = {}): MesocycleDraftProposal => ({
-    name: 'Strength block',
-    days: [mesocycleDraftDay()],
-    ...overrides,
-})
+export const mesocycleDraftProposal = (overrides: Partial<MesocycleDraftProposal> = {}): MesocycleDraftProposal => {
+    const days = overrides.days ?? [mesocycleDraftDay()]
+
+    return {
+        name: overrides.name ?? 'Strength block',
+        days,
+        progression: overrides.progression ?? DEFAULT_PROGRESSION,
+        // One microcycle by default (the template); tests that need the real
+        // expansion build it through the designer.
+        microcycles: overrides.microcycles ?? [{ index: 0, isDeload: false, days }],
+    }
+}
 
 interface DraftOverrides {
     id?: string

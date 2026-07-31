@@ -53,6 +53,38 @@ export class AiMesocycleDraftDayType {
     exercises!: AiMesocycleDraftExerciseType[]
 }
 
+/** One expanded week of the block, ready to render — no client-side replication. */
+@ObjectType('AiMesocycleDraftMicrocycle')
+export class AiMesocycleDraftMicrocycleType {
+    @Field(() => Int, { description: '0-based position in the block.' })
+    index!: number
+
+    @Field(() => Boolean)
+    isDeload!: boolean
+
+    @Field(() => [AiMesocycleDraftDayType])
+    days!: AiMesocycleDraftDayType[]
+}
+
+/** How the block advances week to week; already applied to the microcycles. */
+@ObjectType('AiMesocycleDraftProgression')
+export class AiMesocycleDraftProgressionType {
+    @Field(() => String, { description: '"linear_percent", "double_progression" or "rpe_ramp".' })
+    model!: string
+
+    @Field(() => Float, { description: '% the load climbs each non-deload week.' })
+    weeklyIntensityStepPct!: number
+
+    @Field(() => Int, { description: 'Sets added each non-deload week to the main lifts.' })
+    weeklySetIncrement!: number
+
+    @Field(() => [Int], { description: '0-based week indices that are deloads.' })
+    deloadWeeks!: number[]
+
+    @Field(() => Float, { description: 'Volume multiplier on a deload week.' })
+    deloadFactor!: number
+}
+
 /** One turn of the conversation attached to the draft. */
 @ObjectType('AiMesocycleDraftMessage')
 export class AiMesocycleDraftMessageType {
@@ -106,8 +138,14 @@ export class AiMesocycleDraftType {
     @Field(() => String, { description: 'The name the model proposed for the block.' })
     name!: string
 
-    @Field(() => [AiMesocycleDraftDayType], { description: 'The template week.' })
+    @Field(() => [AiMesocycleDraftDayType], { description: 'The template week (= microcycles[0].days).' })
     days!: AiMesocycleDraftDayType[]
+
+    @Field(() => AiMesocycleDraftProgressionType, { description: 'How the block progresses week to week.' })
+    progression!: AiMesocycleDraftProgressionType
+
+    @Field(() => [AiMesocycleDraftMicrocycleType], { description: 'The expanded block, one entry per week.' })
+    microcycles!: AiMesocycleDraftMicrocycleType[]
 
     @Field(() => [AiMesocycleDraftMessageType])
     messages!: AiMesocycleDraftMessageType[]

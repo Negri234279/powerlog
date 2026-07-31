@@ -2,17 +2,20 @@ import { z } from 'zod'
 
 import type { CatalogExercise } from '../../../../shared/contracts/mesocycle-design-context'
 import {
+    DEFAULT_PROGRESSION,
     type DraftMesocycleDay,
     MESOCYCLE_DRAFT_LIMITS,
-    type MesocycleDraftProposal,
+    type MesocycleProgression,
 } from '../../domain/entities/ai-mesocycle-draft.entity'
 import { MAX_RATIONALE_LENGTH } from './mesocycle-prompt.service'
 import { ModelAnswerRejection, parseJsonObject } from './model-answer'
 
 const { daysPerWeek, exercisesPerDay, setsPerExercise } = MESOCYCLE_DRAFT_LIMITS
 
+// No `weightKg`: the model prescribes reps and an intensity target, and the
+// backend computes the kilograms from the athlete's e1RM (see `fillMesocycleLoads`
+// / `load-calculator`). A stray `weightKg` the model sends anyway is stripped.
 const setSchema = z.object({
-    weightKg: z.number().positive().max(1000).nullish(),
     reps: z.number().int().min(1).max(100).nullish(),
     rpe: z.number().min(1).max(10).nullish(),
     rir: z.number().int().min(0).max(10).nullish(),
@@ -32,6 +35,23 @@ const daySchema = z.object({
 })
 
 /**
+ * The declarative progression the backend expands into the block's weeks (IA.7).
+ * Every field defaults, and the whole object defaults to the neutral progression,
+ * so a model that omits it (or omits a field) yields the pre-IA.7 behaviour rather
+ * than a rejection. Structural bounds only — the training-quality checks live in
+ * the programming rules and the aggregate.
+ */
+const progressionSchema = z
+    .object({
+        model: z.enum(['linear_percent', 'double_progression', 'rpe_ramp']).default('linear_percent'),
+        weeklyIntensityStepPct: z.number().min(0).max(20).default(0),
+        weeklySetIncrement: z.number().int().min(0).max(3).default(0),
+        deloadWeeks: z.array(z.number().int().min(0).max(51)).default([]),
+        deloadFactor: z.number().min(0.1).max(1).default(1),
+    })
+    .default(() => ({ ...DEFAULT_PROGRESSION }))
+
+/**
  * The only shape an answer may take. `rationale` is the single free-text field
  * that ever reaches the athlete, and it is capped: a model argued into writing
  * an essay has nowhere to put it.
@@ -40,11 +60,19 @@ const weekSchema = z.object({
     name: z.string().trim().min(1).max(100),
     rationale: z.string().trim().min(1).max(MAX_RATIONALE_LENGTH),
     days: z.array(daySchema).min(daysPerWeek.min).max(daysPerWeek.max),
+    progression: progressionSchema,
 })
 
+/**
+ * The template week the model designed, plus the progression to expand it by. The
+ * backend fills the loads (IA.5) and expands to microcycles (IA.7) — the parser
+ * stays the structural trust boundary and does neither.
+ */
 export interface ParsedMesocycle {
     rationale: string
-    proposal: MesocycleDraftProposal
+    name: string
+    days: DraftMesocycleDay[]
+    progression: MesocycleProgression
 }
 
 /**
@@ -105,7 +133,9 @@ export function parseMesocycleResponse(
 
                         return {
                             order: index + 1,
-                            plannedWeightKg: set.weightKg ?? null,
+                            // Filled by the backend from the athlete's e1RM; the
+                            // model no longer prescribes a weight.
+                            plannedWeightKg: null,
                             plannedReps: set.reps ?? null,
                             rpe,
                             rir,
@@ -123,6 +153,8 @@ export function parseMesocycleResponse(
 
     return {
         rationale: result.data.rationale,
-        proposal: { name: result.data.name, days },
+        name: result.data.name,
+        days,
+        progression: result.data.progression,
     }
 }

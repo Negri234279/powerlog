@@ -1,6 +1,13 @@
 import type { AiProviderVO } from '../value-objects/ai-provider.vo'
 import type { EncryptedSecretVO } from '../value-objects/encrypted-secret.vo'
 
+/**
+ * The AI tasks a model can be chosen for (IA.8). Designing a block and programming
+ * a session are not the same difficulty, so each may run on its own model — a
+ * per-task choice that falls back to the provider's default `model` when unset.
+ */
+export type AiTaskKind = 'mesocycle' | 'session_plan'
+
 export interface AiProviderConfigProps {
     /** Identity, first half: the owning auth user (soft reference, no FK). */
     userId: string
@@ -11,6 +18,10 @@ export interface AiProviderConfigProps {
     keyLast4: string
     /** Chosen model id; null → the user has not picked one yet. */
     model: string | null
+    /** Model for block design, overriding `model` for that task. Null → use `model`. */
+    mesocycleModel: string | null
+    /** Model for session programming, overriding `model` for that task. Null → use `model`. */
+    sessionPlanModel: string | null
     /** Lets the user park a key without it being used. */
     enabled: boolean
     /** The provider the AI features use when several are configured. */
@@ -49,6 +60,8 @@ export class AiProviderConfigAggregate {
             encryptedKey: input.encryptedKey,
             keyLast4: input.keyLast4,
             model: input.model ?? null,
+            mesocycleModel: null,
+            sessionPlanModel: null,
             enabled: true,
             isDefault: input.isDefault ?? false,
             createdAt: input.now,
@@ -71,6 +84,20 @@ export class AiProviderConfigAggregate {
     setModel(model: string | null, now: Date): void {
         this.props.model = model
         this.props.updatedAt = now
+    }
+
+    /** Pick a model for one task, or `null` to fall back to the provider's `model`. */
+    setTaskModel(kind: AiTaskKind, model: string | null, now: Date): void {
+        if (kind === 'mesocycle') this.props.mesocycleModel = model
+        else this.props.sessionPlanModel = model
+        this.props.updatedAt = now
+    }
+
+    /** The model to run `kind` on: its own if set, otherwise the provider default. */
+    modelFor(kind: AiTaskKind): string | null {
+        const taskModel = kind === 'mesocycle' ? this.props.mesocycleModel : this.props.sessionPlanModel
+
+        return taskModel ?? this.props.model
     }
 
     setEnabled(enabled: boolean, now: Date): void {
@@ -107,6 +134,12 @@ export class AiProviderConfigAggregate {
     }
     get model(): string | null {
         return this.props.model
+    }
+    get mesocycleModel(): string | null {
+        return this.props.mesocycleModel
+    }
+    get sessionPlanModel(): string | null {
+        return this.props.sessionPlanModel
     }
     get enabled(): boolean {
         return this.props.enabled

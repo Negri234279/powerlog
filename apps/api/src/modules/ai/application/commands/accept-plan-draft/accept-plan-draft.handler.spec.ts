@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
     FakeClock,
     InMemoryAiPlanDraftRepository,
+    RecordingAiGenerationMetrics,
     RecordingSessionPlanApplier,
 } from '../../../../../../tests/doubles/ai'
 import { silentLogger } from '../../../../../../tests/doubles/shared'
@@ -16,12 +17,14 @@ const USER_ID = AI_DRAFT_DEFAULTS.userId
 describe('AcceptPlanDraftHandler', () => {
     let drafts: InMemoryAiPlanDraftRepository
     let applier: RecordingSessionPlanApplier
+    let metrics: RecordingAiGenerationMetrics
 
-    const buildHandler = () => new AcceptPlanDraftHandler(drafts, applier, new FakeClock(), silentLogger())
+    const buildHandler = () => new AcceptPlanDraftHandler(drafts, applier, new FakeClock(), metrics, silentLogger())
 
     beforeEach(() => {
         drafts = new InMemoryAiPlanDraftRepository()
         applier = new RecordingSessionPlanApplier()
+        metrics = new RecordingAiGenerationMetrics()
     })
 
     it('hands the plan to workouts and marks the draft accepted', async () => {
@@ -40,7 +43,18 @@ describe('AcceptPlanDraftHandler', () => {
         expect(view.status).toBe('accepted')
     })
 
-    it('leaves the draft open when workouts rejects the plan', async () => {
+    it('records the acceptance and the refinement count once accepted', async () => {
+        drafts.seed(AiPlanDraftMother.open())
+        const command = new AcceptPlanDraftCommand(USER_ID, 'draft-1')
+
+        await buildHandler().execute(command)
+
+        expect(metrics.draftsSettled).toEqual([{ kind: 'session_plan', outcome: 'accepted', model: 'gpt-5' }])
+        // An unrefined draft was accepted as first proposed: zero rounds.
+        expect(metrics.refinementsBeforeAccept).toEqual([{ kind: 'session_plan', model: 'gpt-5', count: 0 }])
+    })
+
+    it('leaves the draft open and records nothing when workouts rejects the plan', async () => {
         drafts.seed(AiPlanDraftMother.open())
         applier = new RecordingSessionPlanApplier(new Error('set was deleted'))
         const command = new AcceptPlanDraftCommand(USER_ID, 'draft-1')
@@ -49,6 +63,8 @@ describe('AcceptPlanDraftHandler', () => {
 
         // Still open: the athlete can regenerate rather than be stuck.
         expect((await drafts.findById('draft-1'))?.status.isOpen).toBe(true)
+        // The metric fires after the write succeeds — a rejected apply is not an outcome.
+        expect(metrics.draftsSettled).toEqual([])
     })
 
     it('does not write the plan twice when accepted twice', async () => {

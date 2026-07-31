@@ -9,6 +9,9 @@ export interface AiProviderConfigView {
     provider: string
     keyLast4: string
     model: string | null
+    /** Per-task model overrides (IA.8); null → the task uses `model`. */
+    mesocycleModel: string | null
+    sessionPlanModel: string | null
     enabled: boolean
     /** The provider the AI features reach for when several are configured. */
     isDefault: boolean
@@ -21,6 +24,8 @@ export function toAiProviderConfigView(config: AiProviderConfigAggregate): AiPro
         provider: config.provider.value,
         keyLast4: config.keyLast4,
         model: config.model,
+        mesocycleModel: config.mesocycleModel,
+        sessionPlanModel: config.sessionPlanModel,
         enabled: config.enabled,
         isDefault: config.isDefault,
         createdAt: config.createdAt,

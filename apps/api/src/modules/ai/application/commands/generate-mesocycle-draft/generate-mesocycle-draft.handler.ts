@@ -39,8 +39,10 @@ export class GenerateMesocycleDraftHandler implements ICommandHandler<
         }
 
         // Resolve the provider next: a missing key should fail before the athlete
-        // waits for anything.
+        // waits for anything. The block runs on the mesocycle-task model if the user
+        // chose one, otherwise the provider default (IA.8).
         const config = await this.designer.resolveConfig(command.userId)
+        const model = config.modelFor('mesocycle') as string
 
         // The strength that anchors the loads is the TRAINEE's — the athlete when a
         // coach is designing for them. Workouts rejects the read if they aren't linked.
@@ -52,7 +54,7 @@ export class GenerateMesocycleDraftHandler implements ICommandHandler<
             prompt: command.prompt,
         }
 
-        const designed = await this.designer.design(config, context, request)
+        const designed = await this.designer.design(config, context, request, { model })
         const now = this.clock.now()
 
         // One proposal at a time per (owner, trainee): a coach designing for Ana
@@ -68,7 +70,7 @@ export class GenerateMesocycleDraftHandler implements ICommandHandler<
             userId: command.userId,
             athleteId: command.athleteId,
             provider: config.provider,
-            model: config.model as string,
+            model,
             weeks: command.weeks,
             trainingDays: command.trainingDays,
             goal: command.goal,

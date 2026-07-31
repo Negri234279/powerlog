@@ -22,6 +22,8 @@ export class DrizzleAiUsageRepository extends AiUsageRepository {
             model: entry.model,
             inputTokens: entry.inputTokens,
             outputTokens: entry.outputTokens,
+            cacheReadInputTokens: entry.cacheReadInputTokens,
+            cacheCreationInputTokens: entry.cacheCreationInputTokens,
             // Drizzle serialises `numeric` as a string; null passes through.
             inputPricePerMtok: entry.inputPricePerMTok?.toString() ?? null,
             outputPricePerMtok: entry.outputPricePerMTok?.toString() ?? null,

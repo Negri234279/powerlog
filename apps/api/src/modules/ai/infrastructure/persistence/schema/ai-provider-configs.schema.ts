@@ -29,6 +29,10 @@ export const aiProviderConfigs = pgTable(
         keyLast4: text('key_last4').notNull(),
         // Chosen model id (provider-specific, e.g. "claude-opus-4-8"); null → none picked.
         model: text('model'),
+        // Per-task model overrides (IA.8); null → fall back to `model`. Additive: an
+        // existing config has both null and behaves exactly as before.
+        mesocycleModel: text('mesocycle_model'),
+        sessionPlanModel: text('session_plan_model'),
         enabled: boolean('enabled').notNull().default(true),
         // The provider the AI features reach for when the user has configured more
         // than one. At most one per user — enforced below, in the database.

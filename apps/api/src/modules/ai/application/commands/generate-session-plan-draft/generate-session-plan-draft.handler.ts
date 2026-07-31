@@ -46,10 +46,12 @@ export class GenerateSessionPlanDraftHandler implements ICommandHandler<
         await this.entitlements.assertFeature(command.userId, audience, 'ai')
 
         // Resolve the provider next: a missing key should fail before the athlete
-        // waits for anything.
+        // waits for anything. The session runs on the session-plan-task model if the
+        // user chose one, otherwise the provider default (IA.8).
         const config = await this.prescriber.resolveConfig(command.userId)
+        const model = config.modelFor('session_plan') as string
 
-        const parsed = await this.prescriber.prescribe(config, context, { extraInfo: command.extraInfo })
+        const parsed = await this.prescriber.prescribe(config, context, { extraInfo: command.extraInfo, model })
         const now = this.clock.now()
 
         // A session holds one proposal at a time; the old one is superseded.
@@ -65,7 +67,7 @@ export class GenerateSessionPlanDraftHandler implements ICommandHandler<
             sessionId: command.sessionId,
             entryId: command.entryId,
             provider: config.provider,
-            model: config.model as string,
+            model,
             sets: parsed.sets,
             rationale: parsed.rationale,
             rationaleId: this.ids.uuid(),
