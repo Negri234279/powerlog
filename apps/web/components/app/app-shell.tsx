@@ -61,8 +61,13 @@ export function AppShell({
     // Avatar rides in the access token (resolved from the profile); null → initials.
     const avatar = initialUser?.avatar ?? null
     const onProfile = isActive('/profile')
+    // Prefer the live `me` for admin too: after a silent token refresh the
+    // server-seeded `initialUser` is null (the access token was expired at render
+    // time), so relying on it alone hides the admin nav until a full reload. `useMe`
+    // carries a fresh `isAdmin` and refetches once the refresh lands.
+    const isAdmin = me?.isAdmin ?? initialUser?.isAdmin ?? false
     // Admins get an extra nav entry; the route itself is gated server-side too.
-    const nav = initialUser?.isAdmin ? [...NAV, { id: 'admin', href: '/admin' } as const] : NAV
+    const nav = isAdmin ? [...NAV, { id: 'admin', href: '/admin' } as const] : NAV
 
     // A dead session (useMe errored after a failed refresh) can't be cleared with
     // a client navigation — the HTTPOnly refresh cookie would linger and bounce
