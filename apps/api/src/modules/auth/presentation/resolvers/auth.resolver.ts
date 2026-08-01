@@ -147,22 +147,14 @@ export class AuthResolver {
 
         const command = new RefreshSessionCommand(token, this.deviceFrom(ctx.req))
 
-        let result: AuthSessionResult
-
-        try {
-            result = await this.commandBus.execute<RefreshSessionCommand, AuthSessionResult>(command)
-        } catch (error) {
-            // The presented refresh cookie is dead. The usual cause is an orphaned
-            // Domain-scoped pl_rt (from before the host-only switch) shadowing the
-            // valid host-only cookie: cookie-parser hands us the orphan, so every
-            // refresh fails and the user is logged out every couple of hours. Expire
-            // *only* the Domain-scoped orphan — leaving the host-only cookie intact —
-            // so the client's follow-up hardLogout → /api/auth/refresh retry sends just
-            // the valid cookie and the session recovers instead of dropping to /login.
-            this.cookies.expireLegacyDomainCookies(ctx.res)
-            
-            throw error
-        }
+        // MUST NOT emit any Set-Cookie on a failed refresh. The web BFF
+        // (apps/web/app/api/auth/refresh/route.ts) uses "the response carries
+        // Set-Cookie" as its ONLY success signal (GraphQL errors are HTTP 200), so a
+        // rejected refresh that set or cleared a cookie is mis-read as a rotation → it
+        // redirects back to the protected page → the gate refreshes again → infinite
+        // loop that trips the rate limiter. Let the error propagate uncleared; the
+        // client's hardLogout → /api/auth/refresh path is what clears both cookie scopes.
+        const result = await this.commandBus.execute<RefreshSessionCommand, AuthSessionResult>(command)
 
         this.cookies.setSession(ctx.res, result)
 
