@@ -43,6 +43,12 @@ export class AuthCookies {
     setSession(res: Response, tokens: SessionTokens): void {
         res.cookie(this.accessName, tokens.accessToken, this.options(this.accessMaxAge))
         res.cookie(this.refreshName, tokens.refreshToken, this.options(this.refreshMaxAge))
+
+        // Kill any legacy Domain-scoped orphan on the way out: we only set host-only
+        // cookies now, so a Domain-scoped pl_at/pl_rt is always a pre-migration orphan
+        // that shadows the fresh host-only cookie. Expiring it on every successful auth
+        // lets an affected device self-heal on its next login/refresh.
+        this.expireLegacyDomainCookies(res)
     }
 
     clear(res: Response): void {
@@ -51,16 +57,24 @@ export class AuthCookies {
         res.clearCookie(this.accessName, base)
         res.clearCookie(this.refreshName, base)
 
-        // Belt-and-braces: also expire any legacy Domain-scoped cookies from when we
-        // set Domain=COOKIE_DOMAIN. A cookie is only deleted by a Set-Cookie carrying
-        // the SAME Domain it was set with, so without this an orphaned Domain-scoped
-        // pl_rt survives, shadows the fresh host-only cookie, and every refresh fails
-        // (INVALID_REFRESH_TOKEN → 15-min logout). Remove once these have expired.
-        if (this.legacyDomain) {
-            const domainScoped = { ...base, domain: this.legacyDomain }
-            res.clearCookie(this.accessName, domainScoped)
-            res.clearCookie(this.refreshName, domainScoped)
-        }
+        this.expireLegacyDomainCookies(res)
+    }
+
+    // Expire the Domain-scoped auth cookies from before the host-only switch. A cookie
+    // is only deleted by a Set-Cookie carrying the SAME Domain it was set with, so
+    // without this an orphaned Domain-scoped pl_rt survives, shadows the fresh
+    // host-only cookie, and every refresh fails (INVALID_REFRESH_TOKEN → the user is
+    // logged out every couple of hours). Safe to call on any set/clear because we no
+    // longer set Domain-scoped cookies. It leaves the host-only cookies untouched, so
+    // the failing-refresh path can call it to drop *only* the shadowing orphan and let
+    // the retry succeed with the still-valid host-only cookie. Remove (with the
+    // COOKIE_DOMAIN env) once all such cookies have expired (~30d after the switch).
+    expireLegacyDomainCookies(res: Response): void {
+        if (!this.legacyDomain) return
+
+        const domainScoped = { ...this.options(), domain: this.legacyDomain }
+        res.clearCookie(this.accessName, domainScoped)
+        res.clearCookie(this.refreshName, domainScoped)
     }
 
     readRefresh(req: Request): string | undefined {

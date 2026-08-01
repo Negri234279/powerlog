@@ -146,7 +146,23 @@ export class AuthResolver {
         }
 
         const command = new RefreshSessionCommand(token, this.deviceFrom(ctx.req))
-        const result = await this.commandBus.execute<RefreshSessionCommand, AuthSessionResult>(command)
+
+        let result: AuthSessionResult
+
+        try {
+            result = await this.commandBus.execute<RefreshSessionCommand, AuthSessionResult>(command)
+        } catch (error) {
+            // The presented refresh cookie is dead. The usual cause is an orphaned
+            // Domain-scoped pl_rt (from before the host-only switch) shadowing the
+            // valid host-only cookie: cookie-parser hands us the orphan, so every
+            // refresh fails and the user is logged out every couple of hours. Expire
+            // *only* the Domain-scoped orphan — leaving the host-only cookie intact —
+            // so the client's follow-up hardLogout → /api/auth/refresh retry sends just
+            // the valid cookie and the session recovers instead of dropping to /login.
+            this.cookies.expireLegacyDomainCookies(ctx.res)
+            
+            throw error
+        }
 
         this.cookies.setSession(ctx.res, result)
 
